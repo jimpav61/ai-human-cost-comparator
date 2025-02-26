@@ -1,5 +1,5 @@
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -14,20 +14,48 @@ const Auth = () => {
   const [password, setPassword] = useState("");
   const [isSignUp, setIsSignUp] = useState(false);
 
+  // Check if user is already logged in
+  useEffect(() => {
+    const checkSession = async () => {
+      const { data: { session } } = await supabase.auth.getSession();
+      if (session) {
+        // If already logged in, go to admin
+        navigate("/admin");
+      }
+    };
+    checkSession();
+  }, [navigate]);
+
   const handleAuth = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
     try {
+      // Check if email is in allowed_admins table
+      const { data: allowedAdmin } = await supabase
+        .from('allowed_admins')
+        .select('email')
+        .eq('email', email)
+        .single();
+
+      if (!allowedAdmin) {
+        toast({
+          title: "Access Denied",
+          description: "You are not authorized to access the admin dashboard",
+          variant: "destructive",
+        });
+        setLoading(false);
+        return;
+      }
+
       const { data, error } = await supabase.auth.signInWithPassword({
         email,
         password,
       });
       
       if (error) throw error;
-      
+
       if (data.session) {
-        navigate("/admin", { replace: true });
-        return;
+        navigate("/admin");
       }
     } catch (error: any) {
       toast({
@@ -44,7 +72,7 @@ const Auth = () => {
     <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-brand-50 to-gray-100">
       <div className="w-full max-w-md p-8 bg-white rounded-lg shadow-lg">
         <h2 className="text-2xl font-bold text-center mb-6">
-          {isSignUp ? "Create Account" : "Welcome Back"}
+          Admin Login
         </h2>
         <form onSubmit={handleAuth} className="space-y-4">
           <div>
@@ -68,17 +96,9 @@ const Auth = () => {
             />
           </div>
           <Button type="submit" className="w-full" disabled={loading}>
-            {loading ? "Loading..." : isSignUp ? "Sign Up" : "Sign In"}
+            {loading ? "Loading..." : "Sign In"}
           </Button>
         </form>
-        <button
-          onClick={() => setIsSignUp(!isSignUp)}
-          className="w-full mt-4 text-sm text-gray-600 hover:text-brand-500"
-        >
-          {isSignUp
-            ? "Already have an account? Sign in"
-            : "Don't have an account? Sign up"}
-        </button>
       </div>
     </div>
   );
