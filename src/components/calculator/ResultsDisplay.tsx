@@ -1,4 +1,3 @@
-
 import React from 'react';
 import { Button } from "@/components/ui/button";
 import type { CalculationResults, CalculatorInputs } from '@/hooks/useCalculator';
@@ -123,18 +122,18 @@ export const ResultsDisplay: React.FC<ResultsDisplayProps> = ({
       recommendationY += 15;
     });
 
-    // Save report to leads table instead of generated_reports
+    // Save report to leads table
     try {
       const { error } = await supabase
         .from('leads')
-        .insert({
-          company_name: companyName,
+        .insert([{  // Note: Wrapping the object in an array to match the type
           name: contactInfo,
+          company_name: companyName,
           email: email,
           phone_number: phoneNumber,
           calculator_inputs: inputs,
           calculator_results: results
-        });
+        }]);
 
       if (error) throw error;
 
