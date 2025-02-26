@@ -27,6 +27,39 @@ export type Database = {
         }
         Relationships: []
       }
+      generated_reports: {
+        Row: {
+          calculator_inputs: Json
+          calculator_results: Json
+          company_name: string
+          contact_name: string
+          email: string
+          id: string
+          phone_number: string | null
+          report_date: string | null
+        }
+        Insert: {
+          calculator_inputs: Json
+          calculator_results: Json
+          company_name: string
+          contact_name: string
+          email: string
+          id?: string
+          phone_number?: string | null
+          report_date?: string | null
+        }
+        Update: {
+          calculator_inputs?: Json
+          calculator_results?: Json
+          company_name?: string
+          contact_name?: string
+          email?: string
+          id?: string
+          phone_number?: string | null
+          report_date?: string | null
+        }
+        Relationships: []
+      }
       leads: {
         Row: {
           calculator_inputs: Json

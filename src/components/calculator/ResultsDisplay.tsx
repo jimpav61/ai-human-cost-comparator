@@ -1,3 +1,4 @@
+
 import React from 'react';
 import { Button } from "@/components/ui/button";
 import type { CalculationResults, CalculatorInputs } from '@/hooks/useCalculator';
@@ -37,6 +38,25 @@ export const ResultsDisplay: React.FC<ResultsDisplayProps> = ({
     {
       title: "Employee Focus",
       description: "Free up your team to handle complex cases while AI manages routine inquiries."
+    }
+  ];
+
+  const aiPlacements = [
+    {
+      role: "Front-line Support",
+      capabilities: [
+        "Handle routine customer inquiries instantly",
+        "Route complex issues to human agents",
+        "Available 24/7 without additional cost"
+      ]
+    },
+    {
+      role: "Customer Service Enhancement",
+      capabilities: [
+        "Reduce wait times significantly",
+        "Process multiple requests simultaneously",
+        "Maintain consistent service quality"
+      ]
     }
   ];
 
@@ -103,13 +123,13 @@ export const ResultsDisplay: React.FC<ResultsDisplayProps> = ({
       recommendationY += 15;
     });
 
-    // Save report in Supabase
+    // Save report to leads table instead of generated_reports
     try {
       const { error } = await supabase
-        .from('generated_reports')
+        .from('leads')
         .insert({
           company_name: companyName,
-          contact_name: contactInfo,
+          name: contactInfo,
           email: email,
           phone_number: phoneNumber,
           calculator_inputs: inputs,
