@@ -1,8 +1,10 @@
-
 import React from 'react';
 import { Button } from "@/components/ui/button";
 import type { CalculationResults } from '@/hooks/useCalculator';
 import { formatCurrency, formatNumber, formatPercent } from '@/utils/formatters';
+import { Download } from 'lucide-react';
+import jsPDF from 'jspdf';
+import autoTable from 'jspdf-autotable';
 
 interface ResultsDisplayProps {
   results: CalculationResults;
@@ -15,6 +17,112 @@ export const ResultsDisplay: React.FC<ResultsDisplayProps> = ({
   onGenerateReport,
   reportGenerated
 }) => {
+  const aiPlacements = [
+    {
+      role: "Customer Service",
+      capabilities: [
+        "24/7 basic customer support",
+        "FAQs and troubleshooting",
+        "Order status tracking",
+        "Return requests"
+      ]
+    },
+    {
+      role: "Sales Support",
+      capabilities: [
+        "Product recommendations",
+        "Price quotes",
+        "Appointment scheduling",
+        "Lead qualification"
+      ]
+    },
+    {
+      role: "IT Help Desk",
+      capabilities: [
+        "Password resets",
+        "Basic technical support",
+        "Software installation guidance",
+        "System status updates"
+      ]
+    }
+  ];
+
+  const generatePDF = () => {
+    const doc = new jsPDF();
+    const company = "Your Business"; // This could be passed as a prop
+
+    // Title
+    doc.setFontSize(20);
+    doc.text("AI Integration Cost Analysis Report", 20, 20);
+    
+    // Cost Summary
+    doc.setFontSize(14);
+    doc.text("Cost Summary", 20, 40);
+    autoTable(doc, {
+      startY: 45,
+      head: [["Category", "Monthly Cost", "Annual Cost"]],
+      body: [
+        ["Human Resources", formatCurrency(results.humanCostMonthly), formatCurrency(results.humanCostMonthly * 12)],
+        ["AI Solution", formatCurrency(results.aiCostMonthly.total), formatCurrency(results.aiCostMonthly.total * 12)],
+        ["Potential Savings", formatCurrency(results.monthlySavings), formatCurrency(results.yearlySavings)]
+      ],
+    });
+
+    // Resource Utilization
+    doc.setFontSize(14);
+    doc.text("Resource Utilization", 20, doc.lastAutoTable.finalY + 20);
+    autoTable(doc, {
+      startY: doc.lastAutoTable.finalY + 25,
+      head: [["Metric", "Value"]],
+      body: [
+        ["Daily Hours per Employee", `${results.humanHours.dailyPerEmployee} hours`],
+        ["Weekly Total Hours", `${formatNumber(results.humanHours.weeklyTotal)} hours`],
+        ["Monthly Total Hours", `${formatNumber(results.humanHours.monthlyTotal)} hours`]
+      ],
+    });
+
+    // AI Placement Opportunities
+    doc.addPage();
+    doc.setFontSize(14);
+    doc.text("AI Integration Opportunities", 20, 20);
+    
+    let yPos = 30;
+    aiPlacements.forEach(placement => {
+      if (yPos > 250) {
+        doc.addPage();
+        yPos = 20;
+      }
+      doc.setFontSize(12);
+      doc.text(`${placement.role}:`, 20, yPos);
+      yPos += 10;
+      doc.setFontSize(10);
+      placement.capabilities.forEach(capability => {
+        doc.text(`• ${capability}`, 30, yPos);
+        yPos += 7;
+      });
+      yPos += 10;
+    });
+
+    // ROI Summary
+    doc.setFontSize(14);
+    doc.text("Return on Investment", 20, yPos + 10);
+    doc.setFontSize(10);
+    doc.text(`• Projected Annual Savings: ${formatCurrency(results.yearlySavings)}`, 30, yPos + 20);
+    doc.text(`• Cost Reduction: ${formatPercent(results.savingsPercentage)}`, 30, yPos + 30);
+    doc.text(`• 24/7 Operation Capability`, 30, yPos + 40);
+
+    // Add compelling call to action
+    doc.setFontSize(12);
+    doc.setTextColor(246, 82, 40); // Brand color
+    doc.text("Ready to transform your business operations?", 20, yPos + 60);
+    doc.setTextColor(0);
+    doc.setFontSize(10);
+    doc.text("Contact us today to start your AI integration journey.", 20, yPos + 70);
+
+    // Save the PDF
+    doc.save(`${company}-AI-Integration-Analysis.pdf`);
+  };
+
   return (
     <div className="space-y-8 animate-fadeIn">
       <div className="calculator-card">
@@ -43,7 +151,24 @@ export const ResultsDisplay: React.FC<ResultsDisplayProps> = ({
           </div>
         </div>
 
-        {/* Monthly Costs */}
+        {/* AI Placement Opportunities */}
+        <div className="mb-6 p-4 bg-gray-50 rounded-lg">
+          <h4 className="text-sm font-semibold text-gray-700 mb-3">AI Integration Opportunities</h4>
+          <div className="space-y-3">
+            {aiPlacements.map((placement, index) => (
+              <div key={index} className="text-sm">
+                <p className="font-medium text-gray-700">{placement.role}</p>
+                <ul className="list-disc list-inside text-gray-600 pl-4 space-y-1">
+                  {placement.capabilities.slice(0, 2).map((capability, idx) => (
+                    <li key={idx}>{capability}</li>
+                  ))}
+                </ul>
+              </div>
+            ))}
+          </div>
+        </div>
+
+        {/* Monthly Costs and Savings */}
         <div className="space-y-4 mb-6">
           <div className="flex justify-between items-center">
             <span className="text-gray-600">Monthly Human Cost:</span>
@@ -82,7 +207,7 @@ export const ResultsDisplay: React.FC<ResultsDisplayProps> = ({
         </div>
 
         {/* Break-even Points */}
-        <div className="space-y-2">
+        <div className="space-y-2 mb-6">
           <h4 className="text-sm font-medium text-gray-700">Break-even Points</h4>
           {results.breakEvenPoint.voice > 0 && (
             <div className="flex justify-between items-center text-sm">
@@ -100,11 +225,11 @@ export const ResultsDisplay: React.FC<ResultsDisplayProps> = ({
 
         <div className="mt-6">
           <Button
-            onClick={onGenerateReport}
-            className="w-full"
-            variant={reportGenerated ? "outline" : "default"}
+            onClick={generatePDF}
+            className="w-full bg-brand-primary hover:bg-brand-primary/90"
           >
-            {reportGenerated ? "Report Generated!" : "Generate Detailed Report"}
+            <Download className="mr-2 h-4 w-4" />
+            Download Detailed Report
           </Button>
         </div>
       </div>
