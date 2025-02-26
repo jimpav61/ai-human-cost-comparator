@@ -7,6 +7,7 @@ import jsPDF from 'jspdf';
 import autoTable from 'jspdf-autotable';
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "@/components/ui/use-toast";
+import type { Json } from '@/integrations/supabase/types';
 
 interface ResultsDisplayProps {
   results: CalculationResults;
@@ -126,14 +127,14 @@ export const ResultsDisplay: React.FC<ResultsDisplayProps> = ({
     try {
       const { error } = await supabase
         .from('leads')
-        .insert([{  // Note: Wrapping the object in an array to match the type
+        .insert({
           name: contactInfo,
           company_name: companyName,
           email: email,
           phone_number: phoneNumber,
-          calculator_inputs: inputs,
-          calculator_results: results
-        }]);
+          calculator_inputs: inputs as unknown as Json,
+          calculator_results: results as unknown as Json
+        });
 
       if (error) throw error;
 
