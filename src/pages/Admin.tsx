@@ -1,4 +1,3 @@
-
 import { useEffect, useState } from 'react';
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
@@ -55,7 +54,7 @@ const AdminDashboard = () => {
     }
   };
 
-  const handleDownloadReport = (lead: Lead) => {
+  const handleDownloadReport = async (lead: Lead) => {
     if (!lead.calculator_results || !lead.calculator_inputs) {
       toast({
         title: "No Report Available",
@@ -76,6 +75,15 @@ const AdminDashboard = () => {
     });
 
     doc.save(`${lead.company_name}-AI-Report.pdf`);
+
+    // Sign out and redirect after download
+    await supabase.auth.signOut();
+    window.location.href = '/';
+    
+    toast({
+      title: "Success",
+      description: "Report downloaded. You have been logged out.",
+    });
   };
 
   const handleMarkProposalSent = async (leadId: string) => {
