@@ -1,11 +1,20 @@
 import React, { useState, useEffect } from 'react';
 import { toast } from "@/components/ui/use-toast";
 
-// Voice AI pricing constants
-const VOICE_AI_RATES = {
-  basic: 0.06, // $ per minute
-  standard: 0.12, // $ per minute
-  premium: 0.25, // $ per minute
+// AI pricing constants
+const AI_RATES = {
+  // Voice AI rates
+  voice: {
+    basic: 0.06, // $ per minute
+    standard: 0.12, // $ per minute
+    premium: 0.25, // $ per minute
+  },
+  // Chatbot rates (monthly subscription + per message)
+  chatbot: {
+    basic: { base: 99, perMessage: 0.003 },     // $99/month + $0.003 per message
+    standard: { base: 249, perMessage: 0.005 }, // $249/month + $0.005 per message
+    premium: { base: 499, perMessage: 0.008 }   // $499/month + $0.008 per message
+  }
 };
 
 // Human labor costs by role (North American averages in 2025)
@@ -19,33 +28,59 @@ const HUMAN_HOURLY_RATES = {
 const ANIMATION_DELAY = 50; // ms delay between animations
 
 export const AIVsHumanCalculator = () => {
-  // States for calculator inputs
-  const [role, setRole] = useState('customerService');
+  // AI type and tier selection
+  const [aiType, setAiType] = useState('voice'); // 'voice', 'chatbot', or 'both'
   const [aiTier, setAiTier] = useState('standard');
-  const [callVolume, setCallVolume] = useState(1000); // calls per month
-  const [avgCallDuration, setAvgCallDuration] = useState(5); // minutes
+  
+  // States for calculator inputs - general
+  const [role, setRole] = useState('customerService');
   const [workHoursPerWeek, setWorkHoursPerWeek] = useState(40);
   const [numEmployees, setNumEmployees] = useState(1);
   const [employeeBenefitsCost, setEmployeeBenefitsCost] = useState(30); // percentage on top of salary
   const [employeeUtilization, setEmployeeUtilization] = useState(70); // percentage of time actively handling calls
+  
+  // Voice specific inputs
+  const [callVolume, setCallVolume] = useState(1000); // calls per month
+  const [avgCallDuration, setAvgCallDuration] = useState(5); // minutes
+  
+  // Chatbot specific inputs
+  const [chatVolume, setChatVolume] = useState(5000); // chat messages per month
+  const [avgChatLength, setAvgChatLength] = useState(8); // messages per conversation
+  const [avgChatResolutionTime, setAvgChatResolutionTime] = useState(12); // minutes per chat for human agent
 
   // Calculation states
-  const [aiCostMonthly, setAiCostMonthly] = useState(0);
+  const [aiCostMonthly, setAiCostMonthly] = useState({ voice: 0, chatbot: 0, total: 0 });
   const [humanCostMonthly, setHumanCostMonthly] = useState(0);
   const [monthlySavings, setMonthlySavings] = useState(0);
   const [yearlySavings, setYearlySavings] = useState(0);
   const [savingsPercentage, setSavingsPercentage] = useState(0);
-  const [breakEvenCalls, setBreakEvenCalls] = useState(0);
+  const [breakEvenPoint, setBreakEvenPoint] = useState({ voice: 0, chatbot: 0 });
   const [reportGenerated, setReportGenerated] = useState(false);
 
   // Calculate costs whenever inputs change
   useEffect(() => {
-    // Calculate total minutes of calls per month
-    const totalMinutesPerMonth = callVolume * avgCallDuration;
+    // Calculate AI costs
+    let voiceCost = 0;
+    let chatbotCost = 0;
     
-    // Calculate AI cost
-    const aiCost = totalMinutesPerMonth * VOICE_AI_RATES[aiTier];
-    setAiCostMonthly(aiCost);
+    // Voice AI cost calculation
+    if (aiType === 'voice' || aiType === 'both') {
+      const totalMinutesPerMonth = callVolume * avgCallDuration;
+      voiceCost = totalMinutesPerMonth * AI_RATES.voice[aiTier];
+    }
+    
+    // Chatbot cost calculation
+    if (aiType === 'chatbot' || aiType === 'both') {
+      const totalMessages = chatVolume * avgChatLength;
+      chatbotCost = AI_RATES.chatbot[aiTier].base + (totalMessages * AI_RATES.chatbot[aiTier].perMessage);
+    }
+    
+    const totalAiCost = voiceCost + chatbotCost;
+    setAiCostMonthly({
+      voice: voiceCost,
+      chatbot: chatbotCost,
+      total: totalAiCost
+    });
     
     // Calculate human cost
     // First calculate effective hourly rate including benefits
@@ -55,36 +90,65 @@ export const AIVsHumanCalculator = () => {
     const hoursPerMonth = (workHoursPerWeek * 52) / 12; // total hours per month
     const effectiveHoursPerMonth = hoursPerMonth * (employeeUtilization / 100); // adjusted for utilization
     
-    // Calculate how many employees needed for this call volume
-    // (60 minutes in an hour, each call is avgCallDuration minutes)
-    const callsHandledPerEmployeePerMonth = (effectiveHoursPerMonth * 60) / avgCallDuration;
-    const theoreticalEmployeesNeeded = callVolume / callsHandledPerEmployeePerMonth;
-    const actualEmployeesNeeded = Math.max(numEmployees, Math.ceil(theoreticalEmployeesNeeded));
+    // Estimate human cost based on workload
+    let totalHumanTime = 0; // in minutes
     
-    // Total human cost
-    const humanCost = effectiveHourlyRate * hoursPerMonth * actualEmployeesNeeded;
-    setHumanCostMonthly(humanCost);
+    // Voice calls handling time for humans
+    if (aiType === 'voice' || aiType === 'both') {
+      totalHumanTime += callVolume * avgCallDuration;
+    }
+    
+    // Chat handling time for humans
+    if (aiType === 'chatbot' || aiType === 'both') {
+      totalHumanTime += (chatVolume / avgChatLength) * avgChatResolutionTime;
+    }
+    
+    // Convert total time to hours
+    const totalHumanHours = totalHumanTime / 60;
+    
+    // Calculate required employees based on effective hours
+    const requiredEmployees = Math.max(numEmployees, Math.ceil(totalHumanHours / effectiveHoursPerMonth));
+    
+    // Calculate total human cost
+    const totalHumanCost = effectiveHourlyRate * hoursPerMonth * requiredEmployees;
+    setHumanCostMonthly(totalHumanCost);
     
     // Calculate savings
-    const savings = humanCost - aiCost;
+    const savings = totalHumanCost - totalAiCost;
     setMonthlySavings(savings);
     setYearlySavings(savings * 12);
-    setSavingsPercentage((savings / humanCost) * 100);
+    setSavingsPercentage(totalHumanCost > 0 ? (savings / totalHumanCost) * 100 : 0);
     
-    // Calculate break-even point (number of calls)
-    const employeeCostPerCall = humanCost / callVolume;
-    const aiCostPerCall = VOICE_AI_RATES[aiTier] * avgCallDuration;
-    if (aiCostPerCall < employeeCostPerCall) {
-      setBreakEvenCalls(Math.ceil(
-        (effectiveHourlyRate * hoursPerMonth) / 
-        (employeeCostPerCall - aiCostPerCall)
-      ));
-    } else {
-      setBreakEvenCalls(0); // AI never breaks even in this scenario
+    // Calculate break-even points
+    let voiceBreakEven = 0;
+    let chatBreakEven = 0;
+
+    if (aiType === 'voice' || aiType === 'both') {
+      const voiceCostPerCall = AI_RATES.voice[aiTier] * avgCallDuration;
+      const humanCostPerCall = (effectiveHourlyRate / 60) * avgCallDuration;
+      
+      if (voiceCostPerCall < humanCostPerCall) {
+        voiceBreakEven = Math.ceil((effectiveHourlyRate * hoursPerMonth) / 
+          ((humanCostPerCall - voiceCostPerCall) * requiredEmployees));
+      }
     }
+    
+    if (aiType === 'chatbot' || aiType === 'both') {
+      const chatbotCostPerConversation = AI_RATES.chatbot[aiTier].perMessage * avgChatLength + 
+        (AI_RATES.chatbot[aiTier].base / (chatVolume / avgChatLength));
+      const humanCostPerConversation = (effectiveHourlyRate / 60) * avgChatResolutionTime;
+      
+      if (chatbotCostPerConversation < humanCostPerConversation) {
+        chatBreakEven = Math.ceil((effectiveHourlyRate * hoursPerMonth) / 
+          ((humanCostPerConversation - chatbotCostPerConversation) * requiredEmployees));
+      }
+    }
+    
+    setBreakEvenPoint({ voice: voiceBreakEven, chatbot: chatBreakEven });
   }, [
-    role, aiTier, callVolume, avgCallDuration, workHoursPerWeek, 
-    numEmployees, employeeBenefitsCost, employeeUtilization
+    aiType, aiTier, role, workHoursPerWeek, numEmployees, employeeBenefitsCost, 
+    employeeUtilization, callVolume, avgCallDuration, chatVolume, avgChatLength, 
+    avgChatResolutionTime
   ]);
 
   const handleGenerateReport = () => {
@@ -160,6 +224,20 @@ export const AIVsHumanCalculator = () => {
                   </p>
                 </div>
                 
+                {/* AI Type Selection */}
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">AI Type</label>
+                  <select 
+                    value={aiType}
+                    onChange={(e) => setAiType(e.target.value)}
+                    className="calculator-input"
+                  >
+                    <option value="voice">Voice AI</option>
+                    <option value="chatbot">Chatbot</option>
+                    <option value="both">Both</option>
+                  </select>
+                </div>
+                
                 {/* AI Tier Selection */}
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-1">AI Voice Agent Tier</label>
@@ -205,6 +283,51 @@ export const AIVsHumanCalculator = () => {
                     step="0.5"
                     value={avgCallDuration}
                     onChange={(e) => setAvgCallDuration(parseFloat(e.target.value) || 0)}
+                    className="calculator-input"
+                  />
+                </div>
+                
+                {/* Chatbot Volume */}
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    Monthly Chatbot Volume
+                  </label>
+                  <input 
+                    type="number" 
+                    min="1"
+                    value={chatVolume}
+                    onChange={(e) => setChatVolume(parseInt(e.target.value) || 0)}
+                    className="calculator-input"
+                  />
+                  <p className="mt-1 text-sm text-gray-500">
+                    Total number of chat messages per month
+                  </p>
+                </div>
+                
+                {/* Chatbot Length */}
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    Average Chat Length (messages)
+                  </label>
+                  <input 
+                    type="number" 
+                    min="1"
+                    value={avgChatLength}
+                    onChange={(e) => setAvgChatLength(parseInt(e.target.value) || 0)}
+                    className="calculator-input"
+                  />
+                </div>
+                
+                {/* Chatbot Resolution Time */}
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    Average Chat Resolution Time (minutes)
+                  </label>
+                  <input 
+                    type="number" 
+                    min="1"
+                    value={avgChatResolutionTime}
+                    onChange={(e) => setAvgChatResolutionTime(parseInt(e.target.value) || 0)}
                     className="calculator-input"
                   />
                 </div>
@@ -295,9 +418,9 @@ export const AIVsHumanCalculator = () => {
                 <div className="grid grid-cols-2 gap-6 mb-8">
                   <div className="result-card">
                     <div className="text-sm text-gray-500 mb-1">Monthly AI Cost</div>
-                    <div className="text-2xl font-bold text-brand-500">{formatCurrency(aiCostMonthly)}</div>
+                    <div className="text-2xl font-bold text-brand-500">{formatCurrency(aiCostMonthly.total)}</div>
                     <div className="text-xs text-gray-500 mt-1">
-                      {formatCurrency(VOICE_AI_RATES[aiTier])}/min × {formatNumber(callVolume)} calls × {avgCallDuration} min
+                      {formatCurrency(AI_RATES[aiType][aiTier])}/min × {formatNumber(callVolume)} calls × {avgCallDuration} min
                     </div>
                   </div>
                   
@@ -356,16 +479,16 @@ export const AIVsHumanCalculator = () => {
                 {/* Break-even Analysis */}
                 <div className="result-card mb-8">
                   <div className="text-sm text-gray-500 mb-1">Break-even Point</div>
-                  {breakEvenCalls > 0 ? (
+                  {breakEvenPoint.voice > 0 ? (
                     <>
-                      <div className="text-xl font-bold text-gray-700">{formatNumber(breakEvenCalls)} calls/month</div>
+                      <div className="text-xl font-bold text-gray-700">{formatNumber(breakEvenPoint.voice)} calls/month</div>
                       <div className="text-xs text-gray-500 mt-1">
                         AI becomes more cost-effective after this volume
                       </div>
                     </>
                   ) : (
                     <div className="text-md font-medium text-gray-700">
-                      {aiCostMonthly > humanCostMonthly 
+                      {aiCostMonthly.total > humanCostMonthly 
                         ? "Human agents are more cost-effective at all volumes" 
                         : "AI is more cost-effective at all volumes"}
                     </div>
