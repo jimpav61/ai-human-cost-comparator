@@ -1,5 +1,5 @@
 
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useCallback } from 'react';
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "@/components/ui/use-toast";
 import { useNavigate } from 'react-router-dom';
@@ -24,7 +24,7 @@ const AdminDashboard = () => {
   const [loading, setLoading] = useState(true);
   const navigate = useNavigate();
 
-  const fetchLeads = async () => {
+  const fetchLeads = useCallback(async () => {
     try {
       console.log("Starting fetchLeads...");
       const { data: { session } } = await supabase.auth.getSession();
@@ -64,7 +64,7 @@ const AdminDashboard = () => {
     } finally {
       setLoading(false);
     }
-  };
+  }, [navigate]);
 
   useEffect(() => {
     // Initial session check
@@ -105,7 +105,7 @@ const AdminDashboard = () => {
     return () => {
       subscription.unsubscribe();
     };
-  }, [navigate]);
+  }, [navigate, fetchLeads]);
 
   if (loading) {
     return <div className="flex justify-center items-center min-h-screen">Loading...</div>;
