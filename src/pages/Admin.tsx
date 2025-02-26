@@ -20,6 +20,7 @@ import {
 } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { useNavigate } from 'react-router-dom';
+import jsPDF from 'jspdf';
 
 interface Lead {
   id: string;
@@ -196,55 +197,102 @@ const AdminDashboard = () => {
 
       if (proposalError) throw proposalError;
 
-      // Format the proposal as HTML
-      const proposalHtml = `
-        <html>
-          <body style="font-family: Arial, sans-serif; max-width: 800px; margin: 0 auto; padding: 20px;">
-            <h1 style="color: #2563eb;">${proposal.title}</h1>
-            <p style="font-size: 16px; line-height: 1.6;">${proposal.summary}</p>
-            
-            <h2 style="color: #374151; margin-top: 30px;">Projected Savings</h2>
-            <ul style="list-style-type: none; padding: 0;">
-              <li>Monthly: ${new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD' }).format(proposal.savings.monthly)}</li>
-              <li>Yearly: ${new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD' }).format(proposal.savings.yearly)}</li>
-              <li>Cost Reduction: ${Math.round(proposal.savings.percentage * 100)}%</li>
-            </ul>
+      // Create PDF using jsPDF
+      const doc = new jsPDF();
+      
+      // Title
+      doc.setFontSize(24);
+      doc.setTextColor(37, 99, 235); // blue-600
+      doc.text(proposal.title, 20, 20);
 
-            <h2 style="color: #374151; margin-top: 30px;">Recommendations</h2>
-            ${proposal.recommendations.map(rec => `
-              <div style="margin-bottom: 20px;">
-                <h3 style="color: #4B5563;">${rec.title}</h3>
-                <p>${rec.description}</p>
-                <ul>
-                  ${rec.benefits.map(benefit => `<li>${benefit}</li>`).join('')}
-                </ul>
-              </div>
-            `).join('')}
+      // Summary
+      doc.setFontSize(12);
+      doc.setTextColor(0);
+      const summaryLines = doc.splitTextToSize(proposal.summary, 170);
+      doc.text(summaryLines, 20, 40);
 
-            <h2 style="color: #374151; margin-top: 30px;">Implementation Timeline</h2>
-            <p>Estimated timeline: ${proposal.implementation.timeline}</p>
-            <ol>
-              ${proposal.implementation.phases.map(phase => `<li>${phase}</li>`).join('')}
-            </ol>
+      let currentY = 40 + (summaryLines.length * 7);
 
-            <div style="margin-top: 40px; border-top: 1px solid #E5E7EB; padding-top: 20px;">
-              <p>Ready to transform your business with AI? Let's discuss the next steps.</p>
-              <p>Best regards,<br>The ChatSites.ai Team</p>
-            </div>
-          </body>
-        </html>
-      `;
+      // Savings Section
+      doc.setFontSize(16);
+      doc.setTextColor(55, 65, 81); // gray-700
+      doc.text("Projected Savings", 20, currentY);
+      
+      currentY += 10;
+      doc.setFontSize(12);
+      doc.text(`Monthly: ${new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD' }).format(proposal.savings.monthly)}`, 20, currentY);
+      currentY += 7;
+      doc.text(`Yearly: ${new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD' }).format(proposal.savings.yearly)}`, 20, currentY);
+      currentY += 7;
+      doc.text(`Cost Reduction: ${Math.round(proposal.savings.percentage * 100)}%`, 20, currentY);
 
-      // Create a Blob and download the proposal
-      const blob = new Blob([proposalHtml], { type: 'text/html' });
-      const url = window.URL.createObjectURL(blob);
-      const a = document.createElement('a');
-      a.href = url;
-      a.download = `${lead.company_name}-AI-Proposal.html`;
-      document.body.appendChild(a);
-      a.click();
-      document.body.removeChild(a);
-      window.URL.revokeObjectURL(url);
+      // Recommendations Section
+      currentY += 15;
+      doc.setFontSize(16);
+      doc.text("Recommendations", 20, currentY);
+      
+      proposal.recommendations.forEach(rec => {
+        currentY += 12;
+        doc.setFontSize(14);
+        doc.setTextColor(75, 85, 99); // gray-600
+        doc.text(rec.title, 20, currentY);
+        
+        currentY += 7;
+        doc.setFontSize(12);
+        doc.setTextColor(0);
+        const descLines = doc.splitTextToSize(rec.description, 170);
+        doc.text(descLines, 20, currentY);
+        
+        currentY += (descLines.length * 7) + 5;
+        rec.benefits.forEach(benefit => {
+          doc.text(`• ${benefit}`, 25, currentY);
+          currentY += 7;
+        });
+      });
+
+      // Implementation Timeline
+      if (currentY > 250) {
+        doc.addPage();
+        currentY = 20;
+      }
+
+      currentY += 10;
+      doc.setFontSize(16);
+      doc.setTextColor(55, 65, 81);
+      doc.text("Implementation Timeline", 20, currentY);
+      
+      currentY += 10;
+      doc.setFontSize(12);
+      doc.text(`Estimated timeline: ${proposal.implementation.timeline}`, 20, currentY);
+      
+      currentY += 10;
+      proposal.implementation.phases.forEach((phase, index) => {
+        doc.text(`${index + 1}. ${phase}`, 20, currentY);
+        currentY += 7;
+      });
+
+      // Footer
+      if (currentY > 250) {
+        doc.addPage();
+        currentY = 20;
+      } else {
+        currentY += 15;
+      }
+
+      doc.setDrawColor(229, 231, 235); // gray-200
+      doc.line(20, currentY, 190, currentY);
+      
+      currentY += 10;
+      doc.setFontSize(12);
+      doc.text("Ready to transform your business with AI? Let's discuss the next steps.", 20, currentY);
+      
+      currentY += 10;
+      doc.text("Best regards,", 20, currentY);
+      currentY += 7;
+      doc.text("The ChatSites.ai Team", 20, currentY);
+
+      // Save the PDF
+      doc.save(`${lead.company_name}-AI-Proposal.pdf`);
 
       // Mark proposal as sent
       await handleMarkProposalSent(lead.id);
