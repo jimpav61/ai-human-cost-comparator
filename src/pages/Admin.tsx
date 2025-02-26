@@ -25,14 +25,13 @@ const AdminDashboard = () => {
   const navigate = useNavigate();
 
   useEffect(() => {
-    const checkSession = async () => {
+    const checkAdmin = async () => {
       const { data: { session } } = await supabase.auth.getSession();
       if (!session) {
         navigate('/auth');
         return;
       }
 
-      // Only check admin status and fetch leads if we have a session
       const { data: adminCheck } = await supabase
         .from('allowed_admins')
         .select('email')
@@ -40,21 +39,30 @@ const AdminDashboard = () => {
         .single();
 
       if (!adminCheck) {
+        await supabase.auth.signOut();
         navigate('/auth');
         return;
       }
 
-      // If we're an admin, fetch the leads
-      const { data } = await supabase
+      const { data, error } = await supabase
         .from('leads')
         .select('*')
         .order('created_at', { ascending: false });
+
+      if (error) {
+        toast({
+          title: "Error",
+          description: "Failed to fetch leads",
+          variant: "destructive",
+        });
+        return;
+      }
 
       setLeads(data || []);
       setLoading(false);
     };
 
-    checkSession();
+    checkAdmin();
   }, []);
 
   const fetchLeads = async () => {

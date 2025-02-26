@@ -1,5 +1,5 @@
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -13,6 +13,24 @@ const Auth = () => {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
 
+  useEffect(() => {
+    const checkAuth = async () => {
+      const { data: { session } } = await supabase.auth.getSession();
+      if (session) {
+        const { data: adminCheck } = await supabase
+          .from('allowed_admins')
+          .select('email')
+          .eq('email', session.user.email)
+          .single();
+        
+        if (adminCheck) {
+          navigate('/admin');
+        }
+      }
+    };
+    checkAuth();
+  }, []);
+
   const handleAuth = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
@@ -25,7 +43,18 @@ const Auth = () => {
       if (error) throw error;
 
       if (data.session) {
-        navigate("/admin");
+        const { data: adminCheck } = await supabase
+          .from('allowed_admins')
+          .select('email')
+          .eq('email', data.session.user.email)
+          .single();
+        
+        if (adminCheck) {
+          navigate("/admin");
+        } else {
+          await supabase.auth.signOut();
+          throw new Error("Not authorized as admin");
+        }
       }
     } catch (error: any) {
       toast({
