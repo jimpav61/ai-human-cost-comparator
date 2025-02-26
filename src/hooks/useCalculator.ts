@@ -69,39 +69,43 @@ export const useCalculator = (inputs: CalculatorInputs): CalculationResults => {
     // Calculate human cost
     const baseHourlyRate = HUMAN_HOURLY_RATES[inputs.role];
     const hourlyRateWithBenefits = baseHourlyRate;
-    const totalHumanCost = hourlyRateWithBenefits * monthlyTotalHours;
+    const monthlyHumanCost = hourlyRateWithBenefits * monthlyTotalHours;
+    const yearlyHumanCost = monthlyHumanCost * MONTHS_PER_YEAR;
 
-    // Calculate AI costs
-    let voiceCost = 0;
-    let chatbotCost = 0;
+    // Calculate AI costs monthly
+    let monthlyVoiceCost = 0;
+    let monthlyChatbotCost = 0;
     
     if (inputs.aiType === 'voice' || inputs.aiType === 'both') {
       const totalMinutesPerMonth = inputs.callVolume * inputs.avgCallDuration;
-      voiceCost = totalMinutesPerMonth * AI_RATES.voice[inputs.aiTier];
+      monthlyVoiceCost = totalMinutesPerMonth * AI_RATES.voice[inputs.aiTier];
     }
     
     if (inputs.aiType === 'chatbot' || inputs.aiType === 'both') {
       const totalMessages = inputs.chatVolume * inputs.avgChatLength;
       const chatbotRates = AI_RATES.chatbot[inputs.aiTier];
-      chatbotCost = chatbotRates.base + (totalMessages * chatbotRates.perMessage);
+      monthlyChatbotCost = chatbotRates.base + (totalMessages * chatbotRates.perMessage);
     }
     
-    const totalAiCost = voiceCost + chatbotCost;
-    const savings = totalHumanCost - totalAiCost;
+    const monthlyAiCost = monthlyVoiceCost + monthlyChatbotCost;
+    const yearlyAiCost = monthlyAiCost * MONTHS_PER_YEAR;
+    
+    const monthlySavings = monthlyHumanCost - monthlyAiCost;
+    const yearlySavings = monthlySavings * MONTHS_PER_YEAR;
     
     setResults({
       aiCostMonthly: {
-        voice: voiceCost,
-        chatbot: chatbotCost,
-        total: totalAiCost
+        voice: monthlyVoiceCost,
+        chatbot: monthlyChatbotCost,
+        total: monthlyAiCost
       },
-      humanCostMonthly: totalHumanCost,
-      monthlySavings: savings,
-      yearlySavings: savings * 12,
-      savingsPercentage: totalHumanCost > 0 ? (savings / totalHumanCost) * 100 : 0,
+      humanCostMonthly: monthlyHumanCost,
+      monthlySavings: monthlySavings,
+      yearlySavings: yearlySavings,
+      savingsPercentage: monthlyHumanCost > 0 ? (monthlySavings / monthlyHumanCost) * 100 : 0,
       breakEvenPoint: { 
-        voice: Math.ceil(voiceCost / (hourlyRateWithBenefits / 60)), 
-        chatbot: Math.ceil(chatbotCost / (hourlyRateWithBenefits / 60))
+        voice: Math.ceil(monthlyVoiceCost / (hourlyRateWithBenefits / 60)), 
+        chatbot: Math.ceil(monthlyChatbotCost / (hourlyRateWithBenefits / 60))
       },
       humanHours: {
         dailyPerEmployee: dailyHoursPerEmployee,
