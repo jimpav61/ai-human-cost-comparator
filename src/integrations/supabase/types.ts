@@ -27,6 +27,45 @@ export type Database = {
         }
         Relationships: []
       }
+      leads: {
+        Row: {
+          calculator_inputs: Json
+          calculator_results: Json
+          company_name: string
+          created_at: string | null
+          email: string
+          id: string
+          name: string
+          phone_number: string | null
+          proposal_sent: boolean | null
+          updated_at: string | null
+        }
+        Insert: {
+          calculator_inputs: Json
+          calculator_results: Json
+          company_name: string
+          created_at?: string | null
+          email: string
+          id?: string
+          name: string
+          phone_number?: string | null
+          proposal_sent?: boolean | null
+          updated_at?: string | null
+        }
+        Update: {
+          calculator_inputs?: Json
+          calculator_results?: Json
+          company_name?: string
+          created_at?: string | null
+          email?: string
+          id?: string
+          name?: string
+          phone_number?: string | null
+          proposal_sent?: boolean | null
+          updated_at?: string | null
+        }
+        Relationships: []
+      }
       user_roles: {
         Row: {
           created_at: string | null
