@@ -1,4 +1,3 @@
-
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { AIVsHumanCalculator } from '@/components/AIVsHumanCalculator';
 import { LeadForm } from '@/components/LeadForm';
@@ -63,25 +62,51 @@ export default function IndexPage() {
   const handleAuth = async (e: React.FormEvent) => {
     e.preventDefault();
     try {
-      const { error } = isSignUp 
-        ? await supabase.auth.signUp({ email, password })
-        : await supabase.auth.signInWithPassword({ email, password });
+      if (isSignUp) {
+        const { data: allowedAdmin } = await supabase
+          .from('allowed_admins')
+          .select('email')
+          .eq('email', email.toLowerCase())
+          .single();
 
-      if (error) {
+        const { data: { user }, error: signUpError } = await supabase.auth.signUp({ 
+          email, 
+          password 
+        });
+
+        if (signUpError) throw signUpError;
+
+        if (user && allowedAdmin) {
+          const { error: roleError } = await supabase
+            .from('user_roles')
+            .insert({
+              user_id: user.id,
+              role: 'admin'
+            });
+
+          if (roleError) throw roleError;
+        }
+
         toast({
-          title: isSignUp ? "Sign Up Error" : "Sign In Error",
-          description: error.message,
-          variant: "destructive",
+          title: "Check your email",
+          description: "Please check your email to verify your account.",
         });
       } else {
+        const { error: signInError } = await supabase.auth.signInWithPassword({ 
+          email, 
+          password 
+        });
+
+        if (signInError) throw signInError;
+
         toast({
-          title: isSignUp ? "Check your email" : "Welcome back!",
-          description: isSignUp ? "Please check your email to verify your account." : "You have successfully signed in.",
+          title: "Welcome back!",
+          description: "You have successfully signed in.",
         });
       }
     } catch (error: any) {
       toast({
-        title: "Error",
+        title: isSignUp ? "Sign Up Error" : "Sign In Error",
         description: error.message,
         variant: "destructive",
       });
