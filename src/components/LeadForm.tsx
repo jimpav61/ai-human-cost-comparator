@@ -20,8 +20,9 @@ export const LeadForm: React.FC<LeadFormProps> = ({ onSubmit }) => {
     email: '',
     phoneNumber: ''
   });
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
     if (!formData.name || !formData.companyName || !formData.email) {
@@ -33,7 +34,45 @@ export const LeadForm: React.FC<LeadFormProps> = ({ onSubmit }) => {
       return;
     }
 
-    onSubmit(formData);
+    setIsSubmitting(true);
+
+    try {
+      // Replace this URL with your Zapier webhook URL
+      const webhookUrl = import.meta.env.VITE_ZAPIER_WEBHOOK_URL;
+      
+      if (!webhookUrl) {
+        console.error('Zapier webhook URL not configured');
+        throw new Error('Lead capture system not configured');
+      }
+
+      // Send data to Zapier
+      const response = await fetch(webhookUrl, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        mode: 'no-cors', // Required for Zapier webhooks
+        body: JSON.stringify({
+          ...formData,
+          timestamp: new Date().toISOString(),
+          source: window.location.href,
+        }),
+      });
+
+      // Since we're using no-cors, we won't get a proper response
+      // Instead, we'll assume success and show a message
+      onSubmit(formData);
+
+    } catch (error) {
+      console.error('Error submitting lead:', error);
+      toast({
+        title: "Submission Error",
+        description: "There was an error submitting your information. Please try again.",
+        variant: "destructive",
+      });
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   return (
@@ -100,9 +139,10 @@ export const LeadForm: React.FC<LeadFormProps> = ({ onSubmit }) => {
 
           <button
             type="submit"
-            className="w-full bg-brand-500 hover:bg-brand-600 text-white font-medium py-3 px-6 rounded-lg transition-all duration-200"
+            disabled={isSubmitting}
+            className="w-full bg-brand-500 hover:bg-brand-600 text-white font-medium py-3 px-6 rounded-lg transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed"
           >
-            Let's Calculate Your Savings
+            {isSubmitting ? 'Processing...' : "Let's Calculate Your Savings"}
           </button>
 
           <p className="text-xs text-gray-500 text-center mt-4">

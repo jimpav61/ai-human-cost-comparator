@@ -4,6 +4,7 @@ import { formatCurrency, formatPercent } from '@/utils/formatters';
 import type { CalculationResults } from '@/hooks/useCalculator';
 import { jsPDF } from 'jspdf';
 import 'jspdf-autotable';
+import { toast } from "@/components/ui/use-toast";
 
 interface ResultsDisplayProps {
   results: CalculationResults;
@@ -26,16 +27,19 @@ export const ResultsDisplay: React.FC<ResultsDisplayProps> = ({
 
   const generatePDF = () => {
     const doc = new jsPDF();
+    let yPos = 20;
     
     // Add header
     doc.setFontSize(20);
     doc.setTextColor(246, 82, 40); // Your brand color
-    doc.text('AI Cost Savings Analysis', 20, 20);
+    doc.text('AI Cost Savings Analysis', 20, yPos);
+    yPos += 20;
     
     // Add summary
     doc.setFontSize(12);
     doc.setTextColor(0);
-    doc.text('Cost Analysis Summary', 20, 40);
+    doc.text('Cost Analysis Summary', 20, yPos);
+    yPos += 10;
     
     // Add data using auto-table
     const tableData = [
@@ -47,7 +51,7 @@ export const ResultsDisplay: React.FC<ResultsDisplayProps> = ({
     ];
     
     (doc as any).autoTable({
-      startY: 50,
+      startY: yPos,
       head: [['Metric', 'Value']],
       body: tableData,
       theme: 'grid',
@@ -55,12 +59,16 @@ export const ResultsDisplay: React.FC<ResultsDisplayProps> = ({
       headStyles: { fillColor: [246, 82, 40] },
     });
     
+    yPos = (doc as any).previousAutoTable.finalY + 20;
+    
     // Add breakdown
     if (aiCostMonthly.voice > 0) {
-      doc.text('Voice AI Cost: ' + formatCurrency(aiCostMonthly.voice), 20, doc.lastAutoTable.finalY + 20);
+      doc.text('Voice AI Cost: ' + formatCurrency(aiCostMonthly.voice), 20, yPos);
+      yPos += 10;
     }
     if (aiCostMonthly.chatbot > 0) {
-      doc.text('Chatbot Cost: ' + formatCurrency(aiCostMonthly.chatbot), 20, doc.lastAutoTable.finalY + 30);
+      doc.text('Chatbot Cost: ' + formatCurrency(aiCostMonthly.chatbot), 20, yPos);
+      yPos += 10;
     }
     
     // Add footer
@@ -71,6 +79,10 @@ export const ResultsDisplay: React.FC<ResultsDisplayProps> = ({
     
     // Save the PDF
     doc.save('ai-savings-analysis.pdf');
+    toast({
+      title: "Report Generated",
+      description: "Your PDF report has been generated and downloaded.",
+    });
   };
 
   return (
