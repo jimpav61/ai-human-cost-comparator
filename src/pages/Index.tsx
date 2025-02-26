@@ -4,11 +4,18 @@ import { AIVsHumanCalculator } from "@/components/AIVsHumanCalculator";
 import Header from "@/components/Header";
 import { LeadForm, type LeadFormData } from "@/components/LeadForm";
 import { toast } from "@/components/ui/use-toast";
+import { Input } from "@/components/ui/input";
+import { Button } from "@/components/ui/button";
+import { Label } from "@/components/ui/label";
+import { supabase } from "@/integrations/supabase/client";
 
 const Index = () => {
   const [showCalculator, setShowCalculator] = useState(false);
   const [leadData, setLeadData] = useState<LeadFormData | null>(null);
   const [showAdminForm, setShowAdminForm] = useState(false);
+  const [adminEmail, setAdminEmail] = useState("");
+  const [adminPassword, setAdminPassword] = useState("");
+  const [isLoading, setIsLoading] = useState(false);
 
   const handleLeadSubmit = (data: LeadFormData) => {
     setLeadData(data);
@@ -17,6 +24,33 @@ const Index = () => {
       title: "Welcome " + data.name + "!",
       description: "Now you can explore detailed AI cost savings for your business.",
     });
+  };
+
+  const handleAdminLogin = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setIsLoading(true);
+    try {
+      const { error } = await supabase.auth.signInWithPassword({
+        email: adminEmail,
+        password: adminPassword,
+      });
+      
+      if (error) throw error;
+      
+      toast({
+        title: "Success",
+        description: "Logged in as admin successfully",
+      });
+      setShowAdminForm(false);
+    } catch (error: any) {
+      toast({
+        title: "Error",
+        description: error.message,
+        variant: "destructive",
+      });
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   return (
@@ -171,7 +205,7 @@ const Index = () => {
             <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
               <div className="bg-white rounded-lg p-6 max-w-md w-full">
                 <div className="flex justify-between items-center mb-4">
-                  <h3 className="text-lg font-semibold">Admin Access</h3>
+                  <h3 className="text-lg font-semibold">Admin Login</h3>
                   <button 
                     onClick={() => setShowAdminForm(false)}
                     className="text-gray-500 hover:text-gray-700"
@@ -179,8 +213,31 @@ const Index = () => {
                     ✕
                   </button>
                 </div>
-                {/* Add your admin form content here */}
-                <p className="text-gray-600">Please contact support for admin access.</p>
+                <form onSubmit={handleAdminLogin} className="space-y-4">
+                  <div>
+                    <Label htmlFor="adminEmail">Email</Label>
+                    <Input
+                      id="adminEmail"
+                      type="email"
+                      value={adminEmail}
+                      onChange={(e) => setAdminEmail(e.target.value)}
+                      required
+                    />
+                  </div>
+                  <div>
+                    <Label htmlFor="adminPassword">Password</Label>
+                    <Input
+                      id="adminPassword"
+                      type="password"
+                      value={adminPassword}
+                      onChange={(e) => setAdminPassword(e.target.value)}
+                      required
+                    />
+                  </div>
+                  <Button type="submit" className="w-full" disabled={isLoading}>
+                    {isLoading ? "Logging in..." : "Login as Admin"}
+                  </Button>
+                </form>
               </div>
             </div>
           )}
