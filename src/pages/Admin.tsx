@@ -32,12 +32,12 @@ const AdminDashboard = () => {
   const checkUser = async () => {
     const { data: { session } } = await supabase.auth.getSession();
     if (!session) {
-      navigate('/');
       toast({
         title: "Access Denied",
         description: "Please sign in to access the admin dashboard",
         variant: "destructive",
       });
+      navigate('/');
     }
   };
 
@@ -51,12 +51,8 @@ const AdminDashboard = () => {
         .select('*')
         .order('created_at', { ascending: false });
 
-      if (error) {
-        console.error('Error fetching leads:', error);
-        throw error;
-      }
+      if (error) throw error;
 
-      console.log('Fetched leads:', data);
       setLeads(data || []);
     } catch (error) {
       console.error('Error fetching leads:', error);
