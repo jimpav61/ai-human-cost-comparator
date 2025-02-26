@@ -247,6 +247,16 @@ const Index = () => {
                   <Button type="submit" className="w-full" disabled={isLoading}>
                     {isLoading ? "Processing..." : (isRegistering ? "Register" : "Login")}
                   </Button>
+                  {!isRegistering && (
+                    <Button
+                      type="button"
+                      variant="ghost"
+                      className="w-full"
+                      onClick={() => window.location.href = '/admin'}
+                    >
+                      Go to Admin Dashboard
+                    </Button>
+                  )}
                   <div className="text-center mt-4">
                     <button
                       type="button"

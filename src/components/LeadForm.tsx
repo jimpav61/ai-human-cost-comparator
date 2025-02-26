@@ -12,6 +12,7 @@ export interface LeadFormData {
   companyName: string;
   email: string;
   phoneNumber: string;
+  website: string;
 }
 
 export const LeadForm: React.FC<LeadFormProps> = ({ onSubmit }) => {
@@ -19,7 +20,8 @@ export const LeadForm: React.FC<LeadFormProps> = ({ onSubmit }) => {
     name: '',
     companyName: '',
     email: '',
-    phoneNumber: ''
+    phoneNumber: '',
+    website: ''
   });
   const [isSubmitting, setIsSubmitting] = useState(false);
 
@@ -46,6 +48,7 @@ export const LeadForm: React.FC<LeadFormProps> = ({ onSubmit }) => {
           company_name: formData.companyName,
           email: formData.email,
           phone_number: formData.phoneNumber || null,
+          website: formData.website || null,
           calculator_inputs: {}, // This will be populated when calculator is used
           calculator_results: {} // This will be populated when calculator is used
         });
@@ -104,6 +107,20 @@ export const LeadForm: React.FC<LeadFormProps> = ({ onSubmit }) => {
               className="calculator-input"
               value={formData.companyName}
               onChange={(e) => setFormData(prev => ({ ...prev, companyName: e.target.value }))}
+            />
+          </div>
+
+          <div>
+            <label htmlFor="website" className="block text-sm font-medium text-gray-700 mb-1">
+              Company Website
+            </label>
+            <input
+              id="website"
+              type="url"
+              className="calculator-input"
+              value={formData.website}
+              onChange={(e) => setFormData(prev => ({ ...prev, website: e.target.value }))}
+              placeholder="https://"
             />
           </div>
 

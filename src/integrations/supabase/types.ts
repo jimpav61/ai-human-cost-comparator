@@ -72,6 +72,7 @@ export type Database = {
           phone_number: string | null
           proposal_sent: boolean | null
           updated_at: string | null
+          website: string | null
         }
         Insert: {
           calculator_inputs: Json
@@ -84,6 +85,7 @@ export type Database = {
           phone_number?: string | null
           proposal_sent?: boolean | null
           updated_at?: string | null
+          website?: string | null
         }
         Update: {
           calculator_inputs?: Json
@@ -96,6 +98,7 @@ export type Database = {
           phone_number?: string | null
           proposal_sent?: boolean | null
           updated_at?: string | null
+          website?: string | null
         }
         Relationships: []
       }
