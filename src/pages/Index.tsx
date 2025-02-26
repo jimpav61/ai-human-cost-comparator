@@ -1,3 +1,4 @@
+
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { AIVsHumanCalculator } from '@/components/AIVsHumanCalculator';
 import { LeadForm } from '@/components/LeadForm';
@@ -12,6 +13,7 @@ const queryClient = new QueryClient();
 
 export default function IndexPage() {
   const [showAdmin, setShowAdmin] = useState(false);
+  const [showAdminForm, setShowAdminForm] = useState(false);
   const [hasSubmittedLead, setHasSubmittedLead] = useState(false);
   const [session, setSession] = useState<any>(null);
   const [isAdmin, setIsAdmin] = useState(false);
@@ -180,46 +182,66 @@ export default function IndexPage() {
           ) : (
             <>
               <LeadForm onSubmit={handleLeadSubmit} />
-              <div className="mt-8">
-                <div className="max-w-md mx-auto">
-                  <form onSubmit={handleAuth} className="space-y-4">
-                    <div>
-                      <label htmlFor="email" className="block text-sm font-medium text-gray-700">
-                        Email
-                      </label>
-                      <Input
-                        id="email"
-                        type="email"
-                        value={email}
-                        onChange={(e) => setEmail(e.target.value)}
-                        required
-                        className="mt-1"
-                      />
-                    </div>
-                    <div>
-                      <label htmlFor="password" className="block text-sm font-medium text-gray-700">
-                        Password
-                      </label>
-                      <Input
-                        id="password"
-                        type="password"
-                        value={password}
-                        onChange={(e) => setPassword(e.target.value)}
-                        required
-                        className="mt-1"
-                      />
-                    </div>
-                    <Button type="submit" variant="outline" className="w-full">
-                      {isSignUp ? 'Sign Up' : 'Sign In'}
-                    </Button>
-                  </form>
-                  <button
-                    onClick={() => setIsSignUp(!isSignUp)}
-                    className="mt-4 text-sm text-center w-full text-gray-500 hover:text-gray-700"
+              <div className="flex justify-center mt-8">
+                {!showAdminForm ? (
+                  <Button 
+                    variant="ghost" 
+                    onClick={() => setShowAdminForm(true)}
+                    className="text-sm text-gray-500"
                   >
-                    {isSignUp ? 'Already have an account? Sign In' : "Don't have an account? Sign Up"}
-                  </button>
-                </div>
+                    Admin Access
+                  </Button>
+                ) : (
+                  <div className="max-w-md w-full">
+                    <div className="flex justify-between items-center mb-4">
+                      <h3 className="text-sm font-medium text-gray-700">Admin Access</h3>
+                      <Button 
+                        variant="ghost" 
+                        onClick={() => setShowAdminForm(false)}
+                        className="text-sm text-gray-500"
+                      >
+                        Cancel
+                      </Button>
+                    </div>
+                    <form onSubmit={handleAuth} className="space-y-4">
+                      <div>
+                        <label htmlFor="email" className="block text-sm font-medium text-gray-700">
+                          Email
+                        </label>
+                        <Input
+                          id="email"
+                          type="email"
+                          value={email}
+                          onChange={(e) => setEmail(e.target.value)}
+                          required
+                          className="mt-1"
+                        />
+                      </div>
+                      <div>
+                        <label htmlFor="password" className="block text-sm font-medium text-gray-700">
+                          Password
+                        </label>
+                        <Input
+                          id="password"
+                          type="password"
+                          value={password}
+                          onChange={(e) => setPassword(e.target.value)}
+                          required
+                          className="mt-1"
+                        />
+                      </div>
+                      <Button type="submit" variant="outline" className="w-full">
+                        {isSignUp ? 'Sign Up' : 'Sign In'}
+                      </Button>
+                    </form>
+                    <button
+                      onClick={() => setIsSignUp(!isSignUp)}
+                      className="mt-4 text-sm text-center w-full text-gray-500 hover:text-gray-700"
+                    >
+                      {isSignUp ? 'Already have an account? Sign In' : "Don't have an account? Sign Up"}
+                    </button>
+                  </div>
+                )}
               </div>
             </>
           )}
