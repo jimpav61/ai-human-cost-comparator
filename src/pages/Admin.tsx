@@ -1,3 +1,4 @@
+
 import { useEffect, useState } from 'react';
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "@/components/ui/use-toast";
@@ -14,6 +15,7 @@ import {
 import { Download, FileText } from 'lucide-react';
 import { generatePDF } from '@/components/calculator/pdfGenerator';
 import type { LeadData } from '@/components/calculator/types';
+import { formatCurrency, formatPercent } from '@/utils/formatters';
 
 interface Lead {
   id: string;
@@ -33,18 +35,11 @@ const AdminDashboard = () => {
   const [leads, setLeads] = useState<Lead[]>([]);
 
   useEffect(() => {
-    // Listen for auth state changes
-    const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
-      if (event === 'SIGNED_OUT') {
-        navigate('/', { replace: true });
-      }
-    });
-
     const checkAccess = async () => {
       const { data: { session } } = await supabase.auth.getSession();
       
       if (!session) {
-        navigate('/', { replace: true });
+        window.location.href = '/';
         return;
       }
 
@@ -75,22 +70,19 @@ const AdminDashboard = () => {
           description: "You don't have access to this page",
           variant: "destructive",
         });
-        navigate('/', { replace: true });
+        window.location.href = '/';
       }
     };
 
     checkAccess();
-
-    // Cleanup subscription on unmount
-    return () => {
-      subscription.unsubscribe();
-    };
-  }, [navigate]);
+  }, []);
 
   const handleLogout = async () => {
     try {
       await supabase.auth.signOut();
-      window.location.href = '/'; // Force a full page reload to clear all state
+      sessionStorage.clear(); // Clear any stored session data
+      localStorage.clear(); // Clear any stored local data
+      window.location.href = '/'; // Force a full page reload and redirect
     } catch (error) {
       console.error('Logout error:', error);
       toast({
