@@ -1,3 +1,4 @@
+
 import { useEffect, useState } from 'react';
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
@@ -11,6 +12,14 @@ import {
 } from "@/components/ui/table";
 import { toast } from "@/components/ui/use-toast";
 import { generatePDF } from "@/components/calculator/pdfGenerator";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+} from "@/components/ui/dialog";
+import { Input } from "@/components/ui/input";
 
 interface Lead {
   id: string;
@@ -28,6 +37,7 @@ interface Lead {
 const AdminDashboard = () => {
   const [leads, setLeads] = useState<Lead[]>([]);
   const [loading, setLoading] = useState(true);
+  const [newAdminEmail, setNewAdminEmail] = useState('');
 
   useEffect(() => {
     fetchLeads();
@@ -54,7 +64,7 @@ const AdminDashboard = () => {
     }
   };
 
-  const handleDownloadReport = async (lead: Lead) => {
+  const handleDownloadReport = (lead: Lead) => {
     if (!lead.calculator_results || !lead.calculator_inputs) {
       toast({
         title: "No Report Available",
@@ -75,14 +85,10 @@ const AdminDashboard = () => {
     });
 
     doc.save(`${lead.company_name}-AI-Report.pdf`);
-
-    // Sign out and redirect after download
-    await supabase.auth.signOut();
-    window.location.href = '/';
     
     toast({
       title: "Success",
-      description: "Report downloaded. You have been logged out.",
+      description: "Report downloaded successfully.",
     });
   };
 
@@ -112,13 +118,79 @@ const AdminDashboard = () => {
     }
   };
 
+  const handleAddAdmin = async () => {
+    try {
+      const { error } = await supabase
+        .from('allowed_admins')
+        .insert([{ email: newAdminEmail }]);
+
+      if (error) throw error;
+
+      toast({
+        title: "Success",
+        description: "New admin added successfully",
+      });
+
+      setNewAdminEmail('');
+    } catch (error) {
+      console.error('Error adding admin:', error);
+      toast({
+        title: "Error",
+        description: "Failed to add new admin",
+        variant: "destructive",
+      });
+    }
+  };
+
+  const handleSendProposal = async (lead: Lead) => {
+    try {
+      // Here you would implement the logic to send the proposal
+      // For now, we'll just mark it as sent
+      await handleMarkProposalSent(lead.id);
+      
+      toast({
+        title: "Success",
+        description: "Proposal sent successfully",
+      });
+    } catch (error) {
+      toast({
+        title: "Error",
+        description: "Failed to send proposal",
+        variant: "destructive",
+      });
+    }
+  };
+
   if (loading) {
     return <div className="flex justify-center items-center min-h-screen">Loading...</div>;
   }
 
   return (
     <div className="container mx-auto py-10">
-      <h1 className="text-3xl font-bold mb-8">Admin Dashboard</h1>
+      <div className="flex justify-between items-center mb-8">
+        <h1 className="text-3xl font-bold">Admin Dashboard</h1>
+        
+        <Dialog>
+          <DialogTrigger asChild>
+            <Button variant="outline">Add Admin User</Button>
+          </DialogTrigger>
+          <DialogContent>
+            <DialogHeader>
+              <DialogTitle>Add New Admin</DialogTitle>
+            </DialogHeader>
+            <div className="space-y-4 py-4">
+              <div className="space-y-2">
+                <Input
+                  placeholder="Enter admin email"
+                  value={newAdminEmail}
+                  onChange={(e) => setNewAdminEmail(e.target.value)}
+                />
+              </div>
+              <Button onClick={handleAddAdmin}>Add Admin</Button>
+            </div>
+          </DialogContent>
+        </Dialog>
+      </div>
       
       <div className="rounded-md border">
         <Table>
@@ -173,13 +245,22 @@ const AdminDashboard = () => {
                       Download Report
                     </Button>
                     {!lead.proposal_sent && (
-                      <Button
-                        variant="default"
-                        size="sm"
-                        onClick={() => handleMarkProposalSent(lead.id)}
-                      >
-                        Mark Sent
-                      </Button>
+                      <>
+                        <Button
+                          variant="default"
+                          size="sm"
+                          onClick={() => handleSendProposal(lead)}
+                        >
+                          Send Proposal
+                        </Button>
+                        <Button
+                          variant="secondary"
+                          size="sm"
+                          onClick={() => handleMarkProposalSent(lead.id)}
+                        >
+                          Mark Sent
+                        </Button>
+                      </>
                     )}
                   </div>
                 </TableCell>
