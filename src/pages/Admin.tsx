@@ -25,27 +25,30 @@ const AdminDashboard = () => {
   const navigate = useNavigate();
 
   useEffect(() => {
-    checkUser();
-    fetchLeads();
-  }, []);
+    const checkSession = async () => {
+      const { data: { session } } = await supabase.auth.getSession();
+      console.log('Current session:', session); // Debug log
+      if (!session) {
+        toast({
+          title: "Access Denied",
+          description: "Please sign in to access the admin dashboard",
+          variant: "destructive",
+        });
+        navigate('/auth');
+        return;
+      }
+      fetchLeads();
+    };
 
-  const checkUser = async () => {
-    const { data: { session } } = await supabase.auth.getSession();
-    if (!session) {
-      toast({
-        title: "Access Denied",
-        description: "Please sign in to access the admin dashboard",
-        variant: "destructive",
-      });
-      navigate('/');
-    }
-  };
+    checkSession();
+  }, [navigate]);
 
   const fetchLeads = async () => {
     try {
       const { data: { session } } = await supabase.auth.getSession();
       if (!session) return;
 
+      console.log('Fetching leads...'); // Debug log
       const { data, error } = await supabase
         .from('leads')
         .select('*')
@@ -53,6 +56,7 @@ const AdminDashboard = () => {
 
       if (error) throw error;
 
+      console.log('Leads data:', data); // Debug log
       setLeads(data || []);
     } catch (error) {
       console.error('Error fetching leads:', error);
