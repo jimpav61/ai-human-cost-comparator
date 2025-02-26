@@ -1,3 +1,4 @@
+
 import React from 'react';
 import { Button } from "@/components/ui/button";
 import type { CalculationResults } from '@/hooks/useCalculator';
@@ -58,8 +59,11 @@ export const ResultsDisplay: React.FC<ResultsDisplayProps> = ({
     // Cost Summary
     doc.setFontSize(14);
     doc.text("Cost Summary", 20, 40);
+    
+    let finalY = 45; // Keep track of Y position
+    
     autoTable(doc, {
-      startY: 45,
+      startY: finalY,
       head: [["Category", "Monthly Cost", "Annual Cost"]],
       body: [
         ["Human Resources", formatCurrency(results.humanCostMonthly), formatCurrency(results.humanCostMonthly * 12)],
@@ -68,11 +72,15 @@ export const ResultsDisplay: React.FC<ResultsDisplayProps> = ({
       ],
     });
 
+    // Get the final Y position after the first table
+    finalY = (doc as any).previousAutoTable.finalY + 20;
+
     // Resource Utilization
     doc.setFontSize(14);
-    doc.text("Resource Utilization", 20, doc.lastAutoTable.finalY + 20);
+    doc.text("Resource Utilization", 20, finalY);
+    
     autoTable(doc, {
-      startY: doc.lastAutoTable.finalY + 25,
+      startY: finalY + 5,
       head: [["Metric", "Value"]],
       body: [
         ["Daily Hours per Employee", `${results.humanHours.dailyPerEmployee} hours`],
@@ -127,29 +135,6 @@ export const ResultsDisplay: React.FC<ResultsDisplayProps> = ({
     <div className="space-y-8 animate-fadeIn">
       <div className="calculator-card">
         <h3 className="text-xl font-medium text-gray-900 mb-6">Results</h3>
-
-        {/* Human Resource Details */}
-        <div className="mb-6 p-4 bg-gray-50 rounded-lg">
-          <h4 className="text-sm font-semibold text-gray-700 mb-3">Human Resource Details</h4>
-          <div className="grid grid-cols-2 gap-4 text-sm">
-            <div>
-              <p className="text-gray-600">Daily Hours per Employee:</p>
-              <p className="font-medium">{results.humanHours.dailyPerEmployee} hours</p>
-            </div>
-            <div>
-              <p className="text-gray-600">Total Weekly Hours:</p>
-              <p className="font-medium">{formatNumber(results.humanHours.weeklyTotal)} hours</p>
-            </div>
-            <div>
-              <p className="text-gray-600">Total Monthly Hours:</p>
-              <p className="font-medium">{formatNumber(results.humanHours.monthlyTotal)} hours</p>
-            </div>
-            <div>
-              <p className="text-gray-600">Total Yearly Hours:</p>
-              <p className="font-medium">{formatNumber(results.humanHours.yearlyTotal)} hours</p>
-            </div>
-          </div>
-        </div>
 
         {/* AI Placement Opportunities */}
         <div className="mb-6 p-4 bg-gray-50 rounded-lg">
