@@ -12,36 +12,42 @@ const Auth = () => {
   const [loading, setLoading] = useState(false);
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
-  const [isSignUp, setIsSignUp] = useState(false);
 
-  const handleAuth = async (e: React.FormEvent) => {
+  const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
     try {
-      if (isSignUp) {
-        const { error } = await supabase.auth.signUp({
-          email,
-          password,
-        });
-        if (error) throw error;
-        toast({
-          title: "Success!",
-          description: "Check your email for the confirmation link.",
-        });
-      } else {
-        const { error } = await supabase.auth.signInWithPassword({
-          email,
-          password,
-        });
-        if (error) throw error;
-        navigate("/");
+      const { data, error } = await supabase.auth.signInWithPassword({
+        email,
+        password,
+      });
+
+      if (error) throw error;
+
+      // Check if user is an allowed admin
+      const { data: adminData, error: adminError } = await supabase
+        .from('allowed_admins')
+        .select('*')
+        .eq('email', email)
+        .single();
+
+      if (adminError || !adminData) {
+        await supabase.auth.signOut();
+        throw new Error('Not authorized as admin');
       }
+
+      navigate('/admin');
+      toast({
+        title: "Success",
+        description: "Logged in successfully",
+      });
     } catch (error: any) {
       toast({
         title: "Error",
-        description: error.message,
+        description: error.message || "Failed to login",
         variant: "destructive",
       });
+      console.error('Error:', error);
     } finally {
       setLoading(false);
     }
@@ -50,10 +56,8 @@ const Auth = () => {
   return (
     <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-brand-50 to-gray-100">
       <div className="w-full max-w-md p-8 bg-white rounded-lg shadow-lg">
-        <h2 className="text-2xl font-bold text-center mb-6">
-          {isSignUp ? "Create Account" : "Welcome Back"}
-        </h2>
-        <form onSubmit={handleAuth} className="space-y-4">
+        <h2 className="text-2xl font-bold text-center mb-6">Admin Login</h2>
+        <form onSubmit={handleLogin} className="space-y-4">
           <div>
             <Label htmlFor="email">Email</Label>
             <Input
@@ -75,17 +79,9 @@ const Auth = () => {
             />
           </div>
           <Button type="submit" className="w-full" disabled={loading}>
-            {loading ? "Loading..." : isSignUp ? "Sign Up" : "Sign In"}
+            {loading ? "Loading..." : "Sign In"}
           </Button>
         </form>
-        <button
-          onClick={() => setIsSignUp(!isSignUp)}
-          className="w-full mt-4 text-sm text-gray-600 hover:text-brand-500"
-        >
-          {isSignUp
-            ? "Already have an account? Sign in"
-            : "Don't have an account? Sign up"}
-        </button>
       </div>
     </div>
   );
