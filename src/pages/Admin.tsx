@@ -38,7 +38,7 @@ const AdminDashboard = () => {
       const { data: { session } } = await supabase.auth.getSession();
       
       if (!session) {
-        navigate('/auth');
+        navigate('/');
         return;
       }
 
@@ -69,7 +69,7 @@ const AdminDashboard = () => {
           description: "You don't have access to this page",
           variant: "destructive",
         });
-        navigate('/auth');
+        navigate('/');
       }
     };
 
@@ -79,7 +79,7 @@ const AdminDashboard = () => {
   const handleLogout = async () => {
     try {
       await supabase.auth.signOut();
-      navigate('/auth');
+      navigate('/');
     } catch (error) {
       console.error('Logout error:', error);
       toast({
@@ -232,7 +232,16 @@ const AdminDashboard = () => {
                     </a>
                   ) : '-'}
                 </TableCell>
-                <TableCell>{lead.phone_number || '-'}</TableCell>
+                <TableCell>
+                  {lead.phone_number ? (
+                    <a 
+                      href={`tel:${lead.phone_number}`}
+                      className="text-blue-600 hover:underline"
+                    >
+                      {lead.phone_number}
+                    </a>
+                  ) : '-'}
+                </TableCell>
                 <TableCell>
                   <div className="flex gap-2">
                     <Button
