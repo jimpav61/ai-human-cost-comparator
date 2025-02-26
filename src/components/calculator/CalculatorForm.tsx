@@ -1,4 +1,3 @@
-
 import React from 'react';
 import { ROLE_LABELS } from '@/constants/pricing';
 import type { CalculatorInputs } from '@/hooks/useCalculator';
@@ -134,7 +133,7 @@ export const CalculatorForm: React.FC<CalculatorFormProps> = ({ inputs, onInputC
         
         {/* Advanced Settings */}
         <div className="pt-4 border-t border-gray-200 mt-6">
-          <h4 className="text-md font-medium text-gray-700 mb-4">Advanced Settings</h4>
+          <h4 className="text-md font-medium text-gray-700 mb-4">Business Settings</h4>
           
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             {/* Current Employees */}
@@ -166,34 +165,21 @@ export const CalculatorForm: React.FC<CalculatorFormProps> = ({ inputs, onInputC
               />
             </div>
             
-            {/* Benefits Cost */}
+            {/* AI Utilization */}
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-1">
-                Benefits Cost (%)
+                AI Utilization Level
               </label>
-              <input 
-                type="number" 
-                min="0" 
-                max="100"
-                value={inputs.employeeBenefitsCost}
-                onChange={(e) => onInputChange('employeeBenefitsCost', parseInt(e.target.value) || 0)}
-                className="calculator-input"
-              />
-            </div>
-            
-            {/* Utilization */}
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">
-                Agent Utilization (%)
-              </label>
-              <input 
-                type="number" 
-                min="1" 
-                max="100"
+              <select
                 value={inputs.employeeUtilization}
-                onChange={(e) => onInputChange('employeeUtilization', parseInt(e.target.value) || 0)}
+                onChange={(e) => onInputChange('employeeUtilization', parseInt(e.target.value))}
                 className="calculator-input"
-              />
+              >
+                <option value={25}>25% - Basic Integration</option>
+                <option value={50}>50% - Moderate Integration</option>
+                <option value={75}>75% - Advanced Integration</option>
+                <option value={100}>100% - Full Integration</option>
+              </select>
             </div>
           </div>
         </div>
