@@ -10,40 +10,56 @@ import { useNavigate } from "react-router-dom";
 const Auth = () => {
   const navigate = useNavigate();
   const [loading, setLoading] = useState(false);
-  const [email, setEmail] = useState("jimmy.pavlatos@gmail.com");
-  const [password, setPassword] = useState("jian232019");
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
 
   useEffect(() => {
-    supabase.auth.onAuthStateChange((event, session) => {
-      console.log("Auth state changed:", event, session);
+    const checkSession = async () => {
+      const { data: { session } } = await supabase.auth.getSession();
       if (session) {
-        console.log("Session found, redirecting to admin");
         navigate("/admin");
       }
-    });
+    };
+    checkSession();
   }, [navigate]);
 
-  const handleAuth = async (e: React.FormEvent) => {
+  const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
+    
     try {
-      console.log("Attempting login with:", email);
-      const { data, error } = await supabase.auth.signInWithPassword({
+      const { data: { session }, error: authError } = await supabase.auth.signInWithPassword({
         email,
-        password,
+        password
       });
-      
-      if (error) throw error;
 
-      if (data.session) {
-        console.log("Login successful", data.session);
+      if (authError) throw authError;
+
+      if (session) {
+        // Check if user is an allowed admin
+        const { data: adminData, error: adminError } = await supabase
+          .from('allowed_admins')
+          .select('email')
+          .eq('email', session.user.email)
+          .single();
+
+        if (adminError || !adminData) {
+          await supabase.auth.signOut();
+          throw new Error("Unauthorized access");
+        }
+
+        toast({
+          title: "Success",
+          description: "Logged in successfully",
+        });
+        
         navigate("/admin");
       }
     } catch (error: any) {
-      console.error('Auth error:', error);
+      console.error("Auth error:", error);
       toast({
         title: "Error",
-        description: error.message,
+        description: error.message || "Failed to log in",
         variant: "destructive",
       });
     } finally {
@@ -57,7 +73,7 @@ const Auth = () => {
         <h2 className="text-2xl font-bold text-center mb-6">
           Admin Login
         </h2>
-        <form onSubmit={handleAuth} className="space-y-4">
+        <form onSubmit={handleLogin} className="space-y-4">
           <div>
             <Label htmlFor="email">Email</Label>
             <Input
@@ -66,6 +82,7 @@ const Auth = () => {
               value={email}
               onChange={(e) => setEmail(e.target.value)}
               required
+              placeholder="Enter your email"
             />
           </div>
           <div>
@@ -76,6 +93,7 @@ const Auth = () => {
               value={password}
               onChange={(e) => setPassword(e.target.value)}
               required
+              placeholder="Enter your password"
             />
           </div>
           <Button type="submit" className="w-full" disabled={loading}>

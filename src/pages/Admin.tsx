@@ -3,29 +3,13 @@ import { useEffect, useState } from 'react';
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "@/components/ui/use-toast";
 import { useNavigate } from 'react-router-dom';
-import { AdminHeader } from '@/components/admin/AdminHeader';
-import { LeadsTable } from '@/components/admin/LeadsTable';
-
-interface Lead {
-  id: string;
-  name: string;
-  company_name: string;
-  email: string;
-  phone_number: string | null;
-  website: string | null;
-  calculator_inputs: any;
-  calculator_results: any;
-  created_at: string;
-  proposal_sent: boolean;
-}
+import { Button } from '@/components/ui/button';
 
 const AdminDashboard = () => {
-  const [leads, setLeads] = useState<Lead[]>([]);
-  const [loading, setLoading] = useState(true);
   const navigate = useNavigate();
+  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    // Simple one-time check on component mount
     const checkAccess = async () => {
       const { data: { session } } = await supabase.auth.getSession();
       
@@ -35,53 +19,40 @@ const AdminDashboard = () => {
       }
 
       try {
-        const { data: adminCheck } = await supabase
+        const { data: adminCheck, error } = await supabase
           .from('allowed_admins')
           .select('email')
           .eq('email', session.user.email)
           .single();
 
-        if (!adminCheck) {
-          await supabase.auth.signOut();
-          navigate('/auth');
-          return;
+        if (error || !adminCheck) {
+          throw new Error('Unauthorized');
         }
 
-        // Admin access confirmed, fetch leads
-        const { data } = await supabase
-          .from('leads')
-          .select('*')
-          .order('created_at', { ascending: false });
-
-        setLeads(data || []);
+        setLoading(false);
       } catch (error) {
+        console.error('Access check error:', error);
         toast({
-          title: "Error",
-          description: "Failed to load admin dashboard",
+          title: "Unauthorized",
+          description: "You don't have access to this page",
           variant: "destructive",
         });
         navigate('/auth');
-      } finally {
-        setLoading(false);
       }
     };
 
     checkAccess();
   }, [navigate]);
 
-  const fetchLeads = async () => {
+  const handleLogout = async () => {
     try {
-      const { data, error } = await supabase
-        .from('leads')
-        .select('*')
-        .order('created_at', { ascending: false });
-
-      if (error) throw error;
-      setLeads(data || []);
+      await supabase.auth.signOut();
+      navigate('/auth');
     } catch (error) {
+      console.error('Logout error:', error);
       toast({
         title: "Error",
-        description: "Failed to fetch leads data",
+        description: "Failed to log out",
         variant: "destructive",
       });
     }
@@ -93,8 +64,17 @@ const AdminDashboard = () => {
 
   return (
     <div className="container mx-auto py-10">
-      <AdminHeader />
-      <LeadsTable leads={leads} onLeadUpdate={fetchLeads} />
+      <div className="flex justify-between items-center mb-8">
+        <h1 className="text-3xl font-bold">Admin Dashboard</h1>
+        <Button variant="destructive" onClick={handleLogout}>
+          Logout
+        </Button>
+      </div>
+      
+      {/* Admin content will go here */}
+      <div className="bg-white rounded-lg shadow p-6">
+        <p className="text-gray-600">Welcome to the admin dashboard. We'll build out more features here.</p>
+      </div>
     </div>
   );
 };
