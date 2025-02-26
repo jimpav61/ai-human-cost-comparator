@@ -8,6 +8,7 @@ import { toast } from "@/components/ui/use-toast";
 const Index = () => {
   const [showCalculator, setShowCalculator] = useState(false);
   const [leadData, setLeadData] = useState<LeadFormData | null>(null);
+  const [showAdminForm, setShowAdminForm] = useState(false);
 
   const handleLeadSubmit = (data: LeadFormData) => {
     setLeadData(data);
@@ -155,8 +156,34 @@ const Index = () => {
               >
                 Powered by ChatSites.ai
               </a>
+              <span className="text-gray-300">|</span>
+              <button
+                onClick={() => setShowAdminForm(!showAdminForm)}
+                className="text-gray-600 hover:text-brand-500 transition-colors text-sm"
+              >
+                Admin
+              </button>
             </div>
           </div>
+
+          {/* Admin Form Modal */}
+          {showAdminForm && (
+            <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
+              <div className="bg-white rounded-lg p-6 max-w-md w-full">
+                <div className="flex justify-between items-center mb-4">
+                  <h3 className="text-lg font-semibold">Admin Access</h3>
+                  <button 
+                    onClick={() => setShowAdminForm(false)}
+                    className="text-gray-500 hover:text-gray-700"
+                  >
+                    ✕
+                  </button>
+                </div>
+                {/* Add your admin form content here */}
+                <p className="text-gray-600">Please contact support for admin access.</p>
+              </div>
+            </div>
+          )}
         </div>
       </div>
     </>
