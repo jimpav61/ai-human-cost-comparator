@@ -4,22 +4,26 @@ import { AIVsHumanCalculator } from '@/components/AIVsHumanCalculator';
 import { LeadForm } from '@/components/LeadForm';
 import { AdminDashboard } from '@/components/AdminDashboard';
 import { useState } from 'react';
+import { SignIn, SignedIn, SignedOut, useUser } from "@clerk/clerk-react";
 
 const queryClient = new QueryClient();
 
 export default function IndexPage() {
   const [showAdmin, setShowAdmin] = useState(false);
   const [hasSubmittedLead, setHasSubmittedLead] = useState(false);
+  const { user } = useUser();
 
   const handleLeadSubmit = (data: any) => {
     setHasSubmittedLead(true);
   };
 
+  const isAdmin = user?.publicMetadata?.role === 'admin';
+
   return (
     <QueryClientProvider client={queryClient}>
       <div className="min-h-screen bg-gray-50 py-12">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          {!showAdmin && (
+          {!showAdmin && isAdmin && (
             <div className="text-right mb-4">
               <button
                 onClick={() => setShowAdmin(true)}
@@ -30,25 +34,35 @@ export default function IndexPage() {
             </div>
           )}
 
-          {showAdmin ? (
-            <div>
-              <button
-                onClick={() => setShowAdmin(false)}
-                className="mb-4 text-sm text-gray-600 hover:text-brand-500"
-              >
-                ← Back to Calculator
-              </button>
-              <AdminDashboard />
+          <SignedIn>
+            {showAdmin && isAdmin ? (
+              <div>
+                <button
+                  onClick={() => setShowAdmin(false)}
+                  className="mb-4 text-sm text-gray-600 hover:text-brand-500"
+                >
+                  ← Back to Calculator
+                </button>
+                <AdminDashboard />
+              </div>
+            ) : (
+              <>
+                {!hasSubmittedLead ? (
+                  <LeadForm onSubmit={handleLeadSubmit} />
+                ) : (
+                  <AIVsHumanCalculator />
+                )}
+              </>
+            )}
+          </SignedIn>
+
+          <SignedOut>
+            <div className="flex flex-col items-center justify-center min-h-[60vh]">
+              <div className="max-w-md w-full">
+                <SignIn />
+              </div>
             </div>
-          ) : (
-            <>
-              {!hasSubmittedLead ? (
-                <LeadForm onSubmit={handleLeadSubmit} />
-              ) : (
-                <AIVsHumanCalculator />
-              )}
-            </>
-          )}
+          </SignedOut>
         </div>
       </div>
     </QueryClientProvider>
