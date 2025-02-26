@@ -141,49 +141,61 @@ export default function IndexPage() {
 
   return (
     <QueryClientProvider client={queryClient}>
-      <div className="min-h-screen bg-gray-50">
+      <div className="min-h-screen bg-gradient-to-b from-gray-50 to-white">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
           {/* Logo and Hero Section */}
           <div className="text-center mb-16">
             <div className="flex justify-center mb-8">
-              <div className="bg-brand-500 p-4 rounded-full">
+              <div className="bg-brand-500 p-4 rounded-full shadow-lg hover:shadow-xl transition-shadow duration-300">
                 <Compass className="h-12 w-12 text-white" />
               </div>
             </div>
-            <h1 className="text-4xl font-bold text-gray-900 mb-4">
-              AI Cost Calculator
+            <h1 className="text-5xl font-extrabold text-gray-900 mb-6 tracking-tight">
+              Supercharge Your Business with AI
             </h1>
-            <p className="text-xl text-gray-600 max-w-2xl mx-auto">
-              Calculate your potential savings by implementing AI solutions in your business operations
+            <p className="text-xl text-gray-600 max-w-3xl mx-auto leading-relaxed">
+              Discover how AI can transform your operations. Calculate your potential savings 
+              and see the impact on your bottom line.
             </p>
           </div>
 
-          {/* Savings Cards */}
+          {/* Value Proposition Cards */}
           <div className="grid grid-cols-1 md:grid-cols-3 gap-8 mb-16">
-            <div className="calculator-card">
-              <h3 className="text-lg font-semibold text-gray-900 mb-2">Time Savings</h3>
-              <p className="text-gray-600">Reduce response times by up to 80% with AI automation</p>
-              <img src="/placeholder.svg" alt="Time savings" className="mt-4 w-full h-32 object-cover rounded-lg" />
+            <div className="calculator-card transform hover:-translate-y-1 transition-transform duration-300">
+              <h3 className="text-xl font-semibold text-gray-900 mb-3">Time Savings</h3>
+              <p className="text-gray-600 mb-4">Cut response times by up to 80% with AI-powered automation</p>
+              <div className="bg-gradient-to-br from-brand-100 to-brand-50 p-6 rounded-xl">
+                <img src="/placeholder.svg" alt="Time savings illustration" className="w-full h-32 object-contain" />
+              </div>
             </div>
-            <div className="calculator-card">
-              <h3 className="text-lg font-semibold text-gray-900 mb-2">Cost Reduction</h3>
-              <p className="text-gray-600">Lower operational costs by implementing AI solutions</p>
-              <img src="/placeholder.svg" alt="Cost reduction" className="mt-4 w-full h-32 object-cover rounded-lg" />
+            <div className="calculator-card transform hover:-translate-y-1 transition-transform duration-300">
+              <h3 className="text-xl font-semibold text-gray-900 mb-3">Cost Efficiency</h3>
+              <p className="text-gray-600 mb-4">Reduce operational costs by up to 60% with smart AI solutions</p>
+              <div className="bg-gradient-to-br from-brand-100 to-brand-50 p-6 rounded-xl">
+                <img src="/placeholder.svg" alt="Cost reduction illustration" className="w-full h-32 object-contain" />
+              </div>
             </div>
-            <div className="calculator-card">
-              <h3 className="text-lg font-semibold text-gray-900 mb-2">Efficiency Boost</h3>
-              <p className="text-gray-600">Improve productivity with intelligent automation</p>
-              <img src="/placeholder.svg" alt="Efficiency boost" className="mt-4 w-full h-32 object-cover rounded-lg" />
+            <div className="calculator-card transform hover:-translate-y-1 transition-transform duration-300">
+              <h3 className="text-xl font-semibold text-gray-900 mb-3">Productivity Boost</h3>
+              <p className="text-gray-600 mb-4">Increase team efficiency by up to 40% with AI assistance</p>
+              <div className="bg-gradient-to-br from-brand-100 to-brand-50 p-6 rounded-xl">
+                <img src="/placeholder.svg" alt="Productivity boost illustration" className="w-full h-32 object-contain" />
+              </div>
             </div>
           </div>
 
-          {/* Sample and Calculator Section */}
+          {/* Calculator Section */}
           <div className="mb-16">
             <div className="calculator-card">
-              <h3 className="text-2xl font-semibold text-gray-900 mb-4">Try Our Calculator</h3>
-              <p className="text-gray-600 mb-8">
-                See how much you could save with AI automation. Input your details below to get started.
-              </p>
+              <div className="text-center max-w-3xl mx-auto mb-8">
+                <h2 className="text-3xl font-bold text-gray-900 mb-4">
+                  Calculate Your AI Savings
+                </h2>
+                <p className="text-lg text-gray-600">
+                  Use our interactive calculator to see how much your business could save with AI automation
+                </p>
+              </div>
+
               {session ? (
                 <>
                   <div className="flex justify-end mb-4">
