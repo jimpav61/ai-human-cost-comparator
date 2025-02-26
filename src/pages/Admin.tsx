@@ -34,11 +34,18 @@ const AdminDashboard = () => {
   const [leads, setLeads] = useState<Lead[]>([]);
 
   useEffect(() => {
+    // Listen for auth state changes
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
+      if (event === 'SIGNED_OUT') {
+        navigate('/', { replace: true });
+      }
+    });
+
     const checkAccess = async () => {
       const { data: { session } } = await supabase.auth.getSession();
       
       if (!session) {
-        navigate('/');
+        navigate('/', { replace: true });
         return;
       }
 
@@ -69,17 +76,22 @@ const AdminDashboard = () => {
           description: "You don't have access to this page",
           variant: "destructive",
         });
-        navigate('/');
+        navigate('/', { replace: true });
       }
     };
 
     checkAccess();
+
+    // Cleanup subscription on unmount
+    return () => {
+      subscription.unsubscribe();
+    };
   }, [navigate]);
 
   const handleLogout = async () => {
     try {
       await supabase.auth.signOut();
-      navigate('/');
+      // The navigation will be handled by the auth state change listener
     } catch (error) {
       console.error('Logout error:', error);
       toast({
@@ -90,59 +102,64 @@ const AdminDashboard = () => {
     }
   };
 
+  const generateReportPDF = (lead: Lead) => {
+    const leadData: LeadData = {
+      name: lead.name,
+      companyName: lead.company_name,
+      email: lead.email,
+      phoneNumber: lead.phone_number || ''
+    };
+
+    const doc = generatePDF({
+      contactInfo: leadData.name,
+      companyName: leadData.companyName,
+      email: leadData.email,
+      phoneNumber: leadData.phoneNumber,
+      results: lead.calculator_results,
+      businessSuggestions: [
+        {
+          title: "24/7 Customer Support",
+          description: "Implement AI to provide round-the-clock support without increasing staff costs."
+        },
+        {
+          title: "Rapid Response Times",
+          description: "AI can handle multiple inquiries simultaneously, reducing customer wait times."
+        },
+        {
+          title: "Cost-Effective Scaling",
+          description: "Save on operational costs while maintaining service quality."
+        },
+        {
+          title: "Employee Focus",
+          description: "Free up your team to handle complex cases while AI manages routine inquiries."
+        }
+      ],
+      aiPlacements: [
+        {
+          role: "Front-line Support",
+          capabilities: [
+            "Handle routine customer inquiries instantly",
+            "Route complex issues to human agents",
+            "Available 24/7 without additional cost"
+          ]
+        },
+        {
+          role: "Customer Service Enhancement",
+          capabilities: [
+            "Reduce wait times significantly",
+            "Process multiple requests simultaneously",
+            "Maintain consistent service quality"
+          ]
+        }
+      ]
+    });
+
+    return doc;
+  };
+
   const handleDownloadReport = (lead: Lead) => {
     try {
-      const leadData: LeadData = {
-        name: lead.name,
-        companyName: lead.company_name,
-        email: lead.email,
-        phoneNumber: lead.phone_number || ''
-      };
-
-      const doc = generatePDF({
-        contactInfo: leadData.name,
-        companyName: leadData.companyName,
-        email: leadData.email,
-        phoneNumber: leadData.phoneNumber,
-        results: lead.calculator_results,
-        businessSuggestions: [
-          {
-            title: "24/7 Customer Support",
-            description: "Implement AI to provide round-the-clock support without increasing staff costs."
-          },
-          {
-            title: "Rapid Response Times",
-            description: "AI can handle multiple inquiries simultaneously, reducing customer wait times."
-          },
-          {
-            title: "Cost-Effective Scaling",
-            description: "Save on operational costs while maintaining service quality."
-          },
-          {
-            title: "Employee Focus",
-            description: "Free up your team to handle complex cases while AI manages routine inquiries."
-          }
-        ],
-        aiPlacements: [
-          {
-            role: "Front-line Support",
-            capabilities: [
-              "Handle routine customer inquiries instantly",
-              "Route complex issues to human agents",
-              "Available 24/7 without additional cost"
-            ]
-          },
-          {
-            role: "Customer Service Enhancement",
-            capabilities: [
-              "Reduce wait times significantly",
-              "Process multiple requests simultaneously",
-              "Maintain consistent service quality"
-            ]
-          }
-        ]
-      });
-
+      const doc = generateReportPDF(lead);
       doc.save(`${lead.company_name}-AI-Integration-Analysis.pdf`);
       
       toast({
@@ -161,7 +178,11 @@ const AdminDashboard = () => {
 
   const handleCreateProposal = async (lead: Lead) => {
     try {
-      // Update the lead's proposal_sent status
+      // First generate and download the PDF
+      const doc = generateReportPDF(lead);
+      doc.save(`${lead.company_name}-AI-Integration-Proposal.pdf`);
+
+      // Then update the lead's proposal_sent status
       await supabase
         .from('leads')
         .update({ proposal_sent: true })
@@ -177,13 +198,13 @@ const AdminDashboard = () => {
 
       toast({
         title: "Success",
-        description: "Proposal status updated successfully",
+        description: "Proposal downloaded and status updated",
       });
     } catch (error) {
       console.error('Error updating proposal status:', error);
       toast({
         title: "Error",
-        description: "Failed to update proposal status",
+        description: "Failed to generate proposal",
         variant: "destructive",
       });
     }
