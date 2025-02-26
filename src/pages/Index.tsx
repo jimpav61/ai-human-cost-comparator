@@ -1,8 +1,22 @@
-
+import { useState } from 'react';
 import { AIVsHumanCalculator } from "@/components/AIVsHumanCalculator";
 import Header from "@/components/Header";
+import { LeadForm, type LeadFormData } from "@/components/LeadForm";
+import { toast } from "@/components/ui/use-toast";
 
 const Index = () => {
+  const [showCalculator, setShowCalculator] = useState(false);
+  const [leadData, setLeadData] = useState<LeadFormData | null>(null);
+
+  const handleLeadSubmit = (data: LeadFormData) => {
+    setLeadData(data);
+    setShowCalculator(true);
+    toast({
+      title: "Welcome " + data.name + "!",
+      description: "Now you can explore detailed AI cost savings for your business.",
+    });
+  };
+
   return (
     <>
       <Header />
@@ -13,6 +27,29 @@ const Index = () => {
             <p className="text-xl text-gray-600 max-w-3xl mx-auto">
               Strategic AI Integration Calculator for Modern Business Operations
             </p>
+          </div>
+
+          {/* Sample ROI Showcase */}
+          <div className="mb-16 text-center">
+            <h2 className="text-2xl font-semibold text-gray-900 mb-4">
+              Real Business Impact
+            </h2>
+            <div className="bg-white/80 backdrop-blur-lg rounded-2xl border border-gray-100 shadow-lg p-8 max-w-4xl mx-auto">
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
+                <div className="text-center">
+                  <div className="text-3xl font-bold text-brand-500 mb-2">65%</div>
+                  <p className="text-gray-600">Average Cost Reduction</p>
+                </div>
+                <div className="text-center">
+                  <div className="text-3xl font-bold text-brand-500 mb-2">24/7</div>
+                  <p className="text-gray-600">Continuous Operation</p>
+                </div>
+                <div className="text-center">
+                  <div className="text-3xl font-bold text-brand-500 mb-2">3.5x</div>
+                  <p className="text-gray-600">Increased Efficiency</p>
+                </div>
+              </div>
+            </div>
           </div>
           
           {/* AI Placement and Function Overview */}
@@ -72,7 +109,21 @@ const Index = () => {
             </div>
           </div>
           
-          <AIVsHumanCalculator />
+          {!showCalculator ? (
+            <LeadForm onSubmit={handleLeadSubmit} />
+          ) : (
+            <div className="animate-fadeIn">
+              <div className="text-center mb-8">
+                <h2 className="text-2xl font-semibold text-gray-900">
+                  Welcome, {leadData?.name}!
+                </h2>
+                <p className="text-gray-600">
+                  Let's calculate potential AI savings for {leadData?.companyName}
+                </p>
+              </div>
+              <AIVsHumanCalculator />
+            </div>
+          )}
         </div>
       </div>
     </>
