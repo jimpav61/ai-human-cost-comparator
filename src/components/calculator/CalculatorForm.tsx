@@ -1,3 +1,4 @@
+
 import React from 'react';
 import { ROLE_LABELS } from '@/constants/pricing';
 import type { CalculatorInputs } from '@/hooks/useCalculator';
@@ -150,25 +151,25 @@ export const CalculatorForm: React.FC<CalculatorFormProps> = ({ inputs, onInputC
               />
             </div>
             
-            {/* Weekly Hours */}
+            {/* Benefits Cost */}
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-1">
-                Weekly Work Hours
+                Employee Benefits Cost (%)
               </label>
               <input 
                 type="number" 
-                min="1" 
-                max="168"
-                value={inputs.workHoursPerWeek}
-                onChange={(e) => onInputChange('workHoursPerWeek', parseInt(e.target.value) || 0)}
+                min="0"
+                max="100"
+                value={inputs.employeeBenefitsCost}
+                onChange={(e) => onInputChange('employeeBenefitsCost', parseInt(e.target.value) || 0)}
                 className="calculator-input"
               />
             </div>
             
-            {/* AI Utilization */}
+            {/* Employee Utilization */}
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-1">
-                AI Utilization Level
+                Employee Utilization (%)
               </label>
               <select
                 value={inputs.employeeUtilization}

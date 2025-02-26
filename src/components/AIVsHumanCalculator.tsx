@@ -11,7 +11,6 @@ export const AIVsHumanCalculator = () => {
     aiType: 'voice',
     aiTier: 'standard',
     role: 'customerService',
-    workHoursPerWeek: 40,
     numEmployees: 1,
     employeeBenefitsCost: 30,
     employeeUtilization: 70,
