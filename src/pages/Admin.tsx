@@ -1,4 +1,3 @@
-
 import { useEffect, useState } from 'react';
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
@@ -184,18 +183,81 @@ const AdminDashboard = () => {
 
   const handleSendProposal = async (lead: Lead) => {
     try {
-      // Here you would implement the logic to send the proposal
-      // For now, we'll just mark it as sent
+      // Generate personalized proposal
+      const { data: proposal, error: proposalError } = await supabase.functions
+        .invoke('generate-proposal', {
+          body: {
+            name: lead.name,
+            company_name: lead.company_name,
+            calculator_results: lead.calculator_results,
+            calculator_inputs: lead.calculator_inputs
+          }
+        });
+
+      if (proposalError) throw proposalError;
+
+      // Format the proposal as HTML
+      const proposalHtml = `
+        <html>
+          <body style="font-family: Arial, sans-serif; max-width: 800px; margin: 0 auto; padding: 20px;">
+            <h1 style="color: #2563eb;">${proposal.title}</h1>
+            <p style="font-size: 16px; line-height: 1.6;">${proposal.summary}</p>
+            
+            <h2 style="color: #374151; margin-top: 30px;">Projected Savings</h2>
+            <ul style="list-style-type: none; padding: 0;">
+              <li>Monthly: ${new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD' }).format(proposal.savings.monthly)}</li>
+              <li>Yearly: ${new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD' }).format(proposal.savings.yearly)}</li>
+              <li>Cost Reduction: ${Math.round(proposal.savings.percentage * 100)}%</li>
+            </ul>
+
+            <h2 style="color: #374151; margin-top: 30px;">Recommendations</h2>
+            ${proposal.recommendations.map(rec => `
+              <div style="margin-bottom: 20px;">
+                <h3 style="color: #4B5563;">${rec.title}</h3>
+                <p>${rec.description}</p>
+                <ul>
+                  ${rec.benefits.map(benefit => `<li>${benefit}</li>`).join('')}
+                </ul>
+              </div>
+            `).join('')}
+
+            <h2 style="color: #374151; margin-top: 30px;">Implementation Timeline</h2>
+            <p>Estimated timeline: ${proposal.implementation.timeline}</p>
+            <ol>
+              ${proposal.implementation.phases.map(phase => `<li>${phase}</li>`).join('')}
+            </ol>
+
+            <div style="margin-top: 40px; border-top: 1px solid #E5E7EB; padding-top: 20px;">
+              <p>Ready to transform your business with AI? Let's discuss the next steps.</p>
+              <p>Best regards,<br>The ChatSites.ai Team</p>
+            </div>
+          </body>
+        </html>
+      `;
+
+      // Create a Blob and download the proposal
+      const blob = new Blob([proposalHtml], { type: 'text/html' });
+      const url = window.URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `${lead.company_name}-AI-Proposal.html`;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      window.URL.revokeObjectURL(url);
+
+      // Mark proposal as sent
       await handleMarkProposalSent(lead.id);
       
       toast({
         title: "Success",
-        description: "Proposal sent successfully",
+        description: "Proposal generated and downloaded successfully",
       });
     } catch (error) {
+      console.error('Error generating proposal:', error);
       toast({
         title: "Error",
-        description: "Failed to send proposal",
+        description: "Failed to generate proposal",
         variant: "destructive",
       });
     }
