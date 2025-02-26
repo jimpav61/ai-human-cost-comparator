@@ -25,45 +25,49 @@ const AdminDashboard = () => {
   const navigate = useNavigate();
 
   useEffect(() => {
-    const checkAdmin = async () => {
+    // Simple one-time check on component mount
+    const checkAccess = async () => {
       const { data: { session } } = await supabase.auth.getSession();
+      
       if (!session) {
         navigate('/auth');
         return;
       }
 
-      const { data: adminCheck } = await supabase
-        .from('allowed_admins')
-        .select('email')
-        .eq('email', session.user.email)
-        .single();
+      try {
+        const { data: adminCheck } = await supabase
+          .from('allowed_admins')
+          .select('email')
+          .eq('email', session.user.email)
+          .single();
 
-      if (!adminCheck) {
-        await supabase.auth.signOut();
-        navigate('/auth');
-        return;
-      }
+        if (!adminCheck) {
+          await supabase.auth.signOut();
+          navigate('/auth');
+          return;
+        }
 
-      const { data, error } = await supabase
-        .from('leads')
-        .select('*')
-        .order('created_at', { ascending: false });
+        // Admin access confirmed, fetch leads
+        const { data } = await supabase
+          .from('leads')
+          .select('*')
+          .order('created_at', { ascending: false });
 
-      if (error) {
+        setLeads(data || []);
+      } catch (error) {
         toast({
           title: "Error",
-          description: "Failed to fetch leads",
+          description: "Failed to load admin dashboard",
           variant: "destructive",
         });
-        return;
+        navigate('/auth');
+      } finally {
+        setLoading(false);
       }
-
-      setLeads(data || []);
-      setLoading(false);
     };
 
-    checkAdmin();
-  }, []);
+    checkAccess();
+  }, [navigate]);
 
   const fetchLeads = async () => {
     try {

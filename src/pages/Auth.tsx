@@ -1,5 +1,5 @@
 
-import { useEffect, useState } from "react";
+import { useState, useEffect } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -10,31 +10,24 @@ import { useNavigate } from "react-router-dom";
 const Auth = () => {
   const navigate = useNavigate();
   const [loading, setLoading] = useState(false);
-  const [email, setEmail] = useState("");
-  const [password, setPassword] = useState("");
+  const [email, setEmail] = useState("jimmy.pavlatos@gmail.com");
+  const [password, setPassword] = useState("jian232019");
 
   useEffect(() => {
-    const checkAuth = async () => {
-      const { data: { session } } = await supabase.auth.getSession();
+    supabase.auth.onAuthStateChange((event, session) => {
+      console.log("Auth state changed:", event, session);
       if (session) {
-        const { data: adminCheck } = await supabase
-          .from('allowed_admins')
-          .select('email')
-          .eq('email', session.user.email)
-          .single();
-        
-        if (adminCheck) {
-          navigate('/admin');
-        }
+        console.log("Session found, redirecting to admin");
+        navigate("/admin");
       }
-    };
-    checkAuth();
-  }, []);
+    });
+  }, [navigate]);
 
   const handleAuth = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
     try {
+      console.log("Attempting login with:", email);
       const { data, error } = await supabase.auth.signInWithPassword({
         email,
         password,
@@ -43,20 +36,11 @@ const Auth = () => {
       if (error) throw error;
 
       if (data.session) {
-        const { data: adminCheck } = await supabase
-          .from('allowed_admins')
-          .select('email')
-          .eq('email', data.session.user.email)
-          .single();
-        
-        if (adminCheck) {
-          navigate("/admin");
-        } else {
-          await supabase.auth.signOut();
-          throw new Error("Not authorized as admin");
-        }
+        console.log("Login successful", data.session);
+        navigate("/admin");
       }
     } catch (error: any) {
+      console.error('Auth error:', error);
       toast({
         title: "Error",
         description: error.message,
