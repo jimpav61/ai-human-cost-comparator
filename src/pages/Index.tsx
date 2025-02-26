@@ -1,4 +1,3 @@
-
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { AIVsHumanCalculator } from '@/components/AIVsHumanCalculator';
 import { LeadForm } from '@/components/LeadForm';
@@ -144,11 +143,7 @@ export default function IndexPage() {
           {session ? (
             <>
               <div className="flex justify-end mb-4">
-                <Button 
-                  variant="outline" 
-                  onClick={handleSignOut}
-                  className="ml-2"
-                >
+                <Button variant="outline" onClick={handleSignOut} className="ml-2">
                   Sign Out
                 </Button>
               </div>
@@ -184,15 +179,9 @@ export default function IndexPage() {
             </>
           ) : (
             <>
-              <div className="mb-12">
-                <LeadForm onSubmit={handleLeadSubmit} />
-              </div>
-              <div className="mt-16 border-t pt-8">
-                <p className="text-center text-sm text-gray-500 mb-4">Admin access only</p>
-                <div className="max-w-md mx-auto bg-white p-8 rounded-lg shadow-sm border border-gray-100">
-                  <h2 className="text-lg font-medium mb-6 text-center text-gray-700">
-                    {isSignUp ? 'Create Admin Account' : 'Admin Sign In'}
-                  </h2>
+              <LeadForm onSubmit={handleLeadSubmit} />
+              <div className="mt-8">
+                <div className="max-w-md mx-auto">
                   <form onSubmit={handleAuth} className="space-y-4">
                     <div>
                       <label htmlFor="email" className="block text-sm font-medium text-gray-700">
