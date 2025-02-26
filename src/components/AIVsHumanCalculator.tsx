@@ -4,8 +4,13 @@ import { toast } from "@/components/ui/use-toast";
 import { useCalculator, type CalculatorInputs } from '@/hooks/useCalculator';
 import { CalculatorForm } from './calculator/CalculatorForm';
 import { ResultsDisplay } from './calculator/ResultsDisplay';
+import type { LeadData } from './calculator/types';
 
-export const AIVsHumanCalculator = () => {
+interface AIVsHumanCalculatorProps {
+  leadData: LeadData;
+}
+
+export const AIVsHumanCalculator: React.FC<AIVsHumanCalculatorProps> = ({ leadData }) => {
   const [reportGenerated, setReportGenerated] = useState(false);
   const [inputs, setInputs] = useState<CalculatorInputs>({
     aiType: 'voice',
@@ -54,6 +59,7 @@ export const AIVsHumanCalculator = () => {
               onGenerateReport={handleGenerateReport}
               reportGenerated={reportGenerated}
               inputs={inputs}
+              leadData={leadData}
             />
           </div>
         </div>
