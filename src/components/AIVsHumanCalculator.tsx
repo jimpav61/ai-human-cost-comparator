@@ -38,14 +38,6 @@ export const AIVsHumanCalculator = () => {
     setTimeout(() => setReportGenerated(false), 3000);
   };
 
-  const handleShareResults = () => {
-    toast({
-      title: "Share Results",
-      description: "Sharing functionality will be implemented in the next version.",
-      duration: 3000,
-    });
-  };
-
   return (
     <div className="max-w-7xl mx-auto">
       <div className="glass-morphism premium-shadow rounded-3xl overflow-hidden">
@@ -63,7 +55,6 @@ export const AIVsHumanCalculator = () => {
             <ResultsDisplay
               results={results}
               onGenerateReport={handleGenerateReport}
-              onShareResults={handleShareResults}
               reportGenerated={reportGenerated}
             />
           </div>
