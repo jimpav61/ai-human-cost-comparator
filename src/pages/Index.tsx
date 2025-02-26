@@ -6,6 +6,7 @@ import { AdminDashboard } from '@/components/AdminDashboard';
 import { useState, useEffect } from 'react';
 import { supabase } from '@/lib/supabase';
 import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
 import { toast } from '@/components/ui/use-toast';
 
 const queryClient = new QueryClient();
@@ -16,15 +17,16 @@ export default function IndexPage() {
   const [session, setSession] = useState<any>(null);
   const [isAdmin, setIsAdmin] = useState(false);
   const [loading, setLoading] = useState(true);
+  const [email, setEmail] = useState('');
+  const [password, setPassword] = useState('');
+  const [isSignUp, setIsSignUp] = useState(false);
 
   useEffect(() => {
-    // Get initial session
     supabase.auth.getSession().then(({ data: { session } }) => {
       setSession(session);
       checkUserRole(session?.user?.id);
     });
 
-    // Listen for auth changes
     const {
       data: { subscription },
     } = supabase.auth.onAuthStateChange((_event, session) => {
@@ -58,13 +60,28 @@ export default function IndexPage() {
     setLoading(false);
   };
 
-  const handleSignIn = async () => {
-    const { error } = await supabase.auth.signInWithOAuth({
-      provider: 'google',
-    });
-    if (error) {
+  const handleAuth = async (e: React.FormEvent) => {
+    e.preventDefault();
+    try {
+      const { error } = isSignUp 
+        ? await supabase.auth.signUp({ email, password })
+        : await supabase.auth.signInWithPassword({ email, password });
+
+      if (error) {
+        toast({
+          title: isSignUp ? "Sign Up Error" : "Sign In Error",
+          description: error.message,
+          variant: "destructive",
+        });
+      } else {
+        toast({
+          title: isSignUp ? "Check your email" : "Welcome back!",
+          description: isSignUp ? "Please check your email to verify your account." : "You have successfully signed in.",
+        });
+      }
+    } catch (error: any) {
       toast({
-        title: "Sign In Error",
+        title: "Error",
         description: error.message,
         variant: "destructive",
       });
@@ -98,8 +115,8 @@ export default function IndexPage() {
     <QueryClientProvider client={queryClient}>
       <div className="min-h-screen bg-gray-50 py-12">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex justify-end mb-4">
-            {session ? (
+          {session ? (
+            <div className="flex justify-end mb-4">
               <Button 
                 variant="outline" 
                 onClick={handleSignOut}
@@ -107,15 +124,51 @@ export default function IndexPage() {
               >
                 Sign Out
               </Button>
-            ) : (
-              <Button 
-                onClick={handleSignIn}
-                className="ml-2"
+            </div>
+          ) : (
+            <div className="max-w-md mx-auto bg-white p-8 rounded-lg shadow-md">
+              <h2 className="text-2xl font-bold mb-6 text-center">
+                {isSignUp ? 'Create an Account' : 'Sign In'}
+              </h2>
+              <form onSubmit={handleAuth} className="space-y-4">
+                <div>
+                  <label htmlFor="email" className="block text-sm font-medium text-gray-700">
+                    Email
+                  </label>
+                  <Input
+                    id="email"
+                    type="email"
+                    value={email}
+                    onChange={(e) => setEmail(e.target.value)}
+                    required
+                    className="mt-1"
+                  />
+                </div>
+                <div>
+                  <label htmlFor="password" className="block text-sm font-medium text-gray-700">
+                    Password
+                  </label>
+                  <Input
+                    id="password"
+                    type="password"
+                    value={password}
+                    onChange={(e) => setPassword(e.target.value)}
+                    required
+                    className="mt-1"
+                  />
+                </div>
+                <Button type="submit" className="w-full">
+                  {isSignUp ? 'Sign Up' : 'Sign In'}
+                </Button>
+              </form>
+              <button
+                onClick={() => setIsSignUp(!isSignUp)}
+                className="mt-4 text-sm text-center w-full text-gray-600 hover:text-gray-900"
               >
-                Sign In with Google
-              </Button>
-            )}
-          </div>
+                {isSignUp ? 'Already have an account? Sign In' : "Don't have an account? Sign Up"}
+              </button>
+            </div>
+          )}
 
           {!showAdmin && isAdmin && (
             <div className="text-right mb-4">
@@ -148,17 +201,7 @@ export default function IndexPage() {
                 )}
               </>
             )
-          ) : (
-            <div className="flex flex-col items-center justify-center min-h-[60vh]">
-              <div className="max-w-md w-full text-center">
-                <h2 className="text-2xl font-semibold mb-4">Welcome to AI Cost Calculator</h2>
-                <p className="text-gray-600 mb-8">Sign in to access the calculator and see how much you can save.</p>
-                <Button onClick={handleSignIn}>
-                  Sign In with Google
-                </Button>
-              </div>
-            </div>
-          )}
+          ) : null}
         </div>
       </div>
     </QueryClientProvider>
