@@ -1,4 +1,3 @@
-
 import React from 'react';
 import { Button } from "@/components/ui/button";
 import type { ResultsDisplayProps } from './types';
@@ -17,7 +16,8 @@ export const ResultsDisplay: React.FC<ResultsDisplayProps> = ({
   results,
   onGenerateReport,
   reportGenerated,
-  inputs
+  inputs,
+  leadData
 }) => {
   const businessSuggestions = [
     {
@@ -93,26 +93,12 @@ export const ResultsDisplay: React.FC<ResultsDisplayProps> = ({
   };
 
   const handleGenerateReport = async () => {
-    const contactInfo = window.prompt("Please enter your name to generate the report:");
-    const companyName = window.prompt("Please enter your company name:");
-    const email = window.prompt("Please enter your email address:");
-    const phoneNumber = window.prompt("Please enter your phone number (optional):");
-    
-    if (!contactInfo || !companyName || !email) {
-      toast({
-        title: "Missing Information",
-        description: "Please provide the required contact information to generate the report.",
-        variant: "destructive"
-      });
-      return;
-    }
-
     try {
       const doc = generatePDF({
-        contactInfo,
-        companyName,
-        email,
-        phoneNumber,
+        contactInfo: leadData.name,
+        companyName: leadData.companyName,
+        email: leadData.email,
+        phoneNumber: leadData.phoneNumber,
         results,
         businessSuggestions,
         aiPlacements
@@ -121,17 +107,17 @@ export const ResultsDisplay: React.FC<ResultsDisplayProps> = ({
       const { error } = await supabase
         .from('leads')
         .insert({
-          name: contactInfo,
-          company_name: companyName,
-          email: email,
-          phone_number: phoneNumber,
+          name: leadData.name,
+          company_name: leadData.companyName,
+          email: leadData.email,
+          phone_number: leadData.phoneNumber || null,
           calculator_inputs: inputs as unknown as Json,
           calculator_results: results as unknown as Json
         });
 
       if (error) throw error;
 
-      doc.save(`${companyName}-AI-Integration-Analysis.pdf`);
+      doc.save(`${leadData.companyName}-AI-Integration-Analysis.pdf`);
       
       toast({
         title: "Report Generated Successfully",

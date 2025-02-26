@@ -1,11 +1,19 @@
 
 import type { CalculationResults, CalculatorInputs } from '@/hooks/useCalculator';
 
+export interface LeadData {
+  name: string;
+  companyName: string;
+  email: string;
+  phoneNumber: string;
+}
+
 export interface ResultsDisplayProps {
   results: CalculationResults;
   onGenerateReport: () => void;
   reportGenerated: boolean;
   inputs: CalculatorInputs;
+  leadData: LeadData;
 }
 
 export interface PricingDetail {
