@@ -1,5 +1,5 @@
 
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -10,24 +10,13 @@ import { useNavigate } from "react-router-dom";
 const Auth = () => {
   const navigate = useNavigate();
   const [loading, setLoading] = useState(false);
-  const [email, setEmail] = useState("jimmy.pavlatos@gmail.com");
-  const [password, setPassword] = useState("jian232019");
-
-  useEffect(() => {
-    supabase.auth.onAuthStateChange((event, session) => {
-      console.log("Auth state changed:", event, session);
-      if (session) {
-        console.log("Session found, redirecting to admin");
-        navigate("/admin");
-      }
-    });
-  }, [navigate]);
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
 
   const handleAuth = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
     try {
-      console.log("Attempting login with:", email);
       const { data, error } = await supabase.auth.signInWithPassword({
         email,
         password,
@@ -36,11 +25,9 @@ const Auth = () => {
       if (error) throw error;
 
       if (data.session) {
-        console.log("Login successful", data.session);
         navigate("/admin");
       }
     } catch (error: any) {
-      console.error('Auth error:', error);
       toast({
         title: "Error",
         description: error.message,
