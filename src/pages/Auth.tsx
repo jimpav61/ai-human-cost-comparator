@@ -10,12 +10,14 @@ import { useNavigate } from "react-router-dom";
 const Auth = () => {
   const navigate = useNavigate();
   const [loading, setLoading] = useState(false);
-  const [email, setEmail] = useState("");
-  const [password, setPassword] = useState("");
+  const [email, setEmail] = useState("jimmy.pavlatos@gmail.com");
+  const [password, setPassword] = useState("jian232019");
 
   useEffect(() => {
     supabase.auth.onAuthStateChange((event, session) => {
+      console.log("Auth state changed:", event, session);
       if (session) {
+        console.log("Session found, redirecting to admin");
         navigate("/admin");
       }
     });
@@ -25,6 +27,7 @@ const Auth = () => {
     e.preventDefault();
     setLoading(true);
     try {
+      console.log("Attempting login with:", email);
       const { data, error } = await supabase.auth.signInWithPassword({
         email,
         password,
