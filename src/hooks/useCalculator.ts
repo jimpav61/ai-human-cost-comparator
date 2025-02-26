@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from 'react';
 import { AI_RATES, HUMAN_HOURLY_RATES } from '@/constants/pricing';
 import { supabase } from '@/lib/supabase';
@@ -96,7 +97,6 @@ export const useCalculator = (inputs: CalculatorInputs): CalculationResults => {
       const humanCostPerMinute = effectiveHourlyRate / 60;
       
       if (voiceAiCostPerMinute < humanCostPerMinute) {
-        // Break-even volume = Fixed Human Costs / (Human Cost per Unit - AI Cost per Unit)
         voiceBreakEven = Math.ceil(
           (effectiveHourlyRate * hoursPerMonth * requiredEmployees) / 
           ((humanCostPerMinute - voiceAiCostPerMinute) * inputs.avgCallDuration)
@@ -118,6 +118,19 @@ export const useCalculator = (inputs: CalculatorInputs): CalculationResults => {
     }
 
     const savings = totalHumanCost - totalAiCost;
+
+    const calculationResults = {
+      aiCostMonthly: {
+        voice: voiceCost,
+        chatbot: chatbotCost,
+        total: totalAiCost
+      },
+      humanCostMonthly: totalHumanCost,
+      monthlySavings: savings,
+      yearlySavings: savings * 12,
+      savingsPercentage: totalHumanCost > 0 ? (savings / totalHumanCost) * 100 : 0,
+      breakEvenPoint: { voice: voiceBreakEven, chatbot: chatBreakEven }
+    };
     
     const saveCalculation = async () => {
       try {
@@ -126,21 +139,7 @@ export const useCalculator = (inputs: CalculatorInputs): CalculationResults => {
           .insert([
             {
               input_data: inputs,
-              results: {
-                aiCostMonthly: {
-                  voice: voiceCost,
-                  chatbot: chatbotCost,
-                  total: totalAiCost
-                },
-                humanCostMonthly: totalHumanCost,
-                monthlySavings: savings,
-                yearlySavings: savings * 12,
-                savingsPercentage: totalHumanCost > 0 ? (savings / totalHumanCost) * 100 : 0,
-                breakEvenPoint: { 
-                  voice: voiceBreakEven, 
-                  chatbot: chatBreakEven 
-                }
-              }
+              results: calculationResults
             }
           ]);
 
@@ -158,19 +157,7 @@ export const useCalculator = (inputs: CalculatorInputs): CalculationResults => {
     };
 
     saveCalculation();
-
-    setResults({
-      aiCostMonthly: {
-        voice: voiceCost,
-        chatbot: chatbotCost,
-        total: totalAiCost
-      },
-      humanCostMonthly: totalHumanCost,
-      monthlySavings: savings,
-      yearlySavings: savings * 12,
-      savingsPercentage: totalHumanCost > 0 ? (savings / totalHumanCost) * 100 : 0,
-      breakEvenPoint: { voice: voiceBreakEven, chatbot: chatBreakEven }
-    });
+    setResults(calculationResults);
   }, [inputs]);
 
   return results;
