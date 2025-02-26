@@ -1,4 +1,3 @@
-
 import React from 'react';
 import { Button } from "@/components/ui/button";
 import type { CalculationResults } from '@/hooks/useCalculator';
@@ -135,6 +134,29 @@ export const ResultsDisplay: React.FC<ResultsDisplayProps> = ({
     <div className="space-y-8 animate-fadeIn">
       <div className="calculator-card">
         <h3 className="text-xl font-medium text-gray-900 mb-6">Results</h3>
+
+        {/* Human Resource Details */}
+        <div className="mb-6 p-4 bg-gray-50 rounded-lg">
+          <h4 className="text-sm font-semibold text-gray-700 mb-3">Employee Work Hours</h4>
+          <div className="grid grid-cols-2 gap-4 text-sm">
+            <div>
+              <p className="text-gray-600">Hours per Employee:</p>
+              <p className="font-medium">{results.humanHours.dailyPerEmployee} hours/day</p>
+            </div>
+            <div>
+              <p className="text-gray-600">Total Weekly Hours:</p>
+              <p className="font-medium">{formatNumber(results.humanHours.weeklyTotal)} hours</p>
+            </div>
+            <div>
+              <p className="text-gray-600">Total Monthly Hours:</p>
+              <p className="font-medium">{formatNumber(results.humanHours.monthlyTotal)} hours</p>
+            </div>
+            <div>
+              <p className="text-gray-600">Team Size:</p>
+              <p className="font-medium">{inputs.numEmployees} employees</p>
+            </div>
+          </div>
+        </div>
 
         {/* AI Placement Opportunities */}
         <div className="mb-6 p-4 bg-gray-50 rounded-lg">

@@ -11,8 +11,6 @@ export interface CalculatorInputs {
   chatVolume: number;
   avgChatLength: number;
   avgChatResolutionTime: number;
-  peakHourPercentage: number; // New field to account for peak hour coverage
-  overflowHandling: number; // New field for overflow percentage handled by AI
 }
 
 export interface CalculationResults {

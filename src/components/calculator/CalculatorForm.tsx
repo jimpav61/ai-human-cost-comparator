@@ -27,6 +27,23 @@ export const CalculatorForm: React.FC<CalculatorFormProps> = ({ inputs, onInputC
             ))}
           </select>
         </div>
+
+        {/* Number of Employees */}
+        <div className="mb-4">
+          <label className="block text-sm font-medium text-gray-700 mb-1">
+            Number of Employees
+          </label>
+          <input 
+            type="number" 
+            min="1"
+            value={inputs.numEmployees}
+            onChange={(e) => onInputChange('numEmployees', parseInt(e.target.value) || 1)}
+            className="calculator-input"
+          />
+          <p className="text-sm text-gray-500 mt-1">
+            Based on 8-hour workday, 5 days per week
+          </p>
+        </div>
         
         {/* AI Type Selection */}
         <div className="mb-4">
@@ -131,57 +148,6 @@ export const CalculatorForm: React.FC<CalculatorFormProps> = ({ inputs, onInputC
             </div>
           </>
         )}
-        
-        {/* Advanced Settings */}
-        <div className="pt-4 border-t border-gray-200 mt-6">
-          <h4 className="text-md font-medium text-gray-700 mb-4">Business Settings</h4>
-          
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            {/* Current Employees */}
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">
-                Current Number of Employees
-              </label>
-              <input 
-                type="number" 
-                min="1"
-                value={inputs.numEmployees}
-                onChange={(e) => onInputChange('numEmployees', parseInt(e.target.value) || 1)}
-                className="calculator-input"
-              />
-            </div>
-            
-            {/* Peak Hour Coverage */}
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">
-                Peak Hour Traffic (%)
-              </label>
-              <input 
-                type="number" 
-                min="0"
-                max="100"
-                value={inputs.peakHourPercentage}
-                onChange={(e) => onInputChange('peakHourPercentage', parseInt(e.target.value) || 0)}
-                className="calculator-input"
-              />
-            </div>
-            
-            {/* Overflow Handling */}
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">
-                AI Overflow Handling (%)
-              </label>
-              <input
-                type="number"
-                min="0"
-                max="100"
-                value={inputs.overflowHandling}
-                onChange={(e) => onInputChange('overflowHandling', parseInt(e.target.value))}
-                className="calculator-input"
-              />
-            </div>
-          </div>
-        </div>
       </div>
     </div>
   );
