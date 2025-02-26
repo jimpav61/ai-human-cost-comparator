@@ -3,7 +3,7 @@ import React from 'react';
 import { Button } from "@/components/ui/button";
 import type { ResultsDisplayProps } from './types';
 import { formatCurrency, formatPercent } from '@/utils/formatters';
-import { Download } from 'lucide-react';
+import { Download, TrendingUp, TrendingDown, DollarSign } from 'lucide-react';
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "@/components/ui/use-toast";
 import type { Json } from '@/integrations/supabase/types';
@@ -155,6 +155,75 @@ export const ResultsDisplay: React.FC<ResultsDisplayProps> = ({
         <div className="p-4 bg-white rounded-lg shadow-sm">
           <h3 className="text-lg font-semibold mb-4">Cost Analysis</h3>
           
+          {/* Monthly and Annual Cost Summary */}
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
+            <div className="p-4 bg-gray-50 rounded-lg">
+              <h4 className="text-sm font-semibold text-gray-700 mb-3">Monthly Overview</h4>
+              <div className="space-y-2">
+                <div className="flex justify-between">
+                  <span>Human Cost:</span>
+                  <span>{formatCurrency(results.humanCostMonthly)}</span>
+                </div>
+                <div className="flex justify-between">
+                  <span>AI Cost:</span>
+                  <span>{formatCurrency(results.aiCostMonthly.total)}</span>
+                </div>
+                <div className="flex justify-between font-semibold">
+                  <span>Monthly Savings:</span>
+                  <div className="flex items-center">
+                    {results.monthlySavings > 0 ? (
+                      <TrendingUp className="w-4 h-4 text-green-500 mr-1" />
+                    ) : (
+                      <TrendingDown className="w-4 h-4 text-red-500 mr-1" />
+                    )}
+                    {formatCurrency(results.monthlySavings)}
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <div className="p-4 bg-gray-50 rounded-lg">
+              <h4 className="text-sm font-semibold text-gray-700 mb-3">Annual Overview</h4>
+              <div className="space-y-2">
+                <div className="flex justify-between">
+                  <span>Human Cost:</span>
+                  <span>{formatCurrency(results.humanCostMonthly * 12)}</span>
+                </div>
+                <div className="flex justify-between">
+                  <span>AI Cost:</span>
+                  <span>{formatCurrency(results.aiCostMonthly.total * 12)}</span>
+                </div>
+                <div className="flex justify-between font-semibold">
+                  <span>Annual Savings:</span>
+                  <div className="flex items-center">
+                    {results.yearlySavings > 0 ? (
+                      <TrendingUp className="w-4 h-4 text-green-500 mr-1" />
+                    ) : (
+                      <TrendingDown className="w-4 h-4 text-red-500 mr-1" />
+                    )}
+                    {formatCurrency(results.yearlySavings)}
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          {/* Savings Indicator */}
+          <div className="mb-6 p-4 bg-gray-50 rounded-lg">
+            <h4 className="text-sm font-semibold text-gray-700 mb-3">Savings Overview</h4>
+            <div className="flex items-center justify-between">
+              <div className="flex items-center">
+                <DollarSign className={`w-5 h-5 mr-2 ${results.savingsPercentage > 0 ? 'text-green-500' : 'text-red-500'}`} />
+                <span className="text-lg font-semibold">
+                  {formatPercent(Math.abs(results.savingsPercentage))}
+                </span>
+              </div>
+              <span className="text-sm text-gray-600">
+                {results.savingsPercentage > 0 ? 'Cost Reduction' : 'Cost Increase'}
+              </span>
+            </div>
+          </div>
+
           {/* AI Pricing Details */}
           <div className="mb-6">
             <h4 className="text-sm font-semibold text-gray-700 mb-3">AI Service Pricing ({inputs.aiTier} tier)</h4>
