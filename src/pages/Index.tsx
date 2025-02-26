@@ -1,3 +1,4 @@
+
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { AIVsHumanCalculator } from '@/components/AIVsHumanCalculator';
 import { LeadForm } from '@/components/LeadForm';
@@ -141,92 +142,98 @@ export default function IndexPage() {
       <div className="min-h-screen bg-gray-50 py-12">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           {session ? (
-            <div className="flex justify-end mb-4">
-              <Button 
-                variant="outline" 
-                onClick={handleSignOut}
-                className="ml-2"
-              >
-                Sign Out
-              </Button>
-            </div>
-          ) : (
-            <div className="max-w-md mx-auto bg-white p-8 rounded-lg shadow-md">
-              <h2 className="text-2xl font-bold mb-6 text-center">
-                {isSignUp ? 'Create an Account' : 'Sign In'}
-              </h2>
-              <form onSubmit={handleAuth} className="space-y-4">
-                <div>
-                  <label htmlFor="email" className="block text-sm font-medium text-gray-700">
-                    Email
-                  </label>
-                  <Input
-                    id="email"
-                    type="email"
-                    value={email}
-                    onChange={(e) => setEmail(e.target.value)}
-                    required
-                    className="mt-1"
-                  />
-                </div>
-                <div>
-                  <label htmlFor="password" className="block text-sm font-medium text-gray-700">
-                    Password
-                  </label>
-                  <Input
-                    id="password"
-                    type="password"
-                    value={password}
-                    onChange={(e) => setPassword(e.target.value)}
-                    required
-                    className="mt-1"
-                  />
-                </div>
-                <Button type="submit" className="w-full">
-                  {isSignUp ? 'Sign Up' : 'Sign In'}
-                </Button>
-              </form>
-              <button
-                onClick={() => setIsSignUp(!isSignUp)}
-                className="mt-4 text-sm text-center w-full text-gray-600 hover:text-gray-900"
-              >
-                {isSignUp ? 'Already have an account? Sign In' : "Don't have an account? Sign Up"}
-              </button>
-            </div>
-          )}
-
-          {!showAdmin && isAdmin && (
-            <div className="text-right mb-4">
-              <button
-                onClick={() => setShowAdmin(true)}
-                className="text-sm text-gray-600 hover:text-brand-500"
-              >
-                Admin Dashboard →
-              </button>
-            </div>
-          )}
-
-          {session ? (
-            showAdmin && isAdmin ? (
-              <div>
-                <button
-                  onClick={() => setShowAdmin(false)}
-                  className="mb-4 text-sm text-gray-600 hover:text-brand-500"
+            <>
+              <div className="flex justify-end mb-4">
+                <Button 
+                  variant="outline" 
+                  onClick={handleSignOut}
+                  className="ml-2"
                 >
-                  ← Back to Calculator
-                </button>
-                <AdminDashboard />
+                  Sign Out
+                </Button>
               </div>
-            ) : (
-              <>
-                {!hasSubmittedLead ? (
-                  <LeadForm onSubmit={handleLeadSubmit} />
-                ) : (
-                  <AIVsHumanCalculator />
-                )}
-              </>
-            )
-          ) : null}
+              {showAdmin && isAdmin ? (
+                <div>
+                  <button
+                    onClick={() => setShowAdmin(false)}
+                    className="mb-4 text-sm text-gray-600 hover:text-brand-500"
+                  >
+                    ← Back to Calculator
+                  </button>
+                  <AdminDashboard />
+                </div>
+              ) : (
+                <>
+                  {!hasSubmittedLead ? (
+                    <LeadForm onSubmit={handleLeadSubmit} />
+                  ) : (
+                    <AIVsHumanCalculator />
+                  )}
+                </>
+              )}
+              {!showAdmin && isAdmin && (
+                <div className="text-right mt-4">
+                  <button
+                    onClick={() => setShowAdmin(true)}
+                    className="text-sm text-gray-600 hover:text-brand-500"
+                  >
+                    Admin Dashboard →
+                  </button>
+                </div>
+              )}
+            </>
+          ) : (
+            <>
+              <div className="mb-12">
+                <LeadForm onSubmit={handleLeadSubmit} />
+              </div>
+              <div className="mt-16 border-t pt-8">
+                <p className="text-center text-sm text-gray-500 mb-4">Admin access only</p>
+                <div className="max-w-md mx-auto bg-white p-8 rounded-lg shadow-sm border border-gray-100">
+                  <h2 className="text-lg font-medium mb-6 text-center text-gray-700">
+                    {isSignUp ? 'Create Admin Account' : 'Admin Sign In'}
+                  </h2>
+                  <form onSubmit={handleAuth} className="space-y-4">
+                    <div>
+                      <label htmlFor="email" className="block text-sm font-medium text-gray-700">
+                        Email
+                      </label>
+                      <Input
+                        id="email"
+                        type="email"
+                        value={email}
+                        onChange={(e) => setEmail(e.target.value)}
+                        required
+                        className="mt-1"
+                      />
+                    </div>
+                    <div>
+                      <label htmlFor="password" className="block text-sm font-medium text-gray-700">
+                        Password
+                      </label>
+                      <Input
+                        id="password"
+                        type="password"
+                        value={password}
+                        onChange={(e) => setPassword(e.target.value)}
+                        required
+                        className="mt-1"
+                      />
+                    </div>
+                    <Button type="submit" variant="outline" className="w-full">
+                      {isSignUp ? 'Sign Up' : 'Sign In'}
+                    </Button>
+                  </form>
+                  <button
+                    onClick={() => setIsSignUp(!isSignUp)}
+                    className="mt-4 text-sm text-center w-full text-gray-500 hover:text-gray-700"
+                  >
+                    {isSignUp ? 'Already have an account? Sign In' : "Don't have an account? Sign Up"}
+                  </button>
+                </div>
+              </div>
+            </>
+          )}
         </div>
       </div>
     </QueryClientProvider>
