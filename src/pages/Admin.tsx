@@ -39,12 +39,14 @@ const AdminDashboard = () => {
         return;
       }
 
+      console.log("User is authenticated, fetching leads...");
       fetchLeads();
     };
 
     checkUser();
 
     const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
+      console.log("Auth state changed:", event, session);
       if (!session) {
         navigate('/auth');
       }
@@ -57,13 +59,21 @@ const AdminDashboard = () => {
 
   const fetchLeads = async () => {
     try {
+      console.log("Starting fetchLeads...");
       const { data: { session } } = await supabase.auth.getSession();
-      if (!session) return;
+      console.log("Current session in fetchLeads:", session);
+      
+      if (!session) {
+        console.log("No session found in fetchLeads");
+        return;
+      }
 
       const { data, error } = await supabase
         .from('leads')
         .select('*')
         .order('created_at', { ascending: false });
+
+      console.log("Leads query response:", { data, error });
 
       if (error) throw error;
 
