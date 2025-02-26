@@ -1,4 +1,3 @@
-
 import { useEffect, useState } from 'react';
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "@/components/ui/use-toast";
@@ -91,7 +90,7 @@ const AdminDashboard = () => {
   const handleLogout = async () => {
     try {
       await supabase.auth.signOut();
-      // The navigation will be handled by the auth state change listener
+      window.location.href = '/'; // Force a full page reload to clear all state
     } catch (error) {
       console.error('Logout error:', error);
       toast({
@@ -103,6 +102,7 @@ const AdminDashboard = () => {
   };
 
   const generateReportPDF = (lead: Lead) => {
+    // Basic report for quick overview
     const leadData: LeadData = {
       name: lead.name,
       companyName: lead.company_name,
@@ -110,7 +110,7 @@ const AdminDashboard = () => {
       phoneNumber: lead.phone_number || ''
     };
 
-    const doc = generatePDF({
+    return generatePDF({
       contactInfo: leadData.name,
       companyName: leadData.companyName,
       email: leadData.email,
@@ -122,39 +122,98 @@ const AdminDashboard = () => {
           description: "Implement AI to provide round-the-clock support without increasing staff costs."
         },
         {
-          title: "Rapid Response Times",
-          description: "AI can handle multiple inquiries simultaneously, reducing customer wait times."
-        },
-        {
-          title: "Cost-Effective Scaling",
-          description: "Save on operational costs while maintaining service quality."
-        },
-        {
-          title: "Employee Focus",
-          description: "Free up your team to handle complex cases while AI manages routine inquiries."
+          title: "Cost Savings",
+          description: "Potential annual savings based on your inputs."
         }
       ],
       aiPlacements: [
         {
-          role: "Front-line Support",
+          role: "Customer Service",
           capabilities: [
-            "Handle routine customer inquiries instantly",
-            "Route complex issues to human agents",
-            "Available 24/7 without additional cost"
-          ]
-        },
-        {
-          role: "Customer Service Enhancement",
-          capabilities: [
-            "Reduce wait times significantly",
-            "Process multiple requests simultaneously",
-            "Maintain consistent service quality"
+            "Handle routine inquiries",
+            "Route complex issues to humans",
+            "24/7 availability"
           ]
         }
       ]
     });
+  };
 
-    return doc;
+  const generateProposalPDF = (lead: Lead) => {
+    const leadData: LeadData = {
+      name: lead.name,
+      companyName: lead.company_name,
+      email: lead.email,
+      phoneNumber: lead.phone_number || ''
+    };
+
+    return generatePDF({
+      contactInfo: leadData.name,
+      companyName: leadData.companyName,
+      email: leadData.email,
+      phoneNumber: leadData.phoneNumber,
+      results: lead.calculator_results,
+      businessSuggestions: [
+        {
+          title: "Comprehensive AI Integration Strategy",
+          description: "A tailored approach to revolutionize your customer service operations through strategic AI implementation."
+        },
+        {
+          title: "Phase 1: Initial Setup (Weeks 1-2)",
+          description: "Implementation of basic AI chatbot capabilities, team training, and initial configuration of voice AI systems."
+        },
+        {
+          title: "Phase 2: Advanced Integration (Weeks 3-4)",
+          description: "Deployment of advanced AI features, custom knowledge base development, and integration with existing systems."
+        },
+        {
+          title: "Phase 3: Optimization (Weeks 5-6)",
+          description: "Fine-tuning AI responses, implementing feedback loops, and optimizing performance metrics."
+        },
+        {
+          title: "Expected Outcomes",
+          description: `Based on your inputs, we project ${formatPercent(lead.calculator_results.savingsPercentage)} cost reduction and significant improvement in customer satisfaction.`
+        }
+      ],
+      aiPlacements: [
+        {
+          role: "Customer Service Transformation",
+          capabilities: [
+            "AI-powered 24/7 customer support system",
+            "Intelligent routing and escalation protocols",
+            "Real-time analytics and performance monitoring",
+            "Custom knowledge base integration"
+          ]
+        },
+        {
+          role: "Implementation Strategy",
+          capabilities: [
+            "Dedicated implementation team",
+            "Comprehensive staff training program",
+            "Regular performance reviews and adjustments",
+            "Ongoing technical support and maintenance"
+          ]
+        },
+        {
+          role: "Technical Integration",
+          capabilities: [
+            "Seamless integration with existing systems",
+            "Custom API development for specific needs",
+            "Scalable infrastructure setup",
+            "Security and compliance measures"
+          ]
+        },
+        {
+          role: "ROI Maximization",
+          capabilities: [
+            `Projected monthly savings: ${formatCurrency(lead.calculator_results.monthlySavings)}`,
+            `Projected annual savings: ${formatCurrency(lead.calculator_results.yearlySavings)}`,
+            "Continuous optimization for maximum efficiency",
+            "Regular ROI assessment and reporting"
+          ]
+        }
+      ]
+    });
   };
 
   const handleDownloadReport = (lead: Lead) => {
@@ -178,11 +237,11 @@ const AdminDashboard = () => {
 
   const handleCreateProposal = async (lead: Lead) => {
     try {
-      // First generate and download the PDF
-      const doc = generateReportPDF(lead);
+      // Generate and download the more detailed proposal PDF
+      const doc = generateProposalPDF(lead);
       doc.save(`${lead.company_name}-AI-Integration-Proposal.pdf`);
 
-      // Then update the lead's proposal_sent status
+      // Update the lead's proposal_sent status
       await supabase
         .from('leads')
         .update({ proposal_sent: true })
@@ -198,10 +257,10 @@ const AdminDashboard = () => {
 
       toast({
         title: "Success",
-        description: "Proposal downloaded and status updated",
+        description: "Detailed proposal downloaded and status updated",
       });
     } catch (error) {
-      console.error('Error updating proposal status:', error);
+      console.error('Error with proposal:', error);
       toast({
         title: "Error",
         description: "Failed to generate proposal",
