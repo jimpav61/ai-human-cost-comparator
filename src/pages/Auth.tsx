@@ -14,13 +14,11 @@ const Auth = () => {
   const [password, setPassword] = useState("");
 
   useEffect(() => {
-    const checkSession = async () => {
-      const { data: { session } } = await supabase.auth.getSession();
+    supabase.auth.onAuthStateChange((event, session) => {
       if (session) {
         navigate("/admin");
       }
-    };
-    checkSession();
+    });
   }, [navigate]);
 
   const handleAuth = async (e: React.FormEvent) => {
@@ -35,6 +33,7 @@ const Auth = () => {
       if (error) throw error;
 
       if (data.session) {
+        console.log("Login successful", data.session);
         navigate("/admin");
       }
     } catch (error: any) {
