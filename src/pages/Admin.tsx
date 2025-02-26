@@ -26,16 +26,44 @@ const AdminDashboard = () => {
   const navigate = useNavigate();
 
   useEffect(() => {
-    // Check initial session
-    supabase.auth.getSession().then(({ data: { session } }) => {
-      setSession(session);
-      if (!session) {
+    const checkAdmin = async () => {
+      try {
+        // First check if we have a session
+        const { data: { session } } = await supabase.auth.getSession();
+        setSession(session);
+
+        if (!session) {
+          console.log("No session found, redirecting to auth");
+          navigate('/auth');
+          return;
+        }
+
+        // Then check if user is in allowed_admins
+        const { data: adminCheck, error: adminError } = await supabase
+          .from('allowed_admins')
+          .select('email')
+          .eq('email', session.user.email)
+          .single();
+
+        if (adminError || !adminCheck) {
+          console.log("Not an admin, redirecting to auth");
+          await supabase.auth.signOut();
+          navigate('/auth');
+          return;
+        }
+
+        console.log("Admin access confirmed, fetching leads");
+        fetchLeads();
+      } catch (error) {
+        console.error('Error checking admin status:', error);
         navigate('/auth');
       }
-    });
+    };
 
-    // Listen for auth changes
-    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
+    checkAdmin();
+
+    const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event, session) => {
+      console.log("Auth state changed in admin:", event, session);
       setSession(session);
       if (!session) {
         navigate('/auth');
@@ -45,32 +73,32 @@ const AdminDashboard = () => {
     return () => subscription.unsubscribe();
   }, [navigate]);
 
-  useEffect(() => {
-    const fetchLeads = async () => {
-      if (!session) return;
+  const fetchLeads = async () => {
+    try {
+      console.log("Fetching leads...");
+      const { data, error } = await supabase
+        .from('leads')
+        .select('*')
+        .order('created_at', { ascending: false });
 
-      try {
-        const { data, error } = await supabase
-          .from('leads')
-          .select('*')
-          .order('created_at', { ascending: false });
-
-        if (error) throw error;
-        setLeads(data || []);
-      } catch (error) {
+      if (error) {
         console.error('Error fetching leads:', error);
-        toast({
-          title: "Error",
-          description: "Failed to fetch leads data",
-          variant: "destructive",
-        });
-      } finally {
-        setLoading(false);
+        throw error;
       }
-    };
-
-    fetchLeads();
-  }, [session]);
+      
+      console.log("Leads fetched:", data);
+      setLeads(data || []);
+    } catch (error) {
+      console.error('Error in fetchLeads:', error);
+      toast({
+        title: "Error",
+        description: "Failed to fetch leads data",
+        variant: "destructive",
+      });
+    } finally {
+      setLoading(false);
+    }
+  };
 
   if (!session) {
     return null;
@@ -80,35 +108,10 @@ const AdminDashboard = () => {
     return <div className="flex justify-center items-center min-h-screen">Loading...</div>;
   }
 
-  const handleLeadUpdate = () => {
-    setLoading(true);
-    const fetchLeads = async () => {
-      try {
-        const { data, error } = await supabase
-          .from('leads')
-          .select('*')
-          .order('created_at', { ascending: false });
-
-        if (error) throw error;
-        setLeads(data || []);
-      } catch (error) {
-        console.error('Error fetching leads:', error);
-        toast({
-          title: "Error",
-          description: "Failed to fetch leads data",
-          variant: "destructive",
-        });
-      } finally {
-        setLoading(false);
-      }
-    };
-    fetchLeads();
-  };
-
   return (
     <div className="container mx-auto py-10">
       <AdminHeader />
-      <LeadsTable leads={leads} onLeadUpdate={handleLeadUpdate} />
+      <LeadsTable leads={leads} onLeadUpdate={fetchLeads} />
     </div>
   );
 };
