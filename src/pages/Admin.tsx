@@ -25,49 +25,37 @@ const AdminDashboard = () => {
   const navigate = useNavigate();
 
   useEffect(() => {
-    // Simple one-time check on component mount
-    const checkAccess = async () => {
+    const checkSession = async () => {
       const { data: { session } } = await supabase.auth.getSession();
-      
       if (!session) {
         navigate('/auth');
         return;
       }
 
-      try {
-        const { data: adminCheck } = await supabase
-          .from('allowed_admins')
-          .select('email')
-          .eq('email', session.user.email)
-          .single();
+      // Only check admin status and fetch leads if we have a session
+      const { data: adminCheck } = await supabase
+        .from('allowed_admins')
+        .select('email')
+        .eq('email', session.user.email)
+        .single();
 
-        if (!adminCheck) {
-          await supabase.auth.signOut();
-          navigate('/auth');
-          return;
-        }
-
-        // Admin access confirmed, fetch leads
-        const { data } = await supabase
-          .from('leads')
-          .select('*')
-          .order('created_at', { ascending: false });
-
-        setLeads(data || []);
-      } catch (error) {
-        toast({
-          title: "Error",
-          description: "Failed to load admin dashboard",
-          variant: "destructive",
-        });
+      if (!adminCheck) {
         navigate('/auth');
-      } finally {
-        setLoading(false);
+        return;
       }
+
+      // If we're an admin, fetch the leads
+      const { data } = await supabase
+        .from('leads')
+        .select('*')
+        .order('created_at', { ascending: false });
+
+      setLeads(data || []);
+      setLoading(false);
     };
 
-    checkAccess();
-  }, [navigate]);
+    checkSession();
+  }, []);
 
   const fetchLeads = async () => {
     try {
