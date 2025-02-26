@@ -1,0 +1,28 @@
+
+import type { CalculationResults, CalculatorInputs } from '@/hooks/useCalculator';
+
+export interface ResultsDisplayProps {
+  results: CalculationResults;
+  onGenerateReport: () => void;
+  reportGenerated: boolean;
+  inputs: CalculatorInputs;
+}
+
+export interface PricingDetail {
+  title: string;
+  base: number | null;
+  rate: string;
+  totalMinutes?: number;
+  totalMessages?: number;
+  monthlyCost: number;
+}
+
+export interface BusinessSuggestion {
+  title: string;
+  description: string;
+}
+
+export interface AIPlacement {
+  role: string;
+  capabilities: string[];
+}
