@@ -2,12 +2,13 @@ import React from 'react';
 import { Button } from "@/components/ui/button";
 import type { CalculationResults, CalculatorInputs } from '@/hooks/useCalculator';
 import { formatCurrency, formatNumber, formatPercent } from '@/utils/formatters';
-import { Download } from 'lucide-react';
+import { Download, CurrencyDollar, Clock } from 'lucide-react';
 import jsPDF from 'jspdf';
 import autoTable from 'jspdf-autotable';
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "@/components/ui/use-toast";
 import type { Json } from '@/integrations/supabase/types';
+import { AI_RATES } from '@/constants/pricing';
 
 interface ResultsDisplayProps {
   results: CalculationResults;
@@ -59,6 +60,39 @@ export const ResultsDisplay: React.FC<ResultsDisplayProps> = ({
       ]
     }
   ];
+
+  const getCurrentTierRates = () => {
+    const voiceRate = AI_RATES.voice[inputs.aiTier];
+    const chatbotRate = AI_RATES.chatbot[inputs.aiTier];
+    return { voiceRate, chatbotRate };
+  };
+
+  const getPricingDetails = () => {
+    const { voiceRate, chatbotRate } = getCurrentTierRates();
+    const details = [];
+
+    if (inputs.aiType === 'voice' || inputs.aiType === 'both') {
+      details.push({
+        title: 'Voice AI Pricing',
+        base: null,
+        rate: `${formatCurrency(voiceRate)} per minute`,
+        totalMinutes: inputs.callVolume * inputs.avgCallDuration,
+        monthlyCost: results.aiCostMonthly.voice
+      });
+    }
+
+    if (inputs.aiType === 'chatbot' || inputs.aiType === 'both') {
+      details.push({
+        title: 'Chatbot Pricing',
+        base: formatCurrency(AI_RATES.chatbot[inputs.aiTier].base),
+        rate: `${formatCurrency(chatbotRate.perMessage)} per message`,
+        totalMessages: inputs.chatVolume * inputs.avgChatLength,
+        monthlyCost: results.aiCostMonthly.chatbot
+      });
+    }
+
+    return details;
+  };
 
   const generatePDF = async () => {
     const contactInfo = window.prompt("Please enter your name to generate the report:");
@@ -162,6 +196,41 @@ export const ResultsDisplay: React.FC<ResultsDisplayProps> = ({
       <div className="calculator-card">
         <h3 className="text-xl font-medium text-gray-900 mb-6">Results</h3>
 
+        {/* AI Pricing Details */}
+        <div className="mb-6 p-4 bg-brand-50 rounded-lg">
+          <h4 className="text-sm font-semibold text-gray-700 mb-3">AI Service Pricing ({inputs.aiTier} tier)</h4>
+          <div className="space-y-4">
+            {getPricingDetails().map((detail, index) => (
+              <div key={index} className="border-b border-gray-200 pb-3 last:border-0 last:pb-0">
+                <div className="flex justify-between items-center mb-2">
+                  <span className="font-medium text-gray-900">{detail.title}</span>
+                  <span className="text-brand-600 font-semibold">{formatCurrency(detail.monthlyCost)}/month</span>
+                </div>
+                <div className="text-sm text-gray-600 space-y-1">
+                  {detail.base && (
+                    <div className="flex items-center">
+                      <CurrencyDollar className="h-4 w-4 mr-1" />
+                      Base fee: {detail.base}/month
+                    </div>
+                  )}
+                  <div className="flex items-center">
+                    <Clock className="h-4 w-4 mr-1" />
+                    Usage rate: {detail.rate}
+                  </div>
+                  <div className="flex items-center">
+                    <span className="font-medium">Monthly volume:</span>
+                    <span className="ml-2">
+                      {detail.totalMessages 
+                        ? `${formatNumber(detail.totalMessages)} messages`
+                        : `${formatNumber(detail.totalMinutes)} minutes`}
+                    </span>
+                  </div>
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+
         {/* Human Resource Details */}
         <div className="mb-6 p-4 bg-gray-50 rounded-lg">
           <h4 className="text-sm font-semibold text-gray-700 mb-3">Employee Work Hours</h4>
@@ -224,7 +293,12 @@ export const ResultsDisplay: React.FC<ResultsDisplayProps> = ({
           
           <div className="flex justify-between items-center">
             <span className="text-gray-600">Monthly AI Cost:</span>
-            <span className="font-semibold">{formatCurrency(results.aiCostMonthly.total)}</span>
+            <div className="text-right">
+              <span className="font-semibold block">{formatCurrency(results.aiCostMonthly.total)}</span>
+              <span className="text-sm text-gray-500">
+                ({inputs.aiTier} tier)
+              </span>
+            </div>
           </div>
           
           <div className="border-t pt-4">
@@ -270,13 +344,15 @@ export const ResultsDisplay: React.FC<ResultsDisplayProps> = ({
           )}
         </div>
 
+        {/* Download Button */}
         <div className="mt-6">
           <Button
             onClick={generatePDF}
             className="w-full bg-brand-primary hover:bg-brand-primary/90"
+            disabled={reportGenerated}
           >
             <Download className="mr-2 h-4 w-4" />
-            Download Detailed Report
+            {reportGenerated ? 'Report Generated' : 'Download Detailed Report'}
           </Button>
         </div>
       </div>
