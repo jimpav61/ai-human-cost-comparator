@@ -64,59 +64,42 @@ export const useCalculator = (inputs: CalculatorInputs): CalculationResults => {
     const totalAiCost = voiceCost + chatbotCost;
     
     // Calculate human cost
-    const effectiveHourlyRate = HUMAN_HOURLY_RATES[inputs.role] * 
-      (1 + inputs.employeeBenefitsCost / 100);
+    const baseHourlyRate = HUMAN_HOURLY_RATES[inputs.role];
+    const hourlyRateWithBenefits = baseHourlyRate * (1 + inputs.employeeBenefitsCost / 100);
     
-    const hoursPerMonth = (inputs.workHoursPerWeek * 52) / 12;
-    const effectiveHoursPerMonth = hoursPerMonth * (inputs.employeeUtilization / 100);
+    // Calculate monthly hours (workHoursPerWeek * 52 weeks / 12 months)
+    const monthlyHoursPerEmployee = (inputs.workHoursPerWeek * 52) / 12;
     
-    let totalHumanTime = 0;
+    // Apply utilization rate
+    const effectiveMonthlyHours = monthlyHoursPerEmployee * (inputs.employeeUtilization / 100);
+    
+    // Calculate total human cost per month
+    const totalHumanCost = hourlyRateWithBenefits * monthlyHoursPerEmployee * inputs.numEmployees;
+    
+    // Calculate service capacity and required staff
+    let totalServiceMinutesRequired = 0;
     
     if (inputs.aiType === 'voice' || inputs.aiType === 'both') {
-      totalHumanTime += inputs.callVolume * inputs.avgCallDuration;
+      totalServiceMinutesRequired += (inputs.callVolume * inputs.avgCallDuration);
     }
     
     if (inputs.aiType === 'chatbot' || inputs.aiType === 'both') {
-      totalHumanTime += (inputs.chatVolume / inputs.avgChatLength) * inputs.avgChatResolutionTime;
+      totalServiceMinutesRequired += (inputs.chatVolume * inputs.avgChatResolutionTime);
     }
     
-    const totalHumanHours = totalHumanTime / 60;
-    const requiredEmployees = Math.max(inputs.numEmployees, 
-      Math.ceil(totalHumanHours / effectiveHoursPerMonth));
+    // Convert to hours
+    const totalServiceHoursRequired = totalServiceMinutesRequired / 60;
     
-    const totalHumanCost = effectiveHourlyRate * hoursPerMonth * requiredEmployees;
+    // Calculate required number of employees based on service volume
+    const minRequiredEmployees = Math.ceil(totalServiceHoursRequired / effectiveMonthlyHours);
     
-    // Calculate break-even points with fixed costs consideration
-    let voiceBreakEven = 0;
-    let chatBreakEven = 0;
+    // Use the larger of actual employees or required employees
+    const effectiveEmployees = Math.max(inputs.numEmployees, minRequiredEmployees);
+    
+    // Recalculate total human cost with effective number of employees
+    const adjustedHumanCost = hourlyRateWithBenefits * monthlyHoursPerEmployee * effectiveEmployees;
 
-    if (inputs.aiType === 'voice' || inputs.aiType === 'both') {
-      const voiceAiCostPerMinute = AI_RATES.voice[inputs.aiTier];
-      const humanCostPerMinute = effectiveHourlyRate / 60;
-      
-      if (voiceAiCostPerMinute < humanCostPerMinute) {
-        // Break-even volume = Fixed Human Costs / (Human Cost per Unit - AI Cost per Unit)
-        voiceBreakEven = Math.ceil(
-          (effectiveHourlyRate * hoursPerMonth * requiredEmployees) / 
-          ((humanCostPerMinute - voiceAiCostPerMinute) * inputs.avgCallDuration)
-        );
-      }
-    }
-    
-    if (inputs.aiType === 'chatbot' || inputs.aiType === 'both') {
-      const chatbotFixedCost = AI_RATES.chatbot[inputs.aiTier].base;
-      const chatbotVariableCost = AI_RATES.chatbot[inputs.aiTier].perMessage * inputs.avgChatLength;
-      const humanCostPerChat = (effectiveHourlyRate / 60) * inputs.avgChatResolutionTime;
-      
-      if ((chatbotFixedCost / inputs.chatVolume + chatbotVariableCost) < humanCostPerChat) {
-        chatBreakEven = Math.ceil(
-          chatbotFixedCost / 
-          (humanCostPerChat - chatbotVariableCost)
-        );
-      }
-    }
-
-    const savings = totalHumanCost - totalAiCost;
+    const savings = adjustedHumanCost - totalAiCost;
     
     setResults({
       aiCostMonthly: {
@@ -124,11 +107,14 @@ export const useCalculator = (inputs: CalculatorInputs): CalculationResults => {
         chatbot: chatbotCost,
         total: totalAiCost
       },
-      humanCostMonthly: totalHumanCost,
+      humanCostMonthly: adjustedHumanCost,
       monthlySavings: savings,
       yearlySavings: savings * 12,
-      savingsPercentage: totalHumanCost > 0 ? (savings / totalHumanCost) * 100 : 0,
-      breakEvenPoint: { voice: voiceBreakEven, chatbot: chatBreakEven }
+      savingsPercentage: adjustedHumanCost > 0 ? (savings / adjustedHumanCost) * 100 : 0,
+      breakEvenPoint: { 
+        voice: Math.ceil(voiceCost / (hourlyRateWithBenefits / 60)), 
+        chatbot: Math.ceil(chatbotCost / (hourlyRateWithBenefits / 60))
+      }
     });
   }, [inputs]);
 
