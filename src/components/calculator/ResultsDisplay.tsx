@@ -1,6 +1,7 @@
+
 import React from 'react';
 import { Button } from "@/components/ui/button";
-import type { CalculationResults } from '@/hooks/useCalculator';
+import type { CalculationResults, CalculatorInputs } from '@/hooks/useCalculator';
 import { formatCurrency, formatNumber, formatPercent } from '@/utils/formatters';
 import { Download } from 'lucide-react';
 import jsPDF from 'jspdf';
@@ -10,12 +11,14 @@ interface ResultsDisplayProps {
   results: CalculationResults;
   onGenerateReport: () => void;
   reportGenerated: boolean;
+  inputs: CalculatorInputs;
 }
 
 export const ResultsDisplay: React.FC<ResultsDisplayProps> = ({
   results,
   onGenerateReport,
-  reportGenerated
+  reportGenerated,
+  inputs
 }) => {
   const aiPlacements = [
     {

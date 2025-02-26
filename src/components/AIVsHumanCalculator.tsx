@@ -1,3 +1,4 @@
+
 import React, { useState } from 'react';
 import { toast } from "@/components/ui/use-toast";
 import { useCalculator, type CalculatorInputs } from '@/hooks/useCalculator';
@@ -52,6 +53,7 @@ export const AIVsHumanCalculator = () => {
               results={results}
               onGenerateReport={handleGenerateReport}
               reportGenerated={reportGenerated}
+              inputs={inputs}
             />
           </div>
         </div>
