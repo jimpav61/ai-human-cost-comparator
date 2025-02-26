@@ -1,4 +1,3 @@
-
 import React from 'react';
 import { Button } from "@/components/ui/button";
 import type { CalculationResults, CalculatorInputs } from '@/hooks/useCalculator';
@@ -156,6 +155,27 @@ export const ResultsDisplay: React.FC<ResultsDisplayProps> = ({
       doc.setTextColor(100, 100, 100);
       doc.text(suggestion.description, 20, recommendationY + 5);
       recommendationY += 15;
+    });
+
+    finalY = recommendationY + 10;
+
+    // AI Placement Opportunities
+    doc.setFontSize(14);
+    doc.text("AI Integration Opportunities", 20, finalY);
+    
+    let placementY = finalY + 10;
+    aiPlacements.forEach((placement) => {
+      doc.setFontSize(12);
+      doc.setTextColor(0, 0, 0);
+      doc.text(placement.role, 20, placementY);
+      
+      doc.setFontSize(10);
+      doc.setTextColor(100, 100, 100);
+      placement.capabilities.forEach((capability, index) => {
+        doc.text(`• ${capability}`, 25, placementY + 5 + (index * 5));
+      });
+      
+      placementY += 25;
     });
 
     // Save report to leads table
@@ -343,7 +363,7 @@ export const ResultsDisplay: React.FC<ResultsDisplayProps> = ({
               <div key={index} className="text-sm">
                 <p className="font-medium text-gray-700">{placement.role}</p>
                 <ul className="list-disc list-inside text-gray-600 pl-4 space-y-1">
-                  {placement.capabilities.slice(0, 2).map((capability, idx) => (
+                  {placement.capabilities.map((capability, idx) => (
                     <li key={idx}>{capability}</li>
                   ))}
                 </ul>
