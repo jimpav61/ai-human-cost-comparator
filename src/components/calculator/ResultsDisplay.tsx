@@ -2,7 +2,7 @@
 import React from 'react';
 import { Button } from "@/components/ui/button";
 import type { CalculationResults } from '@/hooks/useCalculator';
-import { formatCurrency, formatNumber, formatPercentage } from '@/utils/formatters';
+import { formatCurrency, formatNumber, formatPercent } from '@/utils/formatters';
 
 interface ResultsDisplayProps {
   results: CalculationResults;
@@ -76,7 +76,7 @@ export const ResultsDisplay: React.FC<ResultsDisplayProps> = ({
           <div className="flex justify-between items-center mt-2">
             <span className="text-gray-600">Savings Percentage:</span>
             <span className="font-semibold text-brand-600">
-              {formatPercentage(results.savingsPercentage)}
+              {formatPercent(results.savingsPercentage)}
             </span>
           </div>
         </div>
