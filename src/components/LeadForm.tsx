@@ -42,7 +42,7 @@ export const LeadForm: React.FC<LeadFormProps> = ({ onSubmit }) => {
     try {
       const { error } = await supabase
         .from('leads')
-        .insert({
+        .insert([{
           name: formData.name,
           company_name: formData.companyName,
           email: formData.email,
@@ -51,7 +51,7 @@ export const LeadForm: React.FC<LeadFormProps> = ({ onSubmit }) => {
           calculator_inputs: {},
           calculator_results: {},
           proposal_sent: false
-        });
+        }]);
 
       if (error) throw error;
 
