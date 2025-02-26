@@ -1,3 +1,4 @@
+
 import { useEffect, useState } from 'react';
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
@@ -41,8 +42,21 @@ const AdminDashboard = () => {
   const navigate = useNavigate();
 
   useEffect(() => {
+    checkUser();
     fetchLeads();
   }, []);
+
+  const checkUser = async () => {
+    const { data: { session } } = await supabase.auth.getSession();
+    if (!session) {
+      navigate('/');
+      toast({
+        title: "Access Denied",
+        description: "Please sign in to access the admin dashboard",
+        variant: "destructive",
+      });
+    }
+  };
 
   const handleLogout = async () => {
     try {
@@ -63,12 +77,20 @@ const AdminDashboard = () => {
 
   const fetchLeads = async () => {
     try {
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session) return;
+
       const { data, error } = await supabase
         .from('leads')
         .select('*')
         .order('created_at', { ascending: false });
 
-      if (error) throw error;
+      if (error) {
+        console.error('Error fetching leads:', error);
+        throw error;
+      }
+
+      console.log('Fetched leads:', data); // Debug log
       setLeads(data || []);
     } catch (error) {
       console.error('Error fetching leads:', error);
