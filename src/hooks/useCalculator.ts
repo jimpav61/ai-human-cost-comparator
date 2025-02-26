@@ -1,8 +1,6 @@
 
 import { useState, useEffect } from 'react';
 import { AI_RATES, HUMAN_HOURLY_RATES } from '@/constants/pricing';
-import { supabase } from '@/lib/supabase';
-import { toast } from "@/components/ui/use-toast";
 
 export interface CalculatorInputs {
   aiType: 'voice' | 'chatbot' | 'both';
@@ -97,6 +95,7 @@ export const useCalculator = (inputs: CalculatorInputs): CalculationResults => {
       const humanCostPerMinute = effectiveHourlyRate / 60;
       
       if (voiceAiCostPerMinute < humanCostPerMinute) {
+        // Break-even volume = Fixed Human Costs / (Human Cost per Unit - AI Cost per Unit)
         voiceBreakEven = Math.ceil(
           (effectiveHourlyRate * hoursPerMonth * requiredEmployees) / 
           ((humanCostPerMinute - voiceAiCostPerMinute) * inputs.avgCallDuration)
@@ -118,8 +117,8 @@ export const useCalculator = (inputs: CalculatorInputs): CalculationResults => {
     }
 
     const savings = totalHumanCost - totalAiCost;
-
-    const calculationResults = {
+    
+    setResults({
       aiCostMonthly: {
         voice: voiceCost,
         chatbot: chatbotCost,
@@ -130,34 +129,7 @@ export const useCalculator = (inputs: CalculatorInputs): CalculationResults => {
       yearlySavings: savings * 12,
       savingsPercentage: totalHumanCost > 0 ? (savings / totalHumanCost) * 100 : 0,
       breakEvenPoint: { voice: voiceBreakEven, chatbot: chatBreakEven }
-    };
-    
-    const saveCalculation = async () => {
-      try {
-        const { error } = await supabase
-          .from('calculations')
-          .insert([
-            {
-              input_data: inputs,
-              results: calculationResults
-            }
-          ]);
-
-        if (error) {
-          console.error('Error saving calculation:', error);
-          toast({
-            title: "Calculation Storage Error",
-            description: "Your calculation was completed but couldn't be saved.",
-            variant: "destructive",
-          });
-        }
-      } catch (err) {
-        console.error('Error saving calculation:', err);
-      }
-    };
-
-    saveCalculation();
-    setResults(calculationResults);
+    });
   }, [inputs]);
 
   return results;

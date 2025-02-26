@@ -1,308 +1,166 @@
 
-import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
-import { AIVsHumanCalculator } from '@/components/AIVsHumanCalculator';
-import { LeadForm } from '@/components/LeadForm';
-import { AdminDashboard } from '@/components/AdminDashboard';
-import { useState, useEffect } from 'react';
-import { supabase } from '@/lib/supabase';
-import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import { toast } from '@/components/ui/use-toast';
-import { Compass } from 'lucide-react';
+import { useState } from 'react';
+import { AIVsHumanCalculator } from "@/components/AIVsHumanCalculator";
+import Header from "@/components/Header";
+import { LeadForm, type LeadFormData } from "@/components/LeadForm";
+import { toast } from "@/components/ui/use-toast";
 
-const queryClient = new QueryClient();
+const Index = () => {
+  const [showCalculator, setShowCalculator] = useState(false);
+  const [leadData, setLeadData] = useState<LeadFormData | null>(null);
 
-export default function IndexPage() {
-  const [showAdmin, setShowAdmin] = useState(false);
-  const [showAdminForm, setShowAdminForm] = useState(false);
-  const [hasSubmittedLead, setHasSubmittedLead] = useState(false);
-  const [session, setSession] = useState<any>(null);
-  const [isAdmin, setIsAdmin] = useState(false);
-  const [loading, setLoading] = useState(true);
-  const [email, setEmail] = useState('');
-  const [password, setPassword] = useState('');
-  const [isSignUp, setIsSignUp] = useState(false);
-
-  useEffect(() => {
-    supabase.auth.getSession().then(({ data: { session } }) => {
-      setSession(session);
-      checkUserRole(session?.user?.id);
+  const handleLeadSubmit = (data: LeadFormData) => {
+    setLeadData(data);
+    setShowCalculator(true);
+    toast({
+      title: "Welcome " + data.name + "!",
+      description: "Now you can explore detailed AI cost savings for your business.",
     });
-
-    const {
-      data: { subscription },
-    } = supabase.auth.onAuthStateChange((_event, session) => {
-      setSession(session);
-      checkUserRole(session?.user?.id);
-    });
-
-    return () => subscription.unsubscribe();
-  }, []);
-
-  const checkUserRole = async (userId: string | undefined) => {
-    if (!userId) {
-      setIsAdmin(false);
-      setLoading(false);
-      return;
-    }
-
-    try {
-      const { data, error } = await supabase
-        .from('user_roles')
-        .select('role')
-        .eq('user_id', userId)
-        .single();
-
-      if (error) throw error;
-      setIsAdmin(data?.role === 'admin');
-    } catch (error) {
-      console.error('Error checking user role:', error);
-      setIsAdmin(false);
-    }
-    setLoading(false);
   };
-
-  const handleAuth = async (e: React.FormEvent) => {
-    e.preventDefault();
-    try {
-      if (isSignUp) {
-        const { data: allowedAdmin } = await supabase
-          .from('allowed_admins')
-          .select('email')
-          .eq('email', email.toLowerCase())
-          .single();
-
-        const { data: { user }, error: signUpError } = await supabase.auth.signUp({ 
-          email, 
-          password 
-        });
-
-        if (signUpError) throw signUpError;
-
-        if (user && allowedAdmin) {
-          const { error: roleError } = await supabase
-            .from('user_roles')
-            .insert({
-              user_id: user.id,
-              role: 'admin'
-            });
-
-          if (roleError) throw roleError;
-        }
-
-        toast({
-          title: "Check your email",
-          description: "Please check your email to verify your account.",
-        });
-      } else {
-        const { error: signInError } = await supabase.auth.signInWithPassword({ 
-          email, 
-          password 
-        });
-
-        if (signInError) throw signInError;
-
-        toast({
-          title: "Welcome back!",
-          description: "You have successfully signed in.",
-        });
-      }
-    } catch (error: any) {
-      toast({
-        title: isSignUp ? "Sign Up Error" : "Sign In Error",
-        description: error.message,
-        variant: "destructive",
-      });
-    }
-  };
-
-  const handleSignOut = async () => {
-    const { error } = await supabase.auth.signOut();
-    if (error) {
-      toast({
-        title: "Sign Out Error",
-        description: error.message,
-        variant: "destructive",
-      });
-    }
-  };
-
-  const handleLeadSubmit = (data: any) => {
-    setHasSubmittedLead(true);
-  };
-
-  if (loading) {
-    return (
-      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
-        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-gray-900"></div>
-      </div>
-    );
-  }
 
   return (
-    <QueryClientProvider client={queryClient}>
-      <div className="min-h-screen bg-gradient-to-b from-gray-50 to-white">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
-          {/* Logo and Hero Section */}
-          <div className="text-center mb-16">
-            <div className="flex justify-center mb-8">
-              <div className="bg-brand-500 p-4 rounded-full shadow-lg hover:shadow-xl transition-shadow duration-300">
-                <Compass className="h-12 w-12 text-white" />
-              </div>
-            </div>
-            <h1 className="text-5xl font-extrabold text-gray-900 mb-6 tracking-tight">
-              Supercharge Your Business with AI
-            </h1>
-            <p className="text-xl text-gray-600 max-w-3xl mx-auto leading-relaxed">
-              Discover how AI can transform your operations. Calculate your potential savings 
-              and see the impact on your bottom line.
+    <>
+      <Header />
+      <div className="min-h-screen bg-gradient-to-br from-brand-50 to-gray-100 py-12">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="text-center mb-12 animate-fadeIn">
+            <h1 className="text-4xl font-bold text-gray-900 mb-4">AiGent Compass</h1>
+            <p className="text-xl text-gray-600 max-w-3xl mx-auto">
+              Strategic AI Integration Calculator for Modern Business Operations
             </p>
           </div>
 
-          {/* Value Proposition Cards */}
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-8 mb-16">
-            <div className="calculator-card transform hover:-translate-y-1 transition-transform duration-300">
-              <h3 className="text-xl font-semibold text-gray-900 mb-3">Time Savings</h3>
-              <p className="text-gray-600 mb-4">Cut response times by up to 80% with AI-powered automation</p>
-              <div className="bg-gradient-to-br from-brand-100 to-brand-50 p-6 rounded-xl">
-                <img src="/placeholder.svg" alt="Time savings illustration" className="w-full h-32 object-contain" />
-              </div>
-            </div>
-            <div className="calculator-card transform hover:-translate-y-1 transition-transform duration-300">
-              <h3 className="text-xl font-semibold text-gray-900 mb-3">Cost Efficiency</h3>
-              <p className="text-gray-600 mb-4">Reduce operational costs by up to 60% with smart AI solutions</p>
-              <div className="bg-gradient-to-br from-brand-100 to-brand-50 p-6 rounded-xl">
-                <img src="/placeholder.svg" alt="Cost reduction illustration" className="w-full h-32 object-contain" />
-              </div>
-            </div>
-            <div className="calculator-card transform hover:-translate-y-1 transition-transform duration-300">
-              <h3 className="text-xl font-semibold text-gray-900 mb-3">Productivity Boost</h3>
-              <p className="text-gray-600 mb-4">Increase team efficiency by up to 40% with AI assistance</p>
-              <div className="bg-gradient-to-br from-brand-100 to-brand-50 p-6 rounded-xl">
-                <img src="/placeholder.svg" alt="Productivity boost illustration" className="w-full h-32 object-contain" />
+          {/* Sample ROI Showcase */}
+          <div className="mb-16 text-center">
+            <h2 className="text-2xl font-semibold text-gray-900 mb-4">
+              Real Business Impact
+            </h2>
+            <div className="bg-white/80 backdrop-blur-lg rounded-2xl border border-gray-100 shadow-lg p-8 max-w-4xl mx-auto">
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
+                <div className="text-center">
+                  <div className="text-3xl font-bold text-brand-500 mb-2">65%</div>
+                  <p className="text-gray-600">Average Cost Reduction</p>
+                </div>
+                <div className="text-center">
+                  <div className="text-3xl font-bold text-brand-500 mb-2">24/7</div>
+                  <p className="text-gray-600">Continuous Operation</p>
+                </div>
+                <div className="text-center">
+                  <div className="text-3xl font-bold text-brand-500 mb-2">3.5x</div>
+                  <p className="text-gray-600">Increased Efficiency</p>
+                </div>
               </div>
             </div>
           </div>
+          
+          {/* AI Placement and Function Overview */}
+          <div className="mb-16 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+            <div className="calculator-card p-6">
+              <div className="text-brand-500 mb-4">
+                <svg xmlns="http://www.w3.org/2000/svg" className="h-12 w-12 mx-auto" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 8h2a2 2 0 012 2v6a2 2 0 01-2 2h-2v4l-4-4H9a1.994 1.994 0 01-1.414-.586m0 0L11 14h4a2 2 0 002-2V6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2v4l.586-.586z" />
+                </svg>
+              </div>
+              <h3 className="text-xl font-semibold mb-3 text-gray-900">Voice AI Assistants</h3>
+              <p className="text-gray-600 mb-4">
+                Handle customer calls 24/7 with natural voice interactions. Perfect for:
+              </p>
+              <ul className="text-gray-600 text-left space-y-2">
+                <li>• Customer support inquiries</li>
+                <li>• Appointment scheduling</li>
+                <li>• Basic troubleshooting</li>
+                <li>• Information requests</li>
+              </ul>
+            </div>
 
-          {/* Calculator Section */}
-          <div className="mb-16">
-            <div className="calculator-card">
-              <div className="text-center max-w-3xl mx-auto mb-8">
-                <h2 className="text-3xl font-bold text-gray-900 mb-4">
-                  Calculate Your AI Savings
+            <div className="calculator-card p-6">
+              <div className="text-brand-500 mb-4">
+                <svg xmlns="http://www.w3.org/2000/svg" className="h-12 w-12 mx-auto" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 10h.01M12 10h.01M16 10h.01M9 16H5a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v8a2 2 0 01-2 2h-5l-5 5v-5z" />
+                </svg>
+              </div>
+              <h3 className="text-xl font-semibold mb-3 text-gray-900">Chat AI Assistants</h3>
+              <p className="text-gray-600 mb-4">
+                Instant messaging support for websites and apps. Ideal for:
+              </p>
+              <ul className="text-gray-600 text-left space-y-2">
+                <li>• Real-time customer service</li>
+                <li>• Product inquiries</li>
+                <li>• Order tracking</li>
+                <li>• FAQ handling</li>
+              </ul>
+            </div>
+
+            <div className="calculator-card p-6">
+              <div className="text-brand-500 mb-4">
+                <svg xmlns="http://www.w3.org/2000/svg" className="h-12 w-12 mx-auto" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
+                </svg>
+              </div>
+              <h3 className="text-xl font-semibold mb-3 text-gray-900">ROI Benefits</h3>
+              <p className="text-gray-600 mb-4">
+                Key advantages of AI integration:
+              </p>
+              <ul className="text-gray-600 text-left space-y-2">
+                <li>• 24/7 Availability</li>
+                <li>• Instant Response Times</li>
+                <li>• Scalable Operations</li>
+                <li>• Consistent Service Quality</li>
+              </ul>
+            </div>
+          </div>
+          
+          {!showCalculator ? (
+            <LeadForm onSubmit={handleLeadSubmit} />
+          ) : (
+            <div className="animate-fadeIn">
+              <div className="text-center mb-8">
+                <h2 className="text-2xl font-semibold text-gray-900">
+                  Welcome, {leadData?.name}!
                 </h2>
-                <p className="text-lg text-gray-600">
-                  Use our interactive calculator to see how much your business could save with AI automation
+                <p className="text-gray-600">
+                  Let's calculate potential AI savings for {leadData?.companyName}
                 </p>
               </div>
+              <AIVsHumanCalculator />
+            </div>
+          )}
 
-              {session ? (
-                <>
-                  <div className="flex justify-end mb-4">
-                    <Button variant="outline" onClick={handleSignOut} className="ml-2">
-                      Sign Out
-                    </Button>
-                  </div>
-                  {showAdmin && isAdmin ? (
-                    <div>
-                      <button
-                        onClick={() => setShowAdmin(false)}
-                        className="mb-4 text-sm text-gray-600 hover:text-brand-500"
-                      >
-                        ← Back to Calculator
-                      </button>
-                      <AdminDashboard />
-                    </div>
-                  ) : (
-                    <>
-                      {!hasSubmittedLead ? (
-                        <LeadForm onSubmit={handleLeadSubmit} />
-                      ) : (
-                        <AIVsHumanCalculator />
-                      )}
-                    </>
-                  )}
-                  {!showAdmin && isAdmin && (
-                    <div className="text-right mt-4">
-                      <button
-                        onClick={() => setShowAdmin(true)}
-                        className="text-sm text-gray-600 hover:text-brand-500"
-                      >
-                        Admin Dashboard →
-                      </button>
-                    </div>
-                  )}
-                </>
-              ) : (
-                <>
-                  <LeadForm onSubmit={handleLeadSubmit} />
-                  <div className="flex justify-center mt-8">
-                    {!showAdminForm ? (
-                      <Button 
-                        variant="ghost" 
-                        onClick={() => setShowAdminForm(true)}
-                        className="text-sm text-gray-500"
-                      >
-                        Admin Access
-                      </Button>
-                    ) : (
-                      <div className="max-w-md w-full">
-                        <div className="flex justify-between items-center mb-4">
-                          <h3 className="text-sm font-medium text-gray-700">Admin Access</h3>
-                          <Button 
-                            variant="ghost" 
-                            onClick={() => setShowAdminForm(false)}
-                            className="text-sm text-gray-500"
-                          >
-                            Cancel
-                          </Button>
-                        </div>
-                        <form onSubmit={handleAuth} className="space-y-4">
-                          <div>
-                            <label htmlFor="email" className="block text-sm font-medium text-gray-700">
-                              Email
-                            </label>
-                            <Input
-                              id="email"
-                              type="email"
-                              value={email}
-                              onChange={(e) => setEmail(e.target.value)}
-                              required
-                              className="mt-1"
-                            />
-                          </div>
-                          <div>
-                            <label htmlFor="password" className="block text-sm font-medium text-gray-700">
-                              Password
-                            </label>
-                            <Input
-                              id="password"
-                              type="password"
-                              value={password}
-                              onChange={(e) => setPassword(e.target.value)}
-                              required
-                              className="mt-1"
-                            />
-                          </div>
-                          <Button type="submit" variant="outline" className="w-full">
-                            {isSignUp ? 'Sign Up' : 'Sign In'}
-                          </Button>
-                        </form>
-                        <button
-                          onClick={() => setIsSignUp(!isSignUp)}
-                          className="mt-4 text-sm text-center w-full text-gray-500 hover:text-gray-700"
-                        >
-                          {isSignUp ? 'Already have an account? Sign In' : "Don't have an account? Sign Up"}
-                        </button>
-                      </div>
-                    )}
-                  </div>
-                </>
-              )}
+          {/* Footer Links */}
+          <div className="mt-16 text-center">
+            <div className="flex justify-center items-center space-x-4 text-sm text-gray-600">
+              <a 
+                href="https://chatsites.ai/terms-of-service"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="hover:text-brand-500 transition-colors"
+              >
+                Terms of Service
+              </a>
+              <span className="text-gray-300">|</span>
+              <a 
+                href="https://chatsites.ai/privacy-policy"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="hover:text-brand-500 transition-colors"
+              >
+                Privacy Policy
+              </a>
+              <span className="text-gray-300">|</span>
+              <a 
+                href="https://chatsites.ai"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="hover:text-brand-500 transition-colors"
+              >
+                Powered by ChatSites.ai
+              </a>
             </div>
           </div>
         </div>
       </div>
-    </QueryClientProvider>
+    </>
   );
-}
+};
+
+export default Index;
