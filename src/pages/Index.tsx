@@ -100,11 +100,11 @@ const Index = () => {
           
           {/* AI Placement and Function Overview */}
           <div className="mb-16 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
-            <div className="calculator-card p-6">
+            <div className="calculator-card p-6 h-full">
               <div className="text-brand-500 mb-4 flex items-center justify-center">
                 <svg 
                   xmlns="http://www.w3.org/2000/svg" 
-                  className="h-16 w-16" 
+                  className="h-12 w-12" 
                   viewBox="0 0 24 24" 
                   fill="none" 
                   stroke="currentColor" 
@@ -123,25 +123,25 @@ const Index = () => {
               </p>
               <ul className="text-gray-600 space-y-3">
                 <li className="flex items-center">
-                  <svg className="h-5 w-5 mr-2 text-brand-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <svg className="h-5 w-5 mr-2 text-brand-500 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
                   </svg>
                   Customer support inquiries
                 </li>
                 <li className="flex items-center">
-                  <svg className="h-5 w-5 mr-2 text-brand-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <svg className="h-5 w-5 mr-2 text-brand-500 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
                   </svg>
                   Appointment scheduling
                 </li>
                 <li className="flex items-center">
-                  <svg className="h-5 w-5 mr-2 text-brand-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <svg className="h-5 w-5 mr-2 text-brand-500 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
                   </svg>
                   Basic troubleshooting
                 </li>
                 <li className="flex items-center">
-                  <svg className="h-5 w-5 mr-2 text-brand-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <svg className="h-5 w-5 mr-2 text-brand-500 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
                   </svg>
                   Information requests
@@ -149,39 +149,79 @@ const Index = () => {
               </ul>
             </div>
 
-            <div className="calculator-card p-6">
-              <div className="text-brand-500 mb-4">
-                <svg xmlns="http://www.w3.org/2000/svg" className="h-12 w-12 mx-auto" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <div className="calculator-card p-6 h-full">
+              <div className="text-brand-500 mb-4 flex items-center justify-center">
+                <svg xmlns="http://www.w3.org/2000/svg" className="h-12 w-12" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 10h.01M12 10h.01M16 10h.01M9 16H5a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v8a2 2 0 01-2 2h-5l-5 5v-5z" />
                 </svg>
               </div>
-              <h3 className="text-xl font-semibold mb-3 text-gray-900">Chat AI Assistants</h3>
-              <p className="text-gray-600 mb-4">
+              <h3 className="text-xl font-semibold mb-4 text-center text-gray-900">Chat AI Assistants</h3>
+              <p className="text-gray-600 mb-6 text-center">
                 Instant messaging support for websites and apps. Ideal for:
               </p>
-              <ul className="text-gray-600 text-left space-y-2">
-                <li>• Real-time customer service</li>
-                <li>• Product inquiries</li>
-                <li>• Order tracking</li>
-                <li>• FAQ handling</li>
+              <ul className="text-gray-600 space-y-3">
+                <li className="flex items-center">
+                  <svg className="h-5 w-5 mr-2 text-brand-500 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                  </svg>
+                  Real-time customer service
+                </li>
+                <li className="flex items-center">
+                  <svg className="h-5 w-5 mr-2 text-brand-500 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                  </svg>
+                  Product inquiries
+                </li>
+                <li className="flex items-center">
+                  <svg className="h-5 w-5 mr-2 text-brand-500 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                  </svg>
+                  Order tracking
+                </li>
+                <li className="flex items-center">
+                  <svg className="h-5 w-5 mr-2 text-brand-500 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                  </svg>
+                  FAQ handling
+                </li>
               </ul>
             </div>
 
-            <div className="calculator-card p-6">
-              <div className="text-brand-500 mb-4">
-                <svg xmlns="http://www.w3.org/2000/svg" className="h-12 w-12 mx-auto" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <div className="calculator-card p-6 h-full">
+              <div className="text-brand-500 mb-4 flex items-center justify-center">
+                <svg xmlns="http://www.w3.org/2000/svg" className="h-12 w-12" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
                 </svg>
               </div>
-              <h3 className="text-xl font-semibold mb-3 text-gray-900">ROI Benefits</h3>
-              <p className="text-gray-600 mb-4">
+              <h3 className="text-xl font-semibold mb-4 text-center text-gray-900">ROI Benefits</h3>
+              <p className="text-gray-600 mb-6 text-center">
                 Key advantages of AI integration:
               </p>
-              <ul className="text-gray-600 text-left space-y-2">
-                <li>• 24/7 Availability</li>
-                <li>• Instant Response Times</li>
-                <li>• Scalable Operations</li>
-                <li>• Consistent Service Quality</li>
+              <ul className="text-gray-600 space-y-3">
+                <li className="flex items-center">
+                  <svg className="h-5 w-5 mr-2 text-brand-500 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                  </svg>
+                  24/7 Availability
+                </li>
+                <li className="flex items-center">
+                  <svg className="h-5 w-5 mr-2 text-brand-500 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                  </svg>
+                  Instant Response Times
+                </li>
+                <li className="flex items-center">
+                  <svg className="h-5 w-5 mr-2 text-brand-500 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                  </svg>
+                  Scalable Operations
+                </li>
+                <li className="flex items-center">
+                  <svg className="h-5 w-5 mr-2 text-brand-500 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                  </svg>
+                  Consistent Service Quality
+                </li>
               </ul>
             </div>
           </div>
