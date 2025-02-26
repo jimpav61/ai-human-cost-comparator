@@ -12,14 +12,11 @@ const Auth = () => {
   const [loading, setLoading] = useState(false);
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
-  const [isSignUp, setIsSignUp] = useState(false);
 
-  // Check if user is already logged in
   useEffect(() => {
     const checkSession = async () => {
       const { data: { session } } = await supabase.auth.getSession();
       if (session) {
-        // If already logged in, go to admin
         navigate("/admin");
       }
     };
@@ -30,23 +27,6 @@ const Auth = () => {
     e.preventDefault();
     setLoading(true);
     try {
-      // Check if email is in allowed_admins table
-      const { data: allowedAdmin } = await supabase
-        .from('allowed_admins')
-        .select('email')
-        .eq('email', email)
-        .single();
-
-      if (!allowedAdmin) {
-        toast({
-          title: "Access Denied",
-          description: "You are not authorized to access the admin dashboard",
-          variant: "destructive",
-        });
-        setLoading(false);
-        return;
-      }
-
       const { data, error } = await supabase.auth.signInWithPassword({
         email,
         password,
@@ -58,6 +38,7 @@ const Auth = () => {
         navigate("/admin");
       }
     } catch (error: any) {
+      console.error('Auth error:', error);
       toast({
         title: "Error",
         description: error.message,
