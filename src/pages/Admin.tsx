@@ -160,10 +160,33 @@ const AdminDashboard = () => {
   };
 
   const handleCreateProposal = async (lead: Lead) => {
-    toast({
-      title: "Coming Soon",
-      description: "Proposal generation will be implemented soon",
-    });
+    try {
+      // Update the lead's proposal_sent status
+      await supabase
+        .from('leads')
+        .update({ proposal_sent: true })
+        .eq('id', lead.id);
+
+      // Refresh leads list
+      const { data: updatedLeads } = await supabase
+        .from('leads')
+        .select('*')
+        .order('created_at', { ascending: false });
+      
+      setLeads(updatedLeads || []);
+
+      toast({
+        title: "Success",
+        description: "Proposal status updated successfully",
+      });
+    } catch (error) {
+      console.error('Error updating proposal status:', error);
+      toast({
+        title: "Error",
+        description: "Failed to update proposal status",
+        variant: "destructive",
+      });
+    }
   };
 
   if (loading) {
@@ -223,6 +246,7 @@ const AdminDashboard = () => {
                       size="sm"
                       variant="outline"
                       onClick={() => handleCreateProposal(lead)}
+                      disabled={lead.proposal_sent}
                     >
                       <FileText className="w-4 h-4" />
                     </Button>
