@@ -39,7 +39,7 @@ const AdminDashboard = () => {
       const { data: { session } } = await supabase.auth.getSession();
       
       if (!session) {
-        window.location.href = '/';
+        navigate('/auth');
         return;
       }
 
@@ -70,19 +70,19 @@ const AdminDashboard = () => {
           description: "You don't have access to this page",
           variant: "destructive",
         });
-        window.location.href = '/';
+        navigate('/auth');
       }
     };
 
     checkAccess();
-  }, []);
+  }, [navigate]);
 
   const handleLogout = async () => {
     try {
       await supabase.auth.signOut();
-      sessionStorage.clear(); // Clear any stored session data
-      localStorage.clear(); // Clear any stored local data
-      window.location.href = '/'; // Force a full page reload and redirect
+      sessionStorage.clear();
+      localStorage.clear();
+      navigate('/auth');
     } catch (error) {
       console.error('Logout error:', error);
       toast({
