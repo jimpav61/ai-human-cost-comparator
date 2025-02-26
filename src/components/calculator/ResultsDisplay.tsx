@@ -1,4 +1,3 @@
-
 import React from 'react';
 import { formatCurrency, formatPercent, formatNumber } from '@/utils/formatters';
 import type { CalculationResults } from '@/hooks/useCalculator';
@@ -111,10 +110,10 @@ export const ResultsDisplay: React.FC<ResultsDisplayProps> = ({
         <div className="flex space-x-4">
           <button 
             onClick={onGenerateReport}
-            disabled={reportGenerated}
-            className="flex-1 bg-brand-500 hover:bg-brand-600 text-white py-3 px-6 rounded-lg transition-all duration-200 disabled:opacity-50"
+            className="flex-1 bg-brand-500 hover:bg-brand-600 text-white py-3 px-6 rounded-lg transition-all duration-200"
+            disabled
           >
-            {reportGenerated ? 'Report Generated!' : 'Generate Report'}
+            Report Generation Coming Soon
           </button>
           
           <button 

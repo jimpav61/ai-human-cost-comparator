@@ -86,29 +86,33 @@ export const useCalculator = (inputs: CalculatorInputs): CalculationResults => {
     
     const totalHumanCost = effectiveHourlyRate * hoursPerMonth * requiredEmployees;
     
-    // Calculate break-even points
+    // Calculate break-even points with fixed costs consideration
     let voiceBreakEven = 0;
     let chatBreakEven = 0;
 
     if (inputs.aiType === 'voice' || inputs.aiType === 'both') {
-      const voiceCostPerCall = AI_RATES.voice[inputs.aiTier] * inputs.avgCallDuration;
-      const humanCostPerCall = (effectiveHourlyRate / 60) * inputs.avgCallDuration;
+      const voiceAiCostPerMinute = AI_RATES.voice[inputs.aiTier];
+      const humanCostPerMinute = effectiveHourlyRate / 60;
       
-      if (voiceCostPerCall < humanCostPerCall) {
-        voiceBreakEven = Math.ceil((effectiveHourlyRate * hoursPerMonth) / 
-          ((humanCostPerCall - voiceCostPerCall) * requiredEmployees));
+      if (voiceAiCostPerMinute < humanCostPerMinute) {
+        // Break-even volume = Fixed Human Costs / (Human Cost per Unit - AI Cost per Unit)
+        voiceBreakEven = Math.ceil(
+          (effectiveHourlyRate * hoursPerMonth * requiredEmployees) / 
+          ((humanCostPerMinute - voiceAiCostPerMinute) * inputs.avgCallDuration)
+        );
       }
     }
     
     if (inputs.aiType === 'chatbot' || inputs.aiType === 'both') {
-      const chatbotCostPerConversation = AI_RATES.chatbot[inputs.aiTier].perMessage * 
-        inputs.avgChatLength + (AI_RATES.chatbot[inputs.aiTier].base / 
-        (inputs.chatVolume / inputs.avgChatLength));
-      const humanCostPerConversation = (effectiveHourlyRate / 60) * inputs.avgChatResolutionTime;
+      const chatbotFixedCost = AI_RATES.chatbot[inputs.aiTier].base;
+      const chatbotVariableCost = AI_RATES.chatbot[inputs.aiTier].perMessage * inputs.avgChatLength;
+      const humanCostPerChat = (effectiveHourlyRate / 60) * inputs.avgChatResolutionTime;
       
-      if (chatbotCostPerConversation < humanCostPerConversation) {
-        chatBreakEven = Math.ceil((effectiveHourlyRate * hoursPerMonth) / 
-          ((humanCostPerConversation - chatbotCostPerConversation) * requiredEmployees));
+      if ((chatbotFixedCost / inputs.chatVolume + chatbotVariableCost) < humanCostPerChat) {
+        chatBreakEven = Math.ceil(
+          chatbotFixedCost / 
+          (humanCostPerChat - chatbotVariableCost)
+        );
       }
     }
 

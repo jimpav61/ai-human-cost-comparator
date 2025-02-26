@@ -12,11 +12,6 @@ const Header = () => {
               <span className="text-gray-500 text-sm ml-2">by chatsites.ai</span>
             </div>
           </div>
-          <div className="flex items-center">
-            <button className="bg-brand-500 hover:bg-brand-600 text-white font-medium py-2 px-4 rounded-md transition-colors duration-200">
-              Get Started
-            </button>
-          </div>
         </div>
       </div>
     </nav>
