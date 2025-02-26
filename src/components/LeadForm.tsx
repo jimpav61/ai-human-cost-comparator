@@ -27,6 +27,7 @@ export const LeadForm: React.FC<LeadFormProps> = ({ onSubmit }) => {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    console.log("Form submission started", formData);
     
     if (!formData.name || !formData.companyName || !formData.email) {
       toast({
@@ -53,9 +54,15 @@ export const LeadForm: React.FC<LeadFormProps> = ({ onSubmit }) => {
           proposal_sent: false
         }]);
 
-      if (error) throw error;
+      if (error) {
+        console.error('Supabase error:', error);
+        throw error;
+      }
 
-      // Reset form
+      // Call the onSubmit prop with form data
+      onSubmit(formData);
+      
+      // Reset form after successful submission
       setFormData({
         name: '',
         companyName: '',
@@ -64,9 +71,6 @@ export const LeadForm: React.FC<LeadFormProps> = ({ onSubmit }) => {
         website: ''
       });
 
-      // Call the onSubmit prop with form data
-      onSubmit(formData);
-      
       toast({
         title: "Success!",
         description: "Your information has been submitted successfully.",
@@ -76,7 +80,7 @@ export const LeadForm: React.FC<LeadFormProps> = ({ onSubmit }) => {
       console.error('Error submitting lead:', error);
       toast({
         title: "Submission Error",
-        description: "There was an error submitting your information. Please try again.",
+        description: error.message || "There was an error submitting your information. Please try again.",
         variant: "destructive",
       });
     } finally {
