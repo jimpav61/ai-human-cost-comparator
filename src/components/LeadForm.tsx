@@ -1,6 +1,7 @@
 
 import React, { useState } from 'react';
 import { toast } from "@/components/ui/use-toast";
+import { supabase } from "@/integrations/supabase/client";
 
 interface LeadFormProps {
   onSubmit: (data: LeadFormData) => void;
@@ -37,31 +38,27 @@ export const LeadForm: React.FC<LeadFormProps> = ({ onSubmit }) => {
     setIsSubmitting(true);
 
     try {
-      // Replace this URL with your Zapier webhook URL
-      const webhookUrl = import.meta.env.VITE_ZAPIER_WEBHOOK_URL;
-      
-      if (!webhookUrl) {
-        console.error('Zapier webhook URL not configured');
-        throw new Error('Lead capture system not configured');
-      }
+      // Store lead in Supabase
+      const { error } = await supabase
+        .from('leads')
+        .insert({
+          name: formData.name,
+          company_name: formData.companyName,
+          email: formData.email,
+          phone_number: formData.phoneNumber || null,
+          calculator_inputs: {}, // This will be populated when calculator is used
+          calculator_results: {} // This will be populated when calculator is used
+        });
 
-      // Send data to Zapier
-      const response = await fetch(webhookUrl, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        mode: 'no-cors', // Required for Zapier webhooks
-        body: JSON.stringify({
-          ...formData,
-          timestamp: new Date().toISOString(),
-          source: window.location.href,
-        }),
-      });
+      if (error) throw error;
 
-      // Since we're using no-cors, we won't get a proper response
-      // Instead, we'll assume success and show a message
+      // Call the onSubmit prop to notify parent component
       onSubmit(formData);
+      
+      toast({
+        title: "Success!",
+        description: "Your information has been submitted successfully.",
+      });
 
     } catch (error) {
       console.error('Error submitting lead:', error);
