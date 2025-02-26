@@ -11,6 +11,7 @@ import { PricingDetails } from './PricingDetails';
 import { TierComparison } from './TierComparison';
 import { BusinessSuggestionsAndPlacements } from './BusinessSuggestionsAndPlacements';
 import { generatePDF } from './pdfGenerator';
+import { AI_RATES } from '@/constants/pricing';
 
 export const ResultsDisplay: React.FC<ResultsDisplayProps> = ({
   results,
@@ -60,22 +61,31 @@ export const ResultsDisplay: React.FC<ResultsDisplayProps> = ({
     const details = [];
 
     if (inputs.aiType === 'voice' || inputs.aiType === 'both') {
+      const totalMinutes = inputs.callVolume * inputs.avgCallDuration;
+      const voiceRate = AI_RATES.voice[inputs.aiTier];
+      const voiceCost = totalMinutes * voiceRate;
+      
       details.push({
         title: 'Voice AI Pricing',
         base: null,
-        rate: `${formatCurrency(results.aiCostMonthly.voice)} per minute`,
-        totalMinutes: inputs.callVolume * inputs.avgCallDuration,
-        monthlyCost: results.aiCostMonthly.voice
+        rate: `${formatCurrency(voiceRate)} per minute`,
+        totalMinutes: totalMinutes,
+        monthlyCost: voiceCost
       });
     }
 
     if (inputs.aiType === 'chatbot' || inputs.aiType === 'both') {
+      const totalMessages = inputs.chatVolume * inputs.avgChatLength;
+      const chatbotRates = AI_RATES.chatbot[inputs.aiTier];
+      const messageCost = totalMessages * chatbotRates.perMessage;
+      const totalChatbotCost = chatbotRates.base + messageCost;
+      
       details.push({
         title: 'Chatbot Pricing',
-        base: results.aiCostMonthly.chatbot,
-        rate: 'Per message',
-        totalMessages: inputs.chatVolume * inputs.avgChatLength,
-        monthlyCost: results.aiCostMonthly.chatbot
+        base: chatbotRates.base,
+        rate: `${formatCurrency(chatbotRates.perMessage)} per message`,
+        totalMessages: totalMessages,
+        monthlyCost: totalChatbotCost
       });
     }
 

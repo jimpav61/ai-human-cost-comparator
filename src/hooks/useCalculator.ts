@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from 'react';
 import { AI_RATES, HUMAN_HOURLY_RATES } from '@/constants/pricing';
 
@@ -58,7 +59,7 @@ export const useCalculator = (inputs: CalculatorInputs): CalculationResults => {
     const WEEKS_PER_YEAR = 52;
     const MONTHS_PER_YEAR = 12;
 
-    // Calculate human hours based on number of employees
+    // Calculate human hours
     const dailyHoursPerEmployee = HOURS_PER_SHIFT;
     const weeklyHoursPerEmployee = dailyHoursPerEmployee * DAYS_PER_WEEK;
     const weeklyTotalHours = weeklyHoursPerEmployee * inputs.numEmployees;
@@ -68,8 +69,6 @@ export const useCalculator = (inputs: CalculatorInputs): CalculationResults => {
     // Calculate human cost
     const baseHourlyRate = HUMAN_HOURLY_RATES[inputs.role];
     const hourlyRateWithBenefits = baseHourlyRate;
-    
-    // Calculate monthly human cost based on total hours
     const totalHumanCost = hourlyRateWithBenefits * monthlyTotalHours;
 
     // Calculate AI costs
@@ -83,34 +82,12 @@ export const useCalculator = (inputs: CalculatorInputs): CalculationResults => {
     
     if (inputs.aiType === 'chatbot' || inputs.aiType === 'both') {
       const totalMessages = inputs.chatVolume * inputs.avgChatLength;
-      chatbotCost = AI_RATES.chatbot[inputs.aiTier].base + 
-        (totalMessages * AI_RATES.chatbot[inputs.aiTier].perMessage);
+      const chatbotRates = AI_RATES.chatbot[inputs.aiTier];
+      chatbotCost = chatbotRates.base + (totalMessages * chatbotRates.perMessage);
     }
     
     const totalAiCost = voiceCost + chatbotCost;
-    
-    // Calculate service requirements
-    let totalServiceMinutesRequired = 0;
-    
-    if (inputs.aiType === 'voice' || inputs.aiType === 'both') {
-      totalServiceMinutesRequired += (inputs.callVolume * inputs.avgCallDuration);
-    }
-    
-    if (inputs.aiType === 'chatbot' || inputs.aiType === 'both') {
-      totalServiceMinutesRequired += (inputs.chatVolume * inputs.avgChatResolutionTime);
-    }
-    
-    // Calculate effective work hours considering utilization rate
-    const effectiveMonthlyHours = monthlyTotalHours;
-    const totalServiceHoursRequired = totalServiceMinutesRequired / 60;
-    
-    // Calculate required number of employees based on service volume
-    const minRequiredEmployees = Math.ceil(totalServiceHoursRequired / effectiveMonthlyHours);
-    const effectiveEmployees = Math.max(inputs.numEmployees, minRequiredEmployees);
-    
-    // Recalculate final human cost based on effective employees
-    const finalHumanCost = hourlyRateWithBenefits * monthlyTotalHours * (effectiveEmployees / inputs.numEmployees);
-    const savings = finalHumanCost - totalAiCost;
+    const savings = totalHumanCost - totalAiCost;
     
     setResults({
       aiCostMonthly: {
@@ -118,10 +95,10 @@ export const useCalculator = (inputs: CalculatorInputs): CalculationResults => {
         chatbot: chatbotCost,
         total: totalAiCost
       },
-      humanCostMonthly: finalHumanCost,
+      humanCostMonthly: totalHumanCost,
       monthlySavings: savings,
       yearlySavings: savings * 12,
-      savingsPercentage: finalHumanCost > 0 ? (savings / finalHumanCost) * 100 : 0,
+      savingsPercentage: totalHumanCost > 0 ? (savings / totalHumanCost) * 100 : 0,
       breakEvenPoint: { 
         voice: Math.ceil(voiceCost / (hourlyRateWithBenefits / 60)), 
         chatbot: Math.ceil(chatbotCost / (hourlyRateWithBenefits / 60))
