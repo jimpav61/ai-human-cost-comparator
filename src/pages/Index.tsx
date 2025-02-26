@@ -16,6 +16,7 @@ const Index = () => {
   const [adminEmail, setAdminEmail] = useState("");
   const [adminPassword, setAdminPassword] = useState("");
   const [isLoading, setIsLoading] = useState(false);
+  const [isRegistering, setIsRegistering] = useState(false);
 
   const handleLeadSubmit = (data: LeadFormData) => {
     setLeadData(data);
@@ -26,21 +27,31 @@ const Index = () => {
     });
   };
 
-  const handleAdminLogin = async (e: React.FormEvent) => {
+  const handleAdminAuth = async (e: React.FormEvent) => {
     e.preventDefault();
     setIsLoading(true);
     try {
-      const { error } = await supabase.auth.signInWithPassword({
-        email: adminEmail,
-        password: adminPassword,
-      });
-      
-      if (error) throw error;
-      
-      toast({
-        title: "Success",
-        description: "Logged in as admin successfully",
-      });
+      if (isRegistering) {
+        const { error } = await supabase.auth.signUp({
+          email: adminEmail,
+          password: adminPassword,
+        });
+        if (error) throw error;
+        toast({
+          title: "Success",
+          description: "Admin account created successfully. Please check your email to verify your account.",
+        });
+      } else {
+        const { error } = await supabase.auth.signInWithPassword({
+          email: adminEmail,
+          password: adminPassword,
+        });
+        if (error) throw error;
+        toast({
+          title: "Success",
+          description: "Logged in as admin successfully",
+        });
+      }
       setShowAdminForm(false);
     } catch (error: any) {
       toast({
@@ -205,7 +216,7 @@ const Index = () => {
             <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
               <div className="bg-white rounded-lg p-6 max-w-md w-full">
                 <div className="flex justify-between items-center mb-4">
-                  <h3 className="text-lg font-semibold">Admin Login</h3>
+                  <h3 className="text-lg font-semibold">Admin {isRegistering ? 'Registration' : 'Login'}</h3>
                   <button 
                     onClick={() => setShowAdminForm(false)}
                     className="text-gray-500 hover:text-gray-700"
@@ -213,7 +224,7 @@ const Index = () => {
                     ✕
                   </button>
                 </div>
-                <form onSubmit={handleAdminLogin} className="space-y-4">
+                <form onSubmit={handleAdminAuth} className="space-y-4">
                   <div>
                     <Label htmlFor="adminEmail">Email</Label>
                     <Input
@@ -235,8 +246,17 @@ const Index = () => {
                     />
                   </div>
                   <Button type="submit" className="w-full" disabled={isLoading}>
-                    {isLoading ? "Logging in..." : "Login as Admin"}
+                    {isLoading ? "Processing..." : (isRegistering ? "Register" : "Login")}
                   </Button>
+                  <div className="text-center mt-4">
+                    <button
+                      type="button"
+                      onClick={() => setIsRegistering(!isRegistering)}
+                      className="text-sm text-brand-500 hover:underline"
+                    >
+                      {isRegistering ? "Already have an account? Login" : "Need an account? Register"}
+                    </button>
+                  </div>
                 </form>
               </div>
             </div>
