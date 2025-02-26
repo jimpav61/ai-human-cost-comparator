@@ -1,12 +1,6 @@
+
 import { Button } from "@/components/ui/button";
 import { Link } from "react-router-dom";
-import Hero from "@/components/Hero";
-import Pitch from "@/components/Pitch";
-import Features from "@/components/Features";
-import Pricing from "@/components/Pricing";
-import Testimonials from "@/components/Testimonials";
-import FAQ from "@/components/FAQ";
-import Footer from "@/components/Footer";
 
 const Index = () => {
   return (
@@ -18,13 +12,15 @@ const Index = () => {
           </Link>
         </div>
       </nav>
-      <Hero />
-      <Pitch />
-      <Features />
-      <Pricing />
-      <Testimonials />
-      <FAQ />
-      <Footer />
+      <main className="container mx-auto px-4 py-16 text-center">
+        <h1 className="text-4xl font-bold mb-6">Welcome to ChatSites.ai</h1>
+        <p className="text-xl text-gray-600 mb-8">
+          Transform your business with AI-powered solutions
+        </p>
+        <Button asChild>
+          <Link to="/auth">Get Started</Link>
+        </Button>
+      </main>
     </div>
   );
 };
