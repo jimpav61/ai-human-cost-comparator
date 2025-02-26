@@ -1,0 +1,132 @@
+
+import { useState, useEffect } from 'react';
+import { AI_RATES, HUMAN_HOURLY_RATES } from '@/constants/pricing';
+
+export interface CalculatorInputs {
+  aiType: 'voice' | 'chatbot' | 'both';
+  aiTier: 'basic' | 'standard' | 'premium';
+  role: keyof typeof HUMAN_HOURLY_RATES;
+  workHoursPerWeek: number;
+  numEmployees: number;
+  employeeBenefitsCost: number;
+  employeeUtilization: number;
+  callVolume: number;
+  avgCallDuration: number;
+  chatVolume: number;
+  avgChatLength: number;
+  avgChatResolutionTime: number;
+}
+
+export interface CalculationResults {
+  aiCostMonthly: {
+    voice: number;
+    chatbot: number;
+    total: number;
+  };
+  humanCostMonthly: number;
+  monthlySavings: number;
+  yearlySavings: number;
+  savingsPercentage: number;
+  breakEvenPoint: {
+    voice: number;
+    chatbot: number;
+  };
+}
+
+export const useCalculator = (inputs: CalculatorInputs): CalculationResults => {
+  const [results, setResults] = useState<CalculationResults>({
+    aiCostMonthly: { voice: 0, chatbot: 0, total: 0 },
+    humanCostMonthly: 0,
+    monthlySavings: 0,
+    yearlySavings: 0,
+    savingsPercentage: 0,
+    breakEvenPoint: { voice: 0, chatbot: 0 }
+  });
+
+  useEffect(() => {
+    // Calculate AI costs
+    let voiceCost = 0;
+    let chatbotCost = 0;
+    
+    // Voice AI cost calculation
+    if (inputs.aiType === 'voice' || inputs.aiType === 'both') {
+      const totalMinutesPerMonth = inputs.callVolume * inputs.avgCallDuration;
+      voiceCost = totalMinutesPerMonth * AI_RATES.voice[inputs.aiTier];
+    }
+    
+    // Chatbot cost calculation
+    if (inputs.aiType === 'chatbot' || inputs.aiType === 'both') {
+      const totalMessages = inputs.chatVolume * inputs.avgChatLength;
+      chatbotCost = AI_RATES.chatbot[inputs.aiTier].base + 
+        (totalMessages * AI_RATES.chatbot[inputs.aiTier].perMessage);
+    }
+    
+    const totalAiCost = voiceCost + chatbotCost;
+    
+    // Calculate human cost
+    const effectiveHourlyRate = HUMAN_HOURLY_RATES[inputs.role] * 
+      (1 + inputs.employeeBenefitsCost / 100);
+    
+    const hoursPerMonth = (inputs.workHoursPerWeek * 52) / 12;
+    const effectiveHoursPerMonth = hoursPerMonth * (inputs.employeeUtilization / 100);
+    
+    let totalHumanTime = 0;
+    
+    if (inputs.aiType === 'voice' || inputs.aiType === 'both') {
+      totalHumanTime += inputs.callVolume * inputs.avgCallDuration;
+    }
+    
+    if (inputs.aiType === 'chatbot' || inputs.aiType === 'both') {
+      totalHumanTime += (inputs.chatVolume / inputs.avgChatLength) * inputs.avgChatResolutionTime;
+    }
+    
+    const totalHumanHours = totalHumanTime / 60;
+    const requiredEmployees = Math.max(inputs.numEmployees, 
+      Math.ceil(totalHumanHours / effectiveHoursPerMonth));
+    
+    const totalHumanCost = effectiveHourlyRate * hoursPerMonth * requiredEmployees;
+    
+    // Calculate break-even points
+    let voiceBreakEven = 0;
+    let chatBreakEven = 0;
+
+    if (inputs.aiType === 'voice' || inputs.aiType === 'both') {
+      const voiceCostPerCall = AI_RATES.voice[inputs.aiTier] * inputs.avgCallDuration;
+      const humanCostPerCall = (effectiveHourlyRate / 60) * inputs.avgCallDuration;
+      
+      if (voiceCostPerCall < humanCostPerCall) {
+        voiceBreakEven = Math.ceil((effectiveHourlyRate * hoursPerMonth) / 
+          ((humanCostPerCall - voiceCostPerCall) * requiredEmployees));
+      }
+    }
+    
+    if (inputs.aiType === 'chatbot' || inputs.aiType === 'both') {
+      const chatbotCostPerConversation = AI_RATES.chatbot[inputs.aiTier].perMessage * 
+        inputs.avgChatLength + (AI_RATES.chatbot[inputs.aiTier].base / 
+        (inputs.chatVolume / inputs.avgChatLength));
+      const humanCostPerConversation = (effectiveHourlyRate / 60) * inputs.avgChatResolutionTime;
+      
+      if (chatbotCostPerConversation < humanCostPerConversation) {
+        chatBreakEven = Math.ceil((effectiveHourlyRate * hoursPerMonth) / 
+          ((humanCostPerConversation - chatbotCostPerConversation) * requiredEmployees));
+      }
+    }
+
+    const savings = totalHumanCost - totalAiCost;
+    
+    setResults({
+      aiCostMonthly: {
+        voice: voiceCost,
+        chatbot: chatbotCost,
+        total: totalAiCost
+      },
+      humanCostMonthly: totalHumanCost,
+      monthlySavings: savings,
+      yearlySavings: savings * 12,
+      savingsPercentage: totalHumanCost > 0 ? (savings / totalHumanCost) * 100 : 0,
+      breakEvenPoint: { voice: voiceBreakEven, chatbot: chatBreakEven }
+    });
+  }, [inputs]);
+
+  return results;
+};

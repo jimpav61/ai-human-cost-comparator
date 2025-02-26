@@ -1,155 +1,32 @@
-import React, { useState, useEffect } from 'react';
+
+import React, { useState } from 'react';
 import { toast } from "@/components/ui/use-toast";
-
-// AI pricing constants
-const AI_RATES = {
-  // Voice AI rates
-  voice: {
-    basic: 0.06, // $ per minute
-    standard: 0.12, // $ per minute
-    premium: 0.25, // $ per minute
-  },
-  // Chatbot rates (monthly subscription + per message)
-  chatbot: {
-    basic: { base: 99, perMessage: 0.003 },     // $99/month + $0.003 per message
-    standard: { base: 249, perMessage: 0.005 }, // $249/month + $0.005 per message
-    premium: { base: 499, perMessage: 0.008 }   // $499/month + $0.008 per message
-  }
-};
-
-// Human labor costs by role (North American averages in 2025)
-const HUMAN_HOURLY_RATES = {
-  customerService: 21.50, // $ per hour
-  sales: 28.75, // $ per hour
-  technicalSupport: 32.50, // $ per hour
-  generalAdmin: 19.25, // $ per hour
-};
-
-const ANIMATION_DELAY = 50; // ms delay between animations
+import { useCalculator, type CalculatorInputs } from '@/hooks/useCalculator';
+import { CalculatorForm } from './calculator/CalculatorForm';
+import { ResultsDisplay } from './calculator/ResultsDisplay';
 
 export const AIVsHumanCalculator = () => {
-  // AI type and tier selection
-  const [aiType, setAiType] = useState('voice'); // 'voice', 'chatbot', or 'both'
-  const [aiTier, setAiTier] = useState('standard');
-  
-  // States for calculator inputs - general
-  const [role, setRole] = useState('customerService');
-  const [workHoursPerWeek, setWorkHoursPerWeek] = useState(40);
-  const [numEmployees, setNumEmployees] = useState(1);
-  const [employeeBenefitsCost, setEmployeeBenefitsCost] = useState(30); // percentage on top of salary
-  const [employeeUtilization, setEmployeeUtilization] = useState(70); // percentage of time actively handling calls
-  
-  // Voice specific inputs
-  const [callVolume, setCallVolume] = useState(1000); // calls per month
-  const [avgCallDuration, setAvgCallDuration] = useState(5); // minutes
-  
-  // Chatbot specific inputs
-  const [chatVolume, setChatVolume] = useState(5000); // chat messages per month
-  const [avgChatLength, setAvgChatLength] = useState(8); // messages per conversation
-  const [avgChatResolutionTime, setAvgChatResolutionTime] = useState(12); // minutes per chat for human agent
-
-  // Calculation states
-  const [aiCostMonthly, setAiCostMonthly] = useState({ voice: 0, chatbot: 0, total: 0 });
-  const [humanCostMonthly, setHumanCostMonthly] = useState(0);
-  const [monthlySavings, setMonthlySavings] = useState(0);
-  const [yearlySavings, setYearlySavings] = useState(0);
-  const [savingsPercentage, setSavingsPercentage] = useState(0);
-  const [breakEvenPoint, setBreakEvenPoint] = useState({ voice: 0, chatbot: 0 });
   const [reportGenerated, setReportGenerated] = useState(false);
+  const [inputs, setInputs] = useState<CalculatorInputs>({
+    aiType: 'voice',
+    aiTier: 'standard',
+    role: 'customerService',
+    workHoursPerWeek: 40,
+    numEmployees: 1,
+    employeeBenefitsCost: 30,
+    employeeUtilization: 70,
+    callVolume: 1000,
+    avgCallDuration: 5,
+    chatVolume: 5000,
+    avgChatLength: 8,
+    avgChatResolutionTime: 12
+  });
 
-  // Calculate costs whenever inputs change
-  useEffect(() => {
-    // Calculate AI costs
-    let voiceCost = 0;
-    let chatbotCost = 0;
-    
-    // Voice AI cost calculation
-    if (aiType === 'voice' || aiType === 'both') {
-      const totalMinutesPerMonth = callVolume * avgCallDuration;
-      voiceCost = totalMinutesPerMonth * AI_RATES.voice[aiTier];
-    }
-    
-    // Chatbot cost calculation
-    if (aiType === 'chatbot' || aiType === 'both') {
-      const totalMessages = chatVolume * avgChatLength;
-      chatbotCost = AI_RATES.chatbot[aiTier].base + (totalMessages * AI_RATES.chatbot[aiTier].perMessage);
-    }
-    
-    const totalAiCost = voiceCost + chatbotCost;
-    setAiCostMonthly({
-      voice: voiceCost,
-      chatbot: chatbotCost,
-      total: totalAiCost
-    });
-    
-    // Calculate human cost
-    // First calculate effective hourly rate including benefits
-    const effectiveHourlyRate = HUMAN_HOURLY_RATES[role] * (1 + employeeBenefitsCost / 100);
-    
-    // Calculate monthly hours accounting for utilization
-    const hoursPerMonth = (workHoursPerWeek * 52) / 12; // total hours per month
-    const effectiveHoursPerMonth = hoursPerMonth * (employeeUtilization / 100); // adjusted for utilization
-    
-    // Estimate human cost based on workload
-    let totalHumanTime = 0; // in minutes
-    
-    // Voice calls handling time for humans
-    if (aiType === 'voice' || aiType === 'both') {
-      totalHumanTime += callVolume * avgCallDuration;
-    }
-    
-    // Chat handling time for humans
-    if (aiType === 'chatbot' || aiType === 'both') {
-      totalHumanTime += (chatVolume / avgChatLength) * avgChatResolutionTime;
-    }
-    
-    // Convert total time to hours
-    const totalHumanHours = totalHumanTime / 60;
-    
-    // Calculate required employees based on effective hours
-    const requiredEmployees = Math.max(numEmployees, Math.ceil(totalHumanHours / effectiveHoursPerMonth));
-    
-    // Calculate total human cost
-    const totalHumanCost = effectiveHourlyRate * hoursPerMonth * requiredEmployees;
-    setHumanCostMonthly(totalHumanCost);
-    
-    // Calculate savings
-    const savings = totalHumanCost - totalAiCost;
-    setMonthlySavings(savings);
-    setYearlySavings(savings * 12);
-    setSavingsPercentage(totalHumanCost > 0 ? (savings / totalHumanCost) * 100 : 0);
-    
-    // Calculate break-even points
-    let voiceBreakEven = 0;
-    let chatBreakEven = 0;
+  const results = useCalculator(inputs);
 
-    if (aiType === 'voice' || aiType === 'both') {
-      const voiceCostPerCall = AI_RATES.voice[aiTier] * avgCallDuration;
-      const humanCostPerCall = (effectiveHourlyRate / 60) * avgCallDuration;
-      
-      if (voiceCostPerCall < humanCostPerCall) {
-        voiceBreakEven = Math.ceil((effectiveHourlyRate * hoursPerMonth) / 
-          ((humanCostPerCall - voiceCostPerCall) * requiredEmployees));
-      }
-    }
-    
-    if (aiType === 'chatbot' || aiType === 'both') {
-      const chatbotCostPerConversation = AI_RATES.chatbot[aiTier].perMessage * avgChatLength + 
-        (AI_RATES.chatbot[aiTier].base / (chatVolume / avgChatLength));
-      const humanCostPerConversation = (effectiveHourlyRate / 60) * avgChatResolutionTime;
-      
-      if (chatbotCostPerConversation < humanCostPerConversation) {
-        chatBreakEven = Math.ceil((effectiveHourlyRate * hoursPerMonth) / 
-          ((humanCostPerConversation - chatbotCostPerConversation) * requiredEmployees));
-      }
-    }
-    
-    setBreakEvenPoint({ voice: voiceBreakEven, chatbot: chatBreakEven });
-  }, [
-    aiType, aiTier, role, workHoursPerWeek, numEmployees, employeeBenefitsCost, 
-    employeeUtilization, callVolume, avgCallDuration, chatVolume, avgChatLength, 
-    avgChatResolutionTime
-  ]);
+  const handleInputChange = (field: keyof CalculatorInputs, value: any) => {
+    setInputs(prev => ({ ...prev, [field]: value }));
+  };
 
   const handleGenerateReport = () => {
     toast({
@@ -169,29 +46,6 @@ export const AIVsHumanCalculator = () => {
     });
   };
 
-  // Format currency values
-  const formatCurrency = (value) => {
-    return '$' + value.toFixed(2);
-  };
-
-  // Format percentage values
-  const formatPercent = (value) => {
-    return value.toFixed(1) + '%';
-  };
-
-  // Format number with commas
-  const formatNumber = (value) => {
-    return value.toLocaleString();
-  };
-
-  // Role label mapping for display
-  const roleLabels = {
-    customerService: "Customer Service",
-    sales: "Sales",
-    technicalSupport: "Technical Support",
-    generalAdmin: "General Admin"
-  };
-
   return (
     <div className="max-w-7xl mx-auto">
       <div className="glass-morphism premium-shadow rounded-3xl overflow-hidden">
@@ -201,319 +55,17 @@ export const AIVsHumanCalculator = () => {
           </h2>
           
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-12">
-            {/* Input Section */}
-            <div className="space-y-8 animate-fadeIn" style={{ animationDelay: `${ANIMATION_DELAY}ms` }}>
-              <div className="calculator-card">
-                <h3 className="text-xl font-medium text-gray-900 mb-6">Configuration</h3>
-                
-                {/* Job Role Selection */}
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Job Role</label>
-                  <select 
-                    value={role}
-                    onChange={(e) => setRole(e.target.value)}
-                    className="calculator-input"
-                  >
-                    <option value="customerService">Customer Service</option>
-                    <option value="sales">Sales</option>
-                    <option value="technicalSupport">Technical Support</option>
-                    <option value="generalAdmin">General Admin</option>
-                  </select>
-                  <p className="mt-1 text-sm text-gray-500">
-                    North American average: {formatCurrency(HUMAN_HOURLY_RATES[role])}/hour
-                  </p>
-                </div>
-                
-                {/* AI Type Selection */}
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">AI Type</label>
-                  <select 
-                    value={aiType}
-                    onChange={(e) => setAiType(e.target.value)}
-                    className="calculator-input"
-                  >
-                    <option value="voice">Voice AI</option>
-                    <option value="chatbot">Chatbot</option>
-                    <option value="both">Both</option>
-                  </select>
-                </div>
-                
-                {/* AI Tier Selection */}
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">AI Voice Agent Tier</label>
-                  <select 
-                    value={aiTier}
-                    onChange={(e) => setAiTier(e.target.value)}
-                    className="calculator-input"
-                  >
-                    <option value="basic">Basic ({formatCurrency(VOICE_AI_RATES.basic)}/min)</option>
-                    <option value="standard">Standard ({formatCurrency(VOICE_AI_RATES.standard)}/min)</option>
-                    <option value="premium">Premium ({formatCurrency(VOICE_AI_RATES.premium)}/min)</option>
-                  </select>
-                  <p className="mt-1 text-sm text-gray-500">
-                    Voice quality and capabilities increase with tier
-                  </p>
-                </div>
-                
-                {/* Call Volume */}
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
-                    Monthly Call Volume
-                  </label>
-                  <input 
-                    type="number" 
-                    min="1"
-                    value={callVolume}
-                    onChange={(e) => setCallVolume(parseInt(e.target.value) || 0)}
-                    className="calculator-input"
-                  />
-                  <p className="mt-1 text-sm text-gray-500">
-                    Total number of calls per month
-                  </p>
-                </div>
-                
-                {/* Call Duration */}
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
-                    Average Call Duration (minutes)
-                  </label>
-                  <input 
-                    type="number" 
-                    min="0.5" 
-                    step="0.5"
-                    value={avgCallDuration}
-                    onChange={(e) => setAvgCallDuration(parseFloat(e.target.value) || 0)}
-                    className="calculator-input"
-                  />
-                </div>
-                
-                {/* Chatbot Volume */}
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
-                    Monthly Chatbot Volume
-                  </label>
-                  <input 
-                    type="number" 
-                    min="1"
-                    value={chatVolume}
-                    onChange={(e) => setChatVolume(parseInt(e.target.value) || 0)}
-                    className="calculator-input"
-                  />
-                  <p className="mt-1 text-sm text-gray-500">
-                    Total number of chat messages per month
-                  </p>
-                </div>
-                
-                {/* Chatbot Length */}
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
-                    Average Chat Length (messages)
-                  </label>
-                  <input 
-                    type="number" 
-                    min="1"
-                    value={avgChatLength}
-                    onChange={(e) => setAvgChatLength(parseInt(e.target.value) || 0)}
-                    className="calculator-input"
-                  />
-                </div>
-                
-                {/* Chatbot Resolution Time */}
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
-                    Average Chat Resolution Time (minutes)
-                  </label>
-                  <input 
-                    type="number" 
-                    min="1"
-                    value={avgChatResolutionTime}
-                    onChange={(e) => setAvgChatResolutionTime(parseInt(e.target.value) || 0)}
-                    className="calculator-input"
-                  />
-                </div>
-                
-                {/* Advanced Settings */}
-                <div className="pt-4">
-                  <h4 className="text-md font-medium text-gray-700 mb-4">Advanced Settings</h4>
-                  
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    {/* Current Employees */}
-                    <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-1">
-                        Current Number of Employees
-                      </label>
-                      <input 
-                        type="number" 
-                        min="1"
-                        value={numEmployees}
-                        onChange={(e) => setNumEmployees(parseInt(e.target.value) || 1)}
-                        className="calculator-input"
-                      />
-                      <p className="mt-1 text-sm text-gray-500">
-                        Currently handling this type of work
-                      </p>
-                    </div>
-                    
-                    {/* Weekly Hours */}
-                    <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-1">
-                        Weekly Work Hours
-                      </label>
-                      <input 
-                        type="number" 
-                        min="1" 
-                        max="168"
-                        value={workHoursPerWeek}
-                        onChange={(e) => setWorkHoursPerWeek(parseInt(e.target.value) || 0)}
-                        className="calculator-input"
-                      />
-                    </div>
-                    
-                    {/* Benefits Cost */}
-                    <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-1">
-                        Benefits Cost (%)
-                      </label>
-                      <input 
-                        type="number" 
-                        min="0" 
-                        max="100"
-                        value={employeeBenefitsCost}
-                        onChange={(e) => setEmployeeBenefitsCost(parseInt(e.target.value) || 0)}
-                        className="calculator-input"
-                      />
-                      <p className="mt-1 text-sm text-gray-500">
-                        Additional costs beyond salary
-                      </p>
-                    </div>
-                    
-                    {/* Utilization */}
-                    <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-1">
-                        Agent Utilization (%)
-                      </label>
-                      <input 
-                        type="number" 
-                        min="1" 
-                        max="100"
-                        value={employeeUtilization}
-                        onChange={(e) => setEmployeeUtilization(parseInt(e.target.value) || 0)}
-                        className="calculator-input"
-                      />
-                      <p className="mt-1 text-sm text-gray-500">
-                        % of time actively handling calls
-                      </p>
-                    </div>
-                  </div>
-                </div>
-              </div>
-            </div>
+            <CalculatorForm 
+              inputs={inputs}
+              onInputChange={handleInputChange}
+            />
             
-            {/* Results Section */}
-            <div className="space-y-8 animate-fadeIn" style={{ animationDelay: `${ANIMATION_DELAY * 2}ms` }}>
-              <div className="calculator-card">
-                <h3 className="text-xl font-medium text-gray-900 mb-6">Cost Analysis</h3>
-                
-                {/* Monthly Costs */}
-                <div className="grid grid-cols-2 gap-6 mb-8">
-                  <div className="result-card">
-                    <div className="text-sm text-gray-500 mb-1">Monthly AI Cost</div>
-                    <div className="text-2xl font-bold text-brand-500">{formatCurrency(aiCostMonthly.total)}</div>
-                    <div className="text-xs text-gray-500 mt-1">
-                      {formatCurrency(AI_RATES[aiType][aiTier])}/min × {formatNumber(callVolume)} calls × {avgCallDuration} min
-                    </div>
-                  </div>
-                  
-                  <div className="result-card">
-                    <div className="text-sm text-gray-500 mb-1">Monthly Human Cost</div>
-                    <div className="text-2xl font-bold text-gray-700">{formatCurrency(humanCostMonthly)}</div>
-                    <div className="text-xs text-gray-500 mt-1">
-                      Based on {formatCurrency(HUMAN_HOURLY_RATES[role])}/hr + {employeeBenefitsCost}% benefits
-                    </div>
-                    <div className="text-xs text-gray-500 mt-1">
-                      {numEmployees} employee{numEmployees > 1 ? 's' : ''}
-                    </div>
-                  </div>
-                </div>
-                
-                {/* Savings Metrics */}
-                <div className="result-card mb-8">
-                  <div className="flex justify-between items-center mb-4">
-                    <div className="text-lg font-medium text-gray-700">Monthly Savings</div>
-                    <div className={`text-2xl font-bold ${monthlySavings >= 0 ? 'text-green-600' : 'text-red-500'}`}>
-                      {formatCurrency(Math.abs(monthlySavings))}
-                      {monthlySavings < 0 && <span className="text-red-500"> (Loss)</span>}
-                    </div>
-                  </div>
-                  
-                  <div className="flex justify-between items-center mb-2">
-                    <div className="text-sm text-gray-600">Annual Savings</div>
-                    <div className={`text-lg font-semibold ${yearlySavings >= 0 ? 'text-green-600' : 'text-red-500'}`}>
-                      {formatCurrency(Math.abs(yearlySavings))}
-                    </div>
-                  </div>
-                  
-                  <div className="flex justify-between items-center">
-                    <div className="text-sm text-gray-600">Cost Reduction</div>
-                    <div className={`text-lg font-semibold ${savingsPercentage >= 0 ? 'text-green-600' : 'text-red-500'}`}>
-                      {formatPercent(Math.abs(savingsPercentage))}
-                    </div>
-                  </div>
-                  
-                  {/* Savings visualization */}
-                  <div className="mt-4 pt-4 border-t border-gray-100">
-                    <div className="relative h-6 bg-gray-200 rounded-full overflow-hidden">
-                      <div 
-                        className={`absolute top-0 left-0 h-full ${savingsPercentage >= 0 ? 'bg-green-500' : 'bg-red-500'}`}
-                        style={{ width: `${Math.min(Math.abs(savingsPercentage), 100)}%` }}
-                      ></div>
-                    </div>
-                    <div className="flex justify-between mt-1 text-xs text-gray-500">
-                      <div>0%</div>
-                      <div>50%</div>
-                      <div>100%</div>
-                    </div>
-                  </div>
-                </div>
-                
-                {/* Break-even Analysis */}
-                <div className="result-card mb-8">
-                  <div className="text-sm text-gray-500 mb-1">Break-even Point</div>
-                  {breakEvenPoint.voice > 0 ? (
-                    <>
-                      <div className="text-xl font-bold text-gray-700">{formatNumber(breakEvenPoint.voice)} calls/month</div>
-                      <div className="text-xs text-gray-500 mt-1">
-                        AI becomes more cost-effective after this volume
-                      </div>
-                    </>
-                  ) : (
-                    <div className="text-md font-medium text-gray-700">
-                      {aiCostMonthly.total > humanCostMonthly 
-                        ? "Human agents are more cost-effective at all volumes" 
-                        : "AI is more cost-effective at all volumes"}
-                    </div>
-                  )}
-                </div>
-                
-                {/* Actions */}
-                <div className="flex space-x-4">
-                  <button 
-                    onClick={handleGenerateReport}
-                    disabled={reportGenerated}
-                    className="flex-1 bg-brand-500 hover:bg-brand-600 text-white py-3 px-6 rounded-lg transition-all duration-200 disabled:opacity-50"
-                  >
-                    {reportGenerated ? 'Report Generated!' : 'Generate Report'}
-                  </button>
-                  
-                  <button 
-                    onClick={handleShareResults}
-                    className="flex-1 border-2 border-brand-500 text-brand-500 hover:bg-brand-50 py-3 px-6 rounded-lg transition-all duration-200"
-                  >
-                    Share Results
-                  </button>
-                </div>
-              </div>
-            </div>
+            <ResultsDisplay
+              results={results}
+              onGenerateReport={handleGenerateReport}
+              onShareResults={handleShareResults}
+              reportGenerated={reportGenerated}
+            />
           </div>
         </div>
       </div>
