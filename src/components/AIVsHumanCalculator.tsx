@@ -12,8 +12,8 @@ export const AIVsHumanCalculator = () => {
     aiTier: 'standard',
     role: 'customerService',
     numEmployees: 1,
-    employeeBenefitsCost: 30,
-    employeeUtilization: 70,
+    peakHourPercentage: 30, // 30% of traffic during peak hours
+    overflowHandling: 50, // 50% of overflow handled by AI
     callVolume: 1000,
     avgCallDuration: 5,
     chatVolume: 5000,

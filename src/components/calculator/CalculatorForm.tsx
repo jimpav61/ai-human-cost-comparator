@@ -151,36 +151,34 @@ export const CalculatorForm: React.FC<CalculatorFormProps> = ({ inputs, onInputC
               />
             </div>
             
-            {/* Benefits Cost */}
+            {/* Peak Hour Coverage */}
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-1">
-                Employee Benefits Cost (%)
+                Peak Hour Traffic (%)
               </label>
               <input 
                 type="number" 
                 min="0"
                 max="100"
-                value={inputs.employeeBenefitsCost}
-                onChange={(e) => onInputChange('employeeBenefitsCost', parseInt(e.target.value) || 0)}
+                value={inputs.peakHourPercentage}
+                onChange={(e) => onInputChange('peakHourPercentage', parseInt(e.target.value) || 0)}
                 className="calculator-input"
               />
             </div>
             
-            {/* Employee Utilization */}
+            {/* Overflow Handling */}
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-1">
-                Employee Utilization (%)
+                AI Overflow Handling (%)
               </label>
-              <select
-                value={inputs.employeeUtilization}
-                onChange={(e) => onInputChange('employeeUtilization', parseInt(e.target.value))}
+              <input
+                type="number"
+                min="0"
+                max="100"
+                value={inputs.overflowHandling}
+                onChange={(e) => onInputChange('overflowHandling', parseInt(e.target.value))}
                 className="calculator-input"
-              >
-                <option value={25}>25% - Basic Integration</option>
-                <option value={50}>50% - Moderate Integration</option>
-                <option value={75}>75% - Advanced Integration</option>
-                <option value={100}>100% - Full Integration</option>
-              </select>
+              />
             </div>
           </div>
         </div>

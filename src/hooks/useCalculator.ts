@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from 'react';
 import { AI_RATES, HUMAN_HOURLY_RATES } from '@/constants/pricing';
 
@@ -7,13 +6,13 @@ export interface CalculatorInputs {
   aiTier: 'basic' | 'standard' | 'premium';
   role: keyof typeof HUMAN_HOURLY_RATES;
   numEmployees: number;
-  employeeBenefitsCost: number;
-  employeeUtilization: number;
   callVolume: number;
   avgCallDuration: number;
   chatVolume: number;
   avgChatLength: number;
   avgChatResolutionTime: number;
+  peakHourPercentage: number; // New field to account for peak hour coverage
+  overflowHandling: number; // New field for overflow percentage handled by AI
 }
 
 export interface CalculationResults {
@@ -70,7 +69,7 @@ export const useCalculator = (inputs: CalculatorInputs): CalculationResults => {
 
     // Calculate human cost
     const baseHourlyRate = HUMAN_HOURLY_RATES[inputs.role];
-    const hourlyRateWithBenefits = baseHourlyRate * (1 + inputs.employeeBenefitsCost / 100);
+    const hourlyRateWithBenefits = baseHourlyRate;
     
     // Calculate monthly human cost based on total hours
     const totalHumanCost = hourlyRateWithBenefits * monthlyTotalHours;
@@ -104,7 +103,7 @@ export const useCalculator = (inputs: CalculatorInputs): CalculationResults => {
     }
     
     // Calculate effective work hours considering utilization rate
-    const effectiveMonthlyHours = monthlyTotalHours * (inputs.employeeUtilization / 100);
+    const effectiveMonthlyHours = monthlyTotalHours;
     const totalServiceHoursRequired = totalServiceMinutesRequired / 60;
     
     // Calculate required number of employees based on service volume
