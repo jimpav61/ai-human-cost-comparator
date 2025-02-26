@@ -40,22 +40,31 @@ export const LeadForm: React.FC<LeadFormProps> = ({ onSubmit }) => {
     setIsSubmitting(true);
 
     try {
-      // Store lead in Supabase
       const { error } = await supabase
         .from('leads')
-        .insert({
+        .insert([{
           name: formData.name,
           company_name: formData.companyName,
           email: formData.email,
           phone_number: formData.phoneNumber || null,
           website: formData.website || null,
-          calculator_inputs: {}, // This will be populated when calculator is used
-          calculator_results: {} // This will be populated when calculator is used
-        });
+          calculator_inputs: {},
+          calculator_results: {},
+          proposal_sent: false
+        }]);
 
       if (error) throw error;
 
-      // Call the onSubmit prop to notify parent component
+      // Reset form
+      setFormData({
+        name: '',
+        companyName: '',
+        email: '',
+        phoneNumber: '',
+        website: ''
+      });
+
+      // Call the onSubmit prop with form data
       onSubmit(formData);
       
       toast({
@@ -63,7 +72,7 @@ export const LeadForm: React.FC<LeadFormProps> = ({ onSubmit }) => {
         description: "Your information has been submitted successfully.",
       });
 
-    } catch (error) {
+    } catch (error: any) {
       console.error('Error submitting lead:', error);
       toast({
         title: "Submission Error",
