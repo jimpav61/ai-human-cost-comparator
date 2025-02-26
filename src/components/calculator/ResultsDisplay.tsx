@@ -1,4 +1,3 @@
-
 import React from 'react';
 import { Button } from "@/components/ui/button";
 import type { CalculationResults, CalculatorInputs } from '@/hooks/useCalculator';
@@ -6,6 +5,8 @@ import { formatCurrency, formatNumber, formatPercent } from '@/utils/formatters'
 import { Download } from 'lucide-react';
 import jsPDF from 'jspdf';
 import autoTable from 'jspdf-autotable';
+import { supabase } from "@/integrations/supabase/client";
+import { toast } from "@/components/ui/use-toast";
 
 interface ResultsDisplayProps {
   results: CalculationResults;
@@ -20,52 +21,63 @@ export const ResultsDisplay: React.FC<ResultsDisplayProps> = ({
   reportGenerated,
   inputs
 }) => {
-  const aiPlacements = [
+  const businessSuggestions = [
     {
-      role: "Customer Service",
-      capabilities: [
-        "24/7 basic customer support",
-        "FAQs and troubleshooting",
-        "Order status tracking",
-        "Return requests"
-      ]
+      title: "24/7 Customer Support",
+      description: "Implement AI to provide round-the-clock support without increasing staff costs."
     },
     {
-      role: "Sales Support",
-      capabilities: [
-        "Product recommendations",
-        "Price quotes",
-        "Appointment scheduling",
-        "Lead qualification"
-      ]
+      title: "Rapid Response Times",
+      description: "AI can handle multiple inquiries simultaneously, reducing customer wait times."
     },
     {
-      role: "IT Help Desk",
-      capabilities: [
-        "Password resets",
-        "Basic technical support",
-        "Software installation guidance",
-        "System status updates"
-      ]
+      title: "Cost-Effective Scaling",
+      description: `Save ${formatPercent(results.savingsPercentage)} on operational costs while maintaining service quality.`
+    },
+    {
+      title: "Employee Focus",
+      description: "Free up your team to handle complex cases while AI manages routine inquiries."
     }
   ];
 
-  const generatePDF = () => {
+  const generatePDF = async () => {
+    const contactInfo = window.prompt("Please enter your name to generate the report:");
+    const companyName = window.prompt("Please enter your company name:");
+    const email = window.prompt("Please enter your email address:");
+    const phoneNumber = window.prompt("Please enter your phone number (optional):");
+    
+    if (!contactInfo || !companyName || !email) {
+      toast({
+        title: "Missing Information",
+        description: "Please provide the required contact information to generate the report.",
+        variant: "destructive"
+      });
+      return;
+    }
+
     const doc = new jsPDF();
-    const company = "Your Business"; // This could be passed as a prop
+    const reportDate = new Date().toLocaleDateString();
 
     // Title
     doc.setFontSize(20);
     doc.text("AI Integration Cost Analysis Report", 20, 20);
     
+    // Contact Information
+    doc.setFontSize(12);
+    doc.text(`Generated for: ${companyName}`, 20, 35);
+    doc.text(`Contact: ${contactInfo}`, 20, 42);
+    doc.text(`Email: ${email}`, 20, 49);
+    if (phoneNumber) doc.text(`Phone: ${phoneNumber}`, 20, 56);
+    doc.text(`Date: ${reportDate}`, 20, phoneNumber ? 63 : 56);
+    
+    let finalY = phoneNumber ? 73 : 66;
+
     // Cost Summary
     doc.setFontSize(14);
-    doc.text("Cost Summary", 20, 40);
-    
-    let finalY = 45; // Keep track of Y position
+    doc.text("Cost Summary", 20, finalY);
     
     autoTable(doc, {
-      startY: finalY,
+      startY: finalY + 5,
       head: [["Category", "Monthly Cost", "Annual Cost"]],
       body: [
         ["Human Resources", formatCurrency(results.humanCostMonthly), formatCurrency(results.humanCostMonthly * 12)],
@@ -74,63 +86,55 @@ export const ResultsDisplay: React.FC<ResultsDisplayProps> = ({
       ],
     });
 
-    // Get the final Y position after the first table
     finalY = (doc as any).previousAutoTable.finalY + 20;
 
-    // Resource Utilization
+    // Business Recommendations
     doc.setFontSize(14);
-    doc.text("Resource Utilization", 20, finalY);
+    doc.text("Implementation Recommendations", 20, finalY);
     
-    autoTable(doc, {
-      startY: finalY + 5,
-      head: [["Metric", "Value"]],
-      body: [
-        ["Daily Hours per Employee", `${results.humanHours.dailyPerEmployee} hours`],
-        ["Weekly Total Hours", `${formatNumber(results.humanHours.weeklyTotal)} hours`],
-        ["Monthly Total Hours", `${formatNumber(results.humanHours.monthlyTotal)} hours`]
-      ],
-    });
-
-    // AI Placement Opportunities
-    doc.addPage();
-    doc.setFontSize(14);
-    doc.text("AI Integration Opportunities", 20, 20);
-    
-    let yPos = 30;
-    aiPlacements.forEach(placement => {
-      if (yPos > 250) {
-        doc.addPage();
-        yPos = 20;
-      }
+    let recommendationY = finalY + 10;
+    businessSuggestions.forEach((suggestion) => {
       doc.setFontSize(12);
-      doc.text(`${placement.role}:`, 20, yPos);
-      yPos += 10;
+      doc.setTextColor(0, 0, 0);
+      doc.text(suggestion.title, 20, recommendationY);
       doc.setFontSize(10);
-      placement.capabilities.forEach(capability => {
-        doc.text(`• ${capability}`, 30, yPos);
-        yPos += 7;
-      });
-      yPos += 10;
+      doc.setTextColor(100, 100, 100);
+      doc.text(suggestion.description, 20, recommendationY + 5);
+      recommendationY += 15;
     });
 
-    // ROI Summary
-    doc.setFontSize(14);
-    doc.text("Return on Investment", 20, yPos + 10);
-    doc.setFontSize(10);
-    doc.text(`• Projected Annual Savings: ${formatCurrency(results.yearlySavings)}`, 30, yPos + 20);
-    doc.text(`• Cost Reduction: ${formatPercent(results.savingsPercentage)}`, 30, yPos + 30);
-    doc.text(`• 24/7 Operation Capability`, 30, yPos + 40);
+    // Save report in Supabase
+    try {
+      const { error } = await supabase
+        .from('generated_reports')
+        .insert({
+          company_name: companyName,
+          contact_name: contactInfo,
+          email: email,
+          phone_number: phoneNumber,
+          calculator_inputs: inputs,
+          calculator_results: results
+        });
 
-    // Add compelling call to action
-    doc.setFontSize(12);
-    doc.setTextColor(246, 82, 40); // Brand color
-    doc.text("Ready to transform your business operations?", 20, yPos + 60);
-    doc.setTextColor(0);
-    doc.setFontSize(10);
-    doc.text("Contact us today to start your AI integration journey.", 20, yPos + 70);
+      if (error) throw error;
 
-    // Save the PDF
-    doc.save(`${company}-AI-Integration-Analysis.pdf`);
+      // Save the PDF
+      doc.save(`${companyName}-AI-Integration-Analysis.pdf`);
+      
+      toast({
+        title: "Report Generated Successfully",
+        description: "Your report has been saved and downloaded.",
+      });
+      
+      onGenerateReport();
+    } catch (error) {
+      console.error('Error saving report:', error);
+      toast({
+        title: "Error Saving Report",
+        description: "There was an error saving your report. Please try again.",
+        variant: "destructive"
+      });
+    }
   };
 
   return (
@@ -158,6 +162,19 @@ export const ResultsDisplay: React.FC<ResultsDisplayProps> = ({
               <p className="text-gray-600">Team Size:</p>
               <p className="font-medium">{inputs.numEmployees} employees</p>
             </div>
+          </div>
+        </div>
+
+        {/* Business Suggestions */}
+        <div className="mb-6 p-4 bg-brand-50 rounded-lg">
+          <h4 className="text-sm font-semibold text-gray-700 mb-3">Business Benefits</h4>
+          <div className="space-y-4">
+            {businessSuggestions.map((suggestion, index) => (
+              <div key={index} className="space-y-1">
+                <h5 className="font-medium text-gray-900">{suggestion.title}</h5>
+                <p className="text-sm text-gray-600">{suggestion.description}</p>
+              </div>
+            ))}
           </div>
         </div>
 
