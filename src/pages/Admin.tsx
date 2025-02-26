@@ -22,90 +22,54 @@ interface Lead {
 const AdminDashboard = () => {
   const [leads, setLeads] = useState<Lead[]>([]);
   const [loading, setLoading] = useState(true);
-  const [session, setSession] = useState(null);
   const navigate = useNavigate();
 
   useEffect(() => {
-    let mounted = true;
+    // Simple one-time check on component mount
+    const checkAccess = async () => {
+      const { data: { session } } = await supabase.auth.getSession();
+      
+      if (!session) {
+        navigate('/auth');
+        return;
+      }
 
-    const setupAuth = async () => {
       try {
-        const { data: { session } } = await supabase.auth.getSession();
-        
-        if (!mounted) return;
-        
-        if (!session) {
-          console.log("No session, redirecting to auth");
-          navigate('/auth');
-          return;
-        }
-
-        setSession(session);
-        
-        // Check admin status
-        const { data: adminCheck, error: adminError } = await supabase
+        const { data: adminCheck } = await supabase
           .from('allowed_admins')
           .select('email')
           .eq('email', session.user.email)
           .single();
 
-        if (!mounted) return;
-
-        if (adminError || !adminCheck) {
-          console.log("Not an admin, signing out");
+        if (!adminCheck) {
           await supabase.auth.signOut();
           navigate('/auth');
           return;
         }
 
-        // If we got here, user is an admin, fetch leads
-        const { data: leadsData, error: leadsError } = await supabase
+        // Admin access confirmed, fetch leads
+        const { data } = await supabase
           .from('leads')
           .select('*')
           .order('created_at', { ascending: false });
 
-        if (!mounted) return;
-
-        if (leadsError) {
-          throw leadsError;
-        }
-
-        setLeads(leadsData || []);
+        setLeads(data || []);
       } catch (error) {
-        console.error('Error in setup:', error);
-        if (mounted) {
-          toast({
-            title: "Error",
-            description: "Failed to load admin dashboard",
-            variant: "destructive",
-          });
-        }
-      } finally {
-        if (mounted) {
-          setLoading(false);
-        }
-      }
-    };
-
-    setupAuth();
-
-    const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
-      if (!mounted) return;
-      
-      if (event === 'SIGNED_OUT') {
+        toast({
+          title: "Error",
+          description: "Failed to load admin dashboard",
+          variant: "destructive",
+        });
         navigate('/auth');
+      } finally {
+        setLoading(false);
       }
-    });
-
-    return () => {
-      mounted = false;
-      subscription.unsubscribe();
     };
+
+    checkAccess();
   }, [navigate]);
 
   const fetchLeads = async () => {
-    if (!session) return;
-    
     try {
       const { data, error } = await supabase
         .from('leads')
@@ -115,7 +79,6 @@ const AdminDashboard = () => {
       if (error) throw error;
       setLeads(data || []);
     } catch (error) {
-      console.error('Error fetching leads:', error);
       toast({
         title: "Error",
         description: "Failed to fetch leads data",
@@ -126,10 +89,6 @@ const AdminDashboard = () => {
 
   if (loading) {
     return <div className="flex justify-center items-center min-h-screen">Loading...</div>;
-  }
-
-  if (!session) {
-    return null;
   }
 
   return (
