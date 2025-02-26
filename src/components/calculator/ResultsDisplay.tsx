@@ -140,4 +140,42 @@ export const ResultsDisplay: React.FC<ResultsDisplayProps> = ({
   };
 
   return (
-    <div className="space
+    <div className="space-y-6">
+      <div className="grid gap-4">
+        <div className="p-4 bg-white rounded-lg shadow-sm">
+          <h3 className="text-lg font-semibold mb-4">Cost Analysis</h3>
+          
+          {/* AI Pricing Details */}
+          <div className="mb-6">
+            <h4 className="text-sm font-semibold text-gray-700 mb-3">AI Service Pricing ({inputs.aiTier} tier)</h4>
+            <PricingDetails details={getPricingDetails()} />
+          </div>
+
+          {/* Tier Comparison */}
+          <div className="mb-6">
+            <h4 className="text-sm font-semibold text-gray-700 mb-3">Tier Comparison</h4>
+            <TierComparison currentTier={inputs.aiTier} />
+          </div>
+
+          {/* Business Suggestions and AI Placements */}
+          <BusinessSuggestionsAndPlacements 
+            suggestions={businessSuggestions}
+            placements={aiPlacements}
+          />
+
+          {/* Generate Report Button */}
+          <div className="mt-6">
+            <Button
+              onClick={handleGenerateReport}
+              disabled={reportGenerated}
+              className="w-full"
+            >
+              <Download className="w-4 h-4 mr-2" />
+              {reportGenerated ? 'Report Generated' : 'Generate Detailed Report'}
+            </Button>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+};
