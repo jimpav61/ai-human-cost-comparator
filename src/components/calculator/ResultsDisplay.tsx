@@ -2,7 +2,7 @@ import React from 'react';
 import { Button } from "@/components/ui/button";
 import type { CalculationResults, CalculatorInputs } from '@/hooks/useCalculator';
 import { formatCurrency, formatNumber, formatPercent } from '@/utils/formatters';
-import { Download, CurrencyDollar, Clock } from 'lucide-react';
+import { Download, DollarSign, Clock } from 'lucide-react';
 import jsPDF from 'jspdf';
 import autoTable from 'jspdf-autotable';
 import { supabase } from "@/integrations/supabase/client";
@@ -209,7 +209,7 @@ export const ResultsDisplay: React.FC<ResultsDisplayProps> = ({
                 <div className="text-sm text-gray-600 space-y-1">
                   {detail.base && (
                     <div className="flex items-center">
-                      <CurrencyDollar className="h-4 w-4 mr-1" />
+                      <DollarSign className="h-4 w-4 mr-1" />
                       Base fee: {detail.base}/month
                     </div>
                   )}
