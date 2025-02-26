@@ -4,10 +4,34 @@ import { supabase } from "@/integrations/supabase/client";
 import { toast } from "@/components/ui/use-toast";
 import { useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/components/ui/table";
+import { Download, FileText } from 'lucide-react';
+import { generatePDF } from '@/components/calculator/pdfGenerator';
+import type { LeadData } from '@/components/calculator/types';
+
+interface Lead {
+  id: string;
+  name: string;
+  company_name: string;
+  email: string;
+  website: string | null;
+  phone_number: string | null;
+  calculator_inputs: any;
+  calculator_results: any;
+  proposal_sent: boolean;
+}
 
 const AdminDashboard = () => {
   const navigate = useNavigate();
   const [loading, setLoading] = useState(true);
+  const [leads, setLeads] = useState<Lead[]>([]);
 
   useEffect(() => {
     const checkAccess = async () => {
@@ -29,6 +53,14 @@ const AdminDashboard = () => {
           throw new Error('Unauthorized');
         }
 
+        // Fetch leads after confirming admin access
+        const { data: leadsData, error: leadsError } = await supabase
+          .from('leads')
+          .select('*')
+          .order('created_at', { ascending: false });
+
+        if (leadsError) throw leadsError;
+        setLeads(leadsData || []);
         setLoading(false);
       } catch (error) {
         console.error('Access check error:', error);
@@ -58,6 +90,120 @@ const AdminDashboard = () => {
     }
   };
 
+  const handleDownloadReport = (lead: Lead) => {
+    try {
+      const leadData: LeadData = {
+        name: lead.name,
+        companyName: lead.company_name,
+        email: lead.email,
+        phoneNumber: lead.phone_number || ''
+      };
+
+      const doc = generatePDF({
+        contactInfo: leadData.name,
+        companyName: leadData.companyName,
+        email: leadData.email,
+        phoneNumber: leadData.phoneNumber,
+        results: lead.calculator_results,
+        businessSuggestions: [
+          {
+            title: "24/7 Customer Support",
+            description: "Implement AI to provide round-the-clock support without increasing staff costs."
+          },
+          {
+            title: "Rapid Response Times",
+            description: "AI can handle multiple inquiries simultaneously, reducing customer wait times."
+          },
+          {
+            title: "Cost-Effective Scaling",
+            description: "Save on operational costs while maintaining service quality."
+          },
+          {
+            title: "Employee Focus",
+            description: "Free up your team to handle complex cases while AI manages routine inquiries."
+          }
+        ],
+        aiPlacements: [
+          {
+            role: "Front-line Support",
+            capabilities: [
+              "Handle routine customer inquiries instantly",
+              "Route complex issues to human agents",
+              "Available 24/7 without additional cost"
+            ]
+          },
+          {
+            role: "Customer Service Enhancement",
+            capabilities: [
+              "Reduce wait times significantly",
+              "Process multiple requests simultaneously",
+              "Maintain consistent service quality"
+            ]
+          }
+        ]
+      });
+
+      doc.save(`${lead.company_name}-AI-Integration-Analysis.pdf`);
+      
+      toast({
+        title: "Success",
+        description: "Report downloaded successfully",
+      });
+    } catch (error) {
+      console.error('Error generating report:', error);
+      toast({
+        title: "Error",
+        description: "Failed to generate report",
+        variant: "destructive",
+      });
+    }
+  };
+
+  const handleCreateProposal = async (lead: Lead) => {
+    try {
+      const { data, error } = await supabase.functions.invoke('generate-proposal', {
+        body: {
+          lead: {
+            name: lead.name,
+            companyName: lead.company_name,
+            email: lead.email,
+            website: lead.website,
+            phoneNumber: lead.phone_number,
+            calculatorResults: lead.calculator_results
+          }
+        }
+      });
+
+      if (error) throw error;
+
+      // Update the lead's proposal_sent status
+      await supabase
+        .from('leads')
+        .update({ proposal_sent: true })
+        .eq('id', lead.id);
+
+      // Refresh leads list
+      const { data: updatedLeads } = await supabase
+        .from('leads')
+        .select('*')
+        .order('created_at', { ascending: false });
+      
+      setLeads(updatedLeads || []);
+
+      toast({
+        title: "Success",
+        description: "Proposal created and sent successfully",
+      });
+    } catch (error) {
+      console.error('Error creating proposal:', error);
+      toast({
+        title: "Error",
+        description: "Failed to create proposal",
+        variant: "destructive",
+      });
+    }
+  };
+
   if (loading) {
     return <div className="flex justify-center items-center min-h-screen">Loading...</div>;
   }
@@ -71,9 +217,60 @@ const AdminDashboard = () => {
         </Button>
       </div>
       
-      {/* Admin content will go here */}
-      <div className="bg-white rounded-lg shadow p-6">
-        <p className="text-gray-600">Welcome to the admin dashboard. We'll build out more features here.</p>
+      <div className="bg-white rounded-lg shadow">
+        <Table>
+          <TableHeader>
+            <TableRow>
+              <TableHead>Name</TableHead>
+              <TableHead>Company</TableHead>
+              <TableHead>Email</TableHead>
+              <TableHead>Website</TableHead>
+              <TableHead>Phone</TableHead>
+              <TableHead>Actions</TableHead>
+            </TableRow>
+          </TableHeader>
+          <TableBody>
+            {leads.map((lead) => (
+              <TableRow key={lead.id}>
+                <TableCell>{lead.name}</TableCell>
+                <TableCell>{lead.company_name}</TableCell>
+                <TableCell>{lead.email}</TableCell>
+                <TableCell>
+                  {lead.website ? (
+                    <a 
+                      href={lead.website.startsWith('http') ? lead.website : `https://${lead.website}`}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="text-blue-600 hover:underline"
+                    >
+                      {lead.website}
+                    </a>
+                  ) : '-'}
+                </TableCell>
+                <TableCell>{lead.phone_number || '-'}</TableCell>
+                <TableCell>
+                  <div className="flex gap-2">
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      onClick={() => handleDownloadReport(lead)}
+                    >
+                      <Download className="w-4 h-4" />
+                    </Button>
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      onClick={() => handleCreateProposal(lead)}
+                      disabled={lead.proposal_sent}
+                    >
+                      <FileText className="w-4 h-4" />
+                    </Button>
+                  </div>
+                </TableCell>
+              </TableRow>
+            ))}
+          </TableBody>
+        </Table>
       </div>
     </div>
   );
