@@ -67,7 +67,7 @@ export const PricingDetails: React.FC<PricingDetailsProps> = ({
             <span className="text-brand-600 font-semibold">{formatCurrency(detail.monthlyCost)}/month</span>
           </div>
           <div className="text-sm text-gray-600 space-y-1">
-            {detail.base && (
+            {detail.base !== null && (
               <div className="flex items-center">
                 <DollarSign className="h-4 w-4 mr-1" />
                 Base fee: {formatCurrency(detail.base)}/month
@@ -85,6 +85,24 @@ export const PricingDetails: React.FC<PricingDetailsProps> = ({
                   : `${formatNumber(detail.totalMinutes!)} minutes`}
               </span>
             </div>
+            {detail.usageCost !== undefined && (
+              <div className="flex items-center">
+                <DollarSign className="h-4 w-4 mr-1" />
+                Usage cost: {formatCurrency(detail.usageCost)}/month
+              </div>
+            )}
+            {detail.volumeDiscount !== undefined && detail.volumeDiscount > 0 && (
+              <div className="flex items-center">
+                <DollarSign className="h-4 w-4 mr-1" />
+                Volume discount: {formatCurrency(-detail.volumeDiscount)}/month
+              </div>
+            )}
+            {detail.complexityFactor !== undefined && detail.complexityFactor !== 1 && (
+              <div className="flex items-center">
+                <Clock className="h-4 w-4 mr-1" />
+                Complexity factor: {detail.complexityFactor.toFixed(2)}x
+              </div>
+            )}
           </div>
         </div>
       ))}

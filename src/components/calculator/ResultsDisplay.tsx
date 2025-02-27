@@ -35,22 +35,45 @@ export const ResultsDisplay: React.FC<ResultsDisplayProps> = ({
     // Calculate the chargeable minutes (total minus included minutes)
     const includedMinutes = AI_RATES.chatbot[inputs.aiTier].includedVoiceMinutes || 0;
     const chargeableMinutes = Math.max(0, totalMinutes - includedMinutes);
+    const minuteRate = AI_RATES.voice[inputs.aiTier];
+    const usageCost = chargeableMinutes * minuteRate;
+    
     pricingDetails.push({
       title: 'Voice AI',
       base: null,
-      rate: `${formatCurrency(AI_RATES.voice[inputs.aiTier])}/minute after ${includedMinutes} included minutes`,
+      rate: `${formatCurrency(minuteRate)}/minute after ${includedMinutes} included minutes`,
       totalMinutes: totalMinutes,
       monthlyCost: results.aiCostMonthly.voice,
+      usageCost: usageCost
     });
   }
 
   if (inputs.aiType === 'chatbot' || inputs.aiType === 'both') {
+    const totalMessages = inputs.chatVolume * inputs.avgChatLength;
+    const baseRate = AI_RATES.chatbot[inputs.aiTier].base;
+    const perMessageRate = AI_RATES.chatbot[inputs.aiTier].perMessage;
+    const messageUsageCost = totalMessages * perMessageRate;
+    
+    // Calculate volume discount
+    let volumeDiscount = 0;
+    if (totalMessages > 50000) {
+      volumeDiscount = messageUsageCost * 0.2; // 20% discount
+    } else if (totalMessages > 10000) {
+      volumeDiscount = messageUsageCost * 0.1; // 10% discount
+    }
+    
+    // Calculate complexity factor
+    const complexityFactor = Math.min(1.5, Math.max(1.0, inputs.avgChatResolutionTime / 10));
+    
     pricingDetails.push({
       title: 'Text AI',
-      base: AI_RATES.chatbot[inputs.aiTier].base,
-      rate: `${formatCurrency(AI_RATES.chatbot[inputs.aiTier].perMessage)}/message`,
-      totalMessages: inputs.chatVolume * inputs.avgChatLength,
+      base: baseRate,
+      rate: `${formatCurrency(perMessageRate)}/message`,
+      totalMessages: totalMessages,
       monthlyCost: results.aiCostMonthly.chatbot,
+      usageCost: messageUsageCost,
+      volumeDiscount: volumeDiscount,
+      complexityFactor: complexityFactor
     });
   }
 

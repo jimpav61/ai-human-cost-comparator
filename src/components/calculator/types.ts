@@ -25,6 +25,9 @@ export interface PricingDetail {
   totalMessages?: number;
   totalMinutes?: number;
   monthlyCost: number;
+  usageCost?: number;
+  volumeDiscount?: number;
+  complexityFactor?: number;
 }
 
 export interface ResultsDisplayProps {

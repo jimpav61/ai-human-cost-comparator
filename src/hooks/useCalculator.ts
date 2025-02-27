@@ -109,19 +109,25 @@ export const useCalculator = (inputs: CalculatorInputs): CalculationResults => {
       // Base cost for the selected tier
       monthlyChatbotCost = chatbotRates.base;
       
-      // Add message costs
-      monthlyChatbotCost += totalMessages * chatbotRates.perMessage;
-      
-      // Apply volume discounts for larger message volumes
-      if (totalMessages > 50000) {
-        monthlyChatbotCost *= 0.8; // 20% discount for over 50k messages
-      } else if (totalMessages > 10000) {
-        monthlyChatbotCost *= 0.9; // 10% discount for over 10k messages
+      // Only add message costs if there are messages
+      if (totalMessages > 0) {
+        // Raw message cost
+        const rawMessageCost = totalMessages * chatbotRates.perMessage;
+        
+        // Apply volume discounts for larger message volumes
+        let volumeDiscountedCost = rawMessageCost;
+        if (totalMessages > 50000) {
+          volumeDiscountedCost = rawMessageCost * 0.8; // 20% discount for over 50k messages
+        } else if (totalMessages > 10000) {
+          volumeDiscountedCost = rawMessageCost * 0.9; // 10% discount for over 10k messages
+        }
+        
+        // Scale cost based on resolution time (indicates complexity)
+        const complexityFactor = Math.min(1.5, Math.max(1.0, inputs.avgChatResolutionTime / 10));
+        
+        // Add the usage cost to the base cost
+        monthlyChatbotCost += volumeDiscountedCost * complexityFactor;
       }
-      
-      // Scale cost based on resolution time (indicates complexity)
-      const complexityFactor = Math.min(1.5, Math.max(1.0, inputs.avgChatResolutionTime / 10));
-      monthlyChatbotCost *= complexityFactor;
     }
     
     const monthlyAiCost = monthlyVoiceCost + monthlyChatbotCost;
