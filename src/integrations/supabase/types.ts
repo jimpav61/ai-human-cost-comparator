@@ -67,7 +67,10 @@ export type Database = {
           company_name: string
           created_at: string | null
           email: string
+          employee_count: number | null
+          form_completed: boolean | null
           id: string
+          industry: string | null
           name: string
           phone_number: string | null
           proposal_sent: boolean | null
@@ -80,7 +83,10 @@ export type Database = {
           company_name: string
           created_at?: string | null
           email: string
+          employee_count?: number | null
+          form_completed?: boolean | null
           id?: string
+          industry?: string | null
           name: string
           phone_number?: string | null
           proposal_sent?: boolean | null
@@ -93,7 +99,10 @@ export type Database = {
           company_name?: string
           created_at?: string | null
           email?: string
+          employee_count?: number | null
+          form_completed?: boolean | null
           id?: string
+          industry?: string | null
           name?: string
           phone_number?: string | null
           proposal_sent?: boolean | null
