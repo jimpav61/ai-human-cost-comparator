@@ -148,7 +148,7 @@ export const generateProposal = (params: GenerateProposalParams) => {
 
   // Calculate ROI based on employee count if available
   const employeeMultiplier = params.employeeCount ? Math.min(params.employeeCount / 10, 5) : 1;
-  const employeeBasedROI = params.employeeCount ? `${Math.max(1, Math.round(3 - employeeMultiplier * 0.5))} to ${Math.round(3 + employeeMultiplier)} months` : "Immediate to 3 months";
+  const employeeBasedROI = params.employeeCount ? `${Math.max(1, Math.round(3 - employeeMultiplier * 0.5))} to ${Math.round(3 + employeeMultiplier)} days` : "1 to 3 days";
 
   autoTable(doc, {
     startY: yPosition + 5,
@@ -157,7 +157,7 @@ export const generateProposal = (params: GenerateProposalParams) => {
       ["Monthly Cost Reduction", monthlySavings],
       ["Annual Cost Reduction", yearlySavings],
       ["Efficiency Improvement", `${savingsPercent}%`],
-      ["Implementation Timeline", params.employeeCount && params.employeeCount > 50 ? "4-8 weeks" : "2-4 weeks"],
+      ["Implementation Timeline", "5 business days or less"],
       ["ROI Timeline", employeeBasedROI],
       ["5-Year Projected Savings", formatCurrency(Number(yearlySavings.replace(/[^0-9.-]+/g, '')) * 5)]
     ],
@@ -174,20 +174,18 @@ export const generateProposal = (params: GenerateProposalParams) => {
     yPosition = 20;
   }
 
-  // Implementation Process - customize based on company size
+  // Implementation Process - updated to reflect rapid 5-day timeline
   doc.setFontSize(14);
-  doc.text("Detailed Implementation Process", 20, yPosition);
-
-  // Adjust implementation timeline based on employee count
-  const timelineMultiplier = params.employeeCount ? Math.min(Math.max(params.employeeCount / 50, 1), 3) : 1;
+  doc.text("Rapid Implementation Process", 20, yPosition);
   
   autoTable(doc, {
     startY: yPosition + 5,
     body: [
-      [`1. Discovery & Planning (Week ${Math.round(1 * timelineMultiplier)})`, "Our team conducts a thorough assessment of your current systems, workflows, and customer interaction points to identify the optimal integration approach."],
-      [`2. AI Model Customization (Week ${Math.round(2 * timelineMultiplier)})`, "We train and fine-tune our AI models using industry-specific data and your company's unique communication patterns to ensure contextually appropriate responses."],
-      [`3. Integration & Testing (Week ${Math.round(3 * timelineMultiplier)})`, "Seamless integration with your existing systems followed by rigorous testing across various scenarios and edge cases to ensure reliable performance."],
-      [`4. Team Training & Deployment (Week ${Math.round(4 * timelineMultiplier)})`, "Comprehensive training for your staff on how to monitor, manage, and maximize the AI system, followed by staged deployment to minimize disruption."]
+      ["1. Discovery & Planning (Day 1)", "Our team conducts a thorough assessment of your current systems, workflows, and customer interaction points to identify the optimal integration approach."],
+      ["2. AI Model Customization (Day 2)", "We configure and fine-tune our pre-trained AI models using industry-specific data to ensure contextually appropriate responses for your business needs."],
+      ["3. Integration & Testing (Day 3)", "Seamless integration with your existing systems followed by rigorous testing across various scenarios to ensure reliable performance."],
+      ["4. Team Training (Day 4)", "Comprehensive training for your staff on how to monitor, manage, and maximize the AI system to ensure optimal performance."],
+      ["5. Live Deployment (Day 5)", "Swift deployment with careful monitoring and real-time adjustments to ensure smooth operation from day one."]
     ],
     styles: { fontSize: 11 },
     theme: 'plain',
@@ -220,10 +218,10 @@ export const generateProposal = (params: GenerateProposalParams) => {
     startY: yPosition + splitNextSteps.length * 7 + 15,
     body: [
       ["1. Executive Strategy Session", "Schedule a 60-minute executive briefing where we'll walk through the comprehensive proposal and address any strategic questions."],
-      ["2. Technical Discovery Meeting", "Arrange a session with your IT team to discuss integration details, security protocols, and data handling procedures."],
-      ["3. Custom Implementation Plan", "Receive a tailored implementation roadmap with specific milestones, responsibilities, and timeline."],
-      ["4. Pilot Program Setup", "Start with a controlled implementation in one department to demonstrate value and refine the approach."],
-      ["5. Full-Scale Deployment", "Roll out the solution across your organization with continuous support and optimization."]
+      ["2. Technical Discovery Meeting", "Arrange a brief session with your IT team to discuss integration details and security protocols."],
+      ["3. Same-Day Implementation Plan", "Receive a tailored implementation roadmap with specific milestones and responsibilities."],
+      ["4. Rapid Deployment", "Start with immediate implementation to demonstrate value from day one."],
+      ["5. Continuous Optimization", "Our team provides ongoing support to ensure maximum ROI from your AI investment."]
     ],
     styles: { fontSize: 11 },
     theme: 'plain',
@@ -256,7 +254,7 @@ export const generateProposal = (params: GenerateProposalParams) => {
       ["• Training Materials", "Video tutorials and step-by-step guides for all user levels"],
       ["• ROI Calculator", "Online tool to continue tracking and projecting your savings"],
       ["• 24/7 Support Team", "Dedicated technical assistance throughout implementation and beyond"],
-      ["• Regular Performance Reviews", "Quarterly analysis of AI performance and optimization opportunities"]
+      ["• Regular Performance Reviews", "Monthly analysis of AI performance and optimization opportunities"]
     ],
     styles: { fontSize: 11 },
     theme: 'plain',
@@ -273,7 +271,7 @@ export const generateProposal = (params: GenerateProposalParams) => {
   doc.text("Get Started Today", 20, yPosition);
 
   doc.setFontSize(12);
-  const getStartedText = "Contact our dedicated implementation team to begin your AI transformation journey. We're ready to help you revolutionize your customer service operations and achieve significant cost savings.";
+  const getStartedText = "Contact our dedicated implementation team to begin your AI transformation journey. We're ready to help you revolutionize your customer service operations and achieve significant cost savings within just 5 business days.";
   const splitGetStarted = doc.splitTextToSize(getStartedText, 170);
   doc.text(splitGetStarted, 20, yPosition + 10);
   
