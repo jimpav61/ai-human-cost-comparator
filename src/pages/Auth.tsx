@@ -93,26 +93,55 @@ const Auth = () => {
           throw new Error("Error verifying admin status");
         }
         
-        // Now proceed with registration
+        // Now proceed with registration using signUp without email confirmation
         const { data, error } = await supabase.auth.signUp({
           email,
           password,
+          options: {
+            emailRedirectTo: window.location.origin,
+            data: {
+              email_confirmed: true
+            }
+          }
         });
         
         if (error) throw error;
+        
+        // Since we may still need email verification based on Supabase settings,
+        // let's also try to sign in immediately - this will work if email confirmation is disabled in Supabase
+        try {
+          const { error: signInError } = await supabase.auth.signInWithPassword({
+            email,
+            password
+          });
+          
+          if (!signInError) {
+            // Successfully signed in immediately after signup
+            toast({
+              title: "Account created and logged in",
+              description: isAllowedData ? "Admin account created successfully." : "Account created successfully.",
+            });
+            return;
+          }
+        } catch (signInError) {
+          console.log("Could not auto-login after signup, may need verification:", signInError);
+        }
         
         // If email is in allowed_admins, the trigger will automatically add the admin role
         if (isAllowedData) {
           toast({
             title: "Admin Account Created",
-            description: "Your account has been created with admin privileges. Please check your email for verification instructions.",
+            description: "Your account has been created. Please sign in with your credentials.",
           });
         } else {
           toast({
             title: "Account Created",
-            description: "Your account has been created. Please check your email for verification instructions.",
+            description: "Your account has been created. Please sign in with your credentials.",
           });
         }
+        
+        // Switch to login view
+        setIsSignup(false);
       } else {
         const { data, error } = await supabase.auth.signInWithPassword({
           email,
@@ -122,6 +151,10 @@ const Auth = () => {
         if (error) throw error;
         
         console.log("Login successful", data);
+        toast({
+          title: "Login Successful",
+          description: "You have been logged in successfully.",
+        });
       }
     } catch (error: any) {
       console.error("Auth error:", error);
