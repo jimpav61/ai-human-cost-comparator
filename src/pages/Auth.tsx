@@ -12,69 +12,19 @@ const Auth = () => {
   const [password, setPassword] = useState("");
   const [loginInProgress, setLoginInProgress] = useState(false);
 
-  // Handle initial session check
   useEffect(() => {
-    const { data: { subscription } } = supabase.auth.onAuthStateChange(
-      async (event, session) => {
-        if (event === "SIGNED_IN" && session?.user?.email) {
-          try {
-            console.log("Session check - user email:", session.user.email);
-            
-            // Perform admin check
-            const { data: adminCheck } = await supabase
-              .from('allowed_admins')
-              .select('*')
-              .ilike('email', session.user.email);
-            
-            console.log("Admin check for session:", adminCheck);
-
-            if (adminCheck && adminCheck.length > 0) {
-              window.location.replace('/admin');
-            } else {
-              await supabase.auth.signOut();
-              toast({
-                title: "Access Denied",
-                description: "You do not have admin access",
-                variant: "destructive",
-              });
-            }
-          } catch (error) {
-            console.error("Admin check error:", error);
-          }
-        }
-      }
-    );
-
-    // Check initial session
-    const checkInitialSession = async () => {
-      try {
-        const { data: { session } } = await supabase.auth.getSession();
-        if (session?.user?.email) {
-          console.log("Initial session user:", session.user.email);
-          
-          const { data: adminCheck } = await supabase
-            .from('allowed_admins')
-            .select('*')
-            .ilike('email', session.user.email);
-
-          if (adminCheck && adminCheck.length > 0) {
-            window.location.replace('/admin');
-          } else {
-            await supabase.auth.signOut();
-          }
-        }
-      } catch (error) {
-        console.error("Initial session check error:", error);
-      } finally {
+    // Check if user is already logged in
+    const checkSession = async () => {
+      const { data } = await supabase.auth.getSession();
+      if (data.session) {
+        // User is logged in, redirect to admin
+        window.location.href = "/admin";
+      } else {
         setLoading(false);
       }
     };
 
-    checkInitialSession();
-
-    return () => {
-      subscription.unsubscribe();
-    };
+    checkSession();
   }, []);
 
   const handleLogin = async (e: React.FormEvent) => {
@@ -94,38 +44,35 @@ const Auth = () => {
     setLoginInProgress(true);
     
     try {
-      // Sign in first
-      const { data: signInData, error: signInError } = await supabase.auth.signInWithPassword({
+      // Hardcoded admin check for jimmy.pavlatos@gmail.com
+      if (email.trim().toLowerCase() !== "jimmy.pavlatos@gmail.com") {
+        toast({
+          title: "Access Denied",
+          description: "You do not have admin access",
+          variant: "destructive",
+        });
+        setLoginInProgress(false);
+        return;
+      }
+      
+      // Attempt to sign in
+      const { error } = await supabase.auth.signInWithPassword({
         email: email.trim(),
         password: password.trim()
       });
       
-      if (signInError) {
-        throw signInError;
+      if (error) {
+        throw error;
       }
-
-      if (!signInData.user?.email) {
-        throw new Error("No user email found after sign in");
-      }
-
-      // Then check admin access
-      const { data: adminCheck } = await supabase
-        .from('allowed_admins')
-        .select('*')
-        .ilike('email', signInData.user.email);
-
-      if (!adminCheck || adminCheck.length === 0) {
-        await supabase.auth.signOut();
-        throw new Error("This email is not authorized for admin access");
-      }
-
+      
       // Success! Redirect to admin page
       toast({
         title: "Success",
         description: "Logged in successfully",
       });
 
-      window.location.replace('/admin');
+      // Direct redirect
+      window.location.href = "/admin";
       
     } catch (error: any) {
       console.error("Login error:", error);
@@ -134,7 +81,6 @@ const Auth = () => {
         description: error.message || "An unexpected error occurred",
         variant: "destructive",
       });
-    } finally {
       setLoginInProgress(false);
     }
   };
@@ -144,7 +90,7 @@ const Auth = () => {
       <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-brand-50 to-gray-100">
         <div className="text-center">
           <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-brand-500 mx-auto mb-4"></div>
-          <p className="text-gray-600">Checking authentication status...</p>
+          <p className="text-gray-600">Loading...</p>
         </div>
       </div>
     );
