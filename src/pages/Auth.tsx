@@ -56,16 +56,7 @@ const Auth = () => {
     setLoginInProgress(true);
     
     try {
-      // Hardcoded admin check for jimmy.pavlatos@gmail.com
-      if (email.trim().toLowerCase() !== "jimmy.pavlatos@gmail.com") {
-        toast({
-          title: "Access Denied",
-          description: "You do not have admin access",
-          variant: "destructive",
-        });
-        setLoginInProgress(false);
-        return;
-      }
+      // Remove the hardcoded email check - allow any registered user to login
       
       // Attempt to sign in
       const { error } = await supabase.auth.signInWithPassword({
