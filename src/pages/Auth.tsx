@@ -25,6 +25,18 @@ const Auth = () => {
     };
 
     checkSession();
+
+    // Listen for auth state changes
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
+      if (event === 'SIGNED_IN' && session) {
+        // Redirect to admin page upon sign in
+        window.location.href = "/admin";
+      }
+    });
+
+    return () => {
+      subscription.unsubscribe();
+    };
   }, []);
 
   const handleLogin = async (e: React.FormEvent) => {
@@ -71,7 +83,7 @@ const Auth = () => {
         description: "Logged in successfully",
       });
 
-      // Direct redirect
+      // Direct redirect - the auth state listener should also handle this
       window.location.href = "/admin";
       
     } catch (error: any) {

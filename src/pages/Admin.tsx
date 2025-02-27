@@ -11,6 +11,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 const AdminDashboard = () => {
   const [loading, setLoading] = useState(true);
   const [leads, setLeads] = useState<Lead[]>([]);
+  const [isAuthenticated, setIsAuthenticated] = useState(false);
 
   useEffect(() => {
     const checkAuth = async () => {
@@ -20,19 +21,17 @@ const AdminDashboard = () => {
         if (sessionError) throw sessionError;
         
         if (!session) {
-          window.location.href = '/';
+          window.location.href = '/auth';
           return;
         }
 
-        const { data: adminCheck, error: adminError } = await supabase
-          .from('allowed_admins')
-          .select('email')
-          .eq('email', session.user.email)
-          .single();
+        // Set authenticated state to prevent double redirects
+        setIsAuthenticated(true);
 
-        if (adminError || !adminCheck) {
+        // Check if email is jimmy.pavlatos@gmail.com
+        if (session.user.email?.toLowerCase() !== 'jimmy.pavlatos@gmail.com') {
           await supabase.auth.signOut();
-          window.location.href = '/';
+          window.location.href = '/auth';
           return;
         }
 
@@ -69,25 +68,37 @@ const AdminDashboard = () => {
           description: "An error occurred while loading the dashboard",
           variant: "destructive",
         });
-        window.location.href = '/';
+        
+        // Only redirect if not authenticated
+        if (!isAuthenticated) {
+          window.location.href = '/auth';
+        }
       }
     };
 
     checkAuth();
 
-    const authListener = supabase.auth.onAuthStateChange((event) => {
+    // Add auth state change listener
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((event) => {
       if (event === 'SIGNED_OUT') {
-        window.location.href = '/';
+        window.location.href = '/auth';
       }
     });
 
     return () => {
-      authListener.data.subscription.unsubscribe();
+      subscription.unsubscribe();
     };
-  }, []);
+  }, [isAuthenticated]);
 
   if (loading) {
-    return <div className="flex justify-center items-center min-h-screen">Loading...</div>;
+    return (
+      <div className="flex justify-center items-center min-h-screen">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-brand-500 mx-auto mb-4"></div>
+          <p className="text-gray-600">Loading admin dashboard...</p>
+        </div>
+      </div>
+    );
   }
 
   return (
