@@ -60,6 +60,35 @@ export type Database = {
         }
         Relationships: []
       }
+      lead_assignments: {
+        Row: {
+          agent_id: string
+          assigned_at: string | null
+          id: string
+          lead_id: string
+        }
+        Insert: {
+          agent_id: string
+          assigned_at?: string | null
+          id?: string
+          lead_id: string
+        }
+        Update: {
+          agent_id?: string
+          assigned_at?: string | null
+          id?: string
+          lead_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "lead_assignments_lead_id_fkey"
+            columns: ["lead_id"]
+            isOneToOne: false
+            referencedRelation: "leads"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       leads: {
         Row: {
           calculator_inputs: Json
@@ -182,10 +211,23 @@ export type Database = {
         }
         Returns: boolean
       }
+      is_admin: {
+        Args: {
+          user_id: string
+        }
+        Returns: boolean
+      }
+      is_allowed_admin: {
+        Args: {
+          email: string
+        }
+        Returns: boolean
+      }
     }
     Enums: {
       app_role: "admin" | "user"
       package_tier: "starter" | "growth" | "premium"
+      user_role: "admin" | "agent"
     }
     CompositeTypes: {
       [_ in never]: never
