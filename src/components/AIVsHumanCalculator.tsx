@@ -1,5 +1,5 @@
 
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import { useCalculator, type CalculatorInputs } from '@/hooks/useCalculator';
 import { CalculatorForm } from './calculator/CalculatorForm';
 import { ResultsDisplay } from './calculator/ResultsDisplay';
@@ -39,16 +39,19 @@ export const AIVsHumanCalculator: React.FC<AIVsHumanCalculatorProps> = ({ leadDa
   // Generate report and save to database
   const handleGenerateReport = async () => {
     try {
+      // Create a single record object (not an array)
+      const reportData = {
+        contact_name: leadData.name,
+        company_name: leadData.companyName,
+        email: leadData.email,
+        phone_number: leadData.phoneNumber || null,
+        calculator_inputs: calculatorInputs,
+        calculator_results: calculationResults,
+      };
+      
       const { error } = await supabase
         .from('generated_reports')
-        .insert({
-          contact_name: leadData.name,
-          company_name: leadData.companyName,
-          email: leadData.email,
-          phone_number: leadData.phoneNumber || null,
-          calculator_inputs: calculatorInputs,
-          calculator_results: calculationResults,
-        });
+        .insert(reportData);
 
       if (error) throw error;
 
