@@ -1,8 +1,10 @@
 
 import jsPDF from 'jspdf';
 import autoTable, { UserOptions } from 'jspdf-autotable';
-import { formatCurrency } from '@/utils/formatters';
+import { formatCurrency, formatNumber } from '@/utils/formatters';
 import type { CalculationResults } from '@/hooks/useCalculator';
+import { AI_RATES } from '@/constants/pricing';
+import { PricingDetail } from './types';
 
 // Add custom interface to handle the jsPDF extension from autotable
 interface JsPDFWithAutoTable extends jsPDF {
@@ -19,6 +21,9 @@ interface GenerateProposalParams {
   industry?: string;
   employeeCount?: number;
   results: CalculationResults;
+  tierName?: string;
+  aiType?: string;
+  pricingDetails?: PricingDetail[];
 }
 
 export const generateProposal = (params: GenerateProposalParams) => {
@@ -103,10 +108,138 @@ export const generateProposal = (params: GenerateProposalParams) => {
   const splitChallenges = doc.splitTextToSize(challengesText, 170);
   doc.text(splitChallenges, 20, yPosition);
 
-  // Value Proposition
+  // Recommended solution - based on the selected tier and plan
   yPosition += splitChallenges.length * 7 + 10;
   doc.setFontSize(14);
-  doc.text("Your AI Transformation Journey", 20, yPosition);
+  doc.text("Recommended Solution", 20, yPosition);
+  
+  yPosition += 8;
+  doc.setFontSize(12);
+  
+  // Plan details
+  let planText = `Based on your specific needs, we recommend our ${params.tierName || ''} (${params.aiType || ''}) solution. This tailored package provides optimal functionality while maximizing your return on investment.`;
+  const splitPlanText = doc.splitTextToSize(planText, 170);
+  doc.text(splitPlanText, 20, yPosition);
+  
+  // Add pricing table for the detailed plan breakdown
+  autoTable(doc, {
+    startY: yPosition + splitPlanText.length * 7 + 5,
+    head: [["Pricing Component", "Details", "Cost"]],
+    body: [
+      ["Monthly Base Fee", params.tierName || "Custom Plan", formatCurrency(params.results.aiCostMonthly.total)],
+      ["One-time Setup Fee", "Non-refundable", formatCurrency(params.results.aiCostMonthly.setupFee)],
+      ["Annual Plan Option", "Includes 2 months FREE!", formatCurrency(params.results.annualPlan)],
+      ["Estimated Monthly Savings", "vs. current operations", formatCurrency(params.results.monthlySavings)],
+      ["Projected Annual Savings", "First year", formatCurrency(params.results.yearlySavings)]
+    ],
+    theme: 'grid',
+    styles: { fontSize: 10, cellPadding: 5 },
+    columnStyles: {
+      0: { fontStyle: 'bold' },
+      2: { halign: 'right' }
+    },
+  });
+  
+  // Get the last Y position after the table
+  yPosition = (doc.lastAutoTable?.finalY || yPosition + 40) + 10;
+  
+  // Add detailed usage information if we have pricing details
+  if (params.pricingDetails && params.pricingDetails.length > 0) {
+    doc.setFontSize(14);
+    doc.text("Detailed Usage Analysis", 20, yPosition);
+    
+    yPosition += 8;
+    
+    // Create an array to store the pricing breakdown data for the table
+    const pricingBreakdownData = [];
+    
+    // Process each pricing detail to add to the table
+    params.pricingDetails.forEach(detail => {
+      if (detail.title === 'Text AI') {
+        pricingBreakdownData.push(
+          ["Text AI Base Fee", "", formatCurrency(detail.base || 0)],
+          ["Message Volume", `${formatNumber(detail.totalMessages || 0)} messages/month`, ""],
+          ["Message Rate", detail.rate, ""],
+          ["Message Usage Cost", "", formatCurrency(detail.usageCost || 0)]
+        );
+        
+        if (detail.volumeDiscount && detail.volumeDiscount > 0) {
+          pricingBreakdownData.push(
+            ["Volume Discount", "Based on message volume", `-${formatCurrency(detail.volumeDiscount)}`]
+          );
+        }
+        
+        pricingBreakdownData.push(
+          ["Total Text AI Cost", "", formatCurrency(detail.monthlyCost)]
+        );
+      } else if (detail.title === 'Voice AI') {
+        pricingBreakdownData.push(
+          ["Included Voice Minutes", detail.rate.includes("included") ? detail.rate.split("after ")[1].split(" included")[0] : "0", "Included"],
+          ["Monthly Voice Minutes", `${formatNumber(detail.totalMinutes || 0)} minutes/month`, ""],
+          ["Voice Rate", detail.rate, ""],
+          ["Voice Usage Cost", "", formatCurrency(detail.usageCost || 0)],
+          ["Total Voice AI Cost", "", formatCurrency(detail.monthlyCost)]
+        );
+      }
+    });
+    
+    // Add detailed pricing breakdown table
+    autoTable(doc, {
+      startY: yPosition,
+      body: pricingBreakdownData,
+      theme: 'striped',
+      styles: { fontSize: 10, cellPadding: 5 },
+      columnStyles: {
+        0: { fontStyle: 'bold' },
+        2: { halign: 'right' }
+      },
+    });
+    
+    // Get the last Y position after the table
+    yPosition = (doc.lastAutoTable?.finalY || yPosition + 60) + 10;
+  }
+  
+  // Human Resource Cost Analysis
+  if (yPosition > 230) {
+    doc.addPage();
+    yPosition = 20;
+  }
+  
+  doc.setFontSize(14);
+  doc.text("Human Resource Cost Analysis", 20, yPosition);
+  
+  yPosition += 8;
+  doc.setFontSize(12);
+  
+  // Add human resource cost breakdown table
+  autoTable(doc, {
+    startY: yPosition,
+    head: [["Resource Metric", "Details", "Value"]],
+    body: [
+      ["Hourly Labor Rate", "Including benefits & overhead", formatCurrency(params.results.humanCostMonthly / params.results.humanHours.monthlyTotal)],
+      ["Monthly Hours", "Total across all staff", `${formatNumber(params.results.humanHours.monthlyTotal)} hours`],
+      ["Monthly Labor Cost", "Current operation", formatCurrency(params.results.humanCostMonthly)],
+      ["Annual Labor Cost", "Current operation", formatCurrency(params.results.humanCostMonthly * 12)],
+      ["Cost Reduction", "With AI implementation", `${Math.abs(params.results.savingsPercentage).toFixed(1)}%`]
+    ],
+    theme: 'grid',
+    styles: { fontSize: 10, cellPadding: 5 },
+    columnStyles: {
+      0: { fontStyle: 'bold' },
+      2: { halign: 'right' }
+    },
+  });
+  
+  // Value Proposition
+  yPosition = (doc.lastAutoTable?.finalY || yPosition + 60) + 10;
+  
+  if (yPosition > 230) {
+    doc.addPage();
+    yPosition = 20;
+  }
+  
+  doc.setFontSize(14);
+  doc.text("Value Proposition", 20, yPosition);
   
   // Benefits table
   autoTable(doc, {
@@ -130,6 +263,11 @@ export const generateProposal = (params: GenerateProposalParams) => {
   yPosition = (doc.lastAutoTable?.finalY || yPosition + 60) + 20;
 
   // Financial Impact
+  if (yPosition > 230) {
+    doc.addPage();
+    yPosition = 20;
+  }
+  
   doc.setFontSize(14);
   doc.text("Financial Impact & ROI Analysis", 20, yPosition);
 

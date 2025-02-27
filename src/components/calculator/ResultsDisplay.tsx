@@ -7,7 +7,7 @@ import {
 } from 'lucide-react';
 import type { CalculationResults, CalculatorInputs } from '@/hooks/useCalculator';
 import type { ResultsDisplayProps } from './types';
-import { generatePDF } from './pdfGenerator';
+import { generateProposal } from './proposalGenerator';
 import { Button } from '@/components/ui/button';
 import { ResultsSummary } from './ResultsSummary';
 import { ResultsDetailView } from './ResultsDetailView';
@@ -31,51 +31,7 @@ export const ResultsDisplay: React.FC<ResultsDisplayProps> = ({
   const aiTypeDisplay = getAITypeDisplay(inputs.aiType);
 
   const downloadPDF = () => {
-    // Generate suggestions based on the business and calculator results
-    const businessSuggestions = [
-      {
-        title: "Automate Customer Support",
-        description: "Implement our AI system to handle routine customer inquiries 24/7, freeing up your team for complex issues."
-      },
-      {
-        title: "Integration with Existing Systems",
-        description: "Our AI solutions seamlessly integrate with your current CRM and communication tools for a unified workflow."
-      },
-      {
-        title: "Scalable Growth Solution",
-        description: "As your business grows, our AI scales with you without proportional increases in operational costs."
-      }
-    ];
-
-    // Generate AI placement recommendations
-    const aiPlacements = [
-      {
-        role: "Customer Support",
-        capabilities: [
-          "Answer frequently asked questions",
-          "Process simple service requests",
-          "Provide product information"
-        ]
-      },
-      {
-        role: "Sales Assistance",
-        capabilities: [
-          "Qualify leads 24/7",
-          "Schedule appointments",
-          "Answer product questions"
-        ]
-      },
-      {
-        role: "Internal Operations",
-        capabilities: [
-          "Automate data entry tasks",
-          "Process routine internal requests",
-          "Provide employee information"
-        ]
-      }
-    ];
-
-    const doc = generatePDF({
+    const doc = generateProposal({
       contactInfo: leadData.name,
       companyName: leadData.companyName,
       email: leadData.email,
@@ -83,13 +39,12 @@ export const ResultsDisplay: React.FC<ResultsDisplayProps> = ({
       industry: leadData.industry,
       employeeCount: leadData.employeeCount,
       results,
-      businessSuggestions,
-      aiPlacements,
       tierName: tierDisplayName,
-      aiType: aiTypeDisplay
+      aiType: aiTypeDisplay,
+      pricingDetails: pricingDetails
     });
 
-    doc.save(`${leadData.companyName.replace(/\s+/g, '-')}_AI_Analysis.pdf`);
+    doc.save(`${leadData.companyName.replace(/\s+/g, '-')}_AI_Proposal.pdf`);
   };
 
   return (
