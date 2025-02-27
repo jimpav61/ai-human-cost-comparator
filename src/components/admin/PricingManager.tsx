@@ -59,14 +59,22 @@ export const PricingManager = () => {
         
         setConfigurations(defaultConfigurations as PricingConfiguration[]);
       } else {
-        // Make sure we have all the required fields
+        // Make sure we have all the required fields by creating fully typed objects
         const updatedConfigurations = data.map(config => {
-          return {
-            ...config,
-            setup_fee: config.setup_fee ?? 0,
-            annual_price: config.annual_price ?? 0,
-            included_voice_minutes: config.included_voice_minutes ?? 0
-          } as PricingConfiguration;
+          // Create a new object with all the expected properties
+          const typedConfig: PricingConfiguration = {
+            id: config.id,
+            created_at: config.created_at,
+            updated_at: config.updated_at || config.created_at,
+            tier: config.tier as PricingConfiguration['tier'],
+            voice_per_minute: config.voice_per_minute,
+            chatbot_base_price: config.chatbot_base_price,
+            chatbot_per_message: config.chatbot_per_message,
+            setup_fee: typeof config.setup_fee === 'number' ? config.setup_fee : 0,
+            annual_price: typeof config.annual_price === 'number' ? config.annual_price : 0,
+            included_voice_minutes: typeof config.included_voice_minutes === 'number' ? config.included_voice_minutes : 0
+          };
+          return typedConfig;
         });
         
         setConfigurations(updatedConfigurations);
@@ -104,18 +112,21 @@ export const PricingManager = () => {
     try {
       // Save each configuration individually
       for (const config of configurations) {
+        // Explicitly define the fields we're updating
+        const updateData = {
+          id: config.id,
+          tier: config.tier,
+          voice_per_minute: config.voice_per_minute,
+          chatbot_base_price: config.chatbot_base_price,
+          chatbot_per_message: config.chatbot_per_message,
+          setup_fee: config.setup_fee,
+          annual_price: config.annual_price,
+          included_voice_minutes: config.included_voice_minutes
+        };
+        
         const { error } = await supabase
           .from('pricing_configurations')
-          .upsert({
-            id: config.id,
-            tier: config.tier,
-            voice_per_minute: config.voice_per_minute,
-            chatbot_base_price: config.chatbot_base_price,
-            chatbot_per_message: config.chatbot_per_message,
-            setup_fee: config.setup_fee,
-            annual_price: config.annual_price,
-            included_voice_minutes: config.included_voice_minutes
-          });
+          .upsert(updateData);
 
         if (error) throw error;
       }
