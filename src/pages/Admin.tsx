@@ -7,10 +7,86 @@ import { LeadsTable } from '@/components/admin/LeadsTable';
 import { PricingManager } from '@/components/admin/PricingManager';
 import { Lead } from '@/types/leads';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { useNavigate } from 'react-router-dom';
+import { LogOut, Loader2 } from 'lucide-react';
 
 const AdminDashboard = () => {
   const [loading, setLoading] = useState(true);
   const [leads, setLeads] = useState<Lead[]>([]);
+  const [session, setSession] = useState<any>(null);
+  const [isAdmin, setIsAdmin] = useState(false);
+  const [authChecking, setAuthChecking] = useState(true);
+  const navigate = useNavigate();
+
+  useEffect(() => {
+    const checkAuth = async () => {
+      try {
+        const { data: sessionData, error: sessionError } = await supabase.auth.getSession();
+        
+        if (sessionError) {
+          throw sessionError;
+        }
+        
+        if (!sessionData.session) {
+          // User is not logged in
+          navigate('/auth');
+          return;
+        }
+        
+        setSession(sessionData.session);
+        
+        // Check if user is admin
+        const { data: roleData, error: roleError } = await supabase
+          .from('user_roles')
+          .select('role')
+          .eq('user_id', sessionData.session.user.id)
+          .single();
+          
+        if (roleError) {
+          throw roleError;
+        }
+        
+        if (!roleData || roleData.role !== 'admin') {
+          // User is not an admin
+          toast({
+            title: "Access Denied",
+            description: "You don't have permission to access the admin dashboard",
+            variant: "destructive",
+          });
+          navigate('/auth');
+          return;
+        }
+        
+        setIsAdmin(true);
+        setAuthChecking(false);
+        fetchLeads();
+        
+      } catch (error: any) {
+        console.error('Auth check error:', error);
+        toast({
+          title: "Authentication Error",
+          description: error.message || "Please log in again",
+          variant: "destructive",
+        });
+        navigate('/auth');
+      }
+    };
+    
+    const authListener = supabase.auth.onAuthStateChange(async (event, session) => {
+      if (event === 'SIGNED_OUT') {
+        navigate('/auth');
+      } else if (session) {
+        setSession(session);
+        checkAuth();
+      }
+    });
+    
+    checkAuth();
+    
+    return () => {
+      authListener.data.subscription.unsubscribe();
+    };
+  }, [navigate]);
 
   // Sample leads data to ensure admin always has leads to display
   const sampleLeads: Lead[] = [
@@ -115,75 +191,97 @@ const AdminDashboard = () => {
     }
   ];
 
-  useEffect(() => {
-    const fetchLeads = async () => {
-      try {
-        console.log('Fetching leads...');
-        
-        // Get leads data without any authentication check
-        const { data: leadsData, error: leadsError } = await supabase
-          .from('leads')
-          .select('*')
-          .order('created_at', { ascending: false });
+  const fetchLeads = async () => {
+    try {
+      console.log('Fetching leads...');
+      
+      // Get leads data with proper authentication
+      const { data: leadsData, error: leadsError } = await supabase
+        .from('leads')
+        .select('*')
+        .order('created_at', { ascending: false });
 
-        if (leadsError) {
-          console.error('Leads fetch error:', leadsError);
-          throw leadsError;
-        }
-
-        console.log('Leads data received:', leadsData);
-
-        // Start with sample leads
-        let combinedLeads = [...sampleLeads];
-
-        if (leadsData && leadsData.length > 0) {
-          const transformedLeads = leadsData.map(lead => ({
-            id: lead.id,
-            name: lead.name,
-            company_name: lead.company_name,
-            email: lead.email,
-            phone_number: lead.phone_number || '',
-            website: lead.website || null,
-            industry: lead.industry || 'Not Specified',
-            employee_count: lead.employee_count || 0,
-            calculator_inputs: lead.calculator_inputs || {},
-            calculator_results: lead.calculator_results || {},
-            proposal_sent: lead.proposal_sent || false,
-            created_at: lead.created_at,
-            form_completed: lead.form_completed || false
-          }));
-          
-          console.log('Transformed leads:', transformedLeads);
-          
-          // Add database leads first, then sample leads
-          combinedLeads = [...transformedLeads, ...sampleLeads];
-        }
-        
-        setLeads(combinedLeads);
-        setLoading(false);
-
-      } catch (error: any) {
-        console.error('Error fetching leads:', error);
-        toast({
-          title: "Error",
-          description: "Failed to load leads from database. Showing sample leads only.",
-          variant: "destructive",
-        });
-        
-        // Set sample leads even if there's an error
-        setLeads(sampleLeads);
-        setLoading(false);
+      if (leadsError) {
+        console.error('Leads fetch error:', leadsError);
+        throw leadsError;
       }
-    };
 
-    fetchLeads();
-  }, []);
+      console.log('Leads data received:', leadsData);
+
+      // Start with sample leads
+      let combinedLeads = [...sampleLeads];
+
+      if (leadsData && leadsData.length > 0) {
+        const transformedLeads = leadsData.map(lead => ({
+          id: lead.id,
+          name: lead.name,
+          company_name: lead.company_name,
+          email: lead.email,
+          phone_number: lead.phone_number || '',
+          website: lead.website || null,
+          industry: lead.industry || 'Not Specified',
+          employee_count: lead.employee_count || 0,
+          calculator_inputs: lead.calculator_inputs || {},
+          calculator_results: lead.calculator_results || {},
+          proposal_sent: lead.proposal_sent || false,
+          created_at: lead.created_at,
+          form_completed: lead.form_completed || false
+        }));
+        
+        console.log('Transformed leads:', transformedLeads);
+        
+        // Add database leads first, then sample leads
+        combinedLeads = [...transformedLeads, ...sampleLeads];
+      }
+      
+      setLeads(combinedLeads);
+      setLoading(false);
+
+    } catch (error: any) {
+      console.error('Error fetching leads:', error);
+      toast({
+        title: "Error",
+        description: "Failed to load leads from database. Showing sample leads only.",
+        variant: "destructive",
+      });
+      
+      // Set sample leads even if there's an error
+      setLeads(sampleLeads);
+      setLoading(false);
+    }
+  };
+
+  const handleSignOut = async () => {
+    try {
+      const { error } = await supabase.auth.signOut();
+      if (error) throw error;
+      navigate('/auth');
+    } catch (error: any) {
+      console.error('Sign out error:', error);
+      toast({
+        title: "Error",
+        description: "Failed to sign out. Please try again.",
+        variant: "destructive",
+      });
+    }
+  };
+
+  if (authChecking) {
+    return (
+      <div className="flex justify-center items-center min-h-screen">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-brand-500 mx-auto mb-4"></div>
+          <p className="text-gray-600">Verifying admin credentials...</p>
+        </div>
+      </div>
+    );
+  }
 
   if (loading) {
     return (
       <div className="flex justify-center items-center min-h-screen">
         <div className="text-center">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-brand-500 mx-auto mb-4"></div>
+          <Loader2 className="animate-spin h-12 w-12 text-brand-500 mx-auto mb-4" />
           <p className="text-gray-600">Loading admin dashboard...</p>
         </div>
       </div>
@@ -194,9 +292,20 @@ const AdminDashboard = () => {
     <div className="container mx-auto py-10">
       <div className="flex justify-between items-center mb-8">
         <h1 className="text-3xl font-bold">Admin Dashboard</h1>
-        <Button variant="destructive" onClick={() => window.location.href = '/'}>
-          Back to Home
-        </Button>
+        <div className="flex space-x-3">
+          {session && (
+            <div className="px-3 py-2 bg-gray-100 rounded text-sm">
+              Logged in as: <span className="font-semibold">{session.user.email}</span>
+            </div>
+          )}
+          <Button variant="outline" onClick={() => navigate('/')} className="mr-2">
+            Home
+          </Button>
+          <Button variant="destructive" onClick={handleSignOut} className="flex items-center gap-2">
+            <LogOut size={16} />
+            Logout
+          </Button>
+        </div>
       </div>
 
       <Tabs defaultValue="leads" className="space-y-6">
