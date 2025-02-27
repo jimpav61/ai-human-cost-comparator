@@ -73,20 +73,21 @@ export const useCalculator = (inputs: CalculatorInputs): CalculationResults => {
     const WEEKS_PER_YEAR = 52;
     const MONTHS_PER_YEAR = 12;
 
-    // Calculate human hours
+    // Calculate human hours based on number of employees
     const dailyHoursPerEmployee = HOURS_PER_SHIFT;
     const weeklyHoursPerEmployee = dailyHoursPerEmployee * DAYS_PER_WEEK;
     const weeklyTotalHours = weeklyHoursPerEmployee * inputs.numEmployees;
     const monthlyTotalHours = (weeklyTotalHours * WEEKS_PER_YEAR) / MONTHS_PER_YEAR;
     const yearlyTotalHours = weeklyTotalHours * WEEKS_PER_YEAR;
 
-    // Calculate human cost
+    // Calculate human cost with industry-specific rates
     const baseHourlyRate = HUMAN_HOURLY_RATES[inputs.role];
-    const hourlyRateWithBenefits = baseHourlyRate;
+    // Add benefits and overhead (typically 30% additional cost)
+    const hourlyRateWithBenefits = baseHourlyRate * 1.3;
     const monthlyHumanCost = hourlyRateWithBenefits * monthlyTotalHours;
     const yearlyHumanCost = monthlyHumanCost * MONTHS_PER_YEAR;
 
-    // Calculate AI costs monthly
+    // Calculate AI costs monthly based on the selected tier
     let monthlyVoiceCost = 0;
     let monthlyChatbotCost = 0;
     let setupFee = aiRates.chatbot[inputs.aiTier].setupFee || 0;
@@ -98,12 +99,29 @@ export const useCalculator = (inputs: CalculatorInputs): CalculationResults => {
       const includedMinutes = aiRates.chatbot[inputs.aiTier].includedVoiceMinutes || 0;
       const chargeableMinutes = Math.max(0, totalMinutesPerMonth - includedMinutes);
       monthlyVoiceCost = chargeableMinutes * aiRates.voice[inputs.aiTier];
+      
+      // Add fixed costs based on tier for voice services
+      if (inputs.aiTier === 'growth') {
+        monthlyVoiceCost += 100; // Additional base cost for voice in growth tier
+      } else if (inputs.aiTier === 'premium') {
+        monthlyVoiceCost += 200; // Additional base cost for voice in premium tier
+      }
     }
     
     if (inputs.aiType === 'chatbot' || inputs.aiType === 'both') {
       const totalMessages = inputs.chatVolume * inputs.avgChatLength;
       const chatbotRates = aiRates.chatbot[inputs.aiTier];
-      monthlyChatbotCost = chatbotRates.base + (totalMessages * chatbotRates.perMessage);
+      
+      // Calculate volume-based tiers for more realistic pricing
+      let volumeDiscount = 1.0;
+      if (totalMessages > 10000) volumeDiscount = 0.9;  // 10% discount over 10k messages
+      if (totalMessages > 50000) volumeDiscount = 0.8;  // 20% discount over 50k messages
+      
+      monthlyChatbotCost = chatbotRates.base + (totalMessages * chatbotRates.perMessage * volumeDiscount);
+      
+      // Scale chatbot cost proportionally with resolution time (longer chats = more complexity)
+      const complexityFactor = Math.min(1.5, Math.max(1.0, inputs.avgChatResolutionTime / 10));
+      monthlyChatbotCost *= complexityFactor;
     }
     
     const monthlyAiCost = monthlyVoiceCost + monthlyChatbotCost;

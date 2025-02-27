@@ -17,11 +17,45 @@ export const DEFAULT_AI_RATES = {
 };
 
 // Human labor costs by role (North American averages in 2025)
+// Updated with more industry-specific rates
 export const HUMAN_HOURLY_RATES = {
   customerService: 21.50,
   sales: 28.75,
   technicalSupport: 32.50,
   generalAdmin: 19.25,
+};
+
+// Industry-specific hourly rates - these will be applied as multipliers to the base rates
+export const INDUSTRY_RATE_MULTIPLIERS: Record<string, number> = {
+  "Agriculture": 0.85,
+  "Automotive": 1.1,
+  "Banking & Finance": 1.5,
+  "Construction": 1.05,
+  "Consulting": 1.4,
+  "Education": 0.9,
+  "Entertainment": 1.2,
+  "Food & Beverage": 0.8,
+  "Government": 1.1,
+  "Healthcare": 1.25,
+  "Hospitality": 0.75,
+  "Information Technology": 1.5,
+  "Insurance": 1.3,
+  "Legal Services": 1.6,
+  "Manufacturing": 1.0,
+  "Marketing & Advertising": 1.3,
+  "Media & Publishing": 1.15,
+  "Mining & Metals": 1.2,
+  "Non-Profit": 0.8,
+  "Oil & Gas": 1.4,
+  "Pharmaceuticals": 1.45,
+  "Real Estate": 1.25,
+  "Retail": 0.85,
+  "Telecommunications": 1.2,
+  "Transportation & Logistics": 1.05,
+  "Travel & Tourism": 0.9,
+  "Utilities": 1.15,
+  "Wholesale Distribution": 0.95,
+  "Other": 1.0
 };
 
 export const ROLE_LABELS = {

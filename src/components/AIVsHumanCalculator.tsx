@@ -18,7 +18,7 @@ export const AIVsHumanCalculator: React.FC<AIVsHumanCalculatorProps> = ({ leadDa
     aiType: 'chatbot',
     aiTier: 'growth',
     role: 'customerService',
-    numEmployees: 10,
+    numEmployees: leadData.employeeCount || 10,
     callVolume: 2000,
     avgCallDuration: 4.5,
     chatVolume: 5000,
@@ -39,14 +39,14 @@ export const AIVsHumanCalculator: React.FC<AIVsHumanCalculatorProps> = ({ leadDa
   // Generate report and save to database
   const handleGenerateReport = async () => {
     try {
-      // Create a single record object (not an array)
+      // Create a single record object and convert it to proper JSON format
       const reportData = {
         contact_name: leadData.name,
         company_name: leadData.companyName,
         email: leadData.email,
         phone_number: leadData.phoneNumber || null,
-        calculator_inputs: calculatorInputs,
-        calculator_results: calculationResults,
+        calculator_inputs: JSON.parse(JSON.stringify(calculatorInputs)),
+        calculator_results: JSON.parse(JSON.stringify(calculationResults)),
       };
       
       const { error } = await supabase
