@@ -51,7 +51,7 @@ const Index = () => {
         return;
       }
       
-      // For registration flow
+      // For registration flow - the redirectUrl is now handled by the Supabase client config
       const { error } = await supabase.auth.signUp({
         email: adminEmail,
         password: adminPassword,
