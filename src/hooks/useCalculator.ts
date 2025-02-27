@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from 'react';
 import { DEFAULT_AI_RATES, HUMAN_HOURLY_RATES, fetchPricingConfigurations, type AIRates } from '@/constants/pricing';
 
@@ -85,7 +84,6 @@ export const useCalculator = (inputs: CalculatorInputs): CalculationResults => {
     // Add benefits and overhead (typically 30% additional cost)
     const hourlyRateWithBenefits = baseHourlyRate * 1.3;
     const monthlyHumanCost = hourlyRateWithBenefits * monthlyTotalHours;
-    const yearlyHumanCost = monthlyHumanCost * MONTHS_PER_YEAR;
 
     // Calculate AI costs monthly based on the selected tier
     let monthlyVoiceCost = 0;
@@ -103,36 +101,28 @@ export const useCalculator = (inputs: CalculatorInputs): CalculationResults => {
     
     // Calculate chatbot costs only if chatbot is enabled
     if (inputs.aiType === 'chatbot' || inputs.aiType === 'both') {
-      const totalMessages = inputs.chatVolume * inputs.avgChatLength;
       const chatbotRates = aiRates.chatbot[inputs.aiTier];
       
-      // Base cost for the selected tier
+      // Start with base cost
       monthlyChatbotCost = chatbotRates.base;
       
-      // Only add message costs if there are messages
-      if (totalMessages > 0) {
-        // Raw message cost
-        const rawMessageCost = totalMessages * chatbotRates.perMessage;
-        
-        // Apply volume discounts for larger message volumes
-        let volumeDiscountedCost = rawMessageCost;
-        if (totalMessages > 50000) {
-          volumeDiscountedCost = rawMessageCost * 0.8; // 20% discount for over 50k messages
-        } else if (totalMessages > 10000) {
-          volumeDiscountedCost = rawMessageCost * 0.9; // 10% discount for over 10k messages
-        }
-        
-        // Scale cost based on resolution time (indicates complexity)
-        const complexityFactor = Math.min(1.5, Math.max(1.0, inputs.avgChatResolutionTime / 10));
-        
-        // Add the usage cost to the base cost
-        monthlyChatbotCost += volumeDiscountedCost * complexityFactor;
+      // Calculate message costs
+      const totalMessages = inputs.chatVolume * inputs.avgChatLength;
+      const messageUsageCost = totalMessages * chatbotRates.perMessage;
+      
+      // Apply volume discounts if applicable
+      let finalMessageCost = messageUsageCost;
+      if (totalMessages > 50000) {
+        finalMessageCost = messageUsageCost * 0.8; // 20% discount
+      } else if (totalMessages > 10000) {
+        finalMessageCost = messageUsageCost * 0.9; // 10% discount
       }
+      
+      // Add message costs to base cost
+      monthlyChatbotCost += finalMessageCost;
     }
     
     const monthlyAiCost = monthlyVoiceCost + monthlyChatbotCost;
-    const yearlyAiCost = monthlyAiCost * MONTHS_PER_YEAR;
-    
     const monthlySavings = monthlyHumanCost - monthlyAiCost;
     const yearlySavings = monthlySavings * MONTHS_PER_YEAR;
     
