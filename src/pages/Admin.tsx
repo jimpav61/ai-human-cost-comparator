@@ -13,15 +13,11 @@ const AdminDashboard = () => {
   const [leads, setLeads] = useState<Lead[]>([]);
 
   useEffect(() => {
-    const checkAuth = async () => {
+    const fetchLeads = async () => {
       try {
-        const { data: { session } } = await supabase.auth.getSession();
+        console.log('Fetching leads...');
         
-        if (!session) {
-          window.location.href = '/auth';
-          return;
-        }
-
+        // Get leads data without any authentication check
         const { data: leadsData, error: leadsError } = await supabase
           .from('leads')
           .select('*')
@@ -32,7 +28,9 @@ const AdminDashboard = () => {
           throw leadsError;
         }
 
-        if (leadsData) {
+        console.log('Leads data received:', leadsData);
+
+        if (leadsData && leadsData.length > 0) {
           const transformedLeads = leadsData.map(lead => ({
             id: lead.id,
             name: lead.name,
@@ -49,7 +47,11 @@ const AdminDashboard = () => {
             form_completed: lead.form_completed || false
           }));
           
+          console.log('Transformed leads:', transformedLeads);
           setLeads(transformedLeads);
+        } else {
+          console.log('No leads data found');
+          setLeads([]);
         }
         
         setLoading(false);
@@ -65,17 +67,7 @@ const AdminDashboard = () => {
       }
     };
 
-    checkAuth();
-    
-    const { data: { subscription } } = supabase.auth.onAuthStateChange((event) => {
-      if (event === 'SIGNED_OUT') {
-        window.location.href = '/auth';
-      }
-    });
-
-    return () => {
-      subscription.unsubscribe();
-    };
+    fetchLeads();
   }, []);
 
   if (loading) {
@@ -93,8 +85,8 @@ const AdminDashboard = () => {
     <div className="container mx-auto py-10">
       <div className="flex justify-between items-center mb-8">
         <h1 className="text-3xl font-bold">Admin Dashboard</h1>
-        <Button variant="destructive" onClick={() => supabase.auth.signOut()}>
-          Logout
+        <Button variant="destructive" onClick={() => window.location.href = '/'}>
+          Back to Home
         </Button>
       </div>
 
