@@ -1,5 +1,5 @@
 
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -11,44 +11,24 @@ const Auth = () => {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
 
-  useEffect(() => {
-    const checkSession = async () => {
-      const { data: { session } } = await supabase.auth.getSession();
-      if (session) {
-        const { data: adminCheck } = await supabase
-          .from('allowed_admins')
-          .select('email')
-          .eq('email', session.user.email)
-          .single();
-        
-        if (adminCheck) {
-          window.location.href = '/admin';
-        } else {
-          window.location.href = '/';
-        }
-      }
-    };
-    checkSession();
-  }, []);
-
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
     
     try {
-      const { data: { session }, error: authError } = await supabase.auth.signInWithPassword({
+      const { data, error: authError } = await supabase.auth.signInWithPassword({
         email,
         password
       });
 
       if (authError) throw authError;
 
-      if (session) {
+      if (data.session) {
         // Check if user is an allowed admin
         const { data: adminData, error: adminError } = await supabase
           .from('allowed_admins')
           .select('email')
-          .eq('email', session.user.email)
+          .eq('email', data.session.user.email)
           .single();
 
         if (adminError || !adminData) {
@@ -70,6 +50,7 @@ const Auth = () => {
         description: error.message || "Failed to log in",
         variant: "destructive",
       });
+      window.location.href = '/';
     } finally {
       setLoading(false);
     }
