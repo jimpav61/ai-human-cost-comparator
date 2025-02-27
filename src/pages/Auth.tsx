@@ -18,10 +18,16 @@ const Auth = () => {
       async (event, session) => {
         if (event === "SIGNED_IN" && session?.user?.email) {
           try {
-            const { data: adminCheck } = await supabase
+            // Debug log to check user email from session
+            console.log("Signed in user email:", session.user.email);
+            
+            const { data: adminCheck, error: adminCheckError } = await supabase
               .from('allowed_admins')
               .select('*')
-              .eq('email', session.user.email);
+              .eq('email', session.user.email.toLowerCase());
+            
+            // Debug log of admin check results
+            console.log("Admin check result:", adminCheck, "Error:", adminCheckError);
 
             if (adminCheck && adminCheck.length > 0) {
               window.location.replace('/admin');
@@ -45,10 +51,16 @@ const Auth = () => {
       try {
         const { data: { session } } = await supabase.auth.getSession();
         if (session?.user?.email) {
-          const { data: adminCheck } = await supabase
+          // Debug log for initial check
+          console.log("Initial session check for email:", session.user.email);
+          
+          const { data: adminCheck, error: adminCheckError } = await supabase
             .from('allowed_admins')
             .select('*')
-            .eq('email', session.user.email);
+            .eq('email', session.user.email.toLowerCase());
+          
+          // Debug log for initial admin check
+          console.log("Initial admin check result:", adminCheck, "Error:", adminCheckError);
 
           if (adminCheck && adminCheck.length > 0) {
             window.location.replace('/admin');
@@ -88,30 +100,51 @@ const Auth = () => {
     
     try {
       const cleanEmail = email.trim().toLowerCase();
+      console.log("Attempting login with email:", cleanEmail);
       
-      // First check if user is allowed
-      const { data: adminCheck } = await supabase
+      // First check if user is allowed without case sensitivity issues
+      const { data: adminCheck, error: adminCheckError } = await supabase
         .from('allowed_admins')
         .select('*')
-        .eq('email', cleanEmail);
+        .ilike('email', cleanEmail);
+      
+      console.log("Pre-login admin check result:", adminCheck, "Error:", adminCheckError);
       
       if (!adminCheck || adminCheck.length === 0) {
-        throw new Error("This email is not authorized for admin access");
+        // Try one more time with exact match to debug
+        const { data: exactCheck, error: exactError } = await supabase
+          .from('allowed_admins')
+          .select('*');
+        
+        console.log("All admin emails in DB:", exactCheck);
+        
+        throw new Error("This email is not authorized for admin access. Please contact the administrator.");
       }
       
       // Then attempt to sign in
-      const { error: signInError } = await supabase.auth.signInWithPassword({
+      console.log("Proceeding with login attempt");
+      const { data, error: signInError } = await supabase.auth.signInWithPassword({
         email: cleanEmail,
         password: password.trim()
       });
       
-      if (signInError) throw signInError;
+      if (signInError) {
+        console.error("Sign in error:", signInError);
+        throw signInError;
+      }
+      
+      console.log("Sign in successful:", data);
       
       // Auth state change listener will handle the redirect
       toast({
         title: "Success",
-        description: "Authentication successful",
+        description: "Authentication successful. Redirecting to admin page...",
       });
+      
+      // Add a direct redirect as a fallback
+      setTimeout(() => {
+        window.location.replace('/admin');
+      }, 1000);
       
     } catch (error: any) {
       console.error("Login error:", error);
