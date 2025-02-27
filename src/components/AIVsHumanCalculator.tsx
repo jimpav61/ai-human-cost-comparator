@@ -18,7 +18,7 @@ export const AIVsHumanCalculator: React.FC<AIVsHumanCalculatorProps> = ({ leadDa
     aiType: 'voice',
     aiTier: 'standard',
     role: 'customerService',
-    numEmployees: 1,
+    numEmployees: leadData.employeeCount || 1,
     callVolume: 1000,
     avgCallDuration: 5,
     chatVolume: 5000,

@@ -6,6 +6,8 @@ export interface Lead {
   email: string;
   phone_number: string | null;
   website: string | null;
+  industry: string;
+  employee_count: number;
   calculator_inputs: any;
   calculator_results: any;
   proposal_sent: boolean;

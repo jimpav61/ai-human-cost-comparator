@@ -13,7 +13,42 @@ export interface LeadFormData {
   email: string;
   phoneNumber: string;
   website: string;
+  industry: string;
+  employeeCount: number;
 }
+
+// Industry options for dropdown
+const INDUSTRY_OPTIONS = [
+  "Agriculture",
+  "Automotive",
+  "Banking & Finance",
+  "Construction",
+  "Consulting",
+  "Education",
+  "Entertainment",
+  "Food & Beverage",
+  "Government",
+  "Healthcare",
+  "Hospitality",
+  "Information Technology",
+  "Insurance",
+  "Legal Services",
+  "Manufacturing",
+  "Marketing & Advertising",
+  "Media & Publishing",
+  "Mining & Metals",
+  "Non-Profit",
+  "Oil & Gas",
+  "Pharmaceuticals",
+  "Real Estate",
+  "Retail",
+  "Telecommunications",
+  "Transportation & Logistics",
+  "Travel & Tourism",
+  "Utilities",
+  "Wholesale Distribution",
+  "Other"
+];
 
 export const LeadForm: React.FC<LeadFormProps> = ({ onSubmit }) => {
   const [formData, setFormData] = useState<LeadFormData>({
@@ -21,14 +56,16 @@ export const LeadForm: React.FC<LeadFormProps> = ({ onSubmit }) => {
     companyName: '',
     email: '',
     phoneNumber: '',
-    website: ''
+    website: '',
+    industry: '',
+    employeeCount: 1
   });
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
-    if (!formData.name || !formData.companyName || !formData.email) {
+    if (!formData.name || !formData.companyName || !formData.email || !formData.industry || !formData.employeeCount) {
       toast({
         title: "Missing Information",
         description: "Please fill in all required fields.",
@@ -48,6 +85,8 @@ export const LeadForm: React.FC<LeadFormProps> = ({ onSubmit }) => {
           email: formData.email,
           phone_number: formData.phoneNumber || null,
           website: formData.website || null,
+          industry: formData.industry,
+          employee_count: formData.employeeCount,
           calculator_inputs: {},
           calculator_results: {},
           proposal_sent: false
@@ -61,7 +100,9 @@ export const LeadForm: React.FC<LeadFormProps> = ({ onSubmit }) => {
         companyName: '',
         email: '',
         phoneNumber: '',
-        website: ''
+        website: '',
+        industry: '',
+        employeeCount: 1
       });
 
       // Call the onSubmit prop with form data
@@ -116,6 +157,39 @@ export const LeadForm: React.FC<LeadFormProps> = ({ onSubmit }) => {
               className="calculator-input"
               value={formData.companyName}
               onChange={(e) => setFormData(prev => ({ ...prev, companyName: e.target.value }))}
+            />
+          </div>
+
+          <div>
+            <label htmlFor="industry" className="block text-sm font-medium text-gray-700 mb-1">
+              Industry *
+            </label>
+            <select
+              id="industry"
+              required
+              className="calculator-input"
+              value={formData.industry}
+              onChange={(e) => setFormData(prev => ({ ...prev, industry: e.target.value }))}
+            >
+              <option value="" disabled>Select your industry</option>
+              {INDUSTRY_OPTIONS.map(industry => (
+                <option key={industry} value={industry}>{industry}</option>
+              ))}
+            </select>
+          </div>
+
+          <div>
+            <label htmlFor="employeeCount" className="block text-sm font-medium text-gray-700 mb-1">
+              Number of Employees *
+            </label>
+            <input
+              id="employeeCount"
+              type="number"
+              min="1"
+              required
+              className="calculator-input"
+              value={formData.employeeCount}
+              onChange={(e) => setFormData(prev => ({ ...prev, employeeCount: parseInt(e.target.value) || 1 }))}
             />
           </div>
 

@@ -1,3 +1,4 @@
+
 import { useState } from 'react';
 import { AIVsHumanCalculator } from "@/components/AIVsHumanCalculator";
 import Header from "@/components/Header";
@@ -227,7 +228,7 @@ const Index = () => {
                   Welcome, {leadData?.name}!
                 </h2>
                 <p className="text-gray-600">
-                  Let's calculate potential AI savings for {leadData?.companyName}
+                  Let's calculate potential AI savings for {leadData?.companyName} in the {leadData?.industry} industry
                 </p>
               </div>
               <AIVsHumanCalculator leadData={leadData!} />

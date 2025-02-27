@@ -74,6 +74,8 @@ export const LeadsTable = ({ leads }: LeadsTableProps) => {
         companyName: lead.company_name || 'Your Company',
         email: lead.email || 'client@example.com',
         phoneNumber: lead.phone_number,
+        industry: lead.industry,
+        employeeCount: lead.employee_count,
         results: results,
         businessSuggestions: [
           {
@@ -157,6 +159,8 @@ export const LeadsTable = ({ leads }: LeadsTableProps) => {
         companyName: lead.company_name || 'Your Company',
         email: lead.email || 'client@example.com',
         phoneNumber: lead.phone_number,
+        industry: lead.industry,
+        employeeCount: lead.employee_count,
         results: results,
       });
       
@@ -185,7 +189,7 @@ export const LeadsTable = ({ leads }: LeadsTableProps) => {
   const exportToCSV = () => {
     try {
       // Create CSV header
-      let csvContent = "Company Name,Contact Name,Email,Phone,Website,Date Added\n";
+      let csvContent = "Company Name,Contact Name,Email,Phone,Website,Industry,Employee Count,Date Added\n";
       
       // Add lead data
       leads.forEach(lead => {
@@ -195,6 +199,8 @@ export const LeadsTable = ({ leads }: LeadsTableProps) => {
           `"${lead.email || ''}"`,
           `"${lead.phone_number || ''}"`,
           `"${lead.website || ''}"`,
+          `"${lead.industry || ''}"`,
+          `"${lead.employee_count || ''}"`,
           `"${new Date(lead.created_at || Date.now()).toLocaleDateString()}"`
         ].join(',');
         
@@ -243,8 +249,9 @@ export const LeadsTable = ({ leads }: LeadsTableProps) => {
           <TableRow>
             <TableHead>Company</TableHead>
             <TableHead>Contact</TableHead>
+            <TableHead>Industry</TableHead>
+            <TableHead>Size</TableHead>
             <TableHead>Contact Info</TableHead>
-            <TableHead>Links</TableHead>
             <TableHead>Actions</TableHead>
           </TableRow>
         </TableHeader>
@@ -253,8 +260,21 @@ export const LeadsTable = ({ leads }: LeadsTableProps) => {
             <TableRow key={lead.id}>
               <TableCell className="font-medium">
                 {lead.company_name}
+                {lead.website && (
+                  <a 
+                    href={lead.website.startsWith('http') ? lead.website : `https://${lead.website}`}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="flex items-center text-blue-600 hover:text-blue-800 text-xs mt-1"
+                  >
+                    <Globe className="h-3 w-3 mr-1" />
+                    Website
+                  </a>
+                )}
               </TableCell>
               <TableCell>{lead.name}</TableCell>
+              <TableCell>{lead.industry || "N/A"}</TableCell>
+              <TableCell>{lead.employee_count || "N/A"}</TableCell>
               <TableCell>
                 <div className="space-y-1">
                   <a 
@@ -274,19 +294,6 @@ export const LeadsTable = ({ leads }: LeadsTableProps) => {
                     </a>
                   )}
                 </div>
-              </TableCell>
-              <TableCell>
-                {lead.website && (
-                  <a 
-                    href={lead.website.startsWith('http') ? lead.website : `https://${lead.website}`}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="flex items-center text-blue-600 hover:text-blue-800"
-                  >
-                    <Globe className="h-4 w-4 mr-1" />
-                    Website
-                  </a>
-                )}
               </TableCell>
               <TableCell>
                 <div className="flex space-x-2">

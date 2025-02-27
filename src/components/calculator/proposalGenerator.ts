@@ -16,6 +16,8 @@ interface GenerateProposalParams {
   companyName: string;
   email: string;
   phoneNumber: string | null;
+  industry?: string;
+  employeeCount?: number;
   results: CalculationResults;
 }
 
@@ -42,17 +44,62 @@ export const generateProposal = (params: GenerateProposalParams) => {
   doc.setTextColor(40, 40, 40);
   doc.text(`Dear ${params.contactInfo},`, 20, yPosition);
 
-  // Introduction paragraph
+  // Organization info
   yPosition += 10;
   doc.setFontSize(12);
-  const introText = `Thank you for considering ChatSites.ai as your AI solution provider. After a detailed analysis of ${params.companyName}'s current operations and industry benchmarks, we've crafted a transformative AI implementation strategy specifically tailored to your unique requirements. Our approach is designed to revolutionize your customer service operations while delivering substantial and sustainable cost savings.`;
+  doc.text(`Organization: ${params.companyName}`, 20, yPosition);
+  yPosition += 7;
+  
+  if (params.industry) {
+    doc.text(`Industry: ${params.industry}`, 20, yPosition);
+    yPosition += 7;
+  }
+  
+  if (params.employeeCount) {
+    doc.text(`Company Size: ${params.employeeCount} employees`, 20, yPosition);
+    yPosition += 7;
+  }
+  
+  // Add some spacing
+  yPosition += 5;
+
+  // Introduction paragraph - customized with industry if available
+  const industrySpecificPhrase = params.industry 
+    ? `in the ${params.industry} industry` 
+    : "in your industry";
+    
+  const employeeSizePhrase = params.employeeCount 
+    ? `with ${params.employeeCount} employees` 
+    : "of your size";
+    
+  const introText = `Thank you for considering ChatSites.ai as your AI solution provider. After a detailed analysis of ${params.companyName}'s current operations and benchmarks ${industrySpecificPhrase}, we've crafted a transformative AI implementation strategy specifically tailored for organizations ${employeeSizePhrase}. Our approach is designed to revolutionize your customer service operations while delivering substantial and sustainable cost savings.`;
   
   const splitIntro = doc.splitTextToSize(introText, 170);
   doc.text(splitIntro, 20, yPosition);
 
-  // Industry challenges
+  // Industry challenges - customize based on industry if available
   yPosition += splitIntro.length * 7;
-  const challengesText = `In today's rapidly evolving business landscape, organizations like yours face increasing pressure to deliver exceptional customer experiences while managing operational costs. Our AI-powered solution addresses these challenges head-on, allowing you to stay competitive and agile.`;
+  
+  let challengesText = "";
+  if (params.industry) {
+    switch(params.industry) {
+      case "Healthcare":
+        challengesText = "In today's rapidly evolving healthcare landscape, organizations face unique challenges including patient information management, appointment scheduling, and providing timely care information. Our AI-powered solution addresses these specific healthcare challenges.";
+        break;
+      case "Retail":
+        challengesText = "Retail businesses today must balance personalized customer service with efficient operations and inventory management. Our AI solution helps you deliver exceptional shopping experiences while optimizing operational costs.";
+        break;
+      case "Financial Services":
+      case "Banking & Finance":
+        challengesText = "Financial service providers must maintain regulatory compliance while delivering responsive customer service and managing complex transactions. Our AI tools can streamline operations while ensuring security and compliance.";
+        break;
+      default:
+        challengesText = `In today's rapidly evolving ${params.industry} landscape, organizations like yours face increasing pressure to deliver exceptional customer experiences while managing operational costs. Our AI-powered solution addresses these challenges head-on.`;
+    }
+  } else {
+    challengesText = "In today's rapidly evolving business landscape, organizations like yours face increasing pressure to deliver exceptional customer experiences while managing operational costs. Our AI-powered solution addresses these challenges head-on, allowing you to stay competitive and agile.";
+  }
+  
   const splitChallenges = doc.splitTextToSize(challengesText, 170);
   doc.text(splitChallenges, 20, yPosition);
 
@@ -99,6 +146,10 @@ export const generateProposal = (params: GenerateProposalParams) => {
     savingsPercent = "90+";
   }
 
+  // Calculate ROI based on employee count if available
+  const employeeMultiplier = params.employeeCount ? Math.min(params.employeeCount / 10, 5) : 1;
+  const employeeBasedROI = params.employeeCount ? `${Math.max(1, Math.round(3 - employeeMultiplier * 0.5))} to ${Math.round(3 + employeeMultiplier)} months` : "Immediate to 3 months";
+
   autoTable(doc, {
     startY: yPosition + 5,
     head: [["Metric", "Potential Impact"]],
@@ -106,8 +157,8 @@ export const generateProposal = (params: GenerateProposalParams) => {
       ["Monthly Cost Reduction", monthlySavings],
       ["Annual Cost Reduction", yearlySavings],
       ["Efficiency Improvement", `${savingsPercent}%`],
-      ["Implementation Timeline", "2-4 weeks"],
-      ["ROI Timeline", "Immediate to 3 months"],
+      ["Implementation Timeline", params.employeeCount && params.employeeCount > 50 ? "4-8 weeks" : "2-4 weeks"],
+      ["ROI Timeline", employeeBasedROI],
       ["5-Year Projected Savings", formatCurrency(Number(yearlySavings.replace(/[^0-9.-]+/g, '')) * 5)]
     ],
     styles: { fontSize: 11 },
@@ -123,17 +174,20 @@ export const generateProposal = (params: GenerateProposalParams) => {
     yPosition = 20;
   }
 
-  // Implementation Process with more detailed descriptions
+  // Implementation Process - customize based on company size
   doc.setFontSize(14);
   doc.text("Detailed Implementation Process", 20, yPosition);
 
+  // Adjust implementation timeline based on employee count
+  const timelineMultiplier = params.employeeCount ? Math.min(Math.max(params.employeeCount / 50, 1), 3) : 1;
+  
   autoTable(doc, {
     startY: yPosition + 5,
     body: [
-      ["1. Discovery & Planning (Week 1)", "Our team conducts a thorough assessment of your current systems, workflows, and customer interaction points to identify the optimal integration approach."],
-      ["2. AI Model Customization (Week 2)", "We train and fine-tune our AI models using industry-specific data and your company's unique communication patterns to ensure contextually appropriate responses."],
-      ["3. Integration & Testing (Week 3)", "Seamless integration with your existing systems followed by rigorous testing across various scenarios and edge cases to ensure reliable performance."],
-      ["4. Team Training & Deployment (Week 4)", "Comprehensive training for your staff on how to monitor, manage, and maximize the AI system, followed by staged deployment to minimize disruption."]
+      [`1. Discovery & Planning (Week ${Math.round(1 * timelineMultiplier)})`, "Our team conducts a thorough assessment of your current systems, workflows, and customer interaction points to identify the optimal integration approach."],
+      [`2. AI Model Customization (Week ${Math.round(2 * timelineMultiplier)})`, "We train and fine-tune our AI models using industry-specific data and your company's unique communication patterns to ensure contextually appropriate responses."],
+      [`3. Integration & Testing (Week ${Math.round(3 * timelineMultiplier)})`, "Seamless integration with your existing systems followed by rigorous testing across various scenarios and edge cases to ensure reliable performance."],
+      [`4. Team Training & Deployment (Week ${Math.round(4 * timelineMultiplier)})`, "Comprehensive training for your staff on how to monitor, manage, and maximize the AI system, followed by staged deployment to minimize disruption."]
     ],
     styles: { fontSize: 11 },
     theme: 'plain',
@@ -223,7 +277,7 @@ export const generateProposal = (params: GenerateProposalParams) => {
   const splitGetStarted = doc.splitTextToSize(getStartedText, 170);
   doc.text(splitGetStarted, 20, yPosition + 10);
   
-  // Contact Information with more details - UPDATED with actual contact info
+  // Contact Information with real contact details
   yPosition += splitGetStarted.length * 7 + 20;
   doc.setTextColor(246, 82, 40); // brand color
   doc.setFontSize(12);
@@ -237,10 +291,14 @@ export const generateProposal = (params: GenerateProposalParams) => {
   doc.text("1715 N. Channing Mesa, AZ 85298", 20, yPosition + 16);
   doc.text("Website: www.chatsites.ai", 20, yPosition + 24);
 
-  // Footer with personalization
+  // Footer with personalization and industry/employee info if available
   doc.setFontSize(10);
   doc.setTextColor(128, 128, 128);
-  doc.text(`Proposal prepared exclusively for ${params.companyName}`, 20, 280);
+  let footerText = `Proposal prepared exclusively for ${params.companyName}`;
+  if (params.industry) {
+    footerText += ` (${params.industry})`;
+  }
+  doc.text(footerText, 20, 280);
   doc.text(`Generated on ${reportDate} | Valid for 30 days`, 20, 287);
 
   return doc;

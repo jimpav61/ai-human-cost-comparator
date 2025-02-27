@@ -17,6 +17,8 @@ interface GeneratePDFParams {
   companyName: string;
   email: string;
   phoneNumber: string | null;
+  industry?: string;
+  employeeCount?: number;
   results: CalculationResults;
   businessSuggestions: BusinessSuggestion[];
   aiPlacements: AIPlacement[];
@@ -35,10 +37,26 @@ export const generatePDF = (params: GeneratePDFParams) => {
   doc.text(`Generated for: ${params.companyName}`, 20, 35);
   doc.text(`Contact: ${params.contactInfo}`, 20, 42);
   doc.text(`Email: ${params.email}`, 20, 49);
-  if (params.phoneNumber) doc.text(`Phone: ${params.phoneNumber}`, 20, 56);
-  doc.text(`Date: ${reportDate}`, 20, params.phoneNumber ? 63 : 56);
-
-  let currentY = params.phoneNumber ? 73 : 66;
+  
+  let currentY = 56;
+  
+  if (params.phoneNumber) {
+    doc.text(`Phone: ${params.phoneNumber}`, 20, currentY);
+    currentY += 7;
+  }
+  
+  if (params.industry) {
+    doc.text(`Industry: ${params.industry}`, 20, currentY);
+    currentY += 7;
+  }
+  
+  if (params.employeeCount) {
+    doc.text(`Company Size: ${params.employeeCount} employees`, 20, currentY);
+    currentY += 7;
+  }
+  
+  doc.text(`Date: ${reportDate}`, 20, currentY);
+  currentY += 14;
 
   // Cost Summary
   doc.setFontSize(14);
@@ -120,7 +138,7 @@ export const generatePDF = (params: GeneratePDFParams) => {
     currentY += 15;
   }
 
-  // Final contact section - UPDATED with actual contact info
+  // Final contact section with actual contact info
   doc.setFontSize(14);
   doc.setTextColor(0, 0, 0);
   doc.text("Get Started with ChatSites.ai", 20, currentY);

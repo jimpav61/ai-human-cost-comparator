@@ -6,6 +6,9 @@ export interface LeadData {
   companyName: string;
   email: string;
   phoneNumber: string;
+  website?: string;
+  industry: string;
+  employeeCount: number;
 }
 
 export interface ResultsDisplayProps {
