@@ -8,11 +8,11 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { Button } from '@/components/ui/button';
-import { Download, FileDown, Phone, Globe } from 'lucide-react';
+import { Download, FileDown, Phone, Globe, Mail } from 'lucide-react';
 import { toast } from "@/hooks/use-toast";
 import { Lead } from "@/types/leads";
 import { supabase } from "@/integrations/supabase/client";
-import { generatePDF } from '@/components/calculator/pdfGenerator';
+import { generateProposal } from '@/components/calculator/proposalGenerator';
 
 interface LeadsTableProps {
   leads: Lead[];
@@ -36,22 +36,14 @@ export const LeadsTable = ({ leads }: LeadsTableProps) => {
 
   const handleGenerateProposal = async (lead: Lead) => {
     try {
-      // Get business suggestions and AI placements from the calculator results
-      const businessSuggestions = lead.calculator_results.businessSuggestions || [];
-      const aiPlacements = lead.calculator_results.aiPlacements || [];
-
-      // Generate the PDF using our existing utility
-      const doc = generatePDF({
+      const doc = generateProposal({
         contactInfo: lead.name,
         companyName: lead.company_name,
         email: lead.email,
         phoneNumber: lead.phone_number,
         results: lead.calculator_results,
-        businessSuggestions,
-        aiPlacements
       });
       
-      // Save and download the PDF
       doc.save(`${lead.company_name}-Proposal.pdf`);
 
       toast({
@@ -89,7 +81,13 @@ export const LeadsTable = ({ leads }: LeadsTableProps) => {
               <TableCell>{lead.name}</TableCell>
               <TableCell>
                 <div className="space-y-1">
-                  <div>{lead.email}</div>
+                  <a 
+                    href={`mailto:${lead.email}`}
+                    className="flex items-center text-blue-600 hover:text-blue-800"
+                  >
+                    <Mail className="h-4 w-4 mr-1" />
+                    {lead.email}
+                  </a>
                   {lead.phone_number && (
                     <a 
                       href={`tel:${lead.phone_number}`}
