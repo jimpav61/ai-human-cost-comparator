@@ -285,12 +285,12 @@ const Index = () => {
                 Powered by ChatSites.ai
               </a>
               <span className="text-gray-300">|</span>
-              <a
-                href="/admin"
+              <button
+                onClick={() => setShowAdminForm(true)}
                 className="text-gray-600 hover:text-brand-500 transition-colors text-sm"
               >
                 Admin
-              </a>
+              </button>
             </div>
           </div>
 

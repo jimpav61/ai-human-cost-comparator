@@ -1,6 +1,6 @@
 
 import React, { useState } from 'react';
-import { toast } from "@/hooks/use-toast";
+import { toast } from "@/components/ui/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from '@/components/ui/button';
 
@@ -114,30 +114,20 @@ export const LeadForm: React.FC<LeadFormProps> = ({ onSubmit }) => {
       return false;
     }
     
-    // Improved URL validation
-    if (!website.startsWith('http://') && !website.startsWith('https://')) {
-      // Auto-prefix with https:// if missing
-      const updatedWebsite = 'https://' + website;
-      setFormData(prev => ({ ...prev, website: updatedWebsite }));
-      
-      try {
-        new URL(updatedWebsite);
-        setWebsiteError('');
-        return true;
-      } catch (e) {
-        setWebsiteError('Please enter a valid URL (domain format)');
-        return false;
-      }
-    } else {
-      // Has protocol, just validate
-      try {
-        new URL(website);
-        setWebsiteError('');
-        return true;
-      } catch (e) {
-        setWebsiteError('Please enter a valid URL');
-        return false;
-      }
+    // We'll prefix the URL when we save it, but for validation purposes
+    // let's make sure it's in valid domain format at minimum
+    let testURL = website;
+    if (!testURL.startsWith('http://') && !testURL.startsWith('https://')) {
+      testURL = 'https://' + testURL;
+    }
+    
+    try {
+      new URL(testURL);
+      setWebsiteError('');
+      return true;
+    } catch (e) {
+      setWebsiteError('Please enter a valid website domain');
+      return false;
     }
   };
 
@@ -188,7 +178,7 @@ export const LeadForm: React.FC<LeadFormProps> = ({ onSubmit }) => {
     if (!validateWebsite(formData.website)) {
       toast({
         title: "Invalid Website",
-        description: "Please provide a valid website URL.",
+        description: "Please provide a valid website domain.",
         variant: "destructive",
       });
       return;
@@ -225,6 +215,10 @@ export const LeadForm: React.FC<LeadFormProps> = ({ onSubmit }) => {
       if (error) throw error;
 
       setLeadId(data.id);
+      
+      // Update the form data with the properly formatted website
+      setFormData(prev => ({ ...prev, website: finalWebsite }));
+      
       setStep(2);
       
       toast({
@@ -273,23 +267,7 @@ export const LeadForm: React.FC<LeadFormProps> = ({ onSubmit }) => {
         if (error) throw error;
       } else {
         // Fallback in case leadId is not available (shouldn't happen in normal flow)
-        const { error } = await supabase
-          .from('leads')
-          .insert([{
-            name: formData.name,
-            company_name: formData.companyName,
-            email: formData.email,
-            phone_number: formData.phoneNumber,
-            website: formData.website,
-            industry: formData.industry,
-            employee_count: formData.employeeCount,
-            calculator_inputs: {},
-            calculator_results: {},
-            proposal_sent: false,
-            form_completed: true
-          }]);
-
-        if (error) throw error;
+        throw new Error("Lead ID not found. Please try again.");
       }
 
       // Call the onSubmit prop with form data
@@ -304,7 +282,7 @@ export const LeadForm: React.FC<LeadFormProps> = ({ onSubmit }) => {
       console.error('Error submitting lead:', error);
       toast({
         title: "Submission Error",
-        description: "There was an error submitting your information. Please try again.",
+        description: error?.message || "There was an error submitting your information. Please try again.",
         variant: "destructive",
       });
     } finally {
@@ -408,13 +386,13 @@ export const LeadForm: React.FC<LeadFormProps> = ({ onSubmit }) => {
                 className={`calculator-input ${websiteError ? 'border-red-500' : ''}`}
                 value={formData.website}
                 onChange={handleWebsiteChange}
-                placeholder="https://"
+                placeholder="example.com"
               />
               {websiteError && (
                 <p className="text-red-500 text-sm mt-1">{websiteError}</p>
               )}
               <p className="text-xs text-gray-500 mt-1">
-                Enter your company domain (https:// will be added automatically if missing)
+                Enter your company domain (just enter the domain - https:// will be added automatically)
               </p>
             </div>
 
