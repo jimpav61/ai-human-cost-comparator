@@ -63,9 +63,9 @@ export const PricingManager = () => {
         const updatedConfigurations = data.map(config => {
           return {
             ...config,
-            setup_fee: config.setup_fee || 0,
-            annual_price: config.annual_price || 0,
-            included_voice_minutes: config.included_voice_minutes || 0
+            setup_fee: config.setup_fee ?? 0,
+            annual_price: config.annual_price ?? 0,
+            included_voice_minutes: config.included_voice_minutes ?? 0
           } as PricingConfiguration;
         });
         
@@ -102,7 +102,7 @@ export const PricingManager = () => {
   const handleSave = async () => {
     setSaving(true);
     try {
-      // Save each configuration individually instead of all at once
+      // Save each configuration individually
       for (const config of configurations) {
         const { error } = await supabase
           .from('pricing_configurations')
@@ -218,7 +218,7 @@ export const PricingManager = () => {
                 </label>
                 <Input
                   type="number"
-                  value={config.setup_fee || 0}
+                  value={config.setup_fee}
                   onChange={(e) => handleInputChange(config.tier, 'setup_fee', e.target.value)}
                   step="1"
                   min="0"
@@ -231,7 +231,7 @@ export const PricingManager = () => {
                 </label>
                 <Input
                   type="number"
-                  value={config.annual_price || 0}
+                  value={config.annual_price}
                   onChange={(e) => handleInputChange(config.tier, 'annual_price', e.target.value)}
                   step="1"
                   min="0"
@@ -244,7 +244,7 @@ export const PricingManager = () => {
                 </label>
                 <Input
                   type="number"
-                  value={config.included_voice_minutes || 0}
+                  value={config.included_voice_minutes}
                   onChange={(e) => handleInputChange(config.tier, 'included_voice_minutes', e.target.value)}
                   step="1"
                   min="0"
