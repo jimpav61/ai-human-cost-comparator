@@ -5,6 +5,13 @@ import { formatCurrency } from '@/utils/formatters';
 import type { CalculationResults } from '@/hooks/useCalculator';
 import type { BusinessSuggestion, AIPlacement } from './types';
 
+// Add custom interface to handle the jsPDF extension from autotable
+interface JsPDFWithAutoTable extends jsPDF {
+  lastAutoTable?: {
+    finalY?: number;
+  };
+}
+
 interface GeneratePDFParams {
   contactInfo: string;
   companyName: string;
@@ -16,7 +23,7 @@ interface GeneratePDFParams {
 }
 
 export const generatePDF = (params: GeneratePDFParams) => {
-  const doc = new jsPDF();
+  const doc = new jsPDF() as JsPDFWithAutoTable;
   const reportDate = new Date().toLocaleDateString();
 
   // Title
@@ -113,7 +120,7 @@ export const generatePDF = (params: GeneratePDFParams) => {
     currentY += 15;
   }
 
-  // Final contact section
+  // Final contact section - UPDATED with actual contact info
   doc.setFontSize(14);
   doc.setTextColor(0, 0, 0);
   doc.text("Get Started with ChatSites.ai", 20, currentY);
@@ -130,9 +137,14 @@ export const generatePDF = (params: GeneratePDFParams) => {
   
   currentY += 25;
   doc.setFontSize(12);
-  doc.text("Visit: ", 20, currentY);
-  doc.setTextColor(0, 102, 204);
-  doc.text("https://chatsites.ai", 45, currentY);
+  doc.text("Contact Information:", 20, currentY);
+  
+  currentY += 10;
+  doc.setFontSize(11);
+  doc.text("Email: info@chatsites.ai", 25, currentY);
+  doc.text("Phone: +1 480 862 0288", 25, currentY + 7);
+  doc.text("Address: 1715 N. Channing Mesa, AZ 85298", 25, currentY + 14);
+  doc.text("Website: www.chatsites.ai", 25, currentY + 21);
 
   return doc;
 };

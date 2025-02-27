@@ -223,27 +223,19 @@ export const generateProposal = (params: GenerateProposalParams) => {
   const splitGetStarted = doc.splitTextToSize(getStartedText, 170);
   doc.text(splitGetStarted, 20, yPosition + 10);
   
-  // Contact Information with more details
+  // Contact Information with more details - UPDATED with actual contact info
   yPosition += splitGetStarted.length * 7 + 20;
   doc.setTextColor(246, 82, 40); // brand color
   doc.setFontSize(12);
-  doc.text("Primary Contact:", 20, yPosition);
-  doc.text("Sarah Johnson, Implementation Director", 20, yPosition + 8);
-  doc.text("Email: sarah.johnson@chatsites.ai", 20, yPosition + 16);
-  doc.text("Direct Line: (555) 123-4567", 20, yPosition + 24);
-
-  yPosition += 40;
-  doc.text("Technical Support:", 20, yPosition);
-  doc.text("AI Support Team", 20, yPosition + 8);
-  doc.text("Email: support@chatsites.ai", 20, yPosition + 16);
-  doc.text("24/7 Hotline: (555) 987-6543", 20, yPosition + 24);
-
-  yPosition += 40;
-  doc.text("Corporate Headquarters:", 20, yPosition);
+  doc.text("Contact Us:", 20, yPosition);
+  doc.text("Email: info@chatsites.ai", 20, yPosition + 8);
+  doc.text("Phone: +1 480 862 0288", 20, yPosition + 16);
+  
+  yPosition += 30;
+  doc.text("Office Location:", 20, yPosition);
   doc.text("ChatSites.ai", 20, yPosition + 8);
-  doc.text("123 Innovation Way, Suite 500", 20, yPosition + 16);
-  doc.text("San Francisco, CA 94103", 20, yPosition + 24);
-  doc.text("Website: www.chatsites.ai", 20, yPosition + 32);
+  doc.text("1715 N. Channing Mesa, AZ 85298", 20, yPosition + 16);
+  doc.text("Website: www.chatsites.ai", 20, yPosition + 24);
 
   // Footer with personalization
   doc.setFontSize(10);

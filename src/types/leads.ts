@@ -9,4 +9,5 @@ export interface Lead {
   calculator_inputs: any;
   calculator_results: any;
   proposal_sent: boolean;
+  created_at?: string;
 }
