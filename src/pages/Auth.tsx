@@ -14,15 +14,16 @@ const Auth = () => {
   useEffect(() => {
     const checkExistingSession = async () => {
       try {
+        console.log("Auth: Starting existing session check...");
         const { data: { session }, error } = await supabase.auth.getSession();
         
         if (error) {
-          console.error("Session check error:", error);
+          console.error("Auth: Session check error:", error);
           return;
         }
         
         if (session) {
-          console.log("Found existing session, checking admin status...");
+          console.log("Auth: Found existing session, checking admin status...");
           const { data: adminCheck, error: adminError } = await supabase
             .from('allowed_admins')
             .select('email')
@@ -30,22 +31,23 @@ const Auth = () => {
             .single();
 
           if (adminError) {
-            console.error("Admin check error:", adminError);
+            console.error("Auth: Admin check error:", adminError);
+            await supabase.auth.signOut();
             return;
           }
           
           if (adminCheck) {
-            console.log("Valid admin session found, redirecting...");
+            console.log("Auth: Valid admin session found, redirecting...");
             window.location.href = '/admin';
           } else {
-            console.log("User is not an admin, signing out...");
+            console.log("Auth: User is not an admin, signing out...");
             await supabase.auth.signOut();
           }
         } else {
-          console.log("No existing session found");
+          console.log("Auth: No existing session found");
         }
       } catch (error) {
-        console.error("Session check failed:", error);
+        console.error("Auth: Session check failed:", error);
       }
     };
     
@@ -57,21 +59,21 @@ const Auth = () => {
     setLoading(true);
     
     try {
-      console.log("Starting login attempt...");
+      console.log("Auth: Starting login attempt...");
       const { data, error: authError } = await supabase.auth.signInWithPassword({
         email,
         password
       });
 
       if (authError) {
-        console.error("Auth error:", authError);
+        console.error("Auth: Login error:", authError);
         throw authError;
       }
 
-      console.log("Login successful, verifying admin status...");
+      console.log("Auth: Login successful, verifying admin status...");
       
       if (!data.session) {
-        console.error("No session after login");
+        console.error("Auth: No session after login");
         throw new Error("No session created");
       }
 
@@ -82,29 +84,33 @@ const Auth = () => {
         .single();
 
       if (adminError) {
-        console.error("Admin verification error:", adminError);
+        console.error("Auth: Admin verification error:", adminError);
         throw adminError;
       }
 
       if (!adminData) {
-        console.log("Not an admin, signing out...");
+        console.log("Auth: Not an admin, signing out...");
         await supabase.auth.signOut();
         throw new Error("Unauthorized access");
       }
 
-      console.log("Admin verified successfully, redirecting...");
+      console.log("Auth: Admin verified successfully, redirecting...");
       toast({
         title: "Success",
         description: "Logged in successfully",
       });
-      
-      // Small delay to ensure session is properly set
-      setTimeout(() => {
-        window.location.href = '/admin';
-      }, 100);
+
+      // Use local state to prevent race conditions
+      const isStillMounted = true;
+      if (isStillMounted) {
+        // Small delay before redirect to ensure session is properly set
+        setTimeout(() => {
+          window.location.href = '/admin';
+        }, 500);
+      }
       
     } catch (error: any) {
-      console.error("Login process failed:", error);
+      console.error("Auth: Login process failed:", error);
       toast({
         title: "Error",
         description: error.message || "Failed to log in",
@@ -112,7 +118,7 @@ const Auth = () => {
       });
       await supabase.auth.signOut();
     } finally {
-      setLoading(false);
+      if (loading) setLoading(false);
     }
   };
 
