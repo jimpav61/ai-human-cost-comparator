@@ -84,6 +84,16 @@ const Auth = () => {
     
     try {
       if (isSignup) {
+        // When signing up, first check if the email is in the allowed_admins table
+        const { data: isAllowedData, error: isAllowedError } = await supabase
+          .rpc('is_allowed_admin', { email });
+        
+        if (isAllowedError) {
+          console.error("Error checking if admin is allowed:", isAllowedError);
+          throw new Error("Error verifying admin status");
+        }
+        
+        // Now proceed with registration
         const { data, error } = await supabase.auth.signUp({
           email,
           password,
@@ -91,10 +101,18 @@ const Auth = () => {
         
         if (error) throw error;
         
-        toast({
-          title: "Account created",
-          description: "Please check your email for verification instructions.",
-        });
+        // If email is in allowed_admins, the trigger will automatically add the admin role
+        if (isAllowedData) {
+          toast({
+            title: "Admin Account Created",
+            description: "Your account has been created with admin privileges. Please check your email for verification instructions.",
+          });
+        } else {
+          toast({
+            title: "Account Created",
+            description: "Your account has been created. Please check your email for verification instructions.",
+          });
+        }
       } else {
         const { data, error } = await supabase.auth.signInWithPassword({
           email,
