@@ -8,7 +8,7 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { Button } from '@/components/ui/button';
-import { Download, FileDown, Phone, Globe, Mail, FileText } from 'lucide-react';
+import { Download, FileDown, Phone, Globe, Mail, FileText, Calendar } from 'lucide-react';
 import { toast } from "@/hooks/use-toast";
 import { Lead } from "@/types/leads";
 import { supabase } from "@/integrations/supabase/client";
@@ -231,6 +231,24 @@ export const LeadsTable = ({ leads }: LeadsTableProps) => {
     }
   };
 
+  // Format date function
+  const formatDate = (dateString: string) => {
+    if (!dateString) return "N/A";
+    
+    const date = new Date(dateString);
+    if (isNaN(date.getTime())) return "Invalid date";
+    
+    // Format: "Jan 15, 2023 at 14:30"
+    return new Intl.DateTimeFormat('en-US', {
+      month: 'short',
+      day: 'numeric',
+      year: 'numeric',
+      hour: '2-digit',
+      minute: '2-digit',
+      hour12: true
+    }).format(date);
+  };
+
   return (
     <div className="bg-white rounded-lg shadow overflow-hidden">
       <div className="p-4 flex justify-between items-center border-b">
@@ -252,6 +270,7 @@ export const LeadsTable = ({ leads }: LeadsTableProps) => {
             <TableHead>Industry</TableHead>
             <TableHead>Size</TableHead>
             <TableHead>Contact Info</TableHead>
+            <TableHead>Created</TableHead>
             <TableHead>Actions</TableHead>
           </TableRow>
         </TableHeader>
@@ -293,6 +312,12 @@ export const LeadsTable = ({ leads }: LeadsTableProps) => {
                       {lead.phone_number}
                     </a>
                   )}
+                </div>
+              </TableCell>
+              <TableCell>
+                <div className="flex items-center text-gray-600 text-sm">
+                  <Calendar className="h-3 w-3 mr-1" />
+                  {formatDate(lead.created_at)}
                 </div>
               </TableCell>
               <TableCell>
