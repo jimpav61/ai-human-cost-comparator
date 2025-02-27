@@ -11,6 +11,7 @@ import { Button } from '@/components/ui/button';
 import { Download, FileDown, Phone, Globe } from 'lucide-react';
 import { toast } from "@/hooks/use-toast";
 import { Lead } from "@/types/leads";
+import { supabase } from "@/integrations/supabase/client";
 
 interface LeadsTableProps {
   leads: Lead[];
@@ -34,11 +35,31 @@ export const LeadsTable = ({ leads }: LeadsTableProps) => {
 
   const handleGenerateProposal = async (lead: Lead) => {
     try {
+      const { data, error } = await supabase.functions.invoke('generate-proposal', {
+        body: { lead }
+      });
+
+      if (error) throw error;
+
+      // Create a Blob from the HTML content
+      const blob = new Blob([data.html], { type: 'text/html' });
+      
+      // Create download link and trigger download
+      const url = window.URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `${lead.company_name}-Proposal.html`;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      window.URL.revokeObjectURL(url);
+
       toast({
-        title: "Generating Proposal",
-        description: `Generating proposal for ${lead.company_name}...`,
+        title: "Success",
+        description: "Proposal generated and downloaded successfully",
       });
     } catch (error) {
+      console.error('Proposal generation error:', error);
       toast({
         title: "Error",
         description: "Failed to generate proposal",
