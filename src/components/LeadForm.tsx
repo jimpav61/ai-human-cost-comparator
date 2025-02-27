@@ -91,6 +91,7 @@ export const LeadForm: React.FC<LeadFormProps> = ({ onSubmit }) => {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [leadId, setLeadId] = useState<string | null>(null);
   const [emailError, setEmailError] = useState('');
+  const [websiteError, setWebsiteError] = useState('');
 
   const validateEmail = (email: string) => {
     if (!email) {
@@ -107,6 +108,23 @@ export const LeadForm: React.FC<LeadFormProps> = ({ onSubmit }) => {
     return true;
   };
 
+  const validateWebsite = (website: string) => {
+    if (!website) {
+      setWebsiteError('Website URL is required');
+      return false;
+    }
+    
+    // Basic URL validation
+    try {
+      new URL(website);
+      setWebsiteError('');
+      return true;
+    } catch (e) {
+      setWebsiteError('Please enter a valid URL (include https://)');
+      return false;
+    }
+  };
+
   const handleEmailChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const email = e.target.value;
     setFormData(prev => ({ ...prev, email }));
@@ -115,6 +133,17 @@ export const LeadForm: React.FC<LeadFormProps> = ({ onSubmit }) => {
       validateEmail(email);
     } else {
       setEmailError('');
+    }
+  };
+
+  const handleWebsiteChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const website = e.target.value;
+    setFormData(prev => ({ ...prev, website }));
+    
+    if (website) {
+      validateWebsite(website);
+    } else {
+      setWebsiteError('');
     }
   };
 
@@ -140,6 +169,16 @@ export const LeadForm: React.FC<LeadFormProps> = ({ onSubmit }) => {
       return;
     }
 
+    // Validate website before submission
+    if (!validateWebsite(formData.website)) {
+      toast({
+        title: "Invalid Website",
+        description: "Please provide a valid website URL.",
+        variant: "destructive",
+      });
+      return;
+    }
+
     setIsSubmitting(true);
 
     try {
@@ -151,7 +190,7 @@ export const LeadForm: React.FC<LeadFormProps> = ({ onSubmit }) => {
           company_name: formData.companyName,
           email: formData.email,
           phone_number: formData.phoneNumber,
-          website: formData.website || null,
+          website: formData.website,
           industry: "Not yet provided", // Placeholder until step 2
           employee_count: 0, // Placeholder until step 2
           calculator_inputs: {},
@@ -220,7 +259,7 @@ export const LeadForm: React.FC<LeadFormProps> = ({ onSubmit }) => {
             company_name: formData.companyName,
             email: formData.email,
             phone_number: formData.phoneNumber,
-            website: formData.website || null,
+            website: formData.website,
             industry: formData.industry,
             employee_count: formData.employeeCount,
             calculator_inputs: {},
@@ -339,16 +378,20 @@ export const LeadForm: React.FC<LeadFormProps> = ({ onSubmit }) => {
 
             <div>
               <label htmlFor="website" className="block text-sm font-medium text-gray-700 mb-1">
-                Company Website
+                Company Website *
               </label>
               <input
                 id="website"
                 type="url"
-                className="calculator-input"
+                required
+                className={`calculator-input ${websiteError ? 'border-red-500' : ''}`}
                 value={formData.website}
-                onChange={(e) => setFormData(prev => ({ ...prev, website: e.target.value }))}
+                onChange={handleWebsiteChange}
                 placeholder="https://"
               />
+              {websiteError && (
+                <p className="text-red-500 text-sm mt-1">{websiteError}</p>
+              )}
             </div>
 
             <Button
