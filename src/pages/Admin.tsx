@@ -13,8 +13,7 @@ import {
 } from "@/components/ui/table";
 import { Download, FileText } from 'lucide-react';
 import { generatePDF } from '@/components/calculator/pdfGenerator';
-import type { LeadData } from '@/components/calculator/types';
-import { formatCurrency, formatPercent } from '@/utils/formatters';
+import type { BusinessSuggestion, AIPlacement } from '@/components/calculator/types';
 
 interface Lead {
   id: string;
@@ -31,6 +30,83 @@ interface Lead {
 const AdminDashboard = () => {
   const [loading, setLoading] = useState(true);
   const [leads, setLeads] = useState<Lead[]>([]);
+
+  const handleDownloadReport = (lead: Lead) => {
+    try {
+      const businessSuggestions: BusinessSuggestion[] = [
+        {
+          title: "24/7 Customer Support",
+          description: "Implement AI to provide round-the-clock support without increasing staff costs."
+        },
+        {
+          title: "Cost-Effective Scaling",
+          description: "Scale your operations efficiently with AI automation."
+        }
+      ];
+
+      const aiPlacements: AIPlacement[] = [
+        {
+          role: "Front-line Support",
+          capabilities: [
+            "Handle routine customer inquiries instantly",
+            "Route complex issues to human agents",
+            "Available 24/7 without additional cost"
+          ]
+        }
+      ];
+
+      const doc = generatePDF({
+        contactInfo: lead.name,
+        companyName: lead.company_name,
+        email: lead.email,
+        phoneNumber: lead.phone_number,
+        results: lead.calculator_results,
+        businessSuggestions,
+        aiPlacements,
+      });
+
+      doc.save(`${lead.company_name}-AI-Integration-Analysis.pdf`);
+      
+      toast({
+        title: "Success",
+        description: "Report downloaded successfully",
+      });
+    } catch (error) {
+      console.error('Error generating report:', error);
+      toast({
+        title: "Error",
+        description: "Failed to generate report",
+        variant: "destructive",
+      });
+    }
+  };
+
+  const handleCreateProposal = async (lead: Lead) => {
+    try {
+      const { error } = await supabase
+        .from('leads')
+        .update({ proposal_sent: true })
+        .eq('id', lead.id);
+
+      if (error) throw error;
+
+      setLeads(leads.map(l => 
+        l.id === lead.id ? { ...l, proposal_sent: true } : l
+      ));
+
+      toast({
+        title: "Success",
+        description: "Proposal marked as sent",
+      });
+    } catch (error) {
+      console.error('Error updating lead:', error);
+      toast({
+        title: "Error",
+        description: "Failed to update proposal status",
+        variant: "destructive",
+      });
+    }
+  };
 
   useEffect(() => {
     const checkAuth = async () => {
