@@ -12,39 +12,62 @@ const Auth = () => {
   const [password, setPassword] = useState("");
   const [loginInProgress, setLoginInProgress] = useState(false);
 
-  // Check for existing session on component mount
+  // Handle initial session check
   useEffect(() => {
-    const checkSession = async () => {
+    const { data: { subscription } } = supabase.auth.onAuthStateChange(
+      async (event, session) => {
+        if (event === "SIGNED_IN" && session?.user?.email) {
+          try {
+            const { data: adminCheck } = await supabase
+              .from('allowed_admins')
+              .select('*')
+              .eq('email', session.user.email);
+
+            if (adminCheck && adminCheck.length > 0) {
+              window.location.replace('/admin');
+            } else {
+              await supabase.auth.signOut();
+              toast({
+                title: "Access Denied",
+                description: "You do not have admin access",
+                variant: "destructive",
+              });
+            }
+          } catch (error) {
+            console.error("Admin check error:", error);
+          }
+        }
+      }
+    );
+
+    // Check initial session
+    const checkInitialSession = async () => {
       try {
-        // Get session
-        const { data, error } = await supabase.auth.getSession();
-        
-        if (error) throw error;
-        
-        // If we have a session, check if the user is an admin
-        if (data.session) {
-          const { data: adminData } = await supabase
+        const { data: { session } } = await supabase.auth.getSession();
+        if (session?.user?.email) {
+          const { data: adminCheck } = await supabase
             .from('allowed_admins')
             .select('*')
-            .eq('email', data.session.user.email);
-            
-          // If user is an admin, redirect to admin page
-          if (adminData && adminData.length > 0) {
-            window.location.href = '/admin';
-            return;
+            .eq('email', session.user.email);
+
+          if (adminCheck && adminCheck.length > 0) {
+            window.location.replace('/admin');
+          } else {
+            await supabase.auth.signOut();
           }
-          
-          // If user is not an admin, sign them out
-          await supabase.auth.signOut();
         }
       } catch (error) {
-        console.error("Session check error:", error);
+        console.error("Initial session check error:", error);
       } finally {
         setLoading(false);
       }
     };
-    
-    checkSession();
+
+    checkInitialSession();
+
+    return () => {
+      subscription.unsubscribe();
+    };
   }, []);
 
   const handleLogin = async (e: React.FormEvent) => {
@@ -64,41 +87,31 @@ const Auth = () => {
     setLoginInProgress(true);
     
     try {
-      // First, sign in with credentials
-      const { data, error } = await supabase.auth.signInWithPassword({
-        email: email.trim().toLowerCase(),
+      const cleanEmail = email.trim().toLowerCase();
+      
+      // First check if user is allowed
+      const { data: adminCheck } = await supabase
+        .from('allowed_admins')
+        .select('*')
+        .eq('email', cleanEmail);
+      
+      if (!adminCheck || adminCheck.length === 0) {
+        throw new Error("This email is not authorized for admin access");
+      }
+      
+      // Then attempt to sign in
+      const { error: signInError } = await supabase.auth.signInWithPassword({
+        email: cleanEmail,
         password: password.trim()
       });
       
-      if (error) throw error;
+      if (signInError) throw signInError;
       
-      if (!data.session) {
-        throw new Error("No session created");
-      }
-      
-      // Then check if user is allowed as admin
-      const { data: adminData, error: adminError } = await supabase
-        .from('allowed_admins')
-        .select('*')
-        .eq('email', email.trim().toLowerCase());
-      
-      if (adminError) throw adminError;
-      
-      // If not an admin, sign out and show error
-      if (!adminData || adminData.length === 0) {
-        await supabase.auth.signOut();
-        throw new Error("You do not have admin access");
-      }
-      
-      // Success - redirect to admin page
+      // Auth state change listener will handle the redirect
       toast({
         title: "Success",
-        description: "Logged in successfully",
+        description: "Authentication successful",
       });
-      
-      setTimeout(() => {
-        window.location.href = '/admin';
-      }, 500);
       
     } catch (error: any) {
       console.error("Login error:", error);
@@ -107,7 +120,6 @@ const Auth = () => {
         description: error.message || "An unexpected error occurred",
         variant: "destructive",
       });
-    } finally {
       setLoginInProgress(false);
     }
   };
