@@ -1,29 +1,10 @@
 
 import { useEffect, useState } from 'react';
 import { supabase } from "@/integrations/supabase/client";
-import { toast } from "@/components/ui/use-toast";
+import { toast } from "@/hooks/use-toast";
 import { Button } from '@/components/ui/button';
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from "@/components/ui/table";
-import { Download, FileDown, Phone, Globe } from 'lucide-react';
-
-interface Lead {
-  id: string;
-  name: string;
-  company_name: string;
-  email: string;
-  phone_number: string | null;
-  website: string | null;
-  calculator_inputs: any;
-  calculator_results: any;
-  proposal_sent: boolean;
-}
+import { LeadsTable } from '@/components/admin/LeadsTable';
+import { Lead } from '@/types/leads';
 
 const AdminDashboard = () => {
   const [loading, setLoading] = useState(true);
@@ -53,7 +34,6 @@ const AdminDashboard = () => {
           return;
         }
 
-        // Fetch leads after authentication is confirmed
         const { data: leadsData, error: leadsError } = await supabase
           .from('leads')
           .select('*')
@@ -101,38 +81,6 @@ const AdminDashboard = () => {
     }
   };
 
-  const handleDownloadReport = async (lead: Lead) => {
-    try {
-      // For now, just show a toast - we'll implement the actual download later
-      toast({
-        title: "Download Started",
-        description: `Downloading report for ${lead.company_name}...`,
-      });
-    } catch (error) {
-      toast({
-        title: "Error",
-        description: "Failed to download report",
-        variant: "destructive",
-      });
-    }
-  };
-
-  const handleGenerateProposal = async (lead: Lead) => {
-    try {
-      // For now, just show a toast - we'll implement the proposal generation later
-      toast({
-        title: "Generating Proposal",
-        description: `Generating proposal for ${lead.company_name}...`,
-      });
-    } catch (error) {
-      toast({
-        title: "Error",
-        description: "Failed to generate proposal",
-        variant: "destructive",
-      });
-    }
-  };
-
   if (loading) {
     return <div className="flex justify-center items-center min-h-screen">Loading...</div>;
   }
@@ -145,79 +93,7 @@ const AdminDashboard = () => {
           Logout
         </Button>
       </div>
-
-      <div className="bg-white rounded-lg shadow overflow-hidden">
-        <Table>
-          <TableHeader>
-            <TableRow>
-              <TableHead>Company</TableHead>
-              <TableHead>Contact</TableHead>
-              <TableHead>Contact Info</TableHead>
-              <TableHead>Links</TableHead>
-              <TableHead>Actions</TableHead>
-            </TableRow>
-          </TableHeader>
-          <TableBody>
-            {leads.map((lead) => (
-              <TableRow key={lead.id}>
-                <TableCell className="font-medium">
-                  {lead.company_name}
-                </TableCell>
-                <TableCell>{lead.name}</TableCell>
-                <TableCell>
-                  <div className="space-y-1">
-                    <div>{lead.email}</div>
-                    {lead.phone_number && (
-                      <a 
-                        href={`tel:${lead.phone_number}`}
-                        className="flex items-center text-blue-600 hover:text-blue-800"
-                      >
-                        <Phone className="h-4 w-4 mr-1" />
-                        {lead.phone_number}
-                      </a>
-                    )}
-                  </div>
-                </TableCell>
-                <TableCell>
-                  {lead.website && (
-                    <a 
-                      href={lead.website.startsWith('http') ? lead.website : `https://${lead.website}`}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="flex items-center text-blue-600 hover:text-blue-800"
-                    >
-                      <Globe className="h-4 w-4 mr-1" />
-                      Website
-                    </a>
-                  )}
-                </TableCell>
-                <TableCell>
-                  <div className="flex space-x-2">
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      onClick={() => handleDownloadReport(lead)}
-                      className="flex items-center"
-                    >
-                      <Download className="h-4 w-4 mr-1" />
-                      Report
-                    </Button>
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      onClick={() => handleGenerateProposal(lead)}
-                      className="flex items-center"
-                    >
-                      <FileDown className="h-4 w-4 mr-1" />
-                      Proposal
-                    </Button>
-                  </div>
-                </TableCell>
-              </TableRow>
-            ))}
-          </TableBody>
-        </Table>
-      </div>
+      <LeadsTable leads={leads} />
     </div>
   );
 };
