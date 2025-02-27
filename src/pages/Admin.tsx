@@ -113,17 +113,21 @@ const AdminDashboard = () => {
 
     const checkAuth = async () => {
       try {
+        console.log("Admin: Checking session...");
         const { data: { session }, error: sessionError } = await supabase.auth.getSession();
         
-        if (sessionError) throw sessionError;
+        if (sessionError) {
+          console.error("Admin: Session error:", sessionError);
+          throw sessionError;
+        }
         
         if (!session) {
-          console.log("No session found");
+          console.log("Admin: No session found");
           window.location.href = '/';
           return;
         }
 
-        console.log("Session found, checking admin status");
+        console.log("Admin: Session found, checking admin status");
 
         const { data: adminCheck, error: adminError } = await supabase
           .from('allowed_admins')
@@ -132,18 +136,18 @@ const AdminDashboard = () => {
           .single();
 
         if (adminError) {
-          console.error("Admin check error:", adminError);
+          console.error("Admin: Admin check error:", adminError);
           throw adminError;
         }
 
         if (!adminCheck) {
-          console.log("Not an admin");
+          console.log("Admin: Not an admin");
           await supabase.auth.signOut();
           window.location.href = '/';
           return;
         }
 
-        console.log("Admin verified, fetching leads");
+        console.log("Admin: Admin verified, fetching leads");
 
         if (isSubscribed) {
           const { data: leadsData, error: leadsError } = await supabase
@@ -151,7 +155,10 @@ const AdminDashboard = () => {
             .select('*')
             .order('created_at', { ascending: false });
 
-          if (leadsError) throw leadsError;
+          if (leadsError) {
+            console.error("Admin: Leads fetch error:", leadsError);
+            throw leadsError;
+          }
           
           if (isSubscribed) {
             setLeads(leadsData || []);
@@ -159,7 +166,7 @@ const AdminDashboard = () => {
           }
         }
       } catch (error) {
-        console.error('Auth check error:', error);
+        console.error('Admin: Auth check error:', error);
         if (isSubscribed) {
           toast({
             title: "Error",
@@ -174,10 +181,10 @@ const AdminDashboard = () => {
     checkAuth();
 
     const authListener = supabase.auth.onAuthStateChange((event, session) => {
-      console.log("Auth state changed:", event);
+      console.log("Admin: Auth state changed:", event);
       if (event === 'SIGNED_OUT') {
         window.location.href = '/';
-      } else if (event === 'SIGNED_IN') {
+      } else if (event === 'SIGNED_IN' && isSubscribed) {
         checkAuth();
       }
     });
