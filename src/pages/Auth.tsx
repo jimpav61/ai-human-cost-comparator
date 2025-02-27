@@ -5,34 +5,31 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { toast } from "@/components/ui/use-toast";
-import { useNavigate } from "react-router-dom";
 
 const Auth = () => {
-  const navigate = useNavigate();
   const [loading, setLoading] = useState(false);
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
 
   useEffect(() => {
-    supabase.auth.onAuthStateChange((event, session) => {
+    const checkSession = async () => {
+      const { data: { session } } = await supabase.auth.getSession();
       if (session) {
-        const checkAdmin = async () => {
-          const { data: adminCheck } = await supabase
-            .from('allowed_admins')
-            .select('email')
-            .eq('email', session.user.email)
-            .single();
-          
-          if (adminCheck) {
-            navigate('/admin');
-          } else {
-            navigate('/');
-          }
-        };
-        checkAdmin();
+        const { data: adminCheck } = await supabase
+          .from('allowed_admins')
+          .select('email')
+          .eq('email', session.user.email)
+          .single();
+        
+        if (adminCheck) {
+          window.location.href = '/admin';
+        } else {
+          window.location.href = '/';
+        }
       }
-    });
-  }, [navigate]);
+    };
+    checkSession();
+  }, []);
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -64,7 +61,7 @@ const Auth = () => {
           description: "Logged in successfully",
         });
         
-        navigate('/admin');
+        window.location.href = '/admin';
       }
     } catch (error: any) {
       console.error("Auth error:", error);

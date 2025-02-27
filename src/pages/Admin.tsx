@@ -1,7 +1,6 @@
 import { useEffect, useState } from 'react';
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "@/components/ui/use-toast";
-import { useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import {
   Table,
@@ -29,53 +28,14 @@ interface Lead {
 }
 
 const AdminDashboard = () => {
-  const navigate = useNavigate();
   const [loading, setLoading] = useState(true);
   const [leads, setLeads] = useState<Lead[]>([]);
 
   useEffect(() => {
-    const subscription = supabase.auth.onAuthStateChange(async (event, session) => {
-      if (!session) {
-        navigate('/');
-        return;
-      }
-
-      try {
-        const { data: adminCheck, error } = await supabase
-          .from('allowed_admins')
-          .select('email')
-          .eq('email', session.user.email)
-          .single();
-
-        if (error || !adminCheck) {
-          throw new Error('Unauthorized');
-        }
-
-        // Fetch leads after confirming admin access
-        const { data: leadsData, error: leadsError } = await supabase
-          .from('leads')
-          .select('*')
-          .order('created_at', { ascending: false });
-
-        if (leadsError) throw leadsError;
-        setLeads(leadsData || []);
-        setLoading(false);
-      } catch (error) {
-        console.error('Access check error:', error);
-        toast({
-          title: "Unauthorized",
-          description: "You don't have access to this page",
-          variant: "destructive",
-        });
-        navigate('/');
-      }
-    });
-
-    // Initial check
     const checkAccess = async () => {
       const { data: { session } } = await supabase.auth.getSession();
       if (!session) {
-        navigate('/');
+        window.location.href = '/';
         return;
       }
 
@@ -105,23 +65,29 @@ const AdminDashboard = () => {
           description: "You don't have access to this page",
           variant: "destructive",
         });
-        navigate('/');
+        window.location.href = '/';
       }
     };
 
     checkAccess();
 
+    const subscription = supabase.auth.onAuthStateChange((event) => {
+      if (event === 'SIGNED_OUT') {
+        window.location.href = '/';
+      }
+    });
+
     return () => {
       subscription.data.subscription.unsubscribe();
     };
-  }, [navigate]);
+  }, []);
 
   const handleLogout = async () => {
     try {
       await supabase.auth.signOut();
       localStorage.clear();
       sessionStorage.clear();
-      navigate('/');
+      window.location.href = '/';
     } catch (error) {
       console.error('Logout error:', error);
       toast({
