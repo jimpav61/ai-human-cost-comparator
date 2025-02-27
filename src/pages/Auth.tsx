@@ -17,11 +17,19 @@ const Auth = () => {
     const checkSession = async () => {
       const { data: { session } } = await supabase.auth.getSession();
       if (session) {
-        navigate("/admin");
+        const { data: adminCheck } = await supabase
+          .from('allowed_admins')
+          .select('email')
+          .eq('email', session.user.email)
+          .single();
+        
+        if (adminCheck) {
+          window.location.href = '/admin';
+        }
       }
     };
     checkSession();
-  }, [navigate]);
+  }, []);
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -53,7 +61,7 @@ const Auth = () => {
           description: "Logged in successfully",
         });
         
-        navigate("/admin");
+        window.location.href = '/admin';
       }
     } catch (error: any) {
       console.error("Auth error:", error);
