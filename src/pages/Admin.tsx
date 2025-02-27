@@ -17,53 +17,48 @@ const AdminDashboard = () => {
       try {
         const { data: { session } } = await supabase.auth.getSession();
         
-        // If no session, redirect to auth page
         if (!session) {
           window.location.href = '/auth';
           return;
         }
 
-        // Get leads data
         const { data: leadsData, error: leadsError } = await supabase
           .from('leads')
           .select('*')
           .order('created_at', { ascending: false });
 
-        if (leadsError) throw leadsError;
-
-        // Handle the case where leadsData is null or empty
-        if (!leadsData || leadsData.length === 0) {
-          console.log("No leads found");
-          setLeads([]);
-          setLoading(false);
-          return;
+        if (leadsError) {
+          console.error('Leads fetch error:', leadsError);
+          throw leadsError;
         }
 
-        // Transform the data to match the Lead type with proper type checking
-        const transformedLeads: Lead[] = leadsData.map(lead => ({
-          id: lead.id || "",
-          name: lead.name || "",
-          company_name: lead.company_name || "",
-          email: lead.email || "",
-          phone_number: lead.phone_number || "",
-          website: lead.website || null,
-          industry: lead.industry || "Not Specified",
-          employee_count: lead.employee_count || 0,
-          calculator_inputs: lead.calculator_inputs || {},
-          calculator_results: lead.calculator_results || {},
-          proposal_sent: lead.proposal_sent || false,
-          created_at: lead.created_at,
-          form_completed: lead.form_completed || false
-        }));
-
-        setLeads(transformedLeads);
+        if (leadsData) {
+          const transformedLeads = leadsData.map(lead => ({
+            id: lead.id,
+            name: lead.name,
+            company_name: lead.company_name,
+            email: lead.email,
+            phone_number: lead.phone_number || '',
+            website: lead.website || null,
+            industry: lead.industry || 'Not Specified',
+            employee_count: lead.employee_count || 0,
+            calculator_inputs: lead.calculator_inputs || {},
+            calculator_results: lead.calculator_results || {},
+            proposal_sent: lead.proposal_sent || false,
+            created_at: lead.created_at,
+            form_completed: lead.form_completed || false
+          }));
+          
+          setLeads(transformedLeads);
+        }
+        
         setLoading(false);
 
-      } catch (error) {
-        console.error('Error:', error);
+      } catch (error: any) {
+        console.error('Error fetching leads:', error);
         toast({
           title: "Error",
-          description: "An error occurred while loading the dashboard",
+          description: "Failed to load leads: " + (error.message || "Unknown error"),
           variant: "destructive",
         });
         setLoading(false);
@@ -71,8 +66,7 @@ const AdminDashboard = () => {
     };
 
     checkAuth();
-
-    // Add auth state change listener
+    
     const { data: { subscription } } = supabase.auth.onAuthStateChange((event) => {
       if (event === 'SIGNED_OUT') {
         window.location.href = '/auth';
