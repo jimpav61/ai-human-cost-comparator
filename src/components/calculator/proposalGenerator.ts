@@ -298,6 +298,9 @@ export const generateProposal = (params: GenerateProposalParams) => {
   if (params.industry) {
     footerText += ` (${params.industry})`;
   }
+  if (params.employeeCount) {
+    footerText += ` with ${params.employeeCount} employees`;
+  }
   doc.text(footerText, 20, 280);
   doc.text(`Generated on ${reportDate} | Valid for 30 days`, 20, 287);
 
