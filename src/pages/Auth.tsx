@@ -39,11 +39,11 @@ const Auth = () => {
         const { data: adminCheck, error: adminCheckError } = await supabase
           .from('allowed_admins')
           .select('email')
-          .eq('email', session.user.email)
-          .single();
+          .eq('email', session.user.email);
         
-        if (adminCheckError) {
-          console.error("Admin check error:", adminCheckError);
+        // Check if there are any results - using .single() causes errors when no rows are found
+        if (adminCheckError || !adminCheck || adminCheck.length === 0) {
+          console.error("Admin check error or no results:", adminCheckError);
           await supabase.auth.signOut();
           toast({
             title: "Authentication Error",
@@ -55,20 +55,8 @@ const Auth = () => {
           return;
         }
         
-        if (adminCheck) {
-          console.log("User is an admin, redirecting to admin dashboard...");
-          window.location.href = '/admin';
-        } else {
-          console.log("User is not an admin, signing out...");
-          await supabase.auth.signOut();
-          toast({
-            title: "Unauthorized",
-            description: "You do not have admin access.",
-            variant: "destructive",
-          });
-          setLoading(false);
-          setInitialCheckDone(true);
-        }
+        console.log("User is an admin, redirecting to admin dashboard...");
+        window.location.href = '/admin';
       } catch (error) {
         console.error("Auth check failed:", error);
         setLoading(false);
@@ -104,15 +92,15 @@ const Auth = () => {
       const { data: adminCheck, error: adminCheckError } = await supabase
         .from('allowed_admins')
         .select('email')
-        .eq('email', email.toLowerCase().trim())
-        .single();
+        .eq('email', email.toLowerCase().trim());
 
+      // Check if there are any results - using .single() causes errors when no rows are found
       if (adminCheckError) {
         console.error("Admin check error:", adminCheckError);
-        throw new Error("This email is not authorized for admin access");
+        throw new Error("Error checking admin access. Please try again.");
       }
 
-      if (!adminCheck) {
+      if (!adminCheck || adminCheck.length === 0) {
         console.error("Email not found in allowed_admins");
         throw new Error("This email is not authorized for admin access");
       }
