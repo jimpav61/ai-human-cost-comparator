@@ -46,8 +46,8 @@ export const generateProposal = (params: GenerateProposalParams) => {
   doc.setFontSize(14);
   doc.text("Your AI Transformation Journey", 20, yPosition);
   
-  doc.setFontSize(12);
-  const benefits = {
+  // Benefits table
+  autoTable(doc, {
     startY: yPosition + 5,
     head: [["Key Benefits"]],
     body: [
@@ -59,10 +59,12 @@ export const generateProposal = (params: GenerateProposalParams) => {
     ],
     styles: { fontSize: 11 },
     theme: 'plain',
-  } as UserOptions;
-
-  autoTable(doc, benefits);
-  yPosition = (doc as any).previousAutoTable.finalY + 20;
+  });
+  
+  // Get the last Y position after the table
+  // Use finalY from the last table or default to current yPosition + 60 if it's undefined
+  yPosition = doc.lastAutoTable?.finalY || (yPosition + 60);
+  yPosition += 20; // Add some spacing
 
   // Financial Impact
   doc.setFontSize(14);
@@ -73,7 +75,7 @@ export const generateProposal = (params: GenerateProposalParams) => {
   const yearlySavings = formatCurrency(params.results.yearlySavings);
   const savingsPercent = Math.abs(params.results.savingsPercentage).toFixed(1);
 
-  const financial = {
+  autoTable(doc, {
     startY: yPosition + 5,
     head: [["Metric", "Potential Impact"]],
     body: [
@@ -83,16 +85,17 @@ export const generateProposal = (params: GenerateProposalParams) => {
       ["Implementation Timeline", "2-4 weeks"]
     ],
     styles: { fontSize: 11 },
-  } as UserOptions;
-
-  autoTable(doc, financial);
-  yPosition = (doc as any).previousAutoTable.finalY + 20;
+  });
+  
+  // Get the last Y position after the table
+  yPosition = doc.lastAutoTable?.finalY || (yPosition + 60);
+  yPosition += 20; // Add some spacing
 
   // Implementation Process
   doc.setFontSize(14);
   doc.text("Implementation Process", 20, yPosition);
 
-  const implementation = {
+  autoTable(doc, {
     startY: yPosition + 5,
     body: [
       ["1. Initial Setup & Integration (Week 1)"],
@@ -102,10 +105,11 @@ export const generateProposal = (params: GenerateProposalParams) => {
     ],
     styles: { fontSize: 11 },
     theme: 'plain',
-  } as UserOptions;
-
-  autoTable(doc, implementation);
-  yPosition = (doc as any).previousAutoTable.finalY + 20;
+  });
+  
+  // Get the last Y position after the table
+  yPosition = doc.lastAutoTable?.finalY || (yPosition + 60);
+  yPosition += 20; // Add some spacing
 
   // Next Steps
   doc.setFontSize(14);
@@ -116,7 +120,7 @@ export const generateProposal = (params: GenerateProposalParams) => {
   const splitNextSteps = doc.splitTextToSize(nextStepsText, 170);
   doc.text(splitNextSteps, 20, yPosition + 10);
 
-  const nextSteps = {
+  autoTable(doc, {
     startY: yPosition + 25,
     body: [
       ["• Custom implementation timeline"],
@@ -126,9 +130,7 @@ export const generateProposal = (params: GenerateProposalParams) => {
     ],
     styles: { fontSize: 11 },
     theme: 'plain',
-  } as UserOptions;
-
-  autoTable(doc, nextSteps);
+  });
 
   // Contact Information
   doc.addPage();
