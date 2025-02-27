@@ -1,4 +1,3 @@
-
 import { useEffect, useState } from 'react';
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "@/components/ui/use-toast";
@@ -35,11 +34,9 @@ const AdminDashboard = () => {
   const [leads, setLeads] = useState<Lead[]>([]);
 
   useEffect(() => {
-    const checkAccess = async () => {
-      const { data: { session } } = await supabase.auth.getSession();
-      
+    const subscription = supabase.auth.onAuthStateChange(async (event, session) => {
       if (!session) {
-        window.location.href = '/';
+        navigate('/');
         return;
       }
 
@@ -70,19 +67,61 @@ const AdminDashboard = () => {
           description: "You don't have access to this page",
           variant: "destructive",
         });
-        window.location.href = '/';
+        navigate('/');
+      }
+    });
+
+    // Initial check
+    const checkAccess = async () => {
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session) {
+        navigate('/');
+        return;
+      }
+
+      try {
+        const { data: adminCheck, error } = await supabase
+          .from('allowed_admins')
+          .select('email')
+          .eq('email', session.user.email)
+          .single();
+
+        if (error || !adminCheck) {
+          throw new Error('Unauthorized');
+        }
+
+        const { data: leadsData, error: leadsError } = await supabase
+          .from('leads')
+          .select('*')
+          .order('created_at', { ascending: false });
+
+        if (leadsError) throw leadsError;
+        setLeads(leadsData || []);
+        setLoading(false);
+      } catch (error) {
+        console.error('Access check error:', error);
+        toast({
+          title: "Unauthorized",
+          description: "You don't have access to this page",
+          variant: "destructive",
+        });
+        navigate('/');
       }
     };
 
     checkAccess();
-  }, []);
+
+    return () => {
+      subscription.data.subscription.unsubscribe();
+    };
+  }, [navigate]);
 
   const handleLogout = async () => {
     try {
       await supabase.auth.signOut();
       localStorage.clear();
       sessionStorage.clear();
-      window.location.href = '/';
+      navigate('/');
     } catch (error) {
       console.error('Logout error:', error);
       toast({

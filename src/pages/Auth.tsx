@@ -14,22 +14,25 @@ const Auth = () => {
   const [password, setPassword] = useState("");
 
   useEffect(() => {
-    const checkSession = async () => {
-      const { data: { session } } = await supabase.auth.getSession();
+    supabase.auth.onAuthStateChange((event, session) => {
       if (session) {
-        const { data: adminCheck } = await supabase
-          .from('allowed_admins')
-          .select('email')
-          .eq('email', session.user.email)
-          .single();
-        
-        if (adminCheck) {
-          window.location.href = '/admin';
-        }
+        const checkAdmin = async () => {
+          const { data: adminCheck } = await supabase
+            .from('allowed_admins')
+            .select('email')
+            .eq('email', session.user.email)
+            .single();
+          
+          if (adminCheck) {
+            navigate('/admin');
+          } else {
+            navigate('/');
+          }
+        };
+        checkAdmin();
       }
-    };
-    checkSession();
-  }, []);
+    });
+  }, [navigate]);
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -61,7 +64,7 @@ const Auth = () => {
           description: "Logged in successfully",
         });
         
-        window.location.href = '/admin';
+        navigate('/admin');
       }
     } catch (error: any) {
       console.error("Auth error:", error);
