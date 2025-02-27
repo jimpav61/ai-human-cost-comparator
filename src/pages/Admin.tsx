@@ -42,7 +42,7 @@ const Admin = () => {
               
             if (leadsError) throw leadsError;
             
-            setLeads(leadsData);
+            setLeads(leadsData || []);
           }
         }
       } catch (error: any) {
