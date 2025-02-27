@@ -4,7 +4,7 @@ export interface Lead {
   name: string;
   company_name: string;
   email: string;
-  phone_number: string | null;
+  phone_number: string;
   website: string | null;
   industry: string;
   employee_count: number;
@@ -12,4 +12,5 @@ export interface Lead {
   calculator_results: any;
   proposal_sent: boolean;
   created_at?: string;
+  form_completed?: boolean;
 }
