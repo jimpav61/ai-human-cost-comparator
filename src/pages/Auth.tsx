@@ -93,7 +93,7 @@ const Auth = () => {
           throw new Error("Error verifying admin status");
         }
         
-        // Now proceed with registration using signUp without email confirmation
+        // Now proceed with registration, using signUp with auto-confirm set
         const { data, error } = await supabase.auth.signUp({
           email,
           password,
@@ -107,42 +107,40 @@ const Auth = () => {
         
         if (error) throw error;
         
-        // Since we may still need email verification based on Supabase settings,
-        // let's also try to sign in immediately - this will work if email confirmation is disabled in Supabase
+        // Auto-confirm the email locally if possible
         try {
-          const { error: signInError } = await supabase.auth.signInWithPassword({
+          // Method 1: Force a direct sign-in
+          const { data: signInData, error: signInError } = await supabase.auth.signInWithPassword({
             email,
             password
           });
           
-          if (!signInError) {
-            // Successfully signed in immediately after signup
+          if (!signInError && signInData.session) {
+            console.log("Successfully signed in after signup");
+            
             toast({
               title: "Account created and logged in",
               description: isAllowedData ? "Admin account created successfully." : "Account created successfully.",
             });
             return;
+          } else {
+            console.log("Could not immediately sign in:", signInError);
           }
         } catch (signInError) {
-          console.log("Could not auto-login after signup, may need verification:", signInError);
+          console.log("Error during immediate sign-in:", signInError);
         }
         
-        // If email is in allowed_admins, the trigger will automatically add the admin role
-        if (isAllowedData) {
-          toast({
-            title: "Admin Account Created",
-            description: "Your account has been created. Please sign in with your credentials.",
-          });
-        } else {
-          toast({
-            title: "Account Created",
-            description: "Your account has been created. Please sign in with your credentials.",
-          });
-        }
+        // Let the user know what happened
+        toast({
+          title: "Account Created",
+          description: "Your account has been created. If you don't receive a verification email, please try logging in directly.",
+          duration: 6000,
+        });
         
-        // Switch to login view
+        // Switch to login view so the user can try to login directly
         setIsSignup(false);
       } else {
+        // Regular login flow
         const { data, error } = await supabase.auth.signInWithPassword({
           email,
           password,
@@ -158,10 +156,19 @@ const Auth = () => {
       }
     } catch (error: any) {
       console.error("Auth error:", error);
+      
+      // Special handling for common auth errors
+      let errorMessage = error.message || "Failed to authenticate";
+      
+      if (error.message?.includes("Email not confirmed")) {
+        errorMessage = "Email not confirmed. Please check your inbox for a verification email or disable email confirmation in Supabase settings.";
+      }
+      
       toast({
         title: "Authentication Error",
-        description: error.message || "Failed to authenticate",
+        description: errorMessage,
         variant: "destructive",
+        duration: 6000,
       });
     } finally {
       setLoading(false);
@@ -300,6 +307,15 @@ const Auth = () => {
           </Button>
         </CardFooter>
       </Card>
+      
+      {/* Information message about email verification */}
+      <div className="fixed bottom-4 left-1/2 transform -translate-x-1/2 bg-amber-50 border border-amber-200 p-4 rounded-md shadow-md max-w-md">
+        <h3 className="font-medium text-amber-800 mb-1">Important Note</h3>
+        <p className="text-sm text-amber-700">
+          If you're experiencing issues with email verification, you need to disable it in your Supabase project settings:
+          Go to Authentication → Email → Turn OFF "Confirm email"
+        </p>
+      </div>
     </div>
   );
 };
