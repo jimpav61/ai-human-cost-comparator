@@ -4,7 +4,7 @@ import { DEFAULT_AI_RATES, HUMAN_HOURLY_RATES, fetchPricingConfigurations, type 
 
 export interface CalculatorInputs {
   aiType: 'voice' | 'chatbot' | 'both';
-  aiTier: 'basic' | 'standard' | 'premium';
+  aiTier: 'starter' | 'growth' | 'premium';
   role: keyof typeof HUMAN_HOURLY_RATES;
   numEmployees: number;
   callVolume: number;
@@ -19,6 +19,7 @@ export interface CalculationResults {
     voice: number;
     chatbot: number;
     total: number;
+    setupFee: number;
   };
   humanCostMonthly: number;
   monthlySavings: number;
@@ -34,11 +35,12 @@ export interface CalculationResults {
     monthlyTotal: number;
     yearlyTotal: number;
   };
+  annualPlan: number;
 }
 
 export const useCalculator = (inputs: CalculatorInputs): CalculationResults => {
   const [results, setResults] = useState<CalculationResults>({
-    aiCostMonthly: { voice: 0, chatbot: 0, total: 0 },
+    aiCostMonthly: { voice: 0, chatbot: 0, total: 0, setupFee: 0 },
     humanCostMonthly: 0,
     monthlySavings: 0,
     yearlySavings: 0,
@@ -49,7 +51,8 @@ export const useCalculator = (inputs: CalculatorInputs): CalculationResults => {
       weeklyTotal: 0,
       monthlyTotal: 0,
       yearlyTotal: 0
-    }
+    },
+    annualPlan: 0
   });
   
   const [aiRates, setAiRates] = useState<AIRates>(DEFAULT_AI_RATES);
@@ -86,10 +89,15 @@ export const useCalculator = (inputs: CalculatorInputs): CalculationResults => {
     // Calculate AI costs monthly
     let monthlyVoiceCost = 0;
     let monthlyChatbotCost = 0;
+    let setupFee = aiRates.chatbot[inputs.aiTier].setupFee || 0;
+    let annualPlan = aiRates.chatbot[inputs.aiTier].annualPrice || 0;
     
     if (inputs.aiType === 'voice' || inputs.aiType === 'both') {
       const totalMinutesPerMonth = inputs.callVolume * inputs.avgCallDuration;
-      monthlyVoiceCost = totalMinutesPerMonth * aiRates.voice[inputs.aiTier];
+      // Apply the included voice minutes from the selected tier
+      const includedMinutes = aiRates.chatbot[inputs.aiTier].includedVoiceMinutes || 0;
+      const chargeableMinutes = Math.max(0, totalMinutesPerMonth - includedMinutes);
+      monthlyVoiceCost = chargeableMinutes * aiRates.voice[inputs.aiTier];
     }
     
     if (inputs.aiType === 'chatbot' || inputs.aiType === 'both') {
@@ -108,7 +116,8 @@ export const useCalculator = (inputs: CalculatorInputs): CalculationResults => {
       aiCostMonthly: {
         voice: monthlyVoiceCost,
         chatbot: monthlyChatbotCost,
-        total: monthlyAiCost
+        total: monthlyAiCost,
+        setupFee: setupFee
       },
       humanCostMonthly: monthlyHumanCost,
       monthlySavings: monthlySavings,
@@ -123,7 +132,8 @@ export const useCalculator = (inputs: CalculatorInputs): CalculationResults => {
         weeklyTotal: weeklyTotalHours,
         monthlyTotal: monthlyTotalHours,
         yearlyTotal: yearlyTotalHours
-      }
+      },
+      annualPlan: annualPlan
     });
   }, [inputs, aiRates]);
 

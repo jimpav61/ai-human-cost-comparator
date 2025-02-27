@@ -1,15 +1,18 @@
-import React from 'react';
-import { Button } from "@/components/ui/button";
-import type { ResultsDisplayProps } from './types';
-import { formatCurrency, formatPercent } from '@/utils/formatters';
-import { Download, TrendingUp, TrendingDown, DollarSign } from 'lucide-react';
-import { supabase } from "@/integrations/supabase/client";
-import { toast } from "@/components/ui/use-toast";
-import type { Json } from '@/integrations/supabase/types';
+
+import React, { useState } from 'react';
+import { 
+  BarChart,
+  Clock, 
+  Download, 
+  DollarSign,
+  BarChart3
+} from 'lucide-react';
+import { formatCurrency, formatNumber, formatPercent } from '@/utils/formatters';
+import type { CalculationResults, CalculatorInputs } from '@/hooks/useCalculator';
 import { PricingDetails } from './PricingDetails';
-import { TierComparison } from './TierComparison';
-import { BusinessSuggestionsAndPlacements } from './BusinessSuggestionsAndPlacements';
+import type { ResultsDisplayProps, PricingDetail } from './types';
 import { generatePDF } from './pdfGenerator';
+import { Button } from '@/components/ui/button';
 import { AI_RATES } from '@/constants/pricing';
 
 export const ResultsDisplay: React.FC<ResultsDisplayProps> = ({
@@ -17,229 +20,279 @@ export const ResultsDisplay: React.FC<ResultsDisplayProps> = ({
   onGenerateReport,
   reportGenerated,
   inputs,
-  leadData
+  leadData,
 }) => {
-  const businessSuggestions = [
-    {
-      title: "24/7 Customer Support",
-      description: "Implement AI to provide round-the-clock support without increasing staff costs."
-    },
-    {
-      title: "Rapid Response Times",
-      description: "AI can handle multiple inquiries simultaneously, reducing customer wait times."
-    },
-    {
-      title: "Cost-Effective Scaling",
-      description: `Save ${formatPercent(results.savingsPercentage)} on operational costs while maintaining service quality.`
-    },
-    {
-      title: "Employee Focus",
-      description: "Free up your team to handle complex cases while AI manages routine inquiries."
-    }
-  ];
+  const [activeTab, setActiveTab] = useState('summary');
 
-  const aiPlacements = [
-    {
-      role: "Front-line Support",
-      capabilities: [
-        "Handle routine customer inquiries instantly",
-        "Route complex issues to human agents",
-        "Available 24/7 without additional cost"
-      ]
-    },
-    {
-      role: "Customer Service Enhancement",
-      capabilities: [
-        "Reduce wait times significantly",
-        "Process multiple requests simultaneously",
-        "Maintain consistent service quality"
-      ]
-    }
-  ];
-
-  const getPricingDetails = () => {
-    const details = [];
-
-    if (inputs.aiType === 'voice' || inputs.aiType === 'both') {
-      const totalMinutes = inputs.callVolume * inputs.avgCallDuration;
-      const voiceRate = AI_RATES.voice[inputs.aiTier];
-      const voiceCost = totalMinutes * voiceRate;
-      
-      details.push({
-        title: 'Voice AI Pricing',
-        base: null,
-        rate: `${formatCurrency(voiceRate)} per minute`,
-        totalMinutes: totalMinutes,
-        monthlyCost: voiceCost
-      });
-    }
-
-    if (inputs.aiType === 'chatbot' || inputs.aiType === 'both') {
-      const totalMessages = inputs.chatVolume * inputs.avgChatLength;
-      const chatbotRates = AI_RATES.chatbot[inputs.aiTier];
-      const messageCost = totalMessages * chatbotRates.perMessage;
-      const totalChatbotCost = chatbotRates.base + messageCost;
-      
-      details.push({
-        title: 'Chatbot Pricing',
-        base: chatbotRates.base,
-        rate: `${formatCurrency(chatbotRates.perMessage)} per message`,
-        totalMessages: totalMessages,
-        monthlyCost: totalChatbotCost
-      });
-    }
-
-    return details;
+  const handleGenerateReport = () => {
+    onGenerateReport();
   };
 
-  const handleGenerateReport = async () => {
-    try {
-      const doc = generatePDF({
-        contactInfo: leadData.name,
-        companyName: leadData.companyName,
-        email: leadData.email,
-        phoneNumber: leadData.phoneNumber,
-        results,
-        businessSuggestions,
-        aiPlacements
-      });
+  const pricingDetails: PricingDetail[] = [];
 
-      const { error } = await supabase
-        .from('leads')
-        .insert({
-          name: leadData.name,
-          company_name: leadData.companyName,
-          email: leadData.email,
-          phone_number: leadData.phoneNumber || null,
-          calculator_inputs: inputs as unknown as Json,
-          calculator_results: results as unknown as Json
-        });
+  if (inputs.aiType === 'voice' || inputs.aiType === 'both') {
+    const totalMinutes = inputs.callVolume * inputs.avgCallDuration;
+    // Calculate the chargeable minutes (total minus included minutes)
+    const includedMinutes = AI_RATES.chatbot[inputs.aiTier].includedVoiceMinutes || 0;
+    const chargeableMinutes = Math.max(0, totalMinutes - includedMinutes);
+    pricingDetails.push({
+      title: 'Voice AI',
+      base: null,
+      rate: `${formatCurrency(AI_RATES.voice[inputs.aiTier])}/minute after ${includedMinutes} included minutes`,
+      totalMinutes: totalMinutes,
+      monthlyCost: results.aiCostMonthly.voice,
+    });
+  }
 
-      if (error) throw error;
+  if (inputs.aiType === 'chatbot' || inputs.aiType === 'both') {
+    pricingDetails.push({
+      title: 'Text AI',
+      base: AI_RATES.chatbot[inputs.aiTier].base,
+      rate: `${formatCurrency(AI_RATES.chatbot[inputs.aiTier].perMessage)}/message`,
+      totalMessages: inputs.chatVolume * inputs.avgChatLength,
+      monthlyCost: results.aiCostMonthly.chatbot,
+    });
+  }
 
-      doc.save(`${leadData.companyName}-AI-Integration-Analysis.pdf`);
-      
-      toast({
-        title: "Report Generated Successfully",
-        description: "Your report has been saved and downloaded.",
-      });
-      
-      onGenerateReport();
-    } catch (error) {
-      console.error('Error saving report:', error);
-      toast({
-        title: "Error Saving Report",
-        description: "There was an error saving your report. Please try again.",
-        variant: "destructive"
-      });
-    }
+  const downloadPDF = () => {
+    // Generate suggestions based on the business and calculator results
+    const businessSuggestions = [
+      {
+        title: "Automate Customer Support",
+        description: "Implement our AI system to handle routine customer inquiries 24/7, freeing up your team for complex issues."
+      },
+      {
+        title: "Integration with Existing Systems",
+        description: "Our AI solutions seamlessly integrate with your current CRM and communication tools for a unified workflow."
+      },
+      {
+        title: "Scalable Growth Solution",
+        description: "As your business grows, our AI scales with you without proportional increases in operational costs."
+      }
+    ];
+
+    // Generate AI placement recommendations
+    const aiPlacements = [
+      {
+        role: "Customer Support",
+        capabilities: [
+          "Answer frequently asked questions",
+          "Process simple service requests",
+          "Provide product information"
+        ]
+      },
+      {
+        role: "Sales Assistance",
+        capabilities: [
+          "Qualify leads 24/7",
+          "Schedule appointments",
+          "Answer product questions"
+        ]
+      },
+      {
+        role: "Internal Operations",
+        capabilities: [
+          "Automate data entry tasks",
+          "Process routine internal requests",
+          "Provide employee information"
+        ]
+      }
+    ];
+
+    const doc = generatePDF({
+      contactInfo: leadData.name,
+      companyName: leadData.companyName,
+      email: leadData.email,
+      phoneNumber: leadData.phoneNumber,
+      industry: leadData.industry,
+      employeeCount: leadData.employeeCount,
+      results,
+      businessSuggestions,
+      aiPlacements
+    });
+
+    doc.save(`${leadData.companyName.replace(/\s+/g, '-')}_AI_Analysis.pdf`);
   };
 
   return (
-    <div className="space-y-6">
-      <div className="grid gap-4">
-        <div className="p-4 bg-white rounded-lg shadow-sm">
-          <h3 className="text-lg font-semibold mb-4">Cost Analysis</h3>
-          
-          {/* Monthly and Annual Cost Summary */}
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
-            <div className="p-4 bg-gray-50 rounded-lg">
-              <h4 className="text-sm font-semibold text-gray-700 mb-3">Monthly Overview</h4>
-              <div className="space-y-2">
-                <div className="flex justify-between">
-                  <span>Human Cost:</span>
-                  <span>{formatCurrency(results.humanCostMonthly)}</span>
-                </div>
-                <div className="flex justify-between">
-                  <span>AI Cost:</span>
-                  <span>{formatCurrency(results.aiCostMonthly.total)}</span>
-                </div>
-                <div className="flex justify-between font-semibold">
-                  <span>Monthly Savings:</span>
-                  <div className="flex items-center">
-                    {results.monthlySavings > 0 ? (
-                      <TrendingUp className="w-4 h-4 text-green-500 mr-1" />
-                    ) : (
-                      <TrendingDown className="w-4 h-4 text-red-500 mr-1" />
-                    )}
-                    {formatCurrency(results.monthlySavings)}
-                  </div>
-                </div>
-              </div>
-            </div>
-
-            <div className="p-4 bg-gray-50 rounded-lg">
-              <h4 className="text-sm font-semibold text-gray-700 mb-3">Annual Overview</h4>
-              <div className="space-y-2">
-                <div className="flex justify-between">
-                  <span>Human Cost:</span>
-                  <span>{formatCurrency(results.humanCostMonthly * 12)}</span>
-                </div>
-                <div className="flex justify-between">
-                  <span>AI Cost:</span>
-                  <span>{formatCurrency(results.aiCostMonthly.total * 12)}</span>
-                </div>
-                <div className="flex justify-between font-semibold">
-                  <span>Annual Savings:</span>
-                  <div className="flex items-center">
-                    {results.yearlySavings > 0 ? (
-                      <TrendingUp className="w-4 h-4 text-green-500 mr-1" />
-                    ) : (
-                      <TrendingDown className="w-4 h-4 text-red-500 mr-1" />
-                    )}
-                    {formatCurrency(results.yearlySavings)}
-                  </div>
-                </div>
-              </div>
-            </div>
-          </div>
-
-          {/* Savings Indicator */}
-          <div className="mb-6 p-4 bg-gray-50 rounded-lg">
-            <h4 className="text-sm font-semibold text-gray-700 mb-3">Savings Overview</h4>
-            <div className="flex items-center justify-between">
-              <div className="flex items-center">
-                <DollarSign className={`w-5 h-5 mr-2 ${results.savingsPercentage > 0 ? 'text-green-500' : 'text-red-500'}`} />
-                <span className="text-lg font-semibold">
-                  {formatPercent(Math.abs(results.savingsPercentage))}
-                </span>
-              </div>
-              <span className="text-sm text-gray-600">
-                {results.savingsPercentage > 0 ? 'Cost Reduction' : 'Cost Increase'}
-              </span>
-            </div>
-          </div>
-
-          {/* AI Pricing Details */}
-          <div className="mb-6">
-            <h4 className="text-sm font-semibold text-gray-700 mb-3">AI Service Pricing ({inputs.aiTier} tier)</h4>
-            <PricingDetails details={getPricingDetails()} />
-          </div>
-
-          {/* Tier Comparison */}
-          <div className="mb-6">
-            <h4 className="text-sm font-semibold text-gray-700 mb-3">Tier Comparison</h4>
-            <TierComparison currentTier={inputs.aiTier} />
-          </div>
-
-          {/* Business Suggestions and AI Placements */}
-          <BusinessSuggestionsAndPlacements 
-            suggestions={businessSuggestions}
-            placements={aiPlacements}
-          />
-
-          {/* Generate Report Button */}
-          <div className="mt-6">
+    <div className="space-y-8 animate-fadeIn">
+      <div className="calculator-card">
+        <div className="flex justify-between items-center mb-4">
+          <h3 className="text-xl font-medium text-gray-900">Results Analysis</h3>
+          <div className="flex items-center space-x-2">
             <Button
-              onClick={handleGenerateReport}
-              disabled={reportGenerated}
-              className="w-full"
+              variant="outline"
+              size="sm"
+              className="flex items-center"
+              onClick={() => setActiveTab('summary')}
             >
-              <Download className="w-4 h-4 mr-2" />
-              {reportGenerated ? 'Report Generated' : 'Generate Detailed Report'}
+              <BarChart3 className="mr-1 h-4 w-4" />
+              Summary
+            </Button>
+            <Button
+              variant="outline"
+              size="sm"
+              className="flex items-center"
+              onClick={() => setActiveTab('details')}
+            >
+              <DollarSign className="mr-1 h-4 w-4" />
+              Details
+            </Button>
+            <Button
+              onClick={downloadPDF}
+              size="sm"
+              className="flex items-center"
+            >
+              <Download className="mr-1 h-4 w-4" />
+              Download
             </Button>
           </div>
         </div>
+
+        {activeTab === 'summary' && (
+          <div>
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+              <div className="bg-gray-50 p-4 rounded-lg">
+                <div className="text-gray-500 text-sm mb-1">Monthly Cost</div>
+                <div className="text-2xl font-semibold text-gray-900">{formatCurrency(results.aiCostMonthly.total)}</div>
+                <div className="mt-2 flex items-center text-xs">
+                  <Clock className="h-3 w-3 mr-1 text-gray-400" />
+                  <span className="text-gray-500">One-time setup: {formatCurrency(results.aiCostMonthly.setupFee)}</span>
+                </div>
+              </div>
+              
+              <div className="bg-gray-50 p-4 rounded-lg">
+                <div className="text-gray-500 text-sm mb-1">Monthly Savings</div>
+                <div className="text-2xl font-semibold text-green-600">{formatCurrency(results.monthlySavings)}</div>
+                <div className="mt-2 flex items-center text-xs">
+                  <BarChart className="h-3 w-3 mr-1 text-gray-400" />
+                  <span className="text-gray-500">{formatPercent(results.savingsPercentage)} vs. human labor</span>
+                </div>
+              </div>
+              
+              <div className="bg-gray-50 p-4 rounded-lg">
+                <div className="text-gray-500 text-sm mb-1">Annual Savings</div>
+                <div className="text-2xl font-semibold text-green-600">{formatCurrency(results.yearlySavings)}</div>
+                <div className="mt-2 flex items-center text-xs">
+                  <DollarSign className="h-3 w-3 mr-1 text-gray-400" />
+                  <span className="text-gray-500">Annual plan: {formatCurrency(results.annualPlan)}</span>
+                </div>
+              </div>
+            </div>
+
+            <div className="mt-6">
+              <h4 className="font-medium text-gray-900 mb-3">Human Resource Comparison</h4>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div className="border border-gray-200 rounded-lg p-4">
+                  <div className="text-gray-700 font-medium mb-2">Labor Hours</div>
+                  <ul className="text-sm text-gray-600 space-y-2">
+                    <li className="flex justify-between">
+                      <span>Daily per employee:</span>
+                      <span>{results.humanHours.dailyPerEmployee} hours</span>
+                    </li>
+                    <li className="flex justify-between">
+                      <span>Weekly total:</span>
+                      <span>{formatNumber(results.humanHours.weeklyTotal)} hours</span>
+                    </li>
+                    <li className="flex justify-between border-t border-gray-100 pt-1 font-medium">
+                      <span>Monthly total:</span>
+                      <span>{formatNumber(results.humanHours.monthlyTotal)} hours</span>
+                    </li>
+                  </ul>
+                </div>
+                
+                <div className="border border-gray-200 rounded-lg p-4">
+                  <div className="text-gray-700 font-medium mb-2">Labor Costs</div>
+                  <ul className="text-sm text-gray-600 space-y-2">
+                    <li className="flex justify-between">
+                      <span>Human-only monthly cost:</span>
+                      <span>{formatCurrency(results.humanCostMonthly)}</span>
+                    </li>
+                    <li className="flex justify-between">
+                      <span>AI monthly cost:</span>
+                      <span>{formatCurrency(results.aiCostMonthly.total)}</span>
+                    </li>
+                    <li className="flex justify-between border-t border-gray-100 pt-1 font-medium text-green-600">
+                      <span>Monthly savings:</span>
+                      <span>{formatCurrency(results.monthlySavings)}</span>
+                    </li>
+                  </ul>
+                </div>
+              </div>
+            </div>
+
+            <div className="mt-8">
+              <Button 
+                onClick={handleGenerateReport}
+                className="w-full"
+                variant={reportGenerated ? "secondary" : "default"}
+                disabled={reportGenerated}
+              >
+                {reportGenerated ? "Your Report is Ready" : "Generate Detailed Report & ROI Analysis"}
+              </Button>
+            </div>
+          </div>
+        )}
+
+        {activeTab === 'details' && (
+          <div>
+            <h4 className="font-medium text-gray-900 mb-3">AI Cost Breakdown</h4>
+            <PricingDetails 
+              details={pricingDetails}
+              setupFee={results.aiCostMonthly.setupFee}
+              annualPlan={results.annualPlan}
+              includedVoiceMinutes={AI_RATES.chatbot[inputs.aiTier].includedVoiceMinutes}
+            />
+            
+            <h4 className="font-medium text-gray-900 mt-6 mb-3">Human Resource Costs</h4>
+            <div className="border border-gray-200 rounded-lg p-4">
+              <div className="flex justify-between items-center mb-3">
+                <span className="font-medium text-gray-900">Total Human Labor</span>
+                <span className="text-gray-900 font-semibold">{formatCurrency(results.humanCostMonthly)}/month</span>
+              </div>
+              <div className="text-sm text-gray-600 space-y-2">
+                <div className="flex justify-between">
+                  <span>Hourly rate:</span>
+                  <span>{formatCurrency(HUMAN_HOURLY_RATES[inputs.role])}/hour</span>
+                </div>
+                <div className="flex justify-between">
+                  <span>Monthly hours:</span>
+                  <span>{formatNumber(results.humanHours.monthlyTotal)} hours</span>
+                </div>
+                <div className="flex justify-between">
+                  <span>Annual labor cost:</span>
+                  <span>{formatCurrency(results.humanCostMonthly * 12)}</span>
+                </div>
+              </div>
+            </div>
+            
+            <h4 className="font-medium text-gray-900 mt-6 mb-3">Cost Comparison</h4>
+            <div className="border border-gray-200 rounded-lg p-4">
+              <div className="grid grid-cols-2 gap-4 text-sm">
+                <div>
+                  <div className="text-gray-600 mb-1">Monthly Savings</div>
+                  <div className="text-xl font-semibold text-green-600">{formatCurrency(results.monthlySavings)}</div>
+                </div>
+                <div>
+                  <div className="text-gray-600 mb-1">Annual Savings</div>
+                  <div className="text-xl font-semibold text-green-600">{formatCurrency(results.yearlySavings)}</div>
+                </div>
+                <div>
+                  <div className="text-gray-600 mb-1">Cost Reduction</div>
+                  <div className="text-xl font-semibold text-brand-600">{formatPercent(results.savingsPercentage)}</div>
+                </div>
+                <div>
+                  <div className="text-gray-600 mb-1">Break-even</div>
+                  <div className="text-xl font-semibold">
+                    {results.monthlySavings > 0 
+                      ? `${Math.ceil(results.aiCostMonthly.setupFee / results.monthlySavings)} months` 
+                      : 'N/A'}
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
       </div>
     </div>
   );

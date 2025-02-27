@@ -1,7 +1,8 @@
-
-import React from 'react';
+import React, { useEffect } from 'react';
 import { ROLE_LABELS } from '@/constants/pricing';
+import { TierComparison } from './TierComparison';
 import type { CalculatorInputs } from '@/hooks/useCalculator';
+import { toast } from "@/components/ui/use-toast";
 
 interface CalculatorFormProps {
   inputs: CalculatorInputs;
@@ -9,9 +10,39 @@ interface CalculatorFormProps {
 }
 
 export const CalculatorForm: React.FC<CalculatorFormProps> = ({ inputs, onInputChange }) => {
+  useEffect(() => {
+    if (inputs.aiTier === 'starter' && (inputs.aiType === 'voice' || inputs.aiType === 'both')) {
+      onInputChange('aiTier', 'growth');
+      toast({
+        title: "Plan Upgraded",
+        description: "Voice features require at least the Growth Plan. We've automatically upgraded your selection.",
+        variant: "default",
+      });
+    }
+  }, [inputs.aiType, inputs.aiTier, onInputChange]);
+
+  const handleTierSelect = (tier: string) => {
+    if (tier === 'starter' && (inputs.aiType === 'voice' || inputs.aiType === 'both')) {
+      toast({
+        title: "Voice Features Not Available",
+        description: "The Starter Plan doesn't support voice features. Please select Growth or Premium Plan for voice capabilities.",
+        variant: "destructive",
+      });
+      return;
+    }
+    
+    onInputChange('aiTier', tier as any);
+  };
+
   return (
     <div className="space-y-8 animate-fadeIn">
       <div className="calculator-card">
+        <h3 className="text-xl font-medium text-gray-900 mb-6">Plan Selection</h3>
+        
+        <div className="mb-6">
+          <TierComparison currentTier={inputs.aiTier} onSelectTier={handleTierSelect} />
+        </div>
+
         <h3 className="text-xl font-medium text-gray-900 mb-6">Configuration</h3>
         
         {/* Job Role Selection */}
@@ -53,24 +84,15 @@ export const CalculatorForm: React.FC<CalculatorFormProps> = ({ inputs, onInputC
             onChange={(e) => onInputChange('aiType', e.target.value)}
             className="calculator-input"
           >
-            <option value="voice">Voice AI</option>
-            <option value="chatbot">Chatbot</option>
-            <option value="both">Both</option>
+            <option value="chatbot">Text Only</option>
+            <option value="voice">Voice Only</option>
+            <option value="both">Both Text & Voice</option>
           </select>
-        </div>
-        
-        {/* AI Tier Selection */}
-        <div className="mb-4">
-          <label className="block text-sm font-medium text-gray-700 mb-1">AI Tier</label>
-          <select 
-            value={inputs.aiTier}
-            onChange={(e) => onInputChange('aiTier', e.target.value)}
-            className="calculator-input"
-          >
-            <option value="basic">Basic</option>
-            <option value="standard">Standard</option>
-            <option value="premium">Premium</option>
-          </select>
+          {inputs.aiTier === 'starter' && (
+            <p className="text-sm text-amber-600 mt-1">
+              Note: Starter Plan only supports text capabilities. Select Growth or Premium Plan for voice.
+            </p>
+          )}
         </div>
         
         {(inputs.aiType === 'voice' || inputs.aiType === 'both') && (

@@ -1,18 +1,18 @@
 
 import { supabase } from "@/integrations/supabase/client";
-import type { PricingConfiguration } from '@/types/pricing';
+import type { PricingConfiguration, PackageTier } from '@/types/pricing';
 
 // Default values (used while loading from DB)
 export const DEFAULT_AI_RATES = {
   voice: {
-    basic: 0.06,
-    standard: 0.12,
-    premium: 0.25,
+    starter: 0,
+    growth: 0.12,
+    premium: 0.12,
   },
   chatbot: {
-    basic: { base: 99, perMessage: 0.003 },
-    standard: { base: 249, perMessage: 0.005 },
-    premium: { base: 499, perMessage: 0.008 }
+    starter: { base: 99, perMessage: 0.003, setupFee: 249, annualPrice: 990, includedVoiceMinutes: 0 },
+    growth: { base: 229, perMessage: 0.005, setupFee: 749, annualPrice: 2290, includedVoiceMinutes: 600 },
+    premium: { base: 429, perMessage: 0.008, setupFee: 1149, annualPrice: 4290, includedVoiceMinutes: 600 }
   }
 };
 
@@ -31,6 +31,32 @@ export const ROLE_LABELS = {
   generalAdmin: "General Admin"
 };
 
+export const TIER_DESCRIPTIONS = {
+  starter: "Perfect for businesses looking for basic text-based customer interaction.",
+  growth: "Ideal for businesses that want to add voice capabilities.",
+  premium: "For businesses that want the most advanced communication options."
+};
+
+export const TIER_FEATURES = {
+  starter: [
+    "Web Chat on your website",
+    "Facebook Messenger",
+    "WhatsApp",
+    "Telegram",
+    "Instagram",
+    "Email"
+  ],
+  growth: [
+    "Everything in the Starter Plan",
+    "Voice Integration"
+  ],
+  premium: [
+    "Everything in the Growth Plan",
+    "SMS Messaging",
+    "Voice Calls"
+  ]
+};
+
 export type AIRates = typeof DEFAULT_AI_RATES;
 
 export const fetchPricingConfigurations = async (): Promise<AIRates> => {
@@ -46,14 +72,14 @@ export const fetchPricingConfigurations = async (): Promise<AIRates> => {
 
     const result: AIRates = {
       voice: {
-        basic: 0.06,
-        standard: 0.12,
-        premium: 0.25,
+        starter: 0,
+        growth: 0.12,
+        premium: 0.12,
       },
       chatbot: {
-        basic: { base: 99, perMessage: 0.003 },
-        standard: { base: 249, perMessage: 0.005 },
-        premium: { base: 499, perMessage: 0.008 }
+        starter: { base: 99, perMessage: 0.003, setupFee: 249, annualPrice: 990, includedVoiceMinutes: 0 },
+        growth: { base: 229, perMessage: 0.005, setupFee: 749, annualPrice: 2290, includedVoiceMinutes: 600 },
+        premium: { base: 429, perMessage: 0.008, setupFee: 1149, annualPrice: 4290, includedVoiceMinutes: 600 }
       }
     };
 
@@ -62,7 +88,10 @@ export const fetchPricingConfigurations = async (): Promise<AIRates> => {
       result.voice[config.tier] = config.voice_per_minute;
       result.chatbot[config.tier] = {
         base: config.chatbot_base_price,
-        perMessage: config.chatbot_per_message
+        perMessage: config.chatbot_per_message,
+        setupFee: config.setup_fee || DEFAULT_AI_RATES.chatbot[config.tier as PackageTier].setupFee,
+        annualPrice: config.annual_price || DEFAULT_AI_RATES.chatbot[config.tier as PackageTier].annualPrice,
+        includedVoiceMinutes: config.included_voice_minutes || DEFAULT_AI_RATES.chatbot[config.tier as PackageTier].includedVoiceMinutes
       };
     });
 

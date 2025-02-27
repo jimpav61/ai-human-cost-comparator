@@ -1,5 +1,5 @@
 
-export type PackageTier = 'basic' | 'standard' | 'premium';
+export type PackageTier = 'starter' | 'growth' | 'premium';
 
 export interface PricingConfiguration {
   id: string;
@@ -9,4 +9,7 @@ export interface PricingConfiguration {
   voice_per_minute: number;
   chatbot_base_price: number;
   chatbot_per_message: number;
+  setup_fee: number;
+  annual_price: number;
+  included_voice_minutes: number;
 }
