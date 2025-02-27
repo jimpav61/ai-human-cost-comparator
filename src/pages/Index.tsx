@@ -41,15 +41,7 @@ const Index = () => {
           description: "Admin account created successfully. Please check your email to verify your account.",
         });
       } else {
-        const { error } = await supabase.auth.signInWithPassword({
-          email: adminEmail,
-          password: adminPassword,
-        });
-        if (error) throw error;
-        toast({
-          title: "Success",
-          description: "Logged in as admin successfully",
-        });
+        window.location.href = '/auth';
       }
       setShowAdminForm(false);
     } catch (error: any) {
@@ -323,7 +315,7 @@ const Index = () => {
                       type="button"
                       variant="ghost"
                       className="w-full"
-                      onClick={() => window.location.href = '/admin'}
+                      onClick={() => window.location.href = '/auth'}
                     >
                       Go to Admin Dashboard
                     </Button>
