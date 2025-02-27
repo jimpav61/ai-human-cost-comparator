@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from "react";
 import { Navigate, useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
@@ -93,51 +92,36 @@ const Auth = () => {
           throw new Error("Error verifying admin status");
         }
         
-        // Now proceed with registration, using signUp with auto-confirm set
+        // Proceed with registration
         const { data, error } = await supabase.auth.signUp({
           email,
           password,
           options: {
-            emailRedirectTo: window.location.origin,
-            data: {
-              email_confirmed: true
-            }
+            emailRedirectTo: window.location.origin
           }
         });
         
         if (error) throw error;
         
-        // Auto-confirm the email locally if possible
-        try {
-          // Method 1: Force a direct sign-in
-          const { data: signInData, error: signInError } = await supabase.auth.signInWithPassword({
-            email,
-            password
-          });
-          
-          if (!signInError && signInData.session) {
-            console.log("Successfully signed in after signup");
-            
-            toast({
-              title: "Account created and logged in",
-              description: isAllowedData ? "Admin account created successfully." : "Account created successfully.",
-            });
-            return;
-          } else {
-            console.log("Could not immediately sign in:", signInError);
-          }
-        } catch (signInError) {
-          console.log("Error during immediate sign-in:", signInError);
-        }
-        
-        // Let the user know what happened
-        toast({
-          title: "Account Created",
-          description: "Your account has been created. If you don't receive a verification email, please try logging in directly.",
-          duration: 6000,
+        // Try to sign in immediately after signup
+        const { error: signInError } = await supabase.auth.signInWithPassword({
+          email,
+          password
         });
         
-        // Switch to login view so the user can try to login directly
+        if (!signInError) {
+          toast({
+            title: "Account created and logged in",
+            description: isAllowedData ? "Admin account created successfully." : "Account created successfully.",
+          });
+          return;
+        }
+        
+        // If immediate sign-in fails, show message and switch to login view
+        toast({
+          title: "Account Created",
+          description: "Your account has been created. Please sign in with your credentials.",
+        });
         setIsSignup(false);
       } else {
         // Regular login flow
@@ -156,19 +140,10 @@ const Auth = () => {
       }
     } catch (error: any) {
       console.error("Auth error:", error);
-      
-      // Special handling for common auth errors
-      let errorMessage = error.message || "Failed to authenticate";
-      
-      if (error.message?.includes("Email not confirmed")) {
-        errorMessage = "Email not confirmed. Please check your inbox for a verification email or disable email confirmation in Supabase settings.";
-      }
-      
       toast({
         title: "Authentication Error",
-        description: errorMessage,
+        description: error.message || "Failed to authenticate",
         variant: "destructive",
-        duration: 6000,
       });
     } finally {
       setLoading(false);
@@ -307,15 +282,6 @@ const Auth = () => {
           </Button>
         </CardFooter>
       </Card>
-      
-      {/* Information message about email verification */}
-      <div className="fixed bottom-4 left-1/2 transform -translate-x-1/2 bg-amber-50 border border-amber-200 p-4 rounded-md shadow-md max-w-md">
-        <h3 className="font-medium text-amber-800 mb-1">Important Note</h3>
-        <p className="text-sm text-amber-700">
-          If you're experiencing issues with email verification, you need to disable it in your Supabase project settings:
-          Go to Authentication → Email → Turn OFF "Confirm email"
-        </p>
-      </div>
     </div>
   );
 };
