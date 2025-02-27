@@ -13,7 +13,7 @@ import { PricingDetails } from './PricingDetails';
 import type { ResultsDisplayProps, PricingDetail } from './types';
 import { generatePDF } from './pdfGenerator';
 import { Button } from '@/components/ui/button';
-import { AI_RATES } from '@/constants/pricing';
+import { AI_RATES, HUMAN_HOURLY_RATES } from '@/constants/pricing';
 
 export const ResultsDisplay: React.FC<ResultsDisplayProps> = ({
   results,

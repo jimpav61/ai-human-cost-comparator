@@ -3,14 +3,46 @@ import React from 'react';
 import type { BusinessSuggestion, AIPlacement } from './types';
 
 interface BusinessSuggestionsAndPlacementsProps {
-  suggestions: BusinessSuggestion[];
-  placements: AIPlacement[];
+  industry: string;
+  tier: 'starter' | 'growth' | 'premium';
 }
 
 export const BusinessSuggestionsAndPlacements: React.FC<BusinessSuggestionsAndPlacementsProps> = ({
-  suggestions,
-  placements
+  industry,
+  tier
 }) => {
+  // Generate suggestions based on industry
+  const suggestions: BusinessSuggestion[] = [
+    {
+      title: "Automate Common Customer Inquiries",
+      description: "Implement an AI chatbot to handle frequently asked questions, reducing wait times and freeing up human agents."
+    },
+    {
+      title: "Enhance After-Hours Support",
+      description: "Deploy voice AI to provide 24/7 customer service without increasing staffing costs."
+    },
+    {
+      title: "Streamline Onboarding Process",
+      description: "Use AI assistants to guide new customers through product setup and initial questions."
+    }
+  ];
+
+  // Generate AI placements based on tier
+  const placements: AIPlacement[] = [
+    {
+      role: "Front-line Customer Support",
+      capabilities: ["Handle basic inquiries", "Process simple requests", "Collect customer information"]
+    },
+    {
+      role: "Technical Troubleshooting",
+      capabilities: ["Guide users through common issues", "Recommend solutions based on symptoms", "Escalate complex problems to human agents"]
+    },
+    {
+      role: "Sales Assistant",
+      capabilities: ["Answer product questions", "Provide pricing information", "Schedule demonstrations with sales team"]
+    }
+  ];
+
   return (
     <>
       <div className="mb-6 p-4 bg-brand-50 rounded-lg">

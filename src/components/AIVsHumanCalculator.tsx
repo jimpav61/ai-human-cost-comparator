@@ -41,16 +41,14 @@ export const AIVsHumanCalculator: React.FC<AIVsHumanCalculatorProps> = ({ leadDa
     try {
       const { error } = await supabase
         .from('generated_reports')
-        .insert([
-          {
-            contact_name: leadData.name,
-            company_name: leadData.companyName,
-            email: leadData.email,
-            phone_number: leadData.phoneNumber || null,
-            calculator_inputs: calculatorInputs,
-            calculator_results: calculationResults,
-          }
-        ]);
+        .insert({
+          contact_name: leadData.name,
+          company_name: leadData.companyName,
+          email: leadData.email,
+          phone_number: leadData.phoneNumber || null,
+          calculator_inputs: calculatorInputs,
+          calculator_results: calculationResults,
+        });
 
       if (error) throw error;
 

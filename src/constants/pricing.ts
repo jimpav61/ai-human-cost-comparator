@@ -84,15 +84,23 @@ export const fetchPricingConfigurations = async (): Promise<AIRates> => {
     };
 
     // Update the values from the database
-    data.forEach((config: PricingConfiguration) => {
-      result.voice[config.tier] = config.voice_per_minute;
-      result.chatbot[config.tier] = {
-        base: config.chatbot_base_price,
-        perMessage: config.chatbot_per_message,
-        setupFee: config.setup_fee || DEFAULT_AI_RATES.chatbot[config.tier as PackageTier].setupFee,
-        annualPrice: config.annual_price || DEFAULT_AI_RATES.chatbot[config.tier as PackageTier].annualPrice,
-        includedVoiceMinutes: config.included_voice_minutes || DEFAULT_AI_RATES.chatbot[config.tier as PackageTier].includedVoiceMinutes
-      };
+    data.forEach((dbConfig: any) => {
+      const config = dbConfig as PricingConfiguration;
+      const tier = config.tier as PackageTier;
+      
+      if (result.voice[tier] !== undefined) {
+        result.voice[tier] = config.voice_per_minute;
+      }
+      
+      if (result.chatbot[tier] !== undefined) {
+        result.chatbot[tier] = {
+          base: config.chatbot_base_price,
+          perMessage: config.chatbot_per_message,
+          setupFee: config.setup_fee || DEFAULT_AI_RATES.chatbot[tier].setupFee,
+          annualPrice: config.annual_price || DEFAULT_AI_RATES.chatbot[tier].annualPrice,
+          includedVoiceMinutes: config.included_voice_minutes || DEFAULT_AI_RATES.chatbot[tier].includedVoiceMinutes
+        };
+      }
     });
 
     return result;

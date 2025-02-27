@@ -59,7 +59,17 @@ export const PricingManager = () => {
         
         setConfigurations(defaultConfigurations as PricingConfiguration[]);
       } else {
-        setConfigurations(data);
+        // Make sure we have all the required fields
+        const updatedConfigurations = data.map(config => {
+          return {
+            ...config,
+            setup_fee: config.setup_fee || 0,
+            annual_price: config.annual_price || 0,
+            included_voice_minutes: config.included_voice_minutes || 0
+          } as PricingConfiguration;
+        });
+        
+        setConfigurations(updatedConfigurations);
       }
     } catch (error) {
       console.error('Error fetching pricing:', error);
@@ -92,10 +102,11 @@ export const PricingManager = () => {
   const handleSave = async () => {
     setSaving(true);
     try {
-      const { error } = await supabase
-        .from('pricing_configurations')
-        .upsert(
-          configurations.map(config => ({
+      // Save each configuration individually instead of all at once
+      for (const config of configurations) {
+        const { error } = await supabase
+          .from('pricing_configurations')
+          .upsert({
             id: config.id,
             tier: config.tier,
             voice_per_minute: config.voice_per_minute,
@@ -104,10 +115,10 @@ export const PricingManager = () => {
             setup_fee: config.setup_fee,
             annual_price: config.annual_price,
             included_voice_minutes: config.included_voice_minutes
-          }))
-        );
+          });
 
-      if (error) throw error;
+        if (error) throw error;
+      }
 
       toast({
         title: "Success",
