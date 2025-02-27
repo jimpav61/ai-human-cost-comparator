@@ -1,338 +1,154 @@
 
-import { useEffect, useState } from 'react';
+import { useState, useEffect } from "react";
+import { Navigate } from "react-router-dom";
+import { LeadsTable } from "@/components/admin/LeadsTable";
+import { PricingManager } from "@/components/admin/PricingManager";
 import { supabase } from "@/integrations/supabase/client";
-import { toast } from "@/hooks/use-toast";
-import { Button } from '@/components/ui/button';
-import { LeadsTable } from '@/components/admin/LeadsTable';
-import { PricingManager } from '@/components/admin/PricingManager';
-import { Lead } from '@/types/leads';
+import { Lead } from "@/types/leads";
+import { AdminHeader } from "@/components/admin/AdminHeader";
+import { CsvUploader } from "@/components/admin/CsvUploader";
+import { toast } from "@/components/ui/use-toast";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { useNavigate } from 'react-router-dom';
-import { LogOut, Loader2 } from 'lucide-react';
 
-const AdminDashboard = () => {
-  const [loading, setLoading] = useState(true);
-  const [leads, setLeads] = useState<Lead[]>([]);
+const Admin = () => {
   const [session, setSession] = useState<any>(null);
   const [isAdmin, setIsAdmin] = useState(false);
-  const [authChecking, setAuthChecking] = useState(true);
-  const navigate = useNavigate();
+  const [isLoading, setIsLoading] = useState(true);
+  const [leads, setLeads] = useState<Lead[]>([]);
 
   useEffect(() => {
     const checkAuth = async () => {
       try {
-        const { data: sessionData, error: sessionError } = await supabase.auth.getSession();
+        const { data, error } = await supabase.auth.getSession();
+        if (error) throw error;
         
-        if (sessionError) {
-          throw sessionError;
-        }
+        setSession(data.session);
         
-        if (!sessionData.session) {
-          // User is not logged in
-          navigate('/auth');
-          return;
-        }
-        
-        setSession(sessionData.session);
-        
-        // Check if user is admin
-        const { data: roleData, error: roleError } = await supabase
-          .from('user_roles')
-          .select('role')
-          .eq('user_id', sessionData.session.user.id)
-          .single();
+        if (data.session) {
+          // Check if the user has admin role
+          const { data: userData, error: userError } = await supabase
+            .rpc('has_role', { role_to_check: 'admin' });
+            
+          if (userError) throw userError;
           
-        if (roleError) {
-          throw roleError;
+          setIsAdmin(userData || false);
+          
+          if (userData) {
+            // Fetch leads for admin
+            const { data: leadsData, error: leadsError } = await supabase
+              .from('leads')
+              .select('*')
+              .order('created_at', { ascending: false });
+              
+            if (leadsError) throw leadsError;
+            
+            setLeads(leadsData);
+          }
         }
-        
-        if (!roleData || roleData.role !== 'admin') {
-          // User is not an admin
-          toast({
-            title: "Access Denied",
-            description: "You don't have permission to access the admin dashboard",
-            variant: "destructive",
-          });
-          navigate('/auth');
-          return;
-        }
-        
-        setIsAdmin(true);
-        setAuthChecking(false);
-        fetchLeads();
-        
       } catch (error: any) {
-        console.error('Auth check error:', error);
+        console.error('Auth error:', error);
         toast({
           title: "Authentication Error",
-          description: error.message || "Please log in again",
+          description: error.message,
           variant: "destructive",
         });
-        navigate('/auth');
+      } finally {
+        setIsLoading(false);
       }
     };
-    
-    const authListener = supabase.auth.onAuthStateChange(async (event, session) => {
-      if (event === 'SIGNED_OUT') {
-        navigate('/auth');
-      } else if (session) {
-        setSession(session);
-        checkAuth();
-      }
-    });
     
     checkAuth();
     
+    const { data: authListener } = supabase.auth.onAuthStateChange(
+      async (_event, session) => {
+        setSession(session);
+        setIsLoading(true);
+        
+        if (session) {
+          // Check if the user has admin role
+          const { data: userData, error: userError } = await supabase
+            .rpc('has_role', { role_to_check: 'admin' });
+            
+          if (userError) {
+            console.error('Role check error:', userError);
+            setIsAdmin(false);
+          } else {
+            setIsAdmin(userData || false);
+            
+            if (userData) {
+              // Fetch leads for admin
+              const { data: leadsData, error: leadsError } = await supabase
+                .from('leads')
+                .select('*')
+                .order('created_at', { ascending: false });
+                
+              if (leadsError) {
+                console.error('Leads fetch error:', leadsError);
+              } else {
+                setLeads(leadsData || []);
+              }
+            }
+          }
+        } else {
+          setIsAdmin(false);
+          setLeads([]);
+        }
+        
+        setIsLoading(false);
+      }
+    );
+    
     return () => {
-      authListener.data.subscription.unsubscribe();
+      authListener.subscription.unsubscribe();
     };
-  }, [navigate]);
+  }, []);
 
-  // Sample leads data to ensure admin always has leads to display
-  const sampleLeads: Lead[] = [
-    {
-      id: "sample-1",
-      name: "John Smith",
-      company_name: "Tech Innovations",
-      email: "john@techinnovations.com",
-      phone_number: "555-123-4567",
-      website: "https://techinnovations.com",
-      industry: "Information Technology",
-      employee_count: 45,
-      calculator_inputs: {
-        supportTeamSize: 10,
-        averageSalary: 65000,
-        callsPerDay: 120,
-        chatMessagesPerDay: 350
-      },
-      calculator_results: {
-        aiCostMonthly: { voice: 85, chatbot: 199, total: 284 },
-        humanCostMonthly: 5400,
-        monthlySavings: 5116,
-        yearlySavings: 61392,
-        savingsPercentage: 94.7,
-        breakEvenPoint: { voice: 240, chatbot: 520 },
-        humanHours: {
-          dailyPerEmployee: 8,
-          weeklyTotal: 400,
-          monthlyTotal: 1600,
-          yearlyTotal: 19200
-        }
-      },
-      proposal_sent: false,
-      created_at: "2023-10-15T14:30:00Z",
-      form_completed: true
-    },
-    {
-      id: "sample-2",
-      name: "Sarah Johnson",
-      company_name: "Retail Solutions",
-      email: "sarah@retailsolutions.com",
-      phone_number: "555-987-6543",
-      website: "https://retailsolutions.com",
-      industry: "Retail",
-      employee_count: 120,
-      calculator_inputs: {
-        supportTeamSize: 25,
-        averageSalary: 55000,
-        callsPerDay: 350,
-        chatMessagesPerDay: 800
-      },
-      calculator_results: {
-        aiCostMonthly: { voice: 210, chatbot: 350, total: 560 },
-        humanCostMonthly: 11450,
-        monthlySavings: 10890,
-        yearlySavings: 130680,
-        savingsPercentage: 95.1,
-        breakEvenPoint: { voice: 310, chatbot: 650 },
-        humanHours: {
-          dailyPerEmployee: 8,
-          weeklyTotal: 1000,
-          monthlyTotal: 4000,
-          yearlyTotal: 48000
-        }
-      },
-      proposal_sent: true,
-      created_at: "2023-11-02T09:15:00Z",
-      form_completed: true
-    },
-    {
-      id: "sample-3",
-      name: "Michael Brown",
-      company_name: "Healthcare Solutions",
-      email: "michael@healthcaresolutions.com",
-      phone_number: "555-456-7890",
-      website: "https://healthcaresolutions.com",
-      industry: "Healthcare",
-      employee_count: 75,
-      calculator_inputs: {
-        supportTeamSize: 15,
-        averageSalary: 70000,
-        callsPerDay: 180,
-        chatMessagesPerDay: 450
-      },
-      calculator_results: {
-        aiCostMonthly: { voice: 150, chatbot: 220, total: 370 },
-        humanCostMonthly: 8750,
-        monthlySavings: 8380,
-        yearlySavings: 100560,
-        savingsPercentage: 95.8,
-        breakEvenPoint: { voice: 280, chatbot: 580 },
-        humanHours: {
-          dailyPerEmployee: 8,
-          weeklyTotal: 600,
-          monthlyTotal: 2400,
-          yearlyTotal: 28800
-        }
-      },
-      proposal_sent: false,
-      created_at: "2023-12-10T11:45:00Z",
-      form_completed: true
-    }
-  ];
-
-  const fetchLeads = async () => {
-    try {
-      console.log('Fetching leads...');
-      
-      // Get leads data with proper authentication
-      const { data: leadsData, error: leadsError } = await supabase
-        .from('leads')
-        .select('*')
-        .order('created_at', { ascending: false });
-
-      if (leadsError) {
-        console.error('Leads fetch error:', leadsError);
-        throw leadsError;
-      }
-
-      console.log('Leads data received:', leadsData);
-
-      // Start with sample leads
-      let combinedLeads = [...sampleLeads];
-
-      if (leadsData && leadsData.length > 0) {
-        const transformedLeads = leadsData.map(lead => ({
-          id: lead.id,
-          name: lead.name,
-          company_name: lead.company_name,
-          email: lead.email,
-          phone_number: lead.phone_number || '',
-          website: lead.website || null,
-          industry: lead.industry || 'Not Specified',
-          employee_count: lead.employee_count || 0,
-          calculator_inputs: lead.calculator_inputs || {},
-          calculator_results: lead.calculator_results || {},
-          proposal_sent: lead.proposal_sent || false,
-          created_at: lead.created_at,
-          form_completed: lead.form_completed || false
-        }));
-        
-        console.log('Transformed leads:', transformedLeads);
-        
-        // Add database leads first, then sample leads
-        combinedLeads = [...transformedLeads, ...sampleLeads];
-      }
-      
-      setLeads(combinedLeads);
-      setLoading(false);
-
-    } catch (error: any) {
-      console.error('Error fetching leads:', error);
-      toast({
-        title: "Error",
-        description: "Failed to load leads from database. Showing sample leads only.",
-        variant: "destructive",
-      });
-      
-      // Set sample leads even if there's an error
-      setLeads(sampleLeads);
-      setLoading(false);
-    }
-  };
-
-  const handleSignOut = async () => {
-    try {
-      const { error } = await supabase.auth.signOut();
-      if (error) throw error;
-      navigate('/auth');
-    } catch (error: any) {
-      console.error('Sign out error:', error);
-      toast({
-        title: "Error",
-        description: "Failed to sign out. Please try again.",
-        variant: "destructive",
-      });
-    }
-  };
-
-  if (authChecking) {
+  if (isLoading) {
     return (
-      <div className="flex justify-center items-center min-h-screen">
+      <div className="min-h-screen flex items-center justify-center bg-gray-50">
         <div className="text-center">
           <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-brand-500 mx-auto mb-4"></div>
-          <p className="text-gray-600">Verifying admin credentials...</p>
-        </div>
-      </div>
-    );
-  }
-
-  if (loading) {
-    return (
-      <div className="flex justify-center items-center min-h-screen">
-        <div className="text-center">
-          <Loader2 className="animate-spin h-12 w-12 text-brand-500 mx-auto mb-4" />
           <p className="text-gray-600">Loading admin dashboard...</p>
         </div>
       </div>
     );
   }
 
+  if (!session) {
+    return <Navigate to="/auth" replace />;
+  }
+
+  if (!isAdmin) {
+    return <Navigate to="/auth" replace />;
+  }
+
   return (
-    <div className="container mx-auto py-10">
-      <div className="flex justify-between items-center mb-8">
-        <h1 className="text-3xl font-bold">Admin Dashboard</h1>
-        <div className="flex space-x-3">
-          {session && (
-            <div className="px-3 py-2 bg-gray-100 rounded text-sm">
-              Logged in as: <span className="font-semibold">{session.user.email}</span>
-            </div>
-          )}
-          <Button variant="outline" onClick={() => navigate('/')} className="mr-2">
-            Home
-          </Button>
-          <Button variant="destructive" onClick={handleSignOut} className="flex items-center gap-2">
-            <LogOut size={16} />
-            Logout
-          </Button>
-        </div>
-      </div>
-
-      <Tabs defaultValue="leads" className="space-y-6">
-        <TabsList>
-          <TabsTrigger value="leads">Leads</TabsTrigger>
-          <TabsTrigger value="pricing">Pricing</TabsTrigger>
-        </TabsList>
-
-        <TabsContent value="leads" className="space-y-4">
-          {leads.length === 0 ? (
-            <div className="p-8 bg-white rounded-lg shadow text-center">
-              <h2 className="text-xl font-semibold mb-4">No Leads Yet</h2>
-              <p className="text-gray-600">
-                There are no leads in the system yet. Leads will appear here when users submit the lead form on the homepage.
-              </p>
-            </div>
-          ) : (
+    <div className="min-h-screen bg-gray-50">
+      <AdminHeader />
+      
+      <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+        <Tabs defaultValue="leads" className="w-full">
+          <TabsList className="mb-6">
+            <TabsTrigger value="leads">Leads Management</TabsTrigger>
+            <TabsTrigger value="pricing">Pricing Configuration</TabsTrigger>
+            <TabsTrigger value="import">Import Leads</TabsTrigger>
+          </TabsList>
+          
+          <TabsContent value="leads" className="space-y-8">
             <LeadsTable leads={leads} />
-          )}
-        </TabsContent>
-
-        <TabsContent value="pricing" className="space-y-4">
-          <PricingManager />
-        </TabsContent>
-      </Tabs>
+          </TabsContent>
+          
+          <TabsContent value="pricing">
+            <PricingManager />
+          </TabsContent>
+          
+          <TabsContent value="import">
+            <CsvUploader />
+          </TabsContent>
+        </Tabs>
+      </main>
     </div>
   );
 };
 
-export default AdminDashboard;
+export default Admin;

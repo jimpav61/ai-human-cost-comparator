@@ -20,7 +20,7 @@ const Index = () => {
   };
 
   const handleAdminClick = () => {
-    // Simply navigate to admin page without any authentication form
+    // Navigate to admin page
     window.location.href = '/admin';
   };
 
