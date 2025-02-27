@@ -1,7 +1,7 @@
 
 import { useEffect, useState } from 'react';
 import { supabase } from '@/integrations/supabase/client';
-import { toast } from '@/components/ui/use-toast';
+import { toast } from '@/hooks/use-toast';
 
 export default function AuthCallback() {
   const [loading, setLoading] = useState(true);
@@ -10,24 +10,42 @@ export default function AuthCallback() {
   useEffect(() => {
     const handleAuthCallback = async () => {
       try {
-        const { error } = await supabase.auth.getSession();
+        // Parse the hash from the URL
+        const hashParams = new URLSearchParams(window.location.hash.substring(1));
+        const accessToken = hashParams.get('access_token');
+        const refreshToken = hashParams.get('refresh_token');
+  
+        // If we have tokens in the URL, set them manually
+        if (accessToken && refreshToken) {
+          const { error: sessionError } = await supabase.auth.setSession({
+            access_token: accessToken,
+            refresh_token: refreshToken
+          });
+  
+          if (sessionError) {
+            throw sessionError;
+          }
+        }
+        
+        // Now check if we have a valid session
+        const { data, error } = await supabase.auth.getSession();
         
         if (error) {
-          setError(error.message);
-          toast({
-            title: 'Authentication Error',
-            description: error.message,
-            variant: 'destructive',
-          });
-        } else {
-          // Success - redirect to admin
-          window.location.href = '/admin';
+          throw error;
         }
+        
+        if (!data.session) {
+          throw new Error("No session found");
+        }
+        
+        // Success! Redirect to admin
+        window.location.href = '/admin';
       } catch (err: any) {
-        setError(err.message);
+        console.error("Auth callback error:", err);
+        setError(err.message || "Authentication failed");
         toast({
-          title: 'Unexpected Error',
-          description: err.message,
+          title: 'Authentication Error',
+          description: err.message || "An unexpected error occurred",
           variant: 'destructive',
         });
       } finally {

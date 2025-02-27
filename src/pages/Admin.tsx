@@ -31,20 +31,29 @@ const AdminDashboard = () => {
 
         if (leadsError) throw leadsError;
 
-        // Transform the data to match the Lead type
-        const transformedLeads: Lead[] = (leadsData || []).map(lead => ({
-          id: lead.id,
-          name: lead.name,
-          company_name: lead.company_name,
-          email: lead.email,
-          phone_number: lead.phone_number,
-          website: lead.website,
-          industry: lead.industry || 'Not Specified',
+        // Handle the case where leadsData is null or empty
+        if (!leadsData || leadsData.length === 0) {
+          console.log("No leads found");
+          setLeads([]);
+          setLoading(false);
+          return;
+        }
+
+        // Transform the data to match the Lead type with proper type checking
+        const transformedLeads: Lead[] = leadsData.map(lead => ({
+          id: lead.id || "",
+          name: lead.name || "",
+          company_name: lead.company_name || "",
+          email: lead.email || "",
+          phone_number: lead.phone_number || "",
+          website: lead.website || null,
+          industry: lead.industry || "Not Specified",
           employee_count: lead.employee_count || 0,
-          calculator_inputs: lead.calculator_inputs,
-          calculator_results: lead.calculator_results,
-          proposal_sent: lead.proposal_sent,
-          created_at: lead.created_at
+          calculator_inputs: lead.calculator_inputs || {},
+          calculator_results: lead.calculator_results || {},
+          proposal_sent: lead.proposal_sent || false,
+          created_at: lead.created_at,
+          form_completed: lead.form_completed || false
         }));
 
         setLeads(transformedLeads);
@@ -57,6 +66,7 @@ const AdminDashboard = () => {
           description: "An error occurred while loading the dashboard",
           variant: "destructive",
         });
+        setLoading(false);
       }
     };
 
@@ -101,7 +111,16 @@ const AdminDashboard = () => {
         </TabsList>
 
         <TabsContent value="leads" className="space-y-4">
-          <LeadsTable leads={leads} />
+          {leads.length === 0 ? (
+            <div className="p-8 bg-white rounded-lg shadow text-center">
+              <h2 className="text-xl font-semibold mb-4">No Leads Yet</h2>
+              <p className="text-gray-600">
+                There are no leads in the system yet. Leads will appear here when users submit the lead form on the homepage.
+              </p>
+            </div>
+          ) : (
+            <LeadsTable leads={leads} />
+          )}
         </TabsContent>
 
         <TabsContent value="pricing" className="space-y-4">

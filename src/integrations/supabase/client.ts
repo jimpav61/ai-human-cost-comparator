@@ -18,8 +18,7 @@ export const supabase = createClient<Database>(
   {
     auth: {
       autoRefreshToken: true,
-      persistSession: true,
-      redirectTo: `${siteUrl}/auth/callback`,
+      persistSession: true
     }
   }
 );
