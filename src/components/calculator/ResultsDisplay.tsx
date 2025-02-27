@@ -54,6 +54,26 @@ export const ResultsDisplay: React.FC<ResultsDisplayProps> = ({
     });
   }
 
+  // Get the display name for the current AI tier
+  const getTierDisplayName = () => {
+    switch(inputs.aiTier) {
+      case 'starter': return 'Starter Plan';
+      case 'growth': return 'Growth Plan';
+      case 'premium': return 'Premium Plan';
+      default: return 'Custom Plan';
+    }
+  };
+
+  // Get the AI type display text
+  const getAITypeDisplay = () => {
+    switch(inputs.aiType) {
+      case 'chatbot': return 'Text Only';
+      case 'voice': return 'Voice Only';
+      case 'both': return 'Text & Voice';
+      default: return '';
+    }
+  };
+
   const downloadPDF = () => {
     // Generate suggestions based on the business and calculator results
     const businessSuggestions = [
@@ -108,7 +128,9 @@ export const ResultsDisplay: React.FC<ResultsDisplayProps> = ({
       employeeCount: leadData.employeeCount,
       results,
       businessSuggestions,
-      aiPlacements
+      aiPlacements,
+      tierName: getTierDisplayName(),
+      aiType: getAITypeDisplay()
     });
 
     doc.save(`${leadData.companyName.replace(/\s+/g, '-')}_AI_Analysis.pdf`);
@@ -151,6 +173,15 @@ export const ResultsDisplay: React.FC<ResultsDisplayProps> = ({
 
         {!showDetails ? (
           <div>
+            <div className="bg-brand-50 p-3 rounded-lg mb-4 border border-brand-100">
+              <div className="flex items-center">
+                <div className="text-brand-600 font-medium">Selected Plan:</div>
+                <div className="ml-2 text-gray-800">
+                  {getTierDisplayName()} ({getAITypeDisplay()})
+                </div>
+              </div>
+            </div>
+            
             <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
               <div className="bg-gray-50 p-4 rounded-lg">
                 <div className="text-gray-500 text-sm mb-1">Monthly Cost</div>
@@ -234,6 +265,15 @@ export const ResultsDisplay: React.FC<ResultsDisplayProps> = ({
           </div>
         ) : (
           <div>
+            <div className="bg-brand-50 p-3 rounded-lg mb-4 border border-brand-100">
+              <div className="flex items-center">
+                <div className="text-brand-600 font-medium">Selected Plan:</div>
+                <div className="ml-2 text-gray-800">
+                  {getTierDisplayName()} ({getAITypeDisplay()})
+                </div>
+              </div>
+            </div>
+            
             <h4 className="font-medium text-gray-900 mb-3">AI Cost Breakdown</h4>
             <PricingDetails 
               details={pricingDetails}

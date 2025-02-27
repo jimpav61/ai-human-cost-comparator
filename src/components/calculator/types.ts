@@ -1,33 +1,4 @@
 
-import type { CalculationResults, CalculatorInputs } from '@/hooks/useCalculator';
-
-export interface LeadData {
-  name: string;
-  companyName: string;
-  email: string;
-  phoneNumber: string;
-  website?: string;
-  industry: string;
-  employeeCount: number;
-}
-
-export interface ResultsDisplayProps {
-  results: CalculationResults;
-  onGenerateReport: () => void;
-  reportGenerated: boolean;
-  inputs: CalculatorInputs;
-  leadData: LeadData;
-}
-
-export interface PricingDetail {
-  title: string;
-  base: number | null;
-  rate: string;
-  totalMinutes?: number;
-  totalMessages?: number;
-  monthlyCost: number;
-}
-
 export interface BusinessSuggestion {
   title: string;
   description: string;
@@ -36,4 +7,30 @@ export interface BusinessSuggestion {
 export interface AIPlacement {
   role: string;
   capabilities: string[];
+}
+
+export interface LeadData {
+  name: string;
+  companyName: string;
+  email: string;
+  phoneNumber: string | null;
+  industry?: string;
+  employeeCount?: number;
+}
+
+export interface PricingDetail {
+  title: string;
+  base: number | null;
+  rate: string;
+  totalMessages?: number;
+  totalMinutes?: number;
+  monthlyCost: number;
+}
+
+export interface ResultsDisplayProps {
+  results: any;
+  onGenerateReport: () => void;
+  reportGenerated: boolean;
+  inputs: any;
+  leadData: LeadData;
 }

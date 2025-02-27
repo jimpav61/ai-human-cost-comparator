@@ -22,6 +22,8 @@ interface GeneratePDFParams {
   results: CalculationResults;
   businessSuggestions: BusinessSuggestion[];
   aiPlacements: AIPlacement[];
+  tierName?: string;
+  aiType?: string;
 }
 
 export const generatePDF = (params: GeneratePDFParams) => {
@@ -58,8 +60,21 @@ export const generatePDF = (params: GeneratePDFParams) => {
   doc.text(`Date: ${reportDate}`, 20, currentY);
   currentY += 14;
 
+  // Add selected plan information
+  if (params.tierName && params.aiType) {
+    doc.setFontSize(14);
+    doc.setTextColor(0, 0, 0);
+    doc.text("Selected Plan", 20, currentY);
+    currentY += 8;
+    
+    doc.setFontSize(12);
+    doc.text(`${params.tierName} (${params.aiType})`, 20, currentY);
+    currentY += 14;
+  }
+
   // Cost Summary
   doc.setFontSize(14);
+  doc.setTextColor(0, 0, 0);
   doc.text("Cost Summary", 20, currentY);
   
   const costData = [
@@ -78,6 +93,7 @@ export const generatePDF = (params: GeneratePDFParams) => {
 
   // Business Recommendations
   doc.setFontSize(14);
+  doc.setTextColor(0, 0, 0);
   doc.text("Implementation Recommendations", 20, currentY);
   
   currentY += 10;

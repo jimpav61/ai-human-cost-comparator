@@ -11,6 +11,7 @@ interface CalculatorFormProps {
 }
 
 export const CalculatorForm: React.FC<CalculatorFormProps> = ({ inputs, onInputChange }) => {
+  // Enforce tier restrictions when selecting AI type
   useEffect(() => {
     if (inputs.aiTier === 'starter' && (inputs.aiType === 'voice' || inputs.aiType === 'both')) {
       onInputChange('aiTier', 'growth');
@@ -35,13 +36,31 @@ export const CalculatorForm: React.FC<CalculatorFormProps> = ({ inputs, onInputC
     onInputChange('aiTier', tier as any);
   };
 
+  const handleAITypeChange = (value: string) => {
+    onInputChange('aiType', value as any);
+    
+    // Auto-upgrade tier if selecting voice on a starter plan
+    if ((value === 'voice' || value === 'both') && inputs.aiTier === 'starter') {
+      onInputChange('aiTier', 'growth');
+      toast({
+        title: "Plan Upgraded",
+        description: "Voice features require at least the Growth Plan. We've automatically upgraded your selection.",
+        variant: "default",
+      });
+    }
+  };
+
   return (
     <div className="space-y-8 animate-fadeIn">
       <div className="calculator-card">
         <h3 className="text-xl font-medium text-gray-900 mb-6">Plan Selection</h3>
         
         <div className="mb-6">
-          <TierComparison currentTier={inputs.aiTier} onSelectTier={handleTierSelect} />
+          <TierComparison 
+            currentTier={inputs.aiTier} 
+            onSelectTier={handleTierSelect} 
+            currentAIType={inputs.aiType}
+          />
         </div>
 
         <h3 className="text-xl font-medium text-gray-900 mb-6">Configuration</h3>
@@ -82,7 +101,7 @@ export const CalculatorForm: React.FC<CalculatorFormProps> = ({ inputs, onInputC
           <label className="block text-sm font-medium text-gray-700 mb-1">AI Type</label>
           <select 
             value={inputs.aiType}
-            onChange={(e) => onInputChange('aiType', e.target.value)}
+            onChange={(e) => handleAITypeChange(e.target.value)}
             className="calculator-input"
           >
             <option value="chatbot">Text Only</option>
