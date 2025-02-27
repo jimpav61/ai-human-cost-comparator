@@ -138,7 +138,7 @@ export const generatePDF = (params: GeneratePDFParams) => {
     currentY += 15;
   }
 
-  // Final contact section with actual contact info
+  // Final contact section with only email and phone
   doc.setFontSize(14);
   doc.setTextColor(0, 0, 0);
   doc.text("Get Started with ChatSites.ai", 20, currentY);
@@ -161,8 +161,7 @@ export const generatePDF = (params: GeneratePDFParams) => {
   doc.setFontSize(11);
   doc.text("Email: info@chatsites.ai", 25, currentY);
   doc.text("Phone: +1 480 862 0288", 25, currentY + 7);
-  doc.text("Address: 1715 N. Channing Mesa, AZ 85298", 25, currentY + 14);
-  doc.text("Website: www.chatsites.ai", 25, currentY + 21);
+  doc.text("Website: www.chatsites.ai", 25, currentY + 14);
 
   return doc;
 };
