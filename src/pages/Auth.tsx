@@ -14,8 +14,7 @@ const Auth = () => {
   useEffect(() => {
     const checkExistingSession = async () => {
       try {
-        const { data: { session }, error } = await supabase.auth.getSession();
-        
+        const { data: { session } } = await supabase.auth.getSession();
         if (session) {
           const { data: adminCheck } = await supabase
             .from('allowed_admins')
@@ -26,6 +25,7 @@ const Auth = () => {
           if (adminCheck) {
             window.location.href = '/admin';
           } else {
+            console.log("Not an admin, signing out");
             await supabase.auth.signOut();
           }
         }
@@ -39,29 +39,39 @@ const Auth = () => {
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (!email || !password) {
+      toast({
+        title: "Error",
+        description: "Please enter both email and password",
+        variant: "destructive",
+      });
+      return;
+    }
+
     setLoading(true);
     
     try {
-      const { data, error: authError } = await supabase.auth.signInWithPassword({
-        email,
+      // First, check if the email is in allowed_admins
+      const { data: adminCheck, error: adminCheckError } = await supabase
+        .from('allowed_admins')
+        .select('email')
+        .eq('email', email.toLowerCase())
+        .single();
+
+      if (adminCheckError || !adminCheck) {
+        throw new Error("Unauthorized access attempt");
+      }
+
+      // If admin is allowed, attempt to sign in
+      const { data, error: signInError } = await supabase.auth.signInWithPassword({
+        email: email.toLowerCase(),
         password
       });
 
-      if (authError) throw authError;
+      if (signInError) throw signInError;
 
       if (!data.session) {
         throw new Error("No session created");
-      }
-
-      const { data: adminData, error: adminError } = await supabase
-        .from('allowed_admins')
-        .select('email')
-        .eq('email', data.session.user.email)
-        .single();
-
-      if (adminError || !adminData) {
-        await supabase.auth.signOut();
-        throw new Error("Unauthorized access");
       }
 
       toast({
@@ -72,9 +82,12 @@ const Auth = () => {
       window.location.href = '/admin';
       
     } catch (error: any) {
+      console.error("Login error:", error);
       toast({
         title: "Error",
-        description: error.message || "Failed to log in",
+        description: error.message === "Unauthorized access attempt" 
+          ? "This email is not authorized for admin access" 
+          : "Invalid email or password",
         variant: "destructive",
       });
       await supabase.auth.signOut();
@@ -99,6 +112,8 @@ const Auth = () => {
               onChange={(e) => setEmail(e.target.value)}
               required
               placeholder="Enter your email"
+              className="w-full"
+              autoComplete="email"
             />
           </div>
           <div>
@@ -110,10 +125,16 @@ const Auth = () => {
               onChange={(e) => setPassword(e.target.value)}
               required
               placeholder="Enter your password"
+              className="w-full"
+              autoComplete="current-password"
             />
           </div>
-          <Button type="submit" className="w-full" disabled={loading}>
-            {loading ? "Loading..." : "Sign In"}
+          <Button 
+            type="submit" 
+            className="w-full"
+            disabled={loading}
+          >
+            {loading ? "Signing in..." : "Sign In"}
           </Button>
         </form>
       </div>
