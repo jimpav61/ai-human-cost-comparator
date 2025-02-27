@@ -114,21 +114,15 @@ export const LeadForm: React.FC<LeadFormProps> = ({ onSubmit }) => {
       return false;
     }
     
-    // We'll prefix the URL when we save it, but for validation purposes
-    // let's make sure it's in valid domain format at minimum
-    let testURL = website;
-    if (!testURL.startsWith('http://') && !testURL.startsWith('https://')) {
-      testURL = 'https://' + testURL;
-    }
-    
-    try {
-      new URL(testURL);
-      setWebsiteError('');
-      return true;
-    } catch (e) {
+    // Simple domain validation - exact validation will happen server-side
+    const domainPattern = /^(https?:\/\/)?[a-zA-Z0-9][a-zA-Z0-9-]{1,61}[a-zA-Z0-9](?:\.[a-zA-Z]{2,})+/;
+    if (!domainPattern.test(website)) {
       setWebsiteError('Please enter a valid website domain');
       return false;
     }
+    
+    setWebsiteError('');
+    return true;
   };
 
   const handleEmailChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -193,6 +187,14 @@ export const LeadForm: React.FC<LeadFormProps> = ({ onSubmit }) => {
         finalWebsite = 'https://' + finalWebsite;
       }
 
+      console.log("Submitting to Supabase:", {
+        name: formData.name,
+        company_name: formData.companyName,
+        email: formData.email,
+        phone_number: formData.phoneNumber,
+        website: finalWebsite,
+      });
+
       // Save the first step data to the database immediately
       const { data, error } = await supabase
         .from('leads')
@@ -209,22 +211,28 @@ export const LeadForm: React.FC<LeadFormProps> = ({ onSubmit }) => {
           proposal_sent: false,
           form_completed: false
         }])
-        .select('id')
-        .single();
+        .select();
 
-      if (error) throw error;
+      if (error) {
+        console.error("Supabase insert error:", error);
+        throw error;
+      }
 
-      setLeadId(data.id);
-      
-      // Update the form data with the properly formatted website
-      setFormData(prev => ({ ...prev, website: finalWebsite }));
-      
-      setStep(2);
-      
-      toast({
-        title: "Information Saved!",
-        description: "Please complete the remaining details to continue to the calculator.",
-      });
+      if (data && data.length > 0) {
+        setLeadId(data[0].id);
+        
+        // Update the form data with the properly formatted website
+        setFormData(prev => ({ ...prev, website: finalWebsite }));
+        
+        setStep(2);
+        
+        toast({
+          title: "Information Saved!",
+          description: "Please complete the remaining details to continue to the calculator.",
+        });
+      } else {
+        throw new Error("No data returned from database");
+      }
 
     } catch (error: any) {
       console.error('Error submitting lead:', error);
@@ -255,6 +263,11 @@ export const LeadForm: React.FC<LeadFormProps> = ({ onSubmit }) => {
     try {
       // Update the existing record with step 2 data
       if (leadId) {
+        console.log("Updating lead:", leadId, {
+          industry: formData.industry,
+          employee_count: formData.employeeCount,
+        });
+        
         const { error } = await supabase
           .from('leads')
           .update({
@@ -264,10 +277,38 @@ export const LeadForm: React.FC<LeadFormProps> = ({ onSubmit }) => {
           })
           .eq('id', leadId);
 
-        if (error) throw error;
+        if (error) {
+          console.error("Supabase update error:", error);
+          throw error;
+        }
       } else {
-        // Fallback in case leadId is not available (shouldn't happen in normal flow)
-        throw new Error("Lead ID not found. Please try again.");
+        // If for some reason leadId is missing, use a full submission approach
+        console.log("Full submission as fallback");
+        
+        const finalWebsite = formData.website.startsWith('http') 
+          ? formData.website 
+          : `https://${formData.website}`;
+        
+        const { error } = await supabase
+          .from('leads')
+          .insert([{
+            name: formData.name,
+            company_name: formData.companyName,
+            email: formData.email,
+            phone_number: formData.phoneNumber,
+            website: finalWebsite,
+            industry: formData.industry,
+            employee_count: formData.employeeCount,
+            calculator_inputs: {},
+            calculator_results: {},
+            proposal_sent: false,
+            form_completed: true
+          }]);
+
+        if (error) {
+          console.error("Supabase fallback insert error:", error);
+          throw error;
+        }
       }
 
       // Call the onSubmit prop with form data
@@ -321,7 +362,7 @@ export const LeadForm: React.FC<LeadFormProps> = ({ onSubmit }) => {
                 id="name"
                 type="text"
                 required
-                className="calculator-input"
+                className="calculator-input w-full px-3 py-2 border border-gray-300 rounded-md"
                 value={formData.name}
                 onChange={(e) => setFormData(prev => ({ ...prev, name: e.target.value }))}
               />
@@ -335,7 +376,7 @@ export const LeadForm: React.FC<LeadFormProps> = ({ onSubmit }) => {
                 id="companyName"
                 type="text"
                 required
-                className="calculator-input"
+                className="calculator-input w-full px-3 py-2 border border-gray-300 rounded-md"
                 value={formData.companyName}
                 onChange={(e) => setFormData(prev => ({ ...prev, companyName: e.target.value }))}
               />
@@ -349,7 +390,7 @@ export const LeadForm: React.FC<LeadFormProps> = ({ onSubmit }) => {
                 id="email"
                 type="email"
                 required
-                className={`calculator-input ${emailError ? 'border-red-500' : ''}`}
+                className={`calculator-input w-full px-3 py-2 border ${emailError ? 'border-red-500' : 'border-gray-300'} rounded-md`}
                 value={formData.email}
                 onChange={handleEmailChange}
               />
@@ -369,7 +410,7 @@ export const LeadForm: React.FC<LeadFormProps> = ({ onSubmit }) => {
                 id="phoneNumber"
                 type="tel"
                 required
-                className="calculator-input"
+                className="calculator-input w-full px-3 py-2 border border-gray-300 rounded-md"
                 value={formData.phoneNumber}
                 onChange={(e) => setFormData(prev => ({ ...prev, phoneNumber: e.target.value }))}
               />
@@ -383,7 +424,7 @@ export const LeadForm: React.FC<LeadFormProps> = ({ onSubmit }) => {
                 id="website"
                 type="text"
                 required
-                className={`calculator-input ${websiteError ? 'border-red-500' : ''}`}
+                className={`calculator-input w-full px-3 py-2 border ${websiteError ? 'border-red-500' : 'border-gray-300'} rounded-md`}
                 value={formData.website}
                 onChange={handleWebsiteChange}
                 placeholder="example.com"
@@ -417,7 +458,7 @@ export const LeadForm: React.FC<LeadFormProps> = ({ onSubmit }) => {
               <select
                 id="industry"
                 required
-                className="calculator-input"
+                className="calculator-input w-full px-3 py-2 border border-gray-300 rounded-md"
                 value={formData.industry}
                 onChange={(e) => setFormData(prev => ({ ...prev, industry: e.target.value }))}
               >
@@ -437,7 +478,7 @@ export const LeadForm: React.FC<LeadFormProps> = ({ onSubmit }) => {
                 type="number"
                 min="1"
                 required
-                className="calculator-input"
+                className="calculator-input w-full px-3 py-2 border border-gray-300 rounded-md"
                 value={formData.employeeCount}
                 onChange={(e) => setFormData(prev => ({ ...prev, employeeCount: parseInt(e.target.value) || 1 }))}
               />
