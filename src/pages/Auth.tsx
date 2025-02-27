@@ -18,16 +18,15 @@ const Auth = () => {
       async (event, session) => {
         if (event === "SIGNED_IN" && session?.user?.email) {
           try {
-            // Debug log to check user email from session
-            console.log("Signed in user email:", session.user.email);
+            console.log("Session check - user email:", session.user.email);
             
-            const { data: adminCheck, error: adminCheckError } = await supabase
+            // Perform admin check
+            const { data: adminCheck } = await supabase
               .from('allowed_admins')
               .select('*')
-              .eq('email', session.user.email.toLowerCase());
+              .ilike('email', session.user.email);
             
-            // Debug log of admin check results
-            console.log("Admin check result:", adminCheck, "Error:", adminCheckError);
+            console.log("Admin check for session:", adminCheck);
 
             if (adminCheck && adminCheck.length > 0) {
               window.location.replace('/admin');
@@ -51,16 +50,12 @@ const Auth = () => {
       try {
         const { data: { session } } = await supabase.auth.getSession();
         if (session?.user?.email) {
-          // Debug log for initial check
-          console.log("Initial session check for email:", session.user.email);
+          console.log("Initial session user:", session.user.email);
           
-          const { data: adminCheck, error: adminCheckError } = await supabase
+          const { data: adminCheck } = await supabase
             .from('allowed_admins')
             .select('*')
-            .eq('email', session.user.email.toLowerCase());
-          
-          // Debug log for initial admin check
-          console.log("Initial admin check result:", adminCheck, "Error:", adminCheckError);
+            .ilike('email', session.user.email);
 
           if (adminCheck && adminCheck.length > 0) {
             window.location.replace('/admin');
@@ -99,52 +94,38 @@ const Auth = () => {
     setLoginInProgress(true);
     
     try {
-      const cleanEmail = email.trim().toLowerCase();
-      console.log("Attempting login with email:", cleanEmail);
-      
-      // First check if user is allowed without case sensitivity issues
-      const { data: adminCheck, error: adminCheckError } = await supabase
-        .from('allowed_admins')
-        .select('*')
-        .ilike('email', cleanEmail);
-      
-      console.log("Pre-login admin check result:", adminCheck, "Error:", adminCheckError);
-      
-      if (!adminCheck || adminCheck.length === 0) {
-        // Try one more time with exact match to debug
-        const { data: exactCheck, error: exactError } = await supabase
-          .from('allowed_admins')
-          .select('*');
-        
-        console.log("All admin emails in DB:", exactCheck);
-        
-        throw new Error("This email is not authorized for admin access. Please contact the administrator.");
-      }
-      
-      // Then attempt to sign in
-      console.log("Proceeding with login attempt");
-      const { data, error: signInError } = await supabase.auth.signInWithPassword({
-        email: cleanEmail,
+      // Sign in first
+      const { data: signInData, error: signInError } = await supabase.auth.signInWithPassword({
+        email: email.trim(),
         password: password.trim()
       });
       
       if (signInError) {
-        console.error("Sign in error:", signInError);
         throw signInError;
       }
-      
-      console.log("Sign in successful:", data);
-      
-      // Auth state change listener will handle the redirect
+
+      if (!signInData.user?.email) {
+        throw new Error("No user email found after sign in");
+      }
+
+      // Then check admin access
+      const { data: adminCheck } = await supabase
+        .from('allowed_admins')
+        .select('*')
+        .ilike('email', signInData.user.email);
+
+      if (!adminCheck || adminCheck.length === 0) {
+        await supabase.auth.signOut();
+        throw new Error("This email is not authorized for admin access");
+      }
+
+      // Success! Redirect to admin page
       toast({
         title: "Success",
-        description: "Authentication successful. Redirecting to admin page...",
+        description: "Logged in successfully",
       });
-      
-      // Add a direct redirect as a fallback
-      setTimeout(() => {
-        window.location.replace('/admin');
-      }, 1000);
+
+      window.location.replace('/admin');
       
     } catch (error: any) {
       console.error("Login error:", error);
@@ -153,6 +134,7 @@ const Auth = () => {
         description: error.message || "An unexpected error occurred",
         variant: "destructive",
       });
+    } finally {
       setLoginInProgress(false);
     }
   };
