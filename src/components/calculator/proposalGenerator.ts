@@ -4,6 +4,13 @@ import autoTable, { UserOptions } from 'jspdf-autotable';
 import { formatCurrency } from '@/utils/formatters';
 import type { CalculationResults } from '@/hooks/useCalculator';
 
+// Add custom interface to handle the jsPDF extension from autotable
+interface JsPDFWithAutoTable extends jsPDF {
+  lastAutoTable?: {
+    finalY?: number;
+  };
+}
+
 interface GenerateProposalParams {
   contactInfo: string;
   companyName: string;
@@ -13,7 +20,7 @@ interface GenerateProposalParams {
 }
 
 export const generateProposal = (params: GenerateProposalParams) => {
-  const doc = new jsPDF();
+  const doc = new jsPDF() as JsPDFWithAutoTable;
   const reportDate = new Date().toLocaleDateString();
   let yPosition = 20;
 
@@ -62,9 +69,7 @@ export const generateProposal = (params: GenerateProposalParams) => {
   });
   
   // Get the last Y position after the table
-  // Use finalY from the last table or default to current yPosition + 60 if it's undefined
-  yPosition = doc.lastAutoTable?.finalY || (yPosition + 60);
-  yPosition += 20; // Add some spacing
+  yPosition = (doc.lastAutoTable?.finalY || yPosition + 60) + 20;
 
   // Financial Impact
   doc.setFontSize(14);
@@ -88,8 +93,7 @@ export const generateProposal = (params: GenerateProposalParams) => {
   });
   
   // Get the last Y position after the table
-  yPosition = doc.lastAutoTable?.finalY || (yPosition + 60);
-  yPosition += 20; // Add some spacing
+  yPosition = (doc.lastAutoTable?.finalY || yPosition + 60) + 20;
 
   // Implementation Process
   doc.setFontSize(14);
@@ -108,8 +112,7 @@ export const generateProposal = (params: GenerateProposalParams) => {
   });
   
   // Get the last Y position after the table
-  yPosition = doc.lastAutoTable?.finalY || (yPosition + 60);
-  yPosition += 20; // Add some spacing
+  yPosition = (doc.lastAutoTable?.finalY || yPosition + 60) + 20;
 
   // Next Steps
   doc.setFontSize(14);
