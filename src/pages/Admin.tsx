@@ -11,30 +11,19 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 const AdminDashboard = () => {
   const [loading, setLoading] = useState(true);
   const [leads, setLeads] = useState<Lead[]>([]);
-  const [isAuthenticated, setIsAuthenticated] = useState(false);
 
   useEffect(() => {
     const checkAuth = async () => {
       try {
-        const { data: { session }, error: sessionError } = await supabase.auth.getSession();
+        const { data: { session } } = await supabase.auth.getSession();
         
-        if (sessionError) throw sessionError;
-        
+        // If no session, redirect to auth page
         if (!session) {
           window.location.href = '/auth';
           return;
         }
 
-        // Set authenticated state to prevent double redirects
-        setIsAuthenticated(true);
-
-        // Check if email is jimmy.pavlatos@gmail.com
-        if (session.user.email?.toLowerCase() !== 'jimmy.pavlatos@gmail.com') {
-          await supabase.auth.signOut();
-          window.location.href = '/auth';
-          return;
-        }
-
+        // Get leads data
         const { data: leadsData, error: leadsError } = await supabase
           .from('leads')
           .select('*')
@@ -42,7 +31,7 @@ const AdminDashboard = () => {
 
         if (leadsError) throw leadsError;
 
-        // Transform the data to match the Lead type by providing default values
+        // Transform the data to match the Lead type
         const transformedLeads: Lead[] = (leadsData || []).map(lead => ({
           id: lead.id,
           name: lead.name,
@@ -50,8 +39,8 @@ const AdminDashboard = () => {
           email: lead.email,
           phone_number: lead.phone_number,
           website: lead.website,
-          industry: lead.industry || 'Not Specified', // Provide default value
-          employee_count: lead.employee_count || 0, // Provide default value
+          industry: lead.industry || 'Not Specified',
+          employee_count: lead.employee_count || 0,
           calculator_inputs: lead.calculator_inputs,
           calculator_results: lead.calculator_results,
           proposal_sent: lead.proposal_sent,
@@ -68,11 +57,6 @@ const AdminDashboard = () => {
           description: "An error occurred while loading the dashboard",
           variant: "destructive",
         });
-        
-        // Only redirect if not authenticated
-        if (!isAuthenticated) {
-          window.location.href = '/auth';
-        }
       }
     };
 
@@ -88,7 +72,7 @@ const AdminDashboard = () => {
     return () => {
       subscription.unsubscribe();
     };
-  }, [isAuthenticated]);
+  }, []);
 
   if (loading) {
     return (
