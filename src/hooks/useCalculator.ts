@@ -93,33 +93,33 @@ export const useCalculator = (inputs: CalculatorInputs): CalculationResults => {
     let setupFee = aiRates.chatbot[inputs.aiTier].setupFee || 0;
     let annualPlan = aiRates.chatbot[inputs.aiTier].annualPrice || 0;
     
+    // Calculate voice costs only if voice is enabled
     if (inputs.aiType === 'voice' || inputs.aiType === 'both') {
       const totalMinutesPerMonth = inputs.callVolume * inputs.avgCallDuration;
-      // Apply the included voice minutes from the selected tier
       const includedMinutes = aiRates.chatbot[inputs.aiTier].includedVoiceMinutes || 0;
       const chargeableMinutes = Math.max(0, totalMinutesPerMonth - includedMinutes);
       monthlyVoiceCost = chargeableMinutes * aiRates.voice[inputs.aiTier];
-      
-      // Add fixed costs based on tier for voice services
-      if (inputs.aiTier === 'growth') {
-        monthlyVoiceCost += 100; // Additional base cost for voice in growth tier
-      } else if (inputs.aiTier === 'premium') {
-        monthlyVoiceCost += 200; // Additional base cost for voice in premium tier
-      }
     }
     
+    // Calculate chatbot costs only if chatbot is enabled
     if (inputs.aiType === 'chatbot' || inputs.aiType === 'both') {
       const totalMessages = inputs.chatVolume * inputs.avgChatLength;
       const chatbotRates = aiRates.chatbot[inputs.aiTier];
       
-      // Calculate volume-based tiers for more realistic pricing
-      let volumeDiscount = 1.0;
-      if (totalMessages > 10000) volumeDiscount = 0.9;  // 10% discount over 10k messages
-      if (totalMessages > 50000) volumeDiscount = 0.8;  // 20% discount over 50k messages
+      // Base cost for the selected tier
+      monthlyChatbotCost = chatbotRates.base;
       
-      monthlyChatbotCost = chatbotRates.base + (totalMessages * chatbotRates.perMessage * volumeDiscount);
+      // Add message costs
+      monthlyChatbotCost += totalMessages * chatbotRates.perMessage;
       
-      // Scale chatbot cost proportionally with resolution time (longer chats = more complexity)
+      // Apply volume discounts for larger message volumes
+      if (totalMessages > 50000) {
+        monthlyChatbotCost *= 0.8; // 20% discount for over 50k messages
+      } else if (totalMessages > 10000) {
+        monthlyChatbotCost *= 0.9; // 10% discount for over 10k messages
+      }
+      
+      // Scale cost based on resolution time (indicates complexity)
       const complexityFactor = Math.min(1.5, Math.max(1.0, inputs.avgChatResolutionTime / 10));
       monthlyChatbotCost *= complexityFactor;
     }

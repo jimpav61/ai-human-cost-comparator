@@ -1,4 +1,3 @@
-
 import React, { useEffect } from 'react';
 import { ROLE_LABELS } from '@/constants/pricing';
 import { TierComparison } from './TierComparison';
@@ -11,9 +10,18 @@ interface CalculatorFormProps {
 }
 
 export const CalculatorForm: React.FC<CalculatorFormProps> = ({ inputs, onInputChange }) => {
-  // Enforce tier restrictions when selecting AI type
+  // Select appropriate tier when AI type changes
   useEffect(() => {
-    if (inputs.aiTier === 'starter' && (inputs.aiType === 'voice' || inputs.aiType === 'both')) {
+    if (inputs.aiType === 'chatbot' && inputs.aiTier !== 'starter') {
+      // If only text is needed, default to starter plan
+      onInputChange('aiTier', 'starter');
+      toast({
+        title: "Plan Updated",
+        description: "Switched to Starter Plan since only text capabilities are needed.",
+        variant: "default",
+      });
+    } else if ((inputs.aiType === 'voice' || inputs.aiType === 'both') && inputs.aiTier === 'starter') {
+      // If voice is needed, upgrade to at least growth plan
       onInputChange('aiTier', 'growth');
       toast({
         title: "Plan Upgraded",
@@ -21,7 +29,7 @@ export const CalculatorForm: React.FC<CalculatorFormProps> = ({ inputs, onInputC
         variant: "default",
       });
     }
-  }, [inputs.aiType, inputs.aiTier, onInputChange]);
+  }, [inputs.aiType]);
 
   const handleTierSelect = (tier: string) => {
     if (tier === 'starter' && (inputs.aiType === 'voice' || inputs.aiType === 'both')) {
@@ -38,16 +46,6 @@ export const CalculatorForm: React.FC<CalculatorFormProps> = ({ inputs, onInputC
 
   const handleAITypeChange = (value: string) => {
     onInputChange('aiType', value as any);
-    
-    // Auto-upgrade tier if selecting voice on a starter plan
-    if ((value === 'voice' || value === 'both') && inputs.aiTier === 'starter') {
-      onInputChange('aiTier', 'growth');
-      toast({
-        title: "Plan Upgraded",
-        description: "Voice features require at least the Growth Plan. We've automatically upgraded your selection.",
-        variant: "default",
-      });
-    }
   };
 
   return (
