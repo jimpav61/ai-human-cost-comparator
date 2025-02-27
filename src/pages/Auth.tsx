@@ -13,18 +13,39 @@ const Auth = () => {
 
   useEffect(() => {
     const checkExistingSession = async () => {
-      const { data: { session } } = await supabase.auth.getSession();
-      if (session) {
-        const { data: adminCheck } = await supabase
-          .from('allowed_admins')
-          .select('email')
-          .eq('email', session.user.email)
-          .single();
+      try {
+        const { data: { session }, error } = await supabase.auth.getSession();
         
-        if (adminCheck) {
-          console.log("Existing admin session found");
-          window.location.href = '/admin';
+        if (error) {
+          console.error("Session check error:", error);
+          return;
         }
+        
+        if (session) {
+          console.log("Found existing session, checking admin status...");
+          const { data: adminCheck, error: adminError } = await supabase
+            .from('allowed_admins')
+            .select('email')
+            .eq('email', session.user.email)
+            .single();
+
+          if (adminError) {
+            console.error("Admin check error:", adminError);
+            return;
+          }
+          
+          if (adminCheck) {
+            console.log("Valid admin session found, redirecting...");
+            window.location.href = '/admin';
+          } else {
+            console.log("User is not an admin, signing out...");
+            await supabase.auth.signOut();
+          }
+        } else {
+          console.log("No existing session found");
+        }
+      } catch (error) {
+        console.error("Session check failed:", error);
       }
     };
     
@@ -36,44 +57,60 @@ const Auth = () => {
     setLoading(true);
     
     try {
-      console.log("Attempting login...");
+      console.log("Starting login attempt...");
       const { data, error: authError } = await supabase.auth.signInWithPassword({
         email,
         password
       });
 
-      if (authError) throw authError;
-
-      console.log("Login successful, checking admin status");
-      
-      if (data.session) {
-        const { data: adminData, error: adminError } = await supabase
-          .from('allowed_admins')
-          .select('email')
-          .eq('email', data.session.user.email)
-          .single();
-
-        if (adminError || !adminData) {
-          console.log("Not an admin, signing out");
-          await supabase.auth.signOut();
-          throw new Error("Unauthorized access");
-        }
-
-        console.log("Admin verified, redirecting");
-        toast({
-          title: "Success",
-          description: "Logged in successfully",
-        });
-        
-        window.location.href = '/admin';
+      if (authError) {
+        console.error("Auth error:", authError);
+        throw authError;
       }
+
+      console.log("Login successful, verifying admin status...");
+      
+      if (!data.session) {
+        console.error("No session after login");
+        throw new Error("No session created");
+      }
+
+      const { data: adminData, error: adminError } = await supabase
+        .from('allowed_admins')
+        .select('email')
+        .eq('email', data.session.user.email)
+        .single();
+
+      if (adminError) {
+        console.error("Admin verification error:", adminError);
+        throw adminError;
+      }
+
+      if (!adminData) {
+        console.log("Not an admin, signing out...");
+        await supabase.auth.signOut();
+        throw new Error("Unauthorized access");
+      }
+
+      console.log("Admin verified successfully, redirecting...");
+      toast({
+        title: "Success",
+        description: "Logged in successfully",
+      });
+      
+      // Small delay to ensure session is properly set
+      setTimeout(() => {
+        window.location.href = '/admin';
+      }, 100);
+      
     } catch (error: any) {
-      console.error("Auth error:", error);
+      console.error("Login process failed:", error);
       toast({
         title: "Error",
         description: error.message || "Failed to log in",
         variant: "destructive",
       });
+      await supabase.auth.signOut();
     } finally {
       setLoading(false);
     }
