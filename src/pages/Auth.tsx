@@ -34,20 +34,37 @@ const Auth = () => {
           return;
         }
 
-        console.log("Session found, checking if admin...");
-        // User is logged in, check if they're an admin
+        console.log("Session found, checking if admin...", session.user.email);
+        
+        // User is logged in, check if they're an admin - important to use maybeSingle() 
+        // instead of single() to handle the case when no rows are found
         const { data: adminCheck, error: adminCheckError } = await supabase
           .from('allowed_admins')
           .select('email')
-          .eq('email', session.user.email);
+          .eq('email', session.user.email)
+          .maybeSingle();
         
-        // Check if there are any results - using .single() causes errors when no rows are found
-        if (adminCheckError || !adminCheck || adminCheck.length === 0) {
-          console.error("Admin check error or no results:", adminCheckError);
+        console.log("Admin check result:", adminCheck, "Error:", adminCheckError);
+        
+        if (adminCheckError) {
+          console.error("Admin check error:", adminCheckError);
           await supabase.auth.signOut();
           toast({
             title: "Authentication Error",
             description: "There was a problem verifying your admin status. Please try logging in again.",
+            variant: "destructive",
+          });
+          setLoading(false);
+          setInitialCheckDone(true);
+          return;
+        }
+        
+        if (!adminCheck) {
+          console.log("User is not an admin, signing out...");
+          await supabase.auth.signOut();
+          toast({
+            title: "Unauthorized",
+            description: "You do not have admin access.",
             variant: "destructive",
           });
           setLoading(false);
@@ -87,28 +104,12 @@ const Auth = () => {
     setLoginInProgress(true);
     
     try {
-      console.log("Checking if email is in allowed_admins...");
-      // First, check if the email is in allowed_admins
-      const { data: adminCheck, error: adminCheckError } = await supabase
-        .from('allowed_admins')
-        .select('email')
-        .eq('email', email.toLowerCase().trim());
-
-      // Check if there are any results - using .single() causes errors when no rows are found
-      if (adminCheckError) {
-        console.error("Admin check error:", adminCheckError);
-        throw new Error("Error checking admin access. Please try again.");
-      }
-
-      if (!adminCheck || adminCheck.length === 0) {
-        console.error("Email not found in allowed_admins");
-        throw new Error("This email is not authorized for admin access");
-      }
-
-      console.log("Email is authorized, attempting to sign in...");
-      // If admin is allowed, attempt to sign in
+      const cleanEmail = email.toLowerCase().trim();
+      console.log("Attempting to login with email:", cleanEmail);
+      
+      // First sign in the user
       const { data, error: signInError } = await supabase.auth.signInWithPassword({
-        email: email.toLowerCase().trim(),
+        email: cleanEmail,
         password: password.trim()
       });
 
@@ -121,8 +122,31 @@ const Auth = () => {
         console.error("No session created after sign in");
         throw new Error("Failed to create session. Please try again.");
       }
+      
+      console.log("Login successful, checking if admin...");
+      
+      // After successful login, check if they're in the allowed_admins table
+      const { data: adminCheck, error: adminCheckError } = await supabase
+        .from('allowed_admins')
+        .select('email')
+        .eq('email', cleanEmail)
+        .maybeSingle();
+        
+      console.log("Admin check result:", adminCheck, "Error:", adminCheckError);
 
-      console.log("Login successful, redirecting to admin dashboard...");
+      if (adminCheckError) {
+        console.error("Admin check error:", adminCheckError);
+        await supabase.auth.signOut();
+        throw new Error("Error checking admin access. Please try again.");
+      }
+
+      if (!adminCheck) {
+        console.error("Email not found in allowed_admins");
+        await supabase.auth.signOut();
+        throw new Error("This email is not authorized for admin access");
+      }
+
+      console.log("Admin verified, redirecting to admin dashboard...");
       toast({
         title: "Success",
         description: "Logged in successfully",
