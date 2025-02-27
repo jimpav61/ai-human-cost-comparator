@@ -4,19 +4,11 @@ import { AIVsHumanCalculator } from "@/components/AIVsHumanCalculator";
 import Header from "@/components/Header";
 import { LeadForm, type LeadFormData } from "@/components/LeadForm";
 import { toast } from "@/components/ui/use-toast";
-import { Input } from "@/components/ui/input";
-import { Button } from "@/components/ui/button";
-import { Label } from "@/components/ui/label";
 import { supabase } from "@/integrations/supabase/client";
 
 const Index = () => {
   const [showCalculator, setShowCalculator] = useState(false);
   const [leadData, setLeadData] = useState<LeadFormData | null>(null);
-  const [showAdminForm, setShowAdminForm] = useState(false);
-  const [adminEmail, setAdminEmail] = useState("");
-  const [adminPassword, setAdminPassword] = useState("");
-  const [isLoading, setIsLoading] = useState(false);
-  const [isRegistering, setIsRegistering] = useState(false);
 
   const handleLeadSubmit = (data: LeadFormData) => {
     setLeadData(data);
@@ -27,53 +19,9 @@ const Index = () => {
     });
   };
 
-  const handleAdminAuth = async (e: React.FormEvent) => {
-    e.preventDefault();
-    setIsLoading(true);
-    
-    try {
-      // For direct login (not registration)
-      if (!isRegistering) {
-        const { error } = await supabase.auth.signInWithPassword({
-          email: adminEmail,
-          password: adminPassword,
-        });
-        
-        if (error) throw error;
-        
-        toast({
-          title: "Success",
-          description: "Logged in successfully!",
-        });
-        
-        // Directly navigate to admin page
-        window.location.href = '/admin';
-        return;
-      }
-      
-      // For registration flow - the redirectUrl is now handled by the Supabase client config
-      const { error } = await supabase.auth.signUp({
-        email: adminEmail,
-        password: adminPassword,
-      });
-      
-      if (error) throw error;
-      
-      toast({
-        title: "Success",
-        description: "Admin account created successfully. Please check your email to verify your account.",
-      });
-      
-      setShowAdminForm(false);
-    } catch (error: any) {
-      toast({
-        title: "Error",
-        description: error.message,
-        variant: "destructive",
-      });
-    } finally {
-      setIsLoading(false);
-    }
+  const handleAdminClick = () => {
+    // Simply navigate to admin page without any authentication form
+    window.location.href = '/admin';
   };
 
   return (
@@ -286,64 +234,13 @@ const Index = () => {
               </a>
               <span className="text-gray-300">|</span>
               <button
-                onClick={() => setShowAdminForm(true)}
+                onClick={handleAdminClick}
                 className="text-gray-600 hover:text-brand-500 transition-colors text-sm"
               >
                 Admin
               </button>
             </div>
           </div>
-
-          {/* Admin Form Modal */}
-          {showAdminForm && (
-            <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
-              <div className="bg-white rounded-lg p-6 max-w-md w-full">
-                <div className="flex justify-between items-center mb-4">
-                  <h3 className="text-lg font-semibold">Admin {isRegistering ? 'Registration' : 'Login'}</h3>
-                  <button 
-                    onClick={() => setShowAdminForm(false)}
-                    className="text-gray-500 hover:text-gray-700"
-                  >
-                    ✕
-                  </button>
-                </div>
-                <form onSubmit={handleAdminAuth} className="space-y-4">
-                  <div>
-                    <Label htmlFor="adminEmail">Email</Label>
-                    <Input
-                      id="adminEmail"
-                      type="email"
-                      value={adminEmail}
-                      onChange={(e) => setAdminEmail(e.target.value)}
-                      required
-                    />
-                  </div>
-                  <div>
-                    <Label htmlFor="adminPassword">Password</Label>
-                    <Input
-                      id="adminPassword"
-                      type="password"
-                      value={adminPassword}
-                      onChange={(e) => setAdminPassword(e.target.value)}
-                      required
-                    />
-                  </div>
-                  <Button type="submit" className="w-full" disabled={isLoading}>
-                    {isLoading ? "Processing..." : (isRegistering ? "Register" : "Login")}
-                  </Button>
-                  <div className="text-center mt-4">
-                    <button
-                      type="button"
-                      onClick={() => setIsRegistering(!isRegistering)}
-                      className="text-sm text-brand-500 hover:underline"
-                    >
-                      {isRegistering ? "Already have an account? Login" : "Need an account? Register"}
-                    </button>
-                  </div>
-                </form>
-              </div>
-            </div>
-          )}
         </div>
       </div>
     </>
