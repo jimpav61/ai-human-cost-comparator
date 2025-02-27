@@ -1,6 +1,6 @@
 
 import { useState, useEffect } from 'react';
-import { DEFAULT_AI_RATES, HUMAN_HOURLY_RATES, fetchPricingConfigurations } from '@/constants/pricing';
+import { DEFAULT_AI_RATES, HUMAN_HOURLY_RATES, fetchPricingConfigurations, type AIRates } from '@/constants/pricing';
 
 export interface CalculatorInputs {
   aiType: 'voice' | 'chatbot' | 'both';
@@ -52,7 +52,7 @@ export const useCalculator = (inputs: CalculatorInputs): CalculationResults => {
     }
   });
   
-  const [aiRates, setAiRates] = useState(DEFAULT_AI_RATES);
+  const [aiRates, setAiRates] = useState<AIRates>(DEFAULT_AI_RATES);
 
   useEffect(() => {
     const loadPricing = async () => {
