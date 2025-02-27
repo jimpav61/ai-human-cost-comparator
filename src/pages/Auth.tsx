@@ -23,7 +23,7 @@ const Auth = () => {
         }
         
         if (session) {
-          console.log("Auth: Found existing session, checking admin status...");
+          console.log("Auth: Found existing session, checking admin status...", session);
           const { data: adminCheck, error: adminError } = await supabase
             .from('allowed_admins')
             .select('email')
@@ -32,16 +32,12 @@ const Auth = () => {
 
           if (adminError) {
             console.error("Auth: Admin check error:", adminError);
-            await supabase.auth.signOut();
             return;
           }
           
           if (adminCheck) {
             console.log("Auth: Valid admin session found, redirecting...");
             window.location.href = '/admin';
-          } else {
-            console.log("Auth: User is not an admin, signing out...");
-            await supabase.auth.signOut();
           }
         } else {
           console.log("Auth: No existing session found");
@@ -70,7 +66,7 @@ const Auth = () => {
         throw authError;
       }
 
-      console.log("Auth: Login successful, verifying admin status...");
+      console.log("Auth: Login successful, verifying admin status...", data);
       
       if (!data.session) {
         console.error("Auth: No session after login");
@@ -90,7 +86,6 @@ const Auth = () => {
 
       if (!adminData) {
         console.log("Auth: Not an admin, signing out...");
-        await supabase.auth.signOut();
         throw new Error("Unauthorized access");
       }
 
@@ -100,14 +95,8 @@ const Auth = () => {
         description: "Logged in successfully",
       });
 
-      // Use local state to prevent race conditions
-      const isStillMounted = true;
-      if (isStillMounted) {
-        // Small delay before redirect to ensure session is properly set
-        setTimeout(() => {
-          window.location.href = '/admin';
-        }, 500);
-      }
+      // Redirect immediately after successful admin verification
+      window.location.href = '/admin';
       
     } catch (error: any) {
       console.error("Auth: Login process failed:", error);
@@ -118,7 +107,7 @@ const Auth = () => {
       });
       await supabase.auth.signOut();
     } finally {
-      if (loading) setLoading(false);
+      setLoading(false);
     }
   };
 
