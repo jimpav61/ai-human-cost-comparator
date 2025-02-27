@@ -51,6 +51,32 @@ const INDUSTRY_OPTIONS = [
   "Other"
 ];
 
+// Free email providers that should be rejected
+const FREE_EMAIL_DOMAINS = [
+  "gmail.com",
+  "yahoo.com",
+  "outlook.com",
+  "hotmail.com",
+  "aol.com",
+  "icloud.com",
+  "mail.com",
+  "protonmail.com",
+  "zoho.com",
+  "yandex.com",
+  "live.com",
+  "inbox.com",
+  "gmx.com",
+  "mailinator.com",
+  "msn.com"
+];
+
+// Function to validate business email
+const isBusinessEmail = (email: string): boolean => {
+  const domain = email.split('@')[1]?.toLowerCase();
+  if (!domain) return false;
+  return !FREE_EMAIL_DOMAINS.includes(domain);
+};
+
 export const LeadForm: React.FC<LeadFormProps> = ({ onSubmit }) => {
   const [formData, setFormData] = useState<LeadFormData>({
     name: '',
@@ -64,14 +90,51 @@ export const LeadForm: React.FC<LeadFormProps> = ({ onSubmit }) => {
   const [step, setStep] = useState(1);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [leadId, setLeadId] = useState<string | null>(null);
+  const [emailError, setEmailError] = useState('');
+
+  const validateEmail = (email: string) => {
+    if (!email) {
+      setEmailError('Email is required');
+      return false;
+    }
+    
+    if (!isBusinessEmail(email)) {
+      setEmailError('Please use a business email address');
+      return false;
+    }
+    
+    setEmailError('');
+    return true;
+  };
+
+  const handleEmailChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const email = e.target.value;
+    setFormData(prev => ({ ...prev, email }));
+    
+    if (email) {
+      validateEmail(email);
+    } else {
+      setEmailError('');
+    }
+  };
 
   const handleFirstStepSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
-    if (!formData.name || !formData.companyName || !formData.email || !formData.phoneNumber) {
+    if (!formData.name || !formData.companyName || !formData.phoneNumber) {
       toast({
         title: "Missing Information",
         description: "Please fill in all required fields to continue.",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    // Validate email before submission
+    if (!validateEmail(formData.email)) {
+      toast({
+        title: "Invalid Email",
+        description: "Please provide a valid business email address.",
         variant: "destructive",
       });
       return;
@@ -248,10 +311,16 @@ export const LeadForm: React.FC<LeadFormProps> = ({ onSubmit }) => {
                 id="email"
                 type="email"
                 required
-                className="calculator-input"
+                className={`calculator-input ${emailError ? 'border-red-500' : ''}`}
                 value={formData.email}
-                onChange={(e) => setFormData(prev => ({ ...prev, email: e.target.value }))}
+                onChange={handleEmailChange}
               />
+              {emailError && (
+                <p className="text-red-500 text-sm mt-1">{emailError}</p>
+              )}
+              <p className="text-xs text-gray-500 mt-1">
+                Please use your business email address (personal emails like Gmail or Yahoo are not accepted)
+              </p>
             </div>
 
             <div>
