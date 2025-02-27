@@ -114,14 +114,30 @@ export const LeadForm: React.FC<LeadFormProps> = ({ onSubmit }) => {
       return false;
     }
     
-    // Basic URL validation
-    try {
-      new URL(website);
-      setWebsiteError('');
-      return true;
-    } catch (e) {
-      setWebsiteError('Please enter a valid URL (include https://)');
-      return false;
+    // Improved URL validation
+    if (!website.startsWith('http://') && !website.startsWith('https://')) {
+      // Auto-prefix with https:// if missing
+      const updatedWebsite = 'https://' + website;
+      setFormData(prev => ({ ...prev, website: updatedWebsite }));
+      
+      try {
+        new URL(updatedWebsite);
+        setWebsiteError('');
+        return true;
+      } catch (e) {
+        setWebsiteError('Please enter a valid URL (domain format)');
+        return false;
+      }
+    } else {
+      // Has protocol, just validate
+      try {
+        new URL(website);
+        setWebsiteError('');
+        return true;
+      } catch (e) {
+        setWebsiteError('Please enter a valid URL');
+        return false;
+      }
     }
   };
 
@@ -141,8 +157,7 @@ export const LeadForm: React.FC<LeadFormProps> = ({ onSubmit }) => {
     setFormData(prev => ({ ...prev, website }));
     
     if (website) {
-      validateWebsite(website);
-    } else {
+      // Don't validate on every keystroke, just clear previous errors
       setWebsiteError('');
     }
   };
@@ -150,7 +165,7 @@ export const LeadForm: React.FC<LeadFormProps> = ({ onSubmit }) => {
   const handleFirstStepSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
-    if (!formData.name || !formData.companyName || !formData.phoneNumber) {
+    if (!formData.name || !formData.companyName || !formData.phoneNumber || !formData.email || !formData.website) {
       toast({
         title: "Missing Information",
         description: "Please fill in all required fields to continue.",
@@ -182,6 +197,12 @@ export const LeadForm: React.FC<LeadFormProps> = ({ onSubmit }) => {
     setIsSubmitting(true);
 
     try {
+      // Ensure website has protocol
+      let finalWebsite = formData.website;
+      if (!finalWebsite.startsWith('http://') && !finalWebsite.startsWith('https://')) {
+        finalWebsite = 'https://' + finalWebsite;
+      }
+
       // Save the first step data to the database immediately
       const { data, error } = await supabase
         .from('leads')
@@ -190,7 +211,7 @@ export const LeadForm: React.FC<LeadFormProps> = ({ onSubmit }) => {
           company_name: formData.companyName,
           email: formData.email,
           phone_number: formData.phoneNumber,
-          website: formData.website,
+          website: finalWebsite,
           industry: "Not yet provided", // Placeholder until step 2
           employee_count: 0, // Placeholder until step 2
           calculator_inputs: {},
@@ -382,7 +403,7 @@ export const LeadForm: React.FC<LeadFormProps> = ({ onSubmit }) => {
               </label>
               <input
                 id="website"
-                type="url"
+                type="text"
                 required
                 className={`calculator-input ${websiteError ? 'border-red-500' : ''}`}
                 value={formData.website}
@@ -392,6 +413,9 @@ export const LeadForm: React.FC<LeadFormProps> = ({ onSubmit }) => {
               {websiteError && (
                 <p className="text-red-500 text-sm mt-1">{websiteError}</p>
               )}
+              <p className="text-xs text-gray-500 mt-1">
+                Enter your company domain (https:// will be added automatically if missing)
+              </p>
             </div>
 
             <Button
