@@ -43,7 +43,23 @@ const AdminDashboard = () => {
 
         if (leadsError) throw leadsError;
 
-        setLeads(leadsData || []);
+        // Transform the data to match the Lead type by providing default values
+        const transformedLeads: Lead[] = (leadsData || []).map(lead => ({
+          id: lead.id,
+          name: lead.name,
+          company_name: lead.company_name,
+          email: lead.email,
+          phone_number: lead.phone_number,
+          website: lead.website,
+          industry: lead.industry || 'Not Specified', // Provide default value
+          employee_count: lead.employee_count || 0, // Provide default value
+          calculator_inputs: lead.calculator_inputs,
+          calculator_results: lead.calculator_results,
+          proposal_sent: lead.proposal_sent,
+          created_at: lead.created_at
+        }));
+
+        setLeads(transformedLeads);
         setLoading(false);
 
       } catch (error) {
