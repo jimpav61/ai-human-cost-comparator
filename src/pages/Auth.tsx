@@ -1,5 +1,5 @@
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -11,11 +11,32 @@ const Auth = () => {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
 
+  useEffect(() => {
+    const checkExistingSession = async () => {
+      const { data: { session } } = await supabase.auth.getSession();
+      if (session) {
+        const { data: adminCheck } = await supabase
+          .from('allowed_admins')
+          .select('email')
+          .eq('email', session.user.email)
+          .single();
+        
+        if (adminCheck) {
+          console.log("Existing admin session found");
+          window.location.href = '/admin';
+        }
+      }
+    };
+    
+    checkExistingSession();
+  }, []);
+
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
     
     try {
+      console.log("Attempting login...");
       const { data, error: authError } = await supabase.auth.signInWithPassword({
         email,
         password
@@ -23,8 +44,9 @@ const Auth = () => {
 
       if (authError) throw authError;
 
+      console.log("Login successful, checking admin status");
+      
       if (data.session) {
-        // Check if user is an allowed admin
         const { data: adminData, error: adminError } = await supabase
           .from('allowed_admins')
           .select('email')
@@ -32,10 +54,12 @@ const Auth = () => {
           .single();
 
         if (adminError || !adminData) {
+          console.log("Not an admin, signing out");
           await supabase.auth.signOut();
           throw new Error("Unauthorized access");
         }
 
+        console.log("Admin verified, redirecting");
         toast({
           title: "Success",
           description: "Logged in successfully",
@@ -50,7 +74,6 @@ const Auth = () => {
         description: error.message || "Failed to log in",
         variant: "destructive",
       });
-      window.location.href = '/';
     } finally {
       setLoading(false);
     }

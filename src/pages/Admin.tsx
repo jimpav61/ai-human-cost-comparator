@@ -109,19 +109,21 @@ const AdminDashboard = () => {
   };
 
   useEffect(() => {
+    let isSubscribed = true;
+
     const checkAuth = async () => {
       try {
-        const { data: { session } } = await supabase.auth.getSession();
+        const { data: { session }, error: sessionError } = await supabase.auth.getSession();
+        
+        if (sessionError) throw sessionError;
         
         if (!session) {
-          toast({
-            title: "Session expired",
-            description: "Please log in again",
-            variant: "destructive",
-          });
+          console.log("No session found");
           window.location.href = '/';
           return;
         }
+
+        console.log("Session found, checking admin status");
 
         const { data: adminCheck, error: adminError } = await supabase
           .from('allowed_admins')
@@ -129,57 +131,66 @@ const AdminDashboard = () => {
           .eq('email', session.user.email)
           .single();
 
-        if (adminError || !adminCheck) {
-          toast({
-            title: "Unauthorized",
-            description: "You don't have access to this page",
-            variant: "destructive",
-          });
+        if (adminError) {
+          console.error("Admin check error:", adminError);
+          throw adminError;
+        }
+
+        if (!adminCheck) {
+          console.log("Not an admin");
           await supabase.auth.signOut();
           window.location.href = '/';
           return;
         }
 
-        // If authorized, fetch leads
-        const { data: leadsData, error: leadsError } = await supabase
-          .from('leads')
-          .select('*')
-          .order('created_at', { ascending: false });
+        console.log("Admin verified, fetching leads");
 
-        if (leadsError) throw leadsError;
-        setLeads(leadsData || []);
+        if (isSubscribed) {
+          const { data: leadsData, error: leadsError } = await supabase
+            .from('leads')
+            .select('*')
+            .order('created_at', { ascending: false });
+
+          if (leadsError) throw leadsError;
+          
+          if (isSubscribed) {
+            setLeads(leadsData || []);
+            setLoading(false);
+          }
+        }
       } catch (error) {
-        console.error('Error:', error);
-        toast({
-          title: "Error",
-          description: "An error occurred while loading data",
-          variant: "destructive",
-        });
-        window.location.href = '/';
-      } finally {
-        setLoading(false);
+        console.error('Auth check error:', error);
+        if (isSubscribed) {
+          toast({
+            title: "Error",
+            description: "An error occurred while checking authentication",
+            variant: "destructive",
+          });
+          window.location.href = '/';
+        }
       }
     };
 
-    // Check auth immediately
     checkAuth();
 
-    // Listen for auth changes
-    const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event, session) => {
-      if (event === 'SIGNED_OUT' || !session) {
+    const authListener = supabase.auth.onAuthStateChange((event, session) => {
+      console.log("Auth state changed:", event);
+      if (event === 'SIGNED_OUT') {
         window.location.href = '/';
+      } else if (event === 'SIGNED_IN') {
+        checkAuth();
       }
     });
 
     return () => {
-      subscription.unsubscribe();
+      isSubscribed = false;
+      authListener.data.subscription.unsubscribe();
     };
   }, []);
 
   const handleLogout = async () => {
     try {
       await supabase.auth.signOut();
-      window.location.href = '/';
     } catch (error) {
       console.error('Logout error:', error);
       toast({
