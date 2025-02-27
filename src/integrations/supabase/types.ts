@@ -102,6 +102,36 @@ export type Database = {
         }
         Relationships: []
       }
+      pricing_configurations: {
+        Row: {
+          chatbot_base_price: number
+          chatbot_per_message: number
+          created_at: string | null
+          id: string
+          tier: Database["public"]["Enums"]["package_tier"]
+          updated_at: string | null
+          voice_per_minute: number
+        }
+        Insert: {
+          chatbot_base_price: number
+          chatbot_per_message: number
+          created_at?: string | null
+          id?: string
+          tier: Database["public"]["Enums"]["package_tier"]
+          updated_at?: string | null
+          voice_per_minute: number
+        }
+        Update: {
+          chatbot_base_price?: number
+          chatbot_per_message?: number
+          created_at?: string | null
+          id?: string
+          tier?: Database["public"]["Enums"]["package_tier"]
+          updated_at?: string | null
+          voice_per_minute?: number
+        }
+        Relationships: []
+      }
       user_roles: {
         Row: {
           created_at: string | null
@@ -137,6 +167,7 @@ export type Database = {
     }
     Enums: {
       app_role: "admin" | "user"
+      package_tier: "basic" | "standard" | "premium"
     }
     CompositeTypes: {
       [_ in never]: never
