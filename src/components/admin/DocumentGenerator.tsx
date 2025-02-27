@@ -3,7 +3,6 @@ import { Lead } from "@/types/leads";
 import { Button } from "@/components/ui/button";
 import { Download, FileDown } from "lucide-react";
 import { toast } from "@/hooks/use-toast";
-import { generateProposal } from "@/components/calculator/proposalGenerator";
 import { useState, useEffect } from "react";
 
 interface DocumentGeneratorProps {
@@ -13,6 +12,8 @@ interface DocumentGeneratorProps {
 export const DocumentGenerator = ({ lead }: DocumentGeneratorProps) => {
   const [downloadedReports, setDownloadedReports] = useState<Set<string>>(new Set());
   const [downloadedProposals, setDownloadedProposals] = useState<Set<string>>(new Set());
+  const [isGeneratingReport, setIsGeneratingReport] = useState(false);
+  const [isGeneratingProposal, setIsGeneratingProposal] = useState(false);
   
   // Load downloaded status from localStorage
   useEffect(() => {
@@ -36,6 +37,8 @@ export const DocumentGenerator = ({ lead }: DocumentGeneratorProps) => {
 
   const handleDownloadReport = async () => {
     try {
+      setIsGeneratingReport(true);
+      
       // Create default values for missing data
       const defaultResults = {
         aiCostMonthly: { voice: 85, chatbot: 199, total: 284 },
@@ -117,16 +120,19 @@ export const DocumentGenerator = ({ lead }: DocumentGeneratorProps) => {
         description: "Failed to generate report",
         variant: "destructive",
       });
+    } finally {
+      setIsGeneratingReport(false);
     }
   };
 
   const handleGenerateProposal = async () => {
     try {
+      setIsGeneratingProposal(true);
       console.log('Generating proposal for lead:', lead);
       
       // Create default values for missing data
       const defaultResults = {
-        aiCostMonthly: { voice: 85, chatbot: 199, total: 284 },
+        aiCostMonthly: { voice: 85, chatbot: 199, total: 284, setupFee: 499 },
         humanCostMonthly: 3800,
         monthlySavings: 3516,
         yearlySavings: 42192,
@@ -137,13 +143,17 @@ export const DocumentGenerator = ({ lead }: DocumentGeneratorProps) => {
           weeklyTotal: 200,
           monthlyTotal: 850,
           yearlyTotal: 10200
-        }
+        },
+        annualPlan: 2990
       };
       
       // Use actual data if available, otherwise use defaults
       const results = lead.calculator_results && Object.keys(lead.calculator_results).length > 0 
         ? lead.calculator_results 
         : defaultResults;
+      
+      // Import dynamically
+      const { generateProposal } = await import('@/components/calculator/proposalGenerator');
       
       const doc = generateProposal({
         contactInfo: lead.name || 'Valued Client',
@@ -174,6 +184,8 @@ export const DocumentGenerator = ({ lead }: DocumentGeneratorProps) => {
         description: "Failed to generate proposal",
         variant: "destructive",
       });
+    } finally {
+      setIsGeneratingProposal(false);
     }
   };
 
@@ -184,8 +196,13 @@ export const DocumentGenerator = ({ lead }: DocumentGeneratorProps) => {
         size="sm"
         onClick={handleDownloadReport}
         className={`flex items-center ${downloadedReports.has(lead.id) ? 'bg-green-600 hover:bg-green-700' : ''}`}
+        disabled={isGeneratingReport}
       >
-        <Download className="h-4 w-4 mr-1" />
+        {isGeneratingReport ? (
+          <div className="animate-spin h-4 w-4 mr-1 border-b-2 border-current"></div>
+        ) : (
+          <Download className="h-4 w-4 mr-1" />
+        )}
         {downloadedReports.has(lead.id) ? "Downloaded" : "Report"}
       </Button>
       <Button
@@ -193,8 +210,13 @@ export const DocumentGenerator = ({ lead }: DocumentGeneratorProps) => {
         size="sm"
         onClick={handleGenerateProposal}
         className={`flex items-center ${downloadedProposals.has(lead.id) ? 'bg-green-600 hover:bg-green-700' : ''}`}
+        disabled={isGeneratingProposal}
       >
-        <FileDown className="h-4 w-4 mr-1" />
+        {isGeneratingProposal ? (
+          <div className="animate-spin h-4 w-4 mr-1 border-b-2 border-current"></div>
+        ) : (
+          <FileDown className="h-4 w-4 mr-1" />
+        )}
         {downloadedProposals.has(lead.id) ? "Sent" : "Proposal"}
       </Button>
     </div>
