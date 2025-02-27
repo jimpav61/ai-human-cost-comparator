@@ -1,3 +1,4 @@
+
 import { useState } from 'react';
 import { AIVsHumanCalculator } from "@/components/AIVsHumanCalculator";
 import Header from "@/components/Header";
@@ -29,20 +30,40 @@ const Index = () => {
   const handleAdminAuth = async (e: React.FormEvent) => {
     e.preventDefault();
     setIsLoading(true);
+    
     try {
-      if (isRegistering) {
-        const { error } = await supabase.auth.signUp({
+      // For direct login (not registration)
+      if (!isRegistering) {
+        const { error } = await supabase.auth.signInWithPassword({
           email: adminEmail,
           password: adminPassword,
         });
+        
         if (error) throw error;
+        
         toast({
           title: "Success",
-          description: "Admin account created successfully. Please check your email to verify your account.",
+          description: "Logged in successfully!",
         });
-      } else {
-        window.location.href = '/auth';
+        
+        // Directly navigate to admin page
+        window.location.href = '/admin';
+        return;
       }
+      
+      // For registration flow
+      const { error } = await supabase.auth.signUp({
+        email: adminEmail,
+        password: adminPassword,
+      });
+      
+      if (error) throw error;
+      
+      toast({
+        title: "Success",
+        description: "Admin account created successfully. Please check your email to verify your account.",
+      });
+      
       setShowAdminForm(false);
     } catch (error: any) {
       toast({
@@ -307,12 +328,8 @@ const Index = () => {
                       required
                     />
                   </div>
-                  <Button
-                    type="button"
-                    className="w-full"
-                    onClick={() => window.location.href = '/auth'}
-                  >
-                    Go to Admin Dashboard
+                  <Button type="submit" className="w-full" disabled={isLoading}>
+                    {isLoading ? "Processing..." : (isRegistering ? "Register" : "Login")}
                   </Button>
                   <div className="text-center mt-4">
                     <button
