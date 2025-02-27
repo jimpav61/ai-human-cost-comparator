@@ -22,7 +22,7 @@ export const ResultsDisplay: React.FC<ResultsDisplayProps> = ({
   inputs,
   leadData,
 }) => {
-  const [activeTab, setActiveTab] = useState('summary');
+  const [showDetails, setShowDetails] = useState(false);
 
   const handleGenerateReport = () => {
     onGenerateReport();
@@ -121,22 +121,22 @@ export const ResultsDisplay: React.FC<ResultsDisplayProps> = ({
           <h3 className="text-xl font-medium text-gray-900">Results Analysis</h3>
           <div className="flex items-center space-x-2">
             <Button
-              variant="outline"
+              variant={showDetails ? "outline" : "default"}
               size="sm"
               className="flex items-center"
-              onClick={() => setActiveTab('summary')}
+              onClick={() => setShowDetails(!showDetails)}
             >
-              <BarChart3 className="mr-1 h-4 w-4" />
-              Summary
-            </Button>
-            <Button
-              variant="outline"
-              size="sm"
-              className="flex items-center"
-              onClick={() => setActiveTab('details')}
-            >
-              <DollarSign className="mr-1 h-4 w-4" />
-              Details
+              {showDetails ? (
+                <>
+                  <BarChart3 className="mr-1 h-4 w-4" />
+                  Show Summary
+                </>
+              ) : (
+                <>
+                  <DollarSign className="mr-1 h-4 w-4" />
+                  Show Details
+                </>
+              )}
             </Button>
             <Button
               onClick={downloadPDF}
@@ -149,7 +149,7 @@ export const ResultsDisplay: React.FC<ResultsDisplayProps> = ({
           </div>
         </div>
 
-        {activeTab === 'summary' && (
+        {!showDetails ? (
           <div>
             <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
               <div className="bg-gray-50 p-4 rounded-lg">
@@ -232,9 +232,7 @@ export const ResultsDisplay: React.FC<ResultsDisplayProps> = ({
               </Button>
             </div>
           </div>
-        )}
-
-        {activeTab === 'details' && (
+        ) : (
           <div>
             <h4 className="font-medium text-gray-900 mb-3">AI Cost Breakdown</h4>
             <PricingDetails 
