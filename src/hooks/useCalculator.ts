@@ -1,6 +1,6 @@
 
 import { useState, useEffect } from 'react';
-import { AI_RATES, HUMAN_HOURLY_RATES } from '@/constants/pricing';
+import { DEFAULT_AI_RATES, HUMAN_HOURLY_RATES, fetchPricingConfigurations } from '@/constants/pricing';
 
 export interface CalculatorInputs {
   aiType: 'voice' | 'chatbot' | 'both';
@@ -51,6 +51,17 @@ export const useCalculator = (inputs: CalculatorInputs): CalculationResults => {
       yearlyTotal: 0
     }
   });
+  
+  const [aiRates, setAiRates] = useState(DEFAULT_AI_RATES);
+
+  useEffect(() => {
+    const loadPricing = async () => {
+      const rates = await fetchPricingConfigurations();
+      setAiRates(rates);
+    };
+    
+    loadPricing();
+  }, []);
 
   useEffect(() => {
     // Constants for time calculations
@@ -78,12 +89,12 @@ export const useCalculator = (inputs: CalculatorInputs): CalculationResults => {
     
     if (inputs.aiType === 'voice' || inputs.aiType === 'both') {
       const totalMinutesPerMonth = inputs.callVolume * inputs.avgCallDuration;
-      monthlyVoiceCost = totalMinutesPerMonth * AI_RATES.voice[inputs.aiTier];
+      monthlyVoiceCost = totalMinutesPerMonth * aiRates.voice[inputs.aiTier];
     }
     
     if (inputs.aiType === 'chatbot' || inputs.aiType === 'both') {
       const totalMessages = inputs.chatVolume * inputs.avgChatLength;
-      const chatbotRates = AI_RATES.chatbot[inputs.aiTier];
+      const chatbotRates = aiRates.chatbot[inputs.aiTier];
       monthlyChatbotCost = chatbotRates.base + (totalMessages * chatbotRates.perMessage);
     }
     
@@ -114,7 +125,7 @@ export const useCalculator = (inputs: CalculatorInputs): CalculationResults => {
         yearlyTotal: yearlyTotalHours
       }
     });
-  }, [inputs]);
+  }, [inputs, aiRates]);
 
   return results;
 };

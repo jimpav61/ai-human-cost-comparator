@@ -1,10 +1,11 @@
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { toast } from "@/components/ui/use-toast";
 import { useCalculator, type CalculatorInputs } from '@/hooks/useCalculator';
 import { CalculatorForm } from './calculator/CalculatorForm';
 import { ResultsDisplay } from './calculator/ResultsDisplay';
 import type { LeadData } from './calculator/types';
+import { fetchPricingConfigurations } from '@/constants/pricing';
 
 interface AIVsHumanCalculatorProps {
   leadData: LeadData;
@@ -12,6 +13,7 @@ interface AIVsHumanCalculatorProps {
 
 export const AIVsHumanCalculator: React.FC<AIVsHumanCalculatorProps> = ({ leadData }) => {
   const [reportGenerated, setReportGenerated] = useState(false);
+  const [loading, setLoading] = useState(true);
   const [inputs, setInputs] = useState<CalculatorInputs>({
     aiType: 'voice',
     aiTier: 'standard',
@@ -23,6 +25,25 @@ export const AIVsHumanCalculator: React.FC<AIVsHumanCalculatorProps> = ({ leadDa
     avgChatLength: 8,
     avgChatResolutionTime: 12
   });
+
+  useEffect(() => {
+    const loadPricing = async () => {
+      try {
+        await fetchPricingConfigurations();
+      } catch (error) {
+        console.error('Error loading pricing:', error);
+        toast({
+          title: "Error",
+          description: "Failed to load pricing data. Using default values.",
+          variant: "destructive",
+        });
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    loadPricing();
+  }, []);
 
   const results = useCalculator(inputs);
 
@@ -39,6 +60,18 @@ export const AIVsHumanCalculator: React.FC<AIVsHumanCalculatorProps> = ({ leadDa
     setReportGenerated(true);
     setTimeout(() => setReportGenerated(false), 3000);
   };
+
+  if (loading) {
+    return (
+      <div className="max-w-7xl mx-auto">
+        <div className="glass-morphism premium-shadow rounded-3xl overflow-hidden">
+          <div className="p-8 flex justify-center items-center">
+            <div className="animate-pulse">Loading pricing data...</div>
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="max-w-7xl mx-auto">
