@@ -9,6 +9,13 @@ const SUPABASE_PUBLISHABLE_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiO
 // Get the current site URL dynamically to handle both local and production environments
 const siteUrl = window.location.origin;
 
+// Log current environment configuration
+console.log("Supabase client initializing with:", { 
+  SUPABASE_URL, 
+  siteUrl,
+  environment: process.env.NODE_ENV 
+});
+
 // Import the supabase client like this:
 // import { supabase } from "@/integrations/supabase/client";
 
@@ -19,7 +26,22 @@ export const supabase = createClient<Database>(
     auth: {
       autoRefreshToken: true,
       persistSession: true,
-      flowType: 'pkce'
+      flowType: 'pkce',
+      detectSessionInUrl: true,
+      storage: localStorage
+    },
+    global: {
+      headers: {
+        'x-client-info': `vite/${process.env.NODE_ENV || 'development'}`
+      },
+    },
+    realtime: {
+      timeout: 30000 // Increase timeout for realtime connections
     }
   }
 );
+
+// Add global error listener for debugging authentication problems
+supabase.auth.onAuthStateChange((event, session) => {
+  console.log(`[Supabase Auth] ${event}`, { session: session ? 'exists' : 'none' });
+});

@@ -7,7 +7,7 @@ import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { Label } from "@/components/ui/label";
 import { toast } from "@/components/ui/use-toast";
-import { Mail, Lock, Info } from "lucide-react";
+import { Mail, Lock, Info, RefreshCw } from "lucide-react";
 
 const Auth = () => {
   const [email, setEmail] = useState("");
@@ -17,44 +17,74 @@ const Auth = () => {
   const [session, setSession] = useState<any>(null);
   const [isAdmin, setIsAdmin] = useState(false);
   const [isCheckingAuth, setIsCheckingAuth] = useState(true);
+  const [authError, setAuthError] = useState<string | null>(null);
+  const [checkTimeout, setCheckTimeout] = useState(false);
   const navigate = useNavigate();
 
-  useEffect(() => {
-    const checkUserSession = async () => {
-      try {
-        const { data, error } = await supabase.auth.getSession();
-        
-        if (error) {
-          console.error("Error checking session:", error);
-          setIsCheckingAuth(false);
-          return;
-        }
-        
-        setSession(data.session);
-        
-        if (data.session) {
-          // Check if user has admin role using RPC function
-          try {
-            const { data: userData, error: userError } = await supabase
-              .rpc('has_role', { role_to_check: 'admin' });
-              
-            if (userError) throw userError;
-            
-            setIsAdmin(userData || false);
-          } catch (err) {
-            console.error("Error checking admin role:", err);
-            setIsAdmin(false);
-          }
-        }
-      } catch (e) {
-        console.error("Session check error:", e);
-      } finally {
+  const checkSessionWithTimeout = async () => {
+    console.log("Starting auth check with timeout in Auth component");
+    // Reset states
+    setAuthError(null);
+    setCheckTimeout(false);
+    setIsCheckingAuth(true);
+    
+    // Set a timeout to catch hanging requests
+    const timeoutId = setTimeout(() => {
+      console.log("Auth check timed out after 8 seconds");
+      setCheckTimeout(true);
+      setIsCheckingAuth(false);
+    }, 8000);
+    
+    try {
+      const { data, error } = await supabase.auth.getSession();
+      
+      // Clear timeout as we got a response
+      clearTimeout(timeoutId);
+      
+      if (error) {
+        console.error("Error checking session:", error);
+        setAuthError(error.message);
         setIsCheckingAuth(false);
+        return;
       }
-    };
+      
+      setSession(data.session);
+      
+      if (data.session) {
+        // Check if user has admin role using RPC function
+        try {
+          const { data: userData, error: userError } = await supabase
+            .rpc('has_role', { role_to_check: 'admin' });
+            
+          if (userError) {
+            setAuthError(userError.message);
+            setIsAdmin(false);
+            setIsCheckingAuth(false);
+            return;
+          }
+          
+          setIsAdmin(userData || false);
+        } catch (err) {
+          console.error("Error checking admin role:", err);
+          setAuthError(err instanceof Error ? err.message : "Error checking admin status");
+          setIsAdmin(false);
+        }
+      }
+    } catch (e) {
+      clearTimeout(timeoutId);
+      console.error("Session check error:", e);
+      setAuthError(e instanceof Error ? e.message : "Unknown error checking session");
+    } finally {
+      clearTimeout(timeoutId);
+      setIsCheckingAuth(false);
+    }
+  };
+
+  useEffect(() => {
+    // Check session on initial load
+    checkSessionWithTimeout();
     
-    checkUserSession();
-    
+    // Set up auth state change listener
     const { data: authListener } = supabase.auth.onAuthStateChange(async (event, session) => {
       console.log("Auth state changed:", event);
       setSession(session);
@@ -163,7 +193,51 @@ const Auth = () => {
   };
   
   // Debugging output
-  console.log("Auth state:", { isCheckingAuth, session, isAdmin });
+  console.log("Auth state:", { isCheckingAuth, session, isAdmin, checkTimeout, authError });
+  
+  // Handle timeout case
+  if (checkTimeout) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-brand-50 to-gray-100">
+        <Card className="w-[450px]">
+          <CardHeader>
+            <div className="flex items-center justify-center mb-4 text-amber-500">
+              <Info size={48} />
+            </div>
+            <CardTitle className="text-center text-2xl">Authentication Timeout</CardTitle>
+            <CardDescription className="text-center">
+              The authentication request is taking longer than expected. This may be due to network issues.
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            <p className="text-center text-gray-600 mb-4">
+              Please try checking your connection and retry, or login with your credentials.
+            </p>
+          </CardContent>
+          <CardFooter className="flex flex-col gap-3">
+            <Button 
+              onClick={checkSessionWithTimeout}
+              className="w-full"
+            >
+              <RefreshCw className="mr-2 h-4 w-4" />
+              Retry Authentication Check
+            </Button>
+            <Button 
+              variant="outline"
+              onClick={() => {
+                setCheckTimeout(false);
+                setSession(null);
+                setIsAdmin(false);
+              }}
+              className="w-full"
+            >
+              Proceed to Login
+            </Button>
+          </CardFooter>
+        </Card>
+      </div>
+    );
+  }
   
   // Show loading spinner while checking authentication
   if (isCheckingAuth) {
@@ -173,6 +247,50 @@ const Auth = () => {
           <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-brand-500 mx-auto mb-4"></div>
           <p className="text-gray-600">Checking authentication...</p>
         </div>
+      </div>
+    );
+  }
+  
+  // Show auth error
+  if (authError && !session) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-brand-50 to-gray-100">
+        <Card className="w-[450px]">
+          <CardHeader>
+            <div className="flex items-center justify-center mb-4 text-red-500">
+              <Info size={48} />
+            </div>
+            <CardTitle className="text-center text-2xl">Authentication Error</CardTitle>
+            <CardDescription className="text-center">
+              {authError}
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            <p className="text-center text-gray-600 mb-4">
+              There was a problem with the authentication process. Please try again.
+            </p>
+          </CardContent>
+          <CardFooter className="flex flex-col gap-3">
+            <Button 
+              onClick={checkSessionWithTimeout}
+              className="w-full"
+            >
+              <RefreshCw className="mr-2 h-4 w-4" />
+              Retry
+            </Button>
+            <Button 
+              variant="outline"
+              onClick={() => {
+                setAuthError(null);
+                setSession(null);
+                setIsAdmin(false);
+              }}
+              className="w-full"
+            >
+              Proceed to Login
+            </Button>
+          </CardFooter>
+        </Card>
       </div>
     );
   }
@@ -216,6 +334,7 @@ const Auth = () => {
     );
   }
 
+  // If we get here, show the login form
   return (
     <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-brand-50 to-gray-100">
       <Card className="w-[450px]">
