@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from "react";
 import { Navigate, useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
@@ -20,32 +21,36 @@ const Auth = () => {
 
   useEffect(() => {
     const checkUserSession = async () => {
-      const { data, error } = await supabase.auth.getSession();
-      
-      if (error) {
-        console.error("Error checking session:", error);
-        setIsCheckingAuth(false);
-        return;
-      }
-      
-      setSession(data.session);
-      
-      if (data.session) {
-        const { data: userData, error: userError } = await supabase
-          .from('user_roles')
-          .select('role')
-          .eq('user_id', data.session.user.id)
-          .single();
-          
-        if (userError) {
-          console.error("Error checking user role:", userError);
-          setIsAdmin(false);
-        } else if (userData && userData.role === 'admin') {
-          setIsAdmin(true);
+      try {
+        const { data, error } = await supabase.auth.getSession();
+        
+        if (error) {
+          console.error("Error checking session:", error);
+          setIsCheckingAuth(false);
+          return;
         }
+        
+        setSession(data.session);
+        
+        if (data.session) {
+          const { data: userData, error: userError } = await supabase
+            .from('user_roles')
+            .select('role')
+            .eq('user_id', data.session.user.id)
+            .single();
+            
+          if (userError) {
+            console.error("Error checking user role:", userError);
+            setIsAdmin(false);
+          } else if (userData && userData.role === 'admin') {
+            setIsAdmin(true);
+          }
+        }
+      } catch (err) {
+        console.error("Session check error:", err);
+      } finally {
+        setIsCheckingAuth(false);
       }
-      
-      setIsCheckingAuth(false);
     };
     
     checkUserSession();
