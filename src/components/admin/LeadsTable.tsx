@@ -8,22 +8,33 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { Button } from '@/components/ui/button';
-import { FileText } from 'lucide-react';
+import { FileText, ChevronDown, ChevronUp } from 'lucide-react';
 import { Lead } from "@/types/leads";
 import { CompanyDisplay } from "./CompanyDisplay";
 import { ContactDisplay } from "./ContactDisplay";
 import { DateDisplay } from "./DateDisplay";
 import { DocumentGenerator } from "./DocumentGenerator";
 import { exportLeadsToCSV } from "@/utils/exportUtils";
+import { useState } from "react";
+import { Card, CardContent } from "@/components/ui/card";
 
 interface LeadsTableProps {
   leads: Lead[];
 }
 
 export const LeadsTable = ({ leads }: LeadsTableProps) => {
+  const [expandedLeads, setExpandedLeads] = useState<Record<string, boolean>>({});
+
+  const toggleLeadExpansion = (leadId: string) => {
+    setExpandedLeads(prev => ({
+      ...prev,
+      [leadId]: !prev[leadId]
+    }));
+  };
+
   return (
     <div className="bg-white rounded-lg shadow overflow-hidden">
-      <div className="p-4 flex justify-between items-center border-b">
+      <div className="p-4 flex justify-between items-center border-b flex-wrap gap-2">
         <h2 className="text-lg font-semibold">Lead Management</h2>
         <Button 
           onClick={() => exportLeadsToCSV(leads)}
@@ -34,46 +45,120 @@ export const LeadsTable = ({ leads }: LeadsTableProps) => {
         </Button>
       </div>
       
-      <Table>
-        <TableHeader>
-          <TableRow>
-            <TableHead>Company</TableHead>
-            <TableHead>Contact</TableHead>
-            <TableHead>Industry</TableHead>
-            <TableHead>Size</TableHead>
-            <TableHead>Contact Info</TableHead>
-            <TableHead>Created</TableHead>
-            <TableHead>Actions</TableHead>
-          </TableRow>
-        </TableHeader>
-        <TableBody>
-          {leads.map((lead) => (
-            <TableRow key={lead.id}>
-              <TableCell>
-                <CompanyDisplay 
-                  companyName={lead.company_name}
-                  website={lead.website}
-                />
-              </TableCell>
-              <TableCell>{lead.name}</TableCell>
-              <TableCell>{lead.industry || "N/A"}</TableCell>
-              <TableCell>{lead.employee_count || "N/A"}</TableCell>
-              <TableCell>
-                <ContactDisplay
-                  email={lead.email}
-                  phoneNumber={lead.phone_number}
-                />
-              </TableCell>
-              <TableCell>
-                <DateDisplay dateString={lead.created_at} />
-              </TableCell>
-              <TableCell>
-                <DocumentGenerator lead={lead} />
-              </TableCell>
+      {/* Desktop View - Traditional Table */}
+      <div className="hidden md:block">
+        <Table>
+          <TableHeader>
+            <TableRow>
+              <TableHead>Company</TableHead>
+              <TableHead>Contact</TableHead>
+              <TableHead>Industry</TableHead>
+              <TableHead>Size</TableHead>
+              <TableHead>Contact Info</TableHead>
+              <TableHead>Created</TableHead>
+              <TableHead>Actions</TableHead>
             </TableRow>
+          </TableHeader>
+          <TableBody>
+            {leads.map((lead) => (
+              <TableRow key={lead.id}>
+                <TableCell>
+                  <CompanyDisplay 
+                    companyName={lead.company_name}
+                    website={lead.website}
+                  />
+                </TableCell>
+                <TableCell>{lead.name}</TableCell>
+                <TableCell>{lead.industry || "N/A"}</TableCell>
+                <TableCell>{lead.employee_count || "N/A"}</TableCell>
+                <TableCell>
+                  <ContactDisplay
+                    email={lead.email}
+                    phoneNumber={lead.phone_number}
+                  />
+                </TableCell>
+                <TableCell>
+                  <DateDisplay dateString={lead.created_at} />
+                </TableCell>
+                <TableCell>
+                  <DocumentGenerator lead={lead} />
+                </TableCell>
+              </TableRow>
+            ))}
+          </TableBody>
+        </Table>
+      </div>
+
+      {/* Mobile View - Card Layout */}
+      <div className="block md:hidden">
+        <div className="space-y-4 p-3">
+          {leads.map((lead) => (
+            <Card key={lead.id} className="overflow-hidden">
+              <div 
+                className="p-4 border-b flex justify-between items-center cursor-pointer bg-gray-50"
+                onClick={() => toggleLeadExpansion(lead.id)}
+              >
+                <div>
+                  <div className="font-medium">{lead.company_name}</div>
+                  <div className="text-sm text-gray-500">{lead.name}</div>
+                </div>
+                {expandedLeads[lead.id] ? (
+                  <ChevronUp className="h-5 w-5 text-gray-500" />
+                ) : (
+                  <ChevronDown className="h-5 w-5 text-gray-500" />
+                )}
+              </div>
+              
+              {expandedLeads[lead.id] && (
+                <CardContent className="pt-4">
+                  <div className="grid grid-cols-1 gap-3">
+                    <div>
+                      <div className="text-sm font-medium text-gray-500">Company</div>
+                      <CompanyDisplay 
+                        companyName={lead.company_name}
+                        website={lead.website}
+                      />
+                    </div>
+                    
+                    <div>
+                      <div className="text-sm font-medium text-gray-500">Contact</div>
+                      <div>{lead.name}</div>
+                    </div>
+                    
+                    <div>
+                      <div className="text-sm font-medium text-gray-500">Industry</div>
+                      <div>{lead.industry || "N/A"}</div>
+                    </div>
+                    
+                    <div>
+                      <div className="text-sm font-medium text-gray-500">Size</div>
+                      <div>{lead.employee_count || "N/A"}</div>
+                    </div>
+                    
+                    <div>
+                      <div className="text-sm font-medium text-gray-500">Contact Info</div>
+                      <ContactDisplay
+                        email={lead.email}
+                        phoneNumber={lead.phone_number}
+                      />
+                    </div>
+                    
+                    <div>
+                      <div className="text-sm font-medium text-gray-500">Created</div>
+                      <DateDisplay dateString={lead.created_at} />
+                    </div>
+                    
+                    <div>
+                      <div className="text-sm font-medium text-gray-500 mb-2">Actions</div>
+                      <DocumentGenerator lead={lead} />
+                    </div>
+                  </div>
+                </CardContent>
+              )}
+            </Card>
           ))}
-        </TableBody>
-      </Table>
+        </div>
+      </div>
     </div>
   );
 };
