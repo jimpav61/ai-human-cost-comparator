@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from "react";
 import { Navigate, useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
@@ -5,7 +6,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { Label } from "@/components/ui/label";
-import { toast } from "@/hooks/use-toast";
+import { toast } from "@/components/ui/use-toast";
 import { Mail, Lock, Info } from "lucide-react";
 
 const Auth = () => {
@@ -20,32 +21,36 @@ const Auth = () => {
 
   useEffect(() => {
     const checkUserSession = async () => {
-      const { data, error } = await supabase.auth.getSession();
-      
-      if (error) {
-        console.error("Error checking session:", error);
-        setIsCheckingAuth(false);
-        return;
-      }
-      
-      setSession(data.session);
-      
-      if (data.session) {
-        const { data: userData, error: userError } = await supabase
-          .from('user_roles')
-          .select('role')
-          .eq('user_id', data.session.user.id)
-          .single();
-          
-        if (userError) {
-          console.error("Error checking user role:", userError);
-          setIsAdmin(false);
-        } else if (userData && userData.role === 'admin') {
-          setIsAdmin(true);
+      try {
+        const { data, error } = await supabase.auth.getSession();
+        
+        if (error) {
+          console.error("Error checking session:", error);
+          setIsCheckingAuth(false);
+          return;
         }
+        
+        setSession(data.session);
+        
+        if (data.session) {
+          // Check if user has admin role using RPC function
+          try {
+            const { data: userData, error: userError } = await supabase
+              .rpc('has_role', { role_to_check: 'admin' });
+              
+            if (userError) throw userError;
+            
+            setIsAdmin(userData || false);
+          } catch (err) {
+            console.error("Error checking admin role:", err);
+            setIsAdmin(false);
+          }
+        }
+      } catch (e) {
+        console.error("Session check error:", e);
+      } finally {
+        setIsCheckingAuth(false);
       }
-      
-      setIsCheckingAuth(false);
     };
     
     checkUserSession();
@@ -55,17 +60,16 @@ const Auth = () => {
       setSession(session);
       
       if (session) {
-        const { data: userData, error: userError } = await supabase
-          .from('user_roles')
-          .select('role')
-          .eq('user_id', session.user.id)
-          .single();
+        try {
+          const { data: userData, error: userError } = await supabase
+            .rpc('has_role', { role_to_check: 'admin' });
+            
+          if (userError) throw userError;
           
-        if (userError) {
-          console.error("Error checking user role:", userError);
+          setIsAdmin(userData || false);
+        } catch (err) {
+          console.error("Error checking admin role:", err);
           setIsAdmin(false);
-        } else if (userData && userData.role === 'admin') {
-          setIsAdmin(true);
         }
       } else {
         setIsAdmin(false);
@@ -137,6 +141,14 @@ const Auth = () => {
           title: "Login Successful",
           description: "You have been logged in successfully.",
         });
+        
+        // Check admin role directly after login
+        const { data: isAdminData, error: isAdminError } = await supabase
+          .rpc('has_role', { role_to_check: 'admin' });
+          
+        if (!isAdminError && isAdminData) {
+          navigate('/admin');
+        }
       }
     } catch (error: any) {
       console.error("Auth error:", error);
@@ -149,6 +161,9 @@ const Auth = () => {
       setLoading(false);
     }
   };
+  
+  // Debugging output
+  console.log("Auth state:", { isCheckingAuth, session, isAdmin });
   
   // Show loading spinner while checking authentication
   if (isCheckingAuth) {
