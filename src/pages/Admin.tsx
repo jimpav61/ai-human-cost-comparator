@@ -1,123 +1,109 @@
 
 import { useState, useEffect } from "react";
-import { useNavigate } from "react-router-dom";
+import { Navigate } from "react-router-dom";
 import { LeadsTable } from "@/components/admin/LeadsTable";
 import { PricingManager } from "@/components/admin/PricingManager";
 import { supabase } from "@/integrations/supabase/client";
 import { Lead } from "@/types/leads";
 import { AdminHeader } from "@/components/admin/AdminHeader";
 import { CsvUploader } from "@/components/admin/CsvUploader";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Button } from "@/components/ui/button";
 import { toast } from "@/components/ui/use-toast";
-import { RefreshCw } from "lucide-react";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 
 const Admin = () => {
+  const [session, setSession] = useState<any>(null);
+  const [isAdmin, setIsAdmin] = useState(false);
+  const [isLoading, setIsLoading] = useState(true);
   const [leads, setLeads] = useState<Lead[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
-  const navigate = useNavigate();
 
-  // Function to check auth and load data
-  const loadAdminData = async () => {
-    setLoading(true);
-    setError(null);
-    
-    // Set a timeout to handle hanging requests
-    const timeoutId = setTimeout(() => {
-      setError("Authentication request timed out. Please try again.");
-      setLoading(false);
-    }, 10000); // Extended timeout to 10 seconds
-    
-    try {
-      // Check if user is logged in
-      const { data: sessionData, error: sessionError } = await supabase.auth.getSession();
-      
-      clearTimeout(timeoutId);
-      
-      if (sessionError) {
-        throw new Error(sessionError.message);
-      }
-      
-      if (!sessionData.session) {
-        console.log("No session found, redirecting to auth");
-        navigate('/auth');
-        return;
-      }
-      
-      // Check if user is admin using has_role function
+  useEffect(() => {
+    const checkAuth = async () => {
       try {
-        const { data: isAdmin, error: adminError } = await supabase
-          .rpc('has_role', { role_to_check: 'admin' });
+        const { data, error } = await supabase.auth.getSession();
+        if (error) throw error;
         
-        // If there's an error with the role check or user is not admin
-        if (adminError || !isAdmin) {
-          console.log("User is not admin, access denied", { adminError, isAdmin });
-          toast({
-            title: "Access Denied",
-            description: "You don't have admin privileges",
-            variant: "destructive"
-          });
+        setSession(data.session);
+        
+        if (data.session) {
+          // Check if the user has admin role
+          const { data: userData, error: userError } = await supabase
+            .rpc('has_role', { role_to_check: 'admin' });
+            
+          if (userError) throw userError;
           
-          // Sign out the user
-          await supabase.auth.signOut();
-          navigate('/auth');
-          return;
+          setIsAdmin(userData || false);
+          
+          if (userData) {
+            // Fetch leads for admin
+            const { data: leadsData, error: leadsError } = await supabase
+              .from('leads')
+              .select('*')
+              .order('created_at', { ascending: false });
+              
+            if (leadsError) throw leadsError;
+            
+            setLeads(leadsData);
+          }
+        }
+      } catch (error: any) {
+        console.error('Auth error:', error);
+        toast({
+          title: "Authentication Error",
+          description: error.message,
+          variant: "destructive",
+        });
+      } finally {
+        setIsLoading(false);
+      }
+    };
+    
+    checkAuth();
+    
+    const { data: authListener } = supabase.auth.onAuthStateChange(
+      async (_event, session) => {
+        setSession(session);
+        setIsLoading(true);
+        
+        if (session) {
+          // Check if the user has admin role
+          const { data: userData, error: userError } = await supabase
+            .rpc('has_role', { role_to_check: 'admin' });
+            
+          if (userError) {
+            console.error('Role check error:', userError);
+            setIsAdmin(false);
+          } else {
+            setIsAdmin(userData || false);
+            
+            if (userData) {
+              // Fetch leads for admin
+              const { data: leadsData, error: leadsError } = await supabase
+                .from('leads')
+                .select('*')
+                .order('created_at', { ascending: false });
+                
+              if (leadsError) {
+                console.error('Leads fetch error:', leadsError);
+              } else {
+                setLeads(leadsData || []);
+              }
+            }
+          }
+        } else {
+          setIsAdmin(false);
+          setLeads([]);
         }
         
-        console.log("User confirmed as admin, proceeding to load data");
-      } catch (roleError) {
-        console.error("Error checking admin role:", roleError);
-        toast({
-          title: "Error",
-          description: "Failed to verify admin privileges",
-          variant: "destructive"
-        });
-        navigate('/auth');
-        return;
+        setIsLoading(false);
       }
-      
-      // If we got here, user is authenticated and has admin privileges
-      // Load leads data
-      const { data: leadsData, error: leadsError } = await supabase
-        .from('leads')
-        .select('*')
-        .order('created_at', { ascending: false });
-      
-      if (leadsError) {
-        throw new Error(leadsError.message);
-      }
-      
-      setLeads(leadsData || []);
-      
-    } catch (err: any) {
-      console.error("Admin page error:", err);
-      setError(err.message || "An error occurred");
-    } finally {
-      clearTimeout(timeoutId);
-      setLoading(false);
-    }
-  };
-  
-  // Load data on initial render
-  useEffect(() => {
-    loadAdminData();
-    
-    // Setup auth state listener
-    const { data: authListener } = supabase.auth.onAuthStateChange((event) => {
-      console.log("Auth state changed:", event);
-      if (event === 'SIGNED_OUT') {
-        navigate('/auth');
-      }
-    });
+    );
     
     return () => {
       authListener.subscription.unsubscribe();
     };
-  }, [navigate]);
+  }, []);
 
-  // Show loading state
-  if (loading) {
+  if (isLoading) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-gray-50">
         <div className="text-center">
@@ -128,38 +114,14 @@ const Admin = () => {
     );
   }
 
-  // Show error state
-  if (error) {
-    return (
-      <div className="min-h-screen flex items-center justify-center bg-gray-50">
-        <div className="max-w-md p-6 bg-white rounded-lg shadow-lg text-center">
-          <div className="text-amber-500 mb-4">
-            <svg xmlns="http://www.w3.org/2000/svg" className="h-12 w-12 mx-auto" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-            </svg>
-          </div>
-          <h2 className="text-xl font-semibold mb-2">Authentication Error</h2>
-          <p className="text-gray-600 mb-4">
-            {error}
-          </p>
-          <div className="flex flex-col gap-3">
-            <Button onClick={loadAdminData} className="w-full">
-              <RefreshCw className="mr-2 h-4 w-4" />
-              Retry Authentication
-            </Button>
-            <Button variant="outline" onClick={() => navigate('/auth')} className="w-full">
-              Go to Login Page
-            </Button>
-            <Button variant="ghost" onClick={() => navigate('/')} className="w-full">
-              Back to Home
-            </Button>
-          </div>
-        </div>
-      </div>
-    );
+  if (!session) {
+    return <Navigate to="/auth" replace />;
   }
 
-  // Render admin dashboard
+  if (!isAdmin) {
+    return <Navigate to="/auth" replace />;
+  }
+
   return (
     <div className="min-h-screen bg-gray-50">
       <AdminHeader />
@@ -173,13 +135,7 @@ const Admin = () => {
           </TabsList>
           
           <TabsContent value="leads" className="space-y-8">
-            {leads.length === 0 ? (
-              <div className="text-center py-12">
-                <p className="text-gray-500">No leads found. Try importing some using the Import tab.</p>
-              </div>
-            ) : (
-              <LeadsTable leads={leads} />
-            )}
+            <LeadsTable leads={leads} />
           </TabsContent>
           
           <TabsContent value="pricing">

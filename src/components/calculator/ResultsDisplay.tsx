@@ -12,7 +12,6 @@ import { Button } from '@/components/ui/button';
 import { ResultsSummary } from './ResultsSummary';
 import { ResultsDetailView } from './ResultsDetailView';
 import { calculatePricingDetails, getTierDisplayName, getAITypeDisplay } from './pricingDetailsCalculator';
-import { toast } from "@/components/ui/use-toast";
 
 export const ResultsDisplay: React.FC<ResultsDisplayProps> = ({
   results,
@@ -22,7 +21,6 @@ export const ResultsDisplay: React.FC<ResultsDisplayProps> = ({
   leadData,
 }) => {
   const [showDetails, setShowDetails] = useState(false);
-  const [isDownloading, setIsDownloading] = useState(false);
 
   const handleGenerateReport = () => {
     onGenerateReport();
@@ -32,39 +30,21 @@ export const ResultsDisplay: React.FC<ResultsDisplayProps> = ({
   const tierDisplayName = getTierDisplayName(inputs.aiTier);
   const aiTypeDisplay = getAITypeDisplay(inputs.aiType);
 
-  const downloadPDF = async () => {
-    try {
-      setIsDownloading(true);
-      
-      const doc = generateProposal({
-        contactInfo: leadData.name,
-        companyName: leadData.companyName,
-        email: leadData.email,
-        phoneNumber: leadData.phoneNumber,
-        industry: leadData.industry,
-        employeeCount: leadData.employeeCount,
-        results,
-        tierName: tierDisplayName,
-        aiType: aiTypeDisplay,
-        pricingDetails: pricingDetails
-      });
+  const downloadPDF = () => {
+    const doc = generateProposal({
+      contactInfo: leadData.name,
+      companyName: leadData.companyName,
+      email: leadData.email,
+      phoneNumber: leadData.phoneNumber,
+      industry: leadData.industry,
+      employeeCount: leadData.employeeCount,
+      results,
+      tierName: tierDisplayName,
+      aiType: aiTypeDisplay,
+      pricingDetails: pricingDetails
+    });
 
-      doc.save(`${leadData.companyName.replace(/\s+/g, '-')}_AI_Proposal.pdf`);
-      
-      toast({
-        title: "Proposal Downloaded",
-        description: "Your proposal has been generated and downloaded successfully.",
-      });
-    } catch (error) {
-      console.error("Error generating proposal PDF:", error);
-      toast({
-        title: "Download Failed",
-        description: "There was an error generating your proposal. Please try again.",
-        variant: "destructive",
-      });
-    } finally {
-      setIsDownloading(false);
-    }
+    doc.save(`${leadData.companyName.replace(/\s+/g, '-')}_AI_Proposal.pdf`);
   };
 
   return (
@@ -95,19 +75,9 @@ export const ResultsDisplay: React.FC<ResultsDisplayProps> = ({
               onClick={downloadPDF}
               size="sm"
               className="flex items-center"
-              disabled={isDownloading}
             >
-              {isDownloading ? (
-                <>
-                  <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
-                  Generating...
-                </>
-              ) : (
-                <>
-                  <Download className="mr-1 h-4 w-4" />
-                  Download
-                </>
-              )}
+              <Download className="mr-1 h-4 w-4" />
+              Download
             </Button>
           </div>
         </div>
