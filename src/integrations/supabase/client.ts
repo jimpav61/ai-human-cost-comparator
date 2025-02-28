@@ -7,7 +7,7 @@ const SUPABASE_URL = "https://ujyhmchmjzlmsimtrtor.supabase.co";
 const SUPABASE_PUBLISHABLE_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InVqeWhtY2htanpsbXNpbXRydG9yIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDA1OTY5MjgsImV4cCI6MjA1NjE3MjkyOH0.SC-lanLW6TQ6c3BWGPvxtjPpB5oufTvb8j-FmLFHGwI";
 
 // Get the current site URL dynamically to handle both local and production environments
-const siteUrl = window.location.origin;
+const siteUrl = typeof window !== 'undefined' ? window.location.origin : '';
 
 // Import the supabase client like this:
 // import { supabase } from "@/integrations/supabase/client";
@@ -19,6 +19,7 @@ export const supabase = createClient<Database>(
     auth: {
       autoRefreshToken: true,
       persistSession: true,
+      detectSessionInUrl: true,
       flowType: 'pkce'
     }
   }
