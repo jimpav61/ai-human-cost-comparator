@@ -142,6 +142,9 @@ const Auth = () => {
           title: "Login Successful",
           description: "You have been logged in successfully.",
         });
+
+        // Navigate to admin page after successful login
+        navigate("/admin");
       }
     } catch (error: any) {
       console.error("Auth error:", error);

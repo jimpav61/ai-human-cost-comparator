@@ -1,3 +1,4 @@
+
 import { defineConfig } from "vite";
 import react from "@vitejs/plugin-react-swc";
 import path from "path";
@@ -18,8 +19,7 @@ export default defineConfig(({ mode }) => ({
       "ai-human-cost-comparator.onrender.com", // Render domain
       "compass.chatsites.ai", // Your custom domain
     ],
-  },  // ✅ Added missing comma here
-
+  },
   build: {
     rollupOptions: {
       output: {
