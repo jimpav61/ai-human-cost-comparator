@@ -22,16 +22,8 @@ const Auth = () => {
     
     try {
       if (isSignup) {
-        // First check if the email is in the allowed_admins table
-        const { data: isAllowedData, error: isAllowedError } = await supabase
-          .rpc('is_allowed_admin', { email });
-        
-        if (isAllowedError) {
-          throw new Error("Error verifying admin status");
-        }
-        
         // Handle signup
-        const { error } = await supabase.auth.signUp({
+        const { error: signUpError } = await supabase.auth.signUp({
           email,
           password,
           options: {
@@ -39,7 +31,7 @@ const Auth = () => {
           }
         });
         
-        if (error) throw error;
+        if (signUpError) throw signUpError;
         
         toast({
           title: "Account Created",
@@ -49,34 +41,20 @@ const Auth = () => {
         setIsSignup(false);
       } else {
         // Handle login
-        const { error } = await supabase.auth.signInWithPassword({
+        const { error: signInError } = await supabase.auth.signInWithPassword({
           email,
           password,
         });
         
-        if (error) throw error;
+        if (signInError) throw signInError;
         
-        // Check admin role
-        const { data: isAdmin, error: roleError } = await supabase
-          .rpc('has_role', { role_to_check: 'admin' });
+        // Successfully logged in
+        toast({
+          title: "Login Successful",
+          description: "Welcome back!",
+        });
         
-        if (roleError) throw roleError;
-        
-        if (isAdmin) {
-          toast({
-            title: "Login Successful",
-            description: "Welcome to the admin dashboard.",
-          });
-          navigate('/admin');
-        } else {
-          // Not an admin
-          await supabase.auth.signOut();
-          toast({
-            title: "Access Denied",
-            description: "Your account doesn't have administrator privileges.",
-            variant: "destructive"
-          });
-        }
+        navigate('/admin');
       }
     } catch (error: any) {
       console.error("Auth error:", error);
