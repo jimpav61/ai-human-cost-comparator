@@ -1,31 +1,31 @@
-
 import { defineConfig } from "vite";
 import react from "@vitejs/plugin-react-swc";
 import path from "path";
 import { componentTagger } from "lovable-tagger";
 
-// https://vitejs.dev/config/
 export default defineConfig(({ mode }) => ({
   server: {
-    host: "::",
-    port: 8080,
+    host: "0.0.0.0", // Allow external access
+    port: process.env.PORT || 8080,
     fs: {
-      // Allow serving files from one level up to the project root
-      allow: ['..']
-    }
+      allow: [".."],
+    },
+  },
+  preview: {
+    host: "0.0.0.0", // Allow external access for preview mode
+    port: process.env.PORT || 8080,
+    allowedHosts: ["ai-human-cost-comparator.onrender.com"], // Allow Render host
   },
   build: {
-    // Ensure dynamic imports are properly processed
     rollupOptions: {
       output: {
-        manualChunks: undefined
-      }
-    }
+        manualChunks: undefined,
+      },
+    },
   },
   plugins: [
     react(),
-    mode === 'development' &&
-    componentTagger(),
+    mode === "development" && componentTagger(),
   ].filter(Boolean),
   resolve: {
     alias: {
