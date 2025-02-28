@@ -14,7 +14,7 @@ export default defineConfig(({ mode }) => ({
   },
   preview: {
     host: "0.0.0.0", // Allow external access for preview mode
-    port: process.env.PORT || 8080,
+    port: process.env.PORT ? Number(process.env.PORT) : 8080,
     allowedHosts: [
       "ai-human-cost-comparator.onrender.com", // Render domain
       "compass.chatsites.ai", // Your custom domain
