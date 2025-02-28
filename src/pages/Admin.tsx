@@ -27,7 +27,7 @@ const Admin = () => {
     const timeoutId = setTimeout(() => {
       setError("Authentication request timed out. Please try again.");
       setLoading(false);
-    }, 5000);
+    }, 10000); // Extended timeout to 10 seconds
     
     try {
       // Check if user is logged in
@@ -45,29 +45,39 @@ const Admin = () => {
         return;
       }
       
-      // TEMPORARY DISABLED: Skipping admin role check to fix login issue
-      // Instead of redirecting, we'll just let all authenticated users access the admin page
-      
-      /* 
-      // Check if user is admin
-      const { data: isAdmin, error: adminError } = await supabase
-        .rpc('has_role', { role_to_check: 'admin' });
-      
-      if (adminError) {
-        throw new Error(adminError.message);
-      }
-      
-      if (!isAdmin) {
+      // Check if user is admin using has_role function
+      try {
+        const { data: isAdmin, error: adminError } = await supabase
+          .rpc('has_role', { role_to_check: 'admin' });
+        
+        // If there's an error with the role check or user is not admin
+        if (adminError || !isAdmin) {
+          console.log("User is not admin, access denied", { adminError, isAdmin });
+          toast({
+            title: "Access Denied",
+            description: "You don't have admin privileges",
+            variant: "destructive"
+          });
+          
+          // Sign out the user
+          await supabase.auth.signOut();
+          navigate('/auth');
+          return;
+        }
+        
+        console.log("User confirmed as admin, proceeding to load data");
+      } catch (roleError) {
+        console.error("Error checking admin role:", roleError);
         toast({
-          title: "Access Denied",
-          description: "You don't have admin privileges",
+          title: "Error",
+          description: "Failed to verify admin privileges",
           variant: "destructive"
         });
         navigate('/auth');
         return;
       }
-      */
       
+      // If we got here, user is authenticated and has admin privileges
       // Load leads data
       const { data: leadsData, error: leadsError } = await supabase
         .from('leads')
@@ -128,9 +138,9 @@ const Admin = () => {
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
             </svg>
           </div>
-          <h2 className="text-xl font-semibold mb-2">Authentication Timeout</h2>
+          <h2 className="text-xl font-semibold mb-2">Authentication Error</h2>
           <p className="text-gray-600 mb-4">
-            The authentication request is taking longer than expected. This may be due to network issues or Supabase service limitations.
+            {error}
           </p>
           <div className="flex flex-col gap-3">
             <Button onClick={loadAdminData} className="w-full">

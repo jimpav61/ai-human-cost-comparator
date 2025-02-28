@@ -22,6 +22,23 @@ const Auth = () => {
     
     try {
       if (isSignup) {
+        // Check if email is in allowed_admins table before signup
+        const { data: allowedAdmin, error: allowedAdminError } = await supabase
+          .from('allowed_admins')
+          .select('email')
+          .eq('email', email)
+          .single();
+        
+        if (allowedAdminError || !allowedAdmin) {
+          toast({
+            title: "Access Denied",
+            description: "This email is not authorized to create an admin account.",
+            variant: "destructive",
+          });
+          setLoading(false);
+          return;
+        }
+        
         // Handle signup
         const { error: signUpError } = await supabase.auth.signUp({
           email,
@@ -35,23 +52,43 @@ const Auth = () => {
         
         toast({
           title: "Account Created",
-          description: "Your account has been created. Please log in with your credentials.",
+          description: "Your admin account has been created. Please log in with your credentials.",
         });
         
         setIsSignup(false);
       } else {
         // Handle login
-        const { error: signInError } = await supabase.auth.signInWithPassword({
+        const { data, error: signInError } = await supabase.auth.signInWithPassword({
           email,
           password,
         });
         
         if (signInError) throw signInError;
         
-        // Successfully logged in
+        // Check if user is admin
+        if (data.user) {
+          const { data: isAdmin, error: adminCheckError } = await supabase
+            .rpc('has_role', { role_to_check: 'admin' });
+            
+          if (adminCheckError || !isAdmin) {
+            console.error("Admin check failed or user is not admin:", { adminCheckError, isAdmin });
+            await supabase.auth.signOut();
+            
+            toast({
+              title: "Access Denied",
+              description: "Your account does not have admin privileges.",
+              variant: "destructive",
+            });
+            
+            setLoading(false);
+            return;
+          }
+        }
+        
+        // Successfully logged in as admin
         toast({
           title: "Login Successful",
-          description: "Welcome back!",
+          description: "Welcome to the admin dashboard!",
         });
         
         navigate('/admin');
