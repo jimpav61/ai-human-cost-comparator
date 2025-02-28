@@ -16,6 +16,7 @@ export default defineConfig(({ mode }) => ({
     host: "0.0.0.0", // Allow external access for preview mode
     port: 8080,
     allowedHosts: ["ai-human-cost-comparator.onrender.com"], // Allow Render host
+    "compass.chatsites.ai", // Your custom domain
   },
   build: {
     rollupOptions: {
