@@ -1,3 +1,4 @@
+
 import { defineConfig } from "vite";
 import react from "@vitejs/plugin-react-swc";
 import path from "path";
@@ -6,14 +7,14 @@ import { componentTagger } from "lovable-tagger";
 export default defineConfig(({ mode }) => ({
   server: {
     host: "0.0.0.0", // Allow external access
-    port: process.env.PORT || 8080,
+    port: 8080,
     fs: {
       allow: [".."],
     },
   },
   preview: {
     host: "0.0.0.0", // Allow external access for preview mode
-    port: process.env.PORT || 8080,
+    port: 8080,
     allowedHosts: ["ai-human-cost-comparator.onrender.com"], // Allow Render host
   },
   build: {
