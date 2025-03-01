@@ -122,15 +122,18 @@ export const generateProposal = (params: GenerateProposalParams) => {
   doc.text(splitPlanText, 20, yPosition);
   
   // Add pricing table for the detailed plan breakdown
+  const setupFee = params.results.aiCostMonthly?.setupFee || 0;
+  const annualPlanCost = params.results.annualPlan || (params.results.aiCostMonthly?.total * 10 || 0);
+  
   autoTable(doc, {
     startY: yPosition + splitPlanText.length * 7 + 5,
     head: [["Pricing Component", "Details", "Cost"]],
     body: [
-      ["Monthly Base Fee", params.tierName || "Custom Plan", formatCurrency(params.results.aiCostMonthly.total)],
-      ["One-time Setup Fee", "Non-refundable", formatCurrency(params.results.aiCostMonthly.setupFee)],
-      ["Annual Plan Option", "Includes 2 months FREE!", formatCurrency(params.results.annualPlan)],
-      ["Estimated Monthly Savings", "vs. current operations", formatCurrency(params.results.monthlySavings)],
-      ["Projected Annual Savings", "First year", formatCurrency(params.results.yearlySavings)]
+      ["Monthly Base Fee", params.tierName || "Custom Plan", formatCurrency(params.results.aiCostMonthly?.total || 0)],
+      ["One-time Setup Fee", "Non-refundable", formatCurrency(setupFee)],
+      ["Annual Plan Option", "Includes 2 months FREE!", formatCurrency(annualPlanCost)],
+      ["Estimated Monthly Savings", "vs. current operations", formatCurrency(params.results.monthlySavings || 0)],
+      ["Projected Annual Savings", "First year", formatCurrency(params.results.yearlySavings || 0)]
     ],
     theme: 'grid',
     styles: { fontSize: 10, cellPadding: 5 },
@@ -211,16 +214,22 @@ export const generateProposal = (params: GenerateProposalParams) => {
   yPosition += 8;
   doc.setFontSize(12);
   
+  // Calculate hourly rate safely
+  const monthlyHours = params.results.humanHours?.monthlyTotal || 160;
+  const hourlyCost = monthlyHours > 0 ? 
+    (params.results.humanCostMonthly || 0) / monthlyHours : 
+    0;
+  
   // Add human resource cost breakdown table
   autoTable(doc, {
     startY: yPosition,
     head: [["Resource Metric", "Details", "Value"]],
     body: [
-      ["Hourly Labor Rate", "Including benefits & overhead", formatCurrency(params.results.humanCostMonthly / params.results.humanHours.monthlyTotal)],
-      ["Monthly Hours", "Total across all staff", `${formatNumber(params.results.humanHours.monthlyTotal)} hours`],
-      ["Monthly Labor Cost", "Current operation", formatCurrency(params.results.humanCostMonthly)],
-      ["Annual Labor Cost", "Current operation", formatCurrency(params.results.humanCostMonthly * 12)],
-      ["Cost Reduction", "With AI implementation", `${Math.abs(params.results.savingsPercentage).toFixed(1)}%`]
+      ["Hourly Labor Rate", "Including benefits & overhead", formatCurrency(hourlyCost)],
+      ["Monthly Hours", "Total across all staff", `${formatNumber(monthlyHours)} hours`],
+      ["Monthly Labor Cost", "Current operation", formatCurrency(params.results.humanCostMonthly || 0)],
+      ["Annual Labor Cost", "Current operation", formatCurrency((params.results.humanCostMonthly || 0) * 12)],
+      ["Cost Reduction", "With AI implementation", `${Math.abs(params.results.savingsPercentage || 0).toFixed(1)}%`]
     ],
     theme: 'grid',
     styles: { fontSize: 10, cellPadding: 5 },
@@ -271,22 +280,24 @@ export const generateProposal = (params: GenerateProposalParams) => {
   doc.setFontSize(14);
   doc.text("Financial Impact & ROI Analysis", 20, yPosition);
 
-  // Create a professional summary of savings
-  let monthlySavings, yearlySavings, savingsPercent;
-  try {
-    monthlySavings = formatCurrency(params.results.monthlySavings);
-    yearlySavings = formatCurrency(params.results.yearlySavings);
-    savingsPercent = Math.abs(params.results.savingsPercentage).toFixed(1);
-  } catch (e) {
-    console.warn('Error formatting currency values:', e);
-    monthlySavings = "$3,500+";
-    yearlySavings = "$42,000+";
-    savingsPercent = "90+";
-  }
+  // Create a professional summary of savings - with safe fallbacks for all values
+  const monthlySavings = formatCurrency(params.results.monthlySavings || 3500);
+  const yearlySavings = formatCurrency(params.results.yearlySavings || 42000);
+  const savingsPercent = Math.abs(params.results.savingsPercentage || 90).toFixed(1);
 
   // Calculate ROI based on employee count if available
   const employeeMultiplier = params.employeeCount ? Math.min(params.employeeCount / 10, 5) : 1;
   const employeeBasedROI = params.employeeCount ? `${Math.max(1, Math.round(3 - employeeMultiplier * 0.5))} to ${Math.round(3 + employeeMultiplier)} days` : "1 to 3 days";
+
+  // Try to safely parse the yearly savings for 5-year projection
+  let fiveYearSavings;
+  try {
+    const yearlyValue = Number(yearlySavings.replace(/[^0-9.-]+/g, ''));
+    fiveYearSavings = isNaN(yearlyValue) ? formatCurrency(210000) : formatCurrency(yearlyValue * 5);
+  } catch (e) {
+    console.warn('Error calculating 5-year savings:', e);
+    fiveYearSavings = formatCurrency(210000);
+  }
 
   autoTable(doc, {
     startY: yPosition + 5,
@@ -297,7 +308,7 @@ export const generateProposal = (params: GenerateProposalParams) => {
       ["Efficiency Improvement", `${savingsPercent}%`],
       ["Implementation Timeline", "5 business days or less"],
       ["ROI Timeline", employeeBasedROI],
-      ["5-Year Projected Savings", formatCurrency(Number(yearlySavings.replace(/[^0-9.-]+/g, '')) * 5)]
+      ["5-Year Projected Savings", fiveYearSavings]
     ],
     styles: { fontSize: 11 },
     rowPageBreak: 'auto',
@@ -437,3 +448,4 @@ export const generateProposal = (params: GenerateProposalParams) => {
 
   return doc;
 };
+
