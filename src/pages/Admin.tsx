@@ -1,6 +1,6 @@
 
 import { useState, useEffect } from "react";
-import { Navigate } from "react-router-dom";
+import { Navigate, useNavigate } from "react-router-dom";
 import { LeadsTable } from "@/components/admin/LeadsTable";
 import { PricingManager } from "@/components/admin/PricingManager";
 import { supabase } from "@/integrations/supabase/client";
@@ -15,21 +15,98 @@ const Admin = () => {
   const [isAdmin, setIsAdmin] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
   const [leads, setLeads] = useState<Lead[]>([]);
+  const navigate = useNavigate();
 
   useEffect(() => {
     const checkAuth = async () => {
       try {
+        console.log("Admin page: Checking authentication");
         const { data, error } = await supabase.auth.getSession();
-        if (error) throw error;
+        if (error) {
+          console.error("Session error:", error);
+          throw error;
+        }
         
+        console.log("Admin page: Session data:", data.session);
         setSession(data.session);
         
-        if (data.session) {
+        if (!data.session) {
+          console.log("No active session, redirecting to login");
+          navigate("/auth");
+          return;
+        }
+        
+        // Check if the user has admin role
+        const { data: userData, error: userError } = await supabase
+          .rpc('has_role', { role_to_check: 'admin' });
+          
+        if (userError) {
+          console.error("Role check error:", userError);
+          throw userError;
+        }
+        
+        console.log("Admin role check:", userData);
+        setIsAdmin(userData || false);
+        
+        if (userData) {
+          // Fetch leads for admin
+          const { data: leadsData, error: leadsError } = await supabase
+            .from('leads')
+            .select('*')
+            .order('created_at', { ascending: false });
+            
+          if (leadsError) {
+            console.error("Leads fetch error:", leadsError);
+            throw leadsError;
+          }
+          
+          console.log("Fetched leads:", leadsData?.length || 0);
+          setLeads(leadsData || []);
+        } else {
+          console.log("User is not an admin, redirecting");
+          navigate("/auth");
+        }
+      } catch (error: any) {
+        console.error('Auth error:', error);
+        toast({
+          title: "Authentication Error",
+          description: error.message,
+          variant: "destructive",
+        });
+        navigate("/auth");
+      } finally {
+        setIsLoading(false);
+      }
+    };
+    
+    checkAuth();
+    
+    const { data: authListener } = supabase.auth.onAuthStateChange(
+      async (event, session) => {
+        console.log("Admin page: Auth state changed:", event);
+        setSession(session);
+        setIsLoading(true);
+        
+        if (!session) {
+          console.log("Session ended, redirecting to login");
+          setIsAdmin(false);
+          setLeads([]);
+          navigate("/auth");
+          setIsLoading(false);
+          return;
+        }
+        
+        try {
           // Check if the user has admin role
           const { data: userData, error: userError } = await supabase
             .rpc('has_role', { role_to_check: 'admin' });
             
-          if (userError) throw userError;
+          if (userError) {
+            console.error('Role check error:', userError);
+            setIsAdmin(false);
+            navigate("/auth");
+            return;
+          }
           
           setIsAdmin(userData || false);
           
@@ -40,68 +117,27 @@ const Admin = () => {
               .select('*')
               .order('created_at', { ascending: false });
               
-            if (leadsError) throw leadsError;
-            
-            setLeads(leadsData);
-          }
-        }
-      } catch (error: any) {
-        console.error('Auth error:', error);
-        toast({
-          title: "Authentication Error",
-          description: error.message,
-          variant: "destructive",
-        });
-      } finally {
-        setIsLoading(false);
-      }
-    };
-    
-    checkAuth();
-    
-    const { data: authListener } = supabase.auth.onAuthStateChange(
-      async (_event, session) => {
-        setSession(session);
-        setIsLoading(true);
-        
-        if (session) {
-          // Check if the user has admin role
-          const { data: userData, error: userError } = await supabase
-            .rpc('has_role', { role_to_check: 'admin' });
-            
-          if (userError) {
-            console.error('Role check error:', userError);
-            setIsAdmin(false);
-          } else {
-            setIsAdmin(userData || false);
-            
-            if (userData) {
-              // Fetch leads for admin
-              const { data: leadsData, error: leadsError } = await supabase
-                .from('leads')
-                .select('*')
-                .order('created_at', { ascending: false });
-                
-              if (leadsError) {
-                console.error('Leads fetch error:', leadsError);
-              } else {
-                setLeads(leadsData || []);
-              }
+            if (leadsError) {
+              console.error('Leads fetch error:', leadsError);
+            } else {
+              setLeads(leadsData || []);
             }
+          } else {
+            navigate("/auth");
           }
-        } else {
-          setIsAdmin(false);
-          setLeads([]);
+        } catch (error) {
+          console.error("Error during auth state change:", error);
+          navigate("/auth");
+        } finally {
+          setIsLoading(false);
         }
-        
-        setIsLoading(false);
       }
     );
     
     return () => {
       authListener.subscription.unsubscribe();
     };
-  }, []);
+  }, [navigate]);
 
   if (isLoading) {
     return (

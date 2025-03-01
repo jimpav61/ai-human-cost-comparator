@@ -15,46 +15,74 @@ import { useNavigate } from "react-router-dom";
 
 export const AdminHeader = () => {
   const [newAdminEmail, setNewAdminEmail] = useState('');
+  const [isAddingAdmin, setIsAddingAdmin] = useState(false);
   const navigate = useNavigate();
 
   const handleLogout = async () => {
     try {
-      await supabase.auth.signOut();
+      console.log("Logging out user");
+      const { error } = await supabase.auth.signOut();
+      
+      if (error) {
+        console.error("Logout error:", error);
+        throw error;
+      }
+      
+      console.log("Logout successful");
       navigate('/');
       toast({
         title: "Success",
         description: "Logged out successfully",
       });
-    } catch (error) {
+    } catch (error: any) {
+      console.error("Logout error:", error);
       toast({
         title: "Error",
-        description: "Failed to log out",
+        description: "Failed to log out: " + (error.message || "Unknown error"),
         variant: "destructive",
       });
     }
   };
 
   const handleAddAdmin = async () => {
+    if (!newAdminEmail.trim()) {
+      toast({
+        title: "Error",
+        description: "Please enter a valid email address",
+        variant: "destructive",
+      });
+      return;
+    }
+    
+    setIsAddingAdmin(true);
+    
     try {
+      console.log("Adding new admin:", newAdminEmail);
       const { error } = await supabase
         .from('allowed_admins')
         .insert([{ email: newAdminEmail }]);
 
-      if (error) throw error;
+      if (error) {
+        console.error("Error adding admin:", error);
+        throw error;
+      }
 
+      console.log("Admin added successfully");
       toast({
         title: "Success",
         description: "New admin added successfully",
       });
 
       setNewAdminEmail('');
-    } catch (error) {
+    } catch (error: any) {
       console.error('Error adding admin:', error);
       toast({
         title: "Error",
-        description: "Failed to add new admin",
+        description: "Failed to add new admin: " + (error.message || "Unknown error"),
         variant: "destructive",
       });
+    } finally {
+      setIsAddingAdmin(false);
     }
   };
 
@@ -79,7 +107,19 @@ export const AdminHeader = () => {
                   onChange={(e) => setNewAdminEmail(e.target.value)}
                 />
               </div>
-              <Button onClick={handleAddAdmin}>Add Admin</Button>
+              <Button 
+                onClick={handleAddAdmin}
+                disabled={isAddingAdmin}
+              >
+                {isAddingAdmin ? (
+                  <>
+                    <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
+                    Adding Admin...
+                  </>
+                ) : (
+                  "Add Admin"
+                )}
+              </Button>
             </div>
           </DialogContent>
         </Dialog>

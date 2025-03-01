@@ -22,6 +22,7 @@ const Auth = () => {
   useEffect(() => {
     const checkUserSession = async () => {
       try {
+        console.log("Checking user session");
         const { data, error } = await supabase.auth.getSession();
         
         if (error) {
@@ -30,20 +31,20 @@ const Auth = () => {
           return;
         }
         
+        console.log("Session data:", data.session);
         setSession(data.session);
         
         if (data.session) {
+          // Check for admin role
           const { data: userData, error: userError } = await supabase
-            .from('user_roles')
-            .select('role')
-            .eq('user_id', data.session.user.id)
-            .single();
+            .rpc('has_role', { role_to_check: 'admin' });
             
           if (userError) {
             console.error("Error checking user role:", userError);
             setIsAdmin(false);
-          } else if (userData && userData.role === 'admin') {
-            setIsAdmin(true);
+          } else {
+            console.log("User admin status:", userData);
+            setIsAdmin(userData || false);
           }
         }
       } catch (err) {
@@ -56,21 +57,25 @@ const Auth = () => {
     checkUserSession();
     
     const { data: authListener } = supabase.auth.onAuthStateChange(async (event, session) => {
-      console.log("Auth state changed:", event);
+      console.log("Auth state changed:", event, "Session:", session);
       setSession(session);
       
       if (session) {
-        const { data: userData, error: userError } = await supabase
-          .from('user_roles')
-          .select('role')
-          .eq('user_id', session.user.id)
-          .single();
-          
-        if (userError) {
-          console.error("Error checking user role:", userError);
+        try {
+          // Check for admin role
+          const { data: userData, error: userError } = await supabase
+            .rpc('has_role', { role_to_check: 'admin' });
+            
+          if (userError) {
+            console.error("Error checking user role:", userError);
+            setIsAdmin(false);
+          } else {
+            console.log("User admin status:", userData);
+            setIsAdmin(userData || false);
+          }
+        } catch (err) {
+          console.error("Error checking admin role:", err);
           setIsAdmin(false);
-        } else if (userData && userData.role === 'admin') {
-          setIsAdmin(true);
         }
       } else {
         setIsAdmin(false);
@@ -88,7 +93,8 @@ const Auth = () => {
     
     try {
       if (isSignup) {
-        // When signing up, first check if the email is in the allowed_admins table
+        // First check if email is in allowed_admins
+        console.log("Checking if admin is allowed:", email);
         const { data: isAllowedData, error: isAllowedError } = await supabase
           .rpc('is_allowed_admin', { email });
         
@@ -96,6 +102,8 @@ const Auth = () => {
           console.error("Error checking if admin is allowed:", isAllowedError);
           throw new Error("Error verifying admin status");
         }
+        
+        console.log("Is allowed admin:", isAllowedData);
         
         // Proceed with registration
         const { data, error } = await supabase.auth.signUp({
@@ -107,6 +115,8 @@ const Auth = () => {
         });
         
         if (error) throw error;
+        
+        console.log("Signup successful:", data);
         
         // Try to sign in immediately after signup
         const { error: signInError } = await supabase.auth.signInWithPassword({
@@ -130,6 +140,7 @@ const Auth = () => {
         setIsSignup(false);
       } else {
         // Regular login flow
+        console.log("Attempting login with:", email);
         const { data, error } = await supabase.auth.signInWithPassword({
           email,
           password,
@@ -137,7 +148,7 @@ const Auth = () => {
         
         if (error) throw error;
         
-        console.log("Login successful", data);
+        console.log("Login successful:", data);
         toast({
           title: "Login Successful",
           description: "You have been logged in successfully.",

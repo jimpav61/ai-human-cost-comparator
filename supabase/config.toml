@@ -3,3 +3,11 @@ project_id = "ujyhmchmjzlmsimtrtor"
 
 [functions.generate-proposal]
 verify_jwt = true
+
+[auth.email]
+enable_signup = true
+enable_confirmations = false
+
+[auth]
+debug = true
+
