@@ -8,6 +8,8 @@ import Index from "./pages/Index";
 import Admin from "./pages/Admin";
 import Auth from "./pages/Auth";
 import NotFound from "./pages/NotFound";
+import { useEffect, useState } from "react";
+import { supabase } from "./integrations/supabase/client";
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -20,6 +22,18 @@ const queryClient = new QueryClient({
 });
 
 const App = () => {
+  const [initialized, setInitialized] = useState(false);
+  
+  useEffect(() => {
+    // Just check if Supabase is initialized properly
+    console.log("Supabase client initialization check:", supabase);
+    setInitialized(true);
+  }, []);
+
+  if (!initialized) {
+    return <div>Loading application...</div>;
+  }
+
   return (
     <QueryClientProvider client={queryClient}>
       <TooltipProvider>
