@@ -16,7 +16,7 @@ export const supabase = createClient<Database>(
       detectSessionInUrl: true,
       storage: typeof window !== 'undefined' ? localStorage : undefined,
       flowType: 'pkce',
-      debug: true // Keep debug mode on to help troubleshoot
+      debug: true
     },
     global: {
       headers: {
