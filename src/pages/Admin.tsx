@@ -1,4 +1,5 @@
-import { useState, useEffect } from "react";
+
+import { useState, useEffect, useCallback } from "react";
 import { Navigate, useNavigate } from "react-router-dom";
 import { LeadsTable } from "@/components/admin/LeadsTable";
 import { PricingManager } from "@/components/admin/PricingManager";
@@ -8,76 +9,92 @@ import { AdminHeader } from "@/components/admin/AdminHeader";
 import { CsvUploader } from "@/components/admin/CsvUploader";
 import { toast } from "@/components/ui/use-toast";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Button } from "@/components/ui/button";
 
 const Admin = () => {
   const [session, setSession] = useState<any>(null);
   const [isAdmin, setIsAdmin] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
+  const [authError, setAuthError] = useState<string | null>(null);
   const [leads, setLeads] = useState<Lead[]>([]);
+  const [loadingTimeout, setLoadingTimeout] = useState<boolean>(false);
   const navigate = useNavigate();
 
-  useEffect(() => {
-    const checkAuth = async () => {
-      try {
-        console.log("Admin page: Checking authentication");
-        const { data, error } = await supabase.auth.getSession();
-        if (error) {
-          console.error("Session error:", error);
-          throw error;
-        }
-        
-        console.log("Admin page: Session data:", data.session);
-        setSession(data.session);
-        
-        if (!data.session) {
-          console.log("No active session, redirecting to login");
-          navigate("/auth");
-          return;
-        }
-        
-        // Check if the user has admin role
-        const { data: userData, error: userError } = await supabase
-          .rpc('has_role', { role_to_check: 'admin' });
-          
-        if (userError) {
-          console.error("Role check error:", userError);
-          throw userError;
-        }
-        
-        console.log("Admin role check:", userData);
-        setIsAdmin(userData === true);
-        
-        if (userData) {
-          // Fetch leads for admin
-          const { data: leadsData, error: leadsError } = await supabase
-            .from('leads')
-            .select('*')
-            .order('created_at', { ascending: false });
-            
-          if (leadsError) {
-            console.error("Leads fetch error:", leadsError);
-            throw leadsError;
-          }
-          
-          console.log("Fetched leads:", leadsData?.length || 0);
-          setLeads(leadsData as Lead[] || []);
-        } else {
-          console.log("User is not an admin, redirecting");
-          navigate("/auth");
-        }
-      } catch (error: any) {
-        console.error('Auth error:', error);
-        toast({
-          title: "Authentication Error",
-          description: error.message,
-          variant: "destructive",
-        });
-        navigate("/auth");
-      } finally {
-        setIsLoading(false);
-      }
-    };
+  const checkAuth = useCallback(async () => {
+    let timeoutId: number;
     
+    try {
+      // Set a timeout to notify the user if authentication check takes too long
+      timeoutId = window.setTimeout(() => {
+        setLoadingTimeout(true);
+      }, 5000);
+      
+      console.log("Admin page: Checking authentication");
+      const { data, error } = await supabase.auth.getSession();
+      
+      clearTimeout(timeoutId);
+      
+      if (error) {
+        console.error("Session error:", error);
+        setAuthError(error.message);
+        throw error;
+      }
+      
+      console.log("Admin page: Session data:", data.session);
+      setSession(data.session);
+      
+      if (!data.session) {
+        console.log("No active session, redirecting to login");
+        navigate("/auth");
+        return;
+      }
+      
+      // Check if the user has admin role
+      const { data: userData, error: userError } = await supabase
+        .rpc('has_role', { role_to_check: 'admin' });
+        
+      if (userError) {
+        console.error("Role check error:", userError);
+        setAuthError(userError.message);
+        throw userError;
+      }
+      
+      console.log("Admin role check:", userData);
+      setIsAdmin(userData === true);
+      
+      if (userData) {
+        // Fetch leads for admin
+        const { data: leadsData, error: leadsError } = await supabase
+          .from('leads')
+          .select('*')
+          .order('created_at', { ascending: false });
+          
+        if (leadsError) {
+          console.error("Leads fetch error:", leadsError);
+          throw leadsError;
+        }
+        
+        console.log("Fetched leads:", leadsData?.length || 0);
+        setLeads(leadsData as Lead[] || []);
+      } else {
+        console.log("User is not an admin, redirecting");
+        navigate("/auth");
+      }
+    } catch (error: any) {
+      console.error('Auth error:', error);
+      setAuthError(error.message || "Authentication failed");
+      toast({
+        title: "Authentication Error",
+        description: error.message,
+        variant: "destructive",
+      });
+    } finally {
+      clearTimeout(timeoutId);
+      setIsLoading(false);
+    }
+  }, [navigate]);
+
+  useEffect(() => {
     checkAuth();
     
     const { data: authListener } = supabase.auth.onAuthStateChange(
@@ -102,6 +119,7 @@ const Admin = () => {
             
           if (userError) {
             console.error('Role check error:', userError);
+            setAuthError(userError.message);
             setIsAdmin(false);
             navigate("/auth");
             return;
@@ -118,14 +136,16 @@ const Admin = () => {
               
             if (leadsError) {
               console.error('Leads fetch error:', leadsError);
+              setAuthError(leadsError.message);
             } else {
               setLeads(leadsData as Lead[] || []);
             }
           } else {
             navigate("/auth");
           }
-        } catch (error) {
+        } catch (error: any) {
           console.error("Error during auth state change:", error);
+          setAuthError(error.message || "Authentication error");
           navigate("/auth");
         } finally {
           setIsLoading(false);
@@ -136,8 +156,38 @@ const Admin = () => {
     return () => {
       authListener.subscription.unsubscribe();
     };
-  }, [navigate]);
+  }, [navigate, checkAuth]);
 
+  const handleRetry = () => {
+    setIsLoading(true);
+    setAuthError(null);
+    setLoadingTimeout(false);
+    checkAuth();
+  };
+
+  const handleGoBack = () => {
+    navigate('/');
+  };
+
+  // Authentication timeout screen
+  if (loadingTimeout) {
+    return (
+      <div className="min-h-screen flex flex-col items-center justify-center bg-gray-50 p-4">
+        <div className="bg-white rounded-lg shadow-md p-8 max-w-md w-full text-center">
+          <h1 className="text-2xl font-bold mb-4">Authentication Taking Too Long</h1>
+          <p className="text-gray-600 mb-6">
+            We're having trouble verifying your admin credentials. This could be due to network issues or server response delays.
+          </p>
+          <div className="flex flex-col space-y-3">
+            <Button onClick={handleRetry}>Try Again</Button>
+            <Button variant="outline" onClick={handleGoBack}>Back to Home</Button>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  // Loading state
   if (isLoading) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-gray-50">
@@ -149,17 +199,38 @@ const Admin = () => {
     );
   }
 
+  // Authentication error screen
+  if (authError) {
+    return (
+      <div className="min-h-screen flex flex-col items-center justify-center bg-gray-50 p-4">
+        <div className="bg-white rounded-lg shadow-md p-8 max-w-md w-full text-center">
+          <h1 className="text-2xl font-bold mb-4">Authentication Error</h1>
+          <p className="text-gray-600 mb-6">
+            {authError}
+          </p>
+          <div className="flex flex-col space-y-3">
+            <Button onClick={handleRetry}>Try Again</Button>
+            <Button variant="outline" onClick={handleGoBack}>Back to Home</Button>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  // No session redirect
   if (!session) {
     return <Navigate to="/auth" replace />;
   }
 
+  // Not admin redirect
   if (!isAdmin) {
     return <Navigate to="/auth" replace />;
   }
 
+  // Main admin dashboard
   return (
     <div className="min-h-screen bg-gray-50">
-      <AdminHeader />
+      <AdminHeader isLoading={isLoading} />
       
       <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         <Tabs defaultValue="leads" className="w-full">

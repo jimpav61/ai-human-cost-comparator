@@ -1,3 +1,4 @@
+
 import { Button } from "@/components/ui/button";
 import {
   Dialog,
@@ -12,7 +13,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { toast } from "@/components/ui/use-toast";
 import { useNavigate } from "react-router-dom";
 
-export const AdminHeader = () => {
+export const AdminHeader = ({ isLoading = false }) => {
   const [newAdminEmail, setNewAdminEmail] = useState('');
   const [isAddingAdmin, setIsAddingAdmin] = useState(false);
   const navigate = useNavigate();
@@ -41,6 +42,10 @@ export const AdminHeader = () => {
         variant: "destructive",
       });
     }
+  };
+
+  const handleGoBack = () => {
+    navigate('/');
   };
 
   const handleAddAdmin = async () => {
@@ -92,7 +97,7 @@ export const AdminHeader = () => {
       <div className="flex items-center gap-4">
         <Dialog>
           <DialogTrigger asChild>
-            <Button variant="outline">Add Admin User</Button>
+            <Button variant="outline" disabled={isLoading}>Add Admin User</Button>
           </DialogTrigger>
           <DialogContent>
             <DialogHeader>
@@ -124,8 +129,17 @@ export const AdminHeader = () => {
         </Dialog>
         
         <Button 
+          variant="outline"
+          onClick={handleGoBack}
+          disabled={isLoading}
+        >
+          Go Back
+        </Button>
+        
+        <Button 
           variant="destructive"
           onClick={handleLogout}
+          disabled={isLoading}
         >
           Logout
         </Button>
