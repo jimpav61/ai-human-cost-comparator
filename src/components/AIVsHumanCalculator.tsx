@@ -36,7 +36,7 @@ export const AIVsHumanCalculator: React.FC<AIVsHumanCalculatorProps> = ({ leadDa
     setCalculatorInputs(prev => ({ ...prev, [field]: value }));
   };
   
-  // Generate report and save to database
+  // Generate report and save to database - removing proposal references
   const handleGenerateReport = async () => {
     try {
       // Create a single record object and convert it to proper JSON format
