@@ -20,10 +20,16 @@ const Auth = () => {
   const [authError, setAuthError] = useState<string | null>(null);
   const navigate = useNavigate();
 
-  console.log("Auth component rendering");
+  console.log("Auth component rendering with state:", { isCheckingAuth, session, isAdmin, authError });
 
-  // Enhanced session check
+  // Enhanced session check with timeout handling
   useEffect(() => {
+    const authTimeout = setTimeout(() => {
+      console.log("Auth check timed out");
+      setIsCheckingAuth(false);
+      setAuthError("Authentication check timed out. Please try again.");
+    }, 10000); // 10 second timeout
+    
     const checkUserSession = async () => {
       try {
         console.log("Checking user session");
@@ -68,6 +74,7 @@ const Auth = () => {
         console.error("Session check error:", err);
         setAuthError(`Session check exception: ${err.message}`);
       } finally {
+        clearTimeout(authTimeout);
         setIsCheckingAuth(false);
       }
     };
@@ -109,6 +116,7 @@ const Auth = () => {
     });
     
     return () => {
+      clearTimeout(authTimeout);
       authListener.subscription.unsubscribe();
     };
   }, [navigate]);
@@ -260,7 +268,7 @@ const Auth = () => {
             <Button 
               onClick={async () => {
                 await supabase.auth.signOut();
-                navigate("/");
+                window.location.href = "/";
               }}
             >
               Back to Home
@@ -352,7 +360,7 @@ const Auth = () => {
           <Button 
             variant="outline" 
             className="w-full"
-            onClick={() => navigate("/")}
+            onClick={() => window.location.href = "/"}
           >
             Back to Home
           </Button>

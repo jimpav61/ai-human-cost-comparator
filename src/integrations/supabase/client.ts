@@ -17,6 +17,16 @@ export const supabase = createClient<Database>(
       storage: typeof window !== 'undefined' ? localStorage : undefined,
       flowType: 'pkce',
       debug: true // Keep debug mode on to help troubleshoot
-    }
+    },
+    global: {
+      headers: {
+        'x-client-info': `@supabase/js@${process.env.npm_package_dependencies_supabase_js || 'unknown'}`
+      },
+    },
+    realtime: {
+      params: {
+        eventsPerSecond: 10,
+      },
+    },
   }
 );

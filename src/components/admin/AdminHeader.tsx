@@ -29,11 +29,12 @@ export const AdminHeader = ({ isLoading = false }) => {
       }
       
       console.log("Logout successful");
-      navigate('/');
       toast({
         title: "Success",
         description: "Logged out successfully",
       });
+      // Force navigation after logout
+      window.location.href = '/';
     } catch (error: any) {
       console.error("Logout error:", error);
       toast({
@@ -45,7 +46,8 @@ export const AdminHeader = ({ isLoading = false }) => {
   };
 
   const handleGoBack = () => {
-    navigate('/');
+    // Use direct location change to ensure it works
+    window.location.href = '/';
   };
 
   const handleAddAdmin = async () => {

@@ -18,6 +18,7 @@ const Admin = () => {
   const [authError, setAuthError] = useState<string | null>(null);
   const [leads, setLeads] = useState<Lead[]>([]);
   const [loadingTimeout, setLoadingTimeout] = useState<boolean>(false);
+  const [retryCount, setRetryCount] = useState(0);
   const navigate = useNavigate();
 
   const checkAuth = useCallback(async () => {
@@ -26,6 +27,7 @@ const Admin = () => {
     try {
       // Set a timeout to notify the user if authentication check takes too long
       timeoutId = window.setTimeout(() => {
+        console.log("Auth check taking too long");
         setLoadingTimeout(true);
       }, 5000);
       
@@ -45,7 +47,7 @@ const Admin = () => {
       
       if (!data.session) {
         console.log("No active session, redirecting to login");
-        navigate("/auth");
+        window.location.href = "/auth";
         return;
       }
       
@@ -78,7 +80,7 @@ const Admin = () => {
         setLeads(leadsData as Lead[] || []);
       } else {
         console.log("User is not an admin, redirecting");
-        navigate("/auth");
+        window.location.href = "/auth";
       }
     } catch (error: any) {
       console.error('Auth error:', error);
@@ -107,7 +109,7 @@ const Admin = () => {
           console.log("Session ended, redirecting to login");
           setIsAdmin(false);
           setLeads([]);
-          navigate("/auth");
+          window.location.href = "/auth";
           setIsLoading(false);
           return;
         }
@@ -121,7 +123,7 @@ const Admin = () => {
             console.error('Role check error:', userError);
             setAuthError(userError.message);
             setIsAdmin(false);
-            navigate("/auth");
+            window.location.href = "/auth";
             return;
           }
           
@@ -141,12 +143,12 @@ const Admin = () => {
               setLeads(leadsData as Lead[] || []);
             }
           } else {
-            navigate("/auth");
+            window.location.href = "/auth";
           }
         } catch (error: any) {
           console.error("Error during auth state change:", error);
           setAuthError(error.message || "Authentication error");
-          navigate("/auth");
+          window.location.href = "/auth";
         } finally {
           setIsLoading(false);
         }
@@ -162,11 +164,12 @@ const Admin = () => {
     setIsLoading(true);
     setAuthError(null);
     setLoadingTimeout(false);
+    setRetryCount(retryCount + 1);
     checkAuth();
   };
 
   const handleGoBack = () => {
-    navigate('/');
+    window.location.href = '/';
   };
 
   // Authentication timeout screen
@@ -194,6 +197,9 @@ const Admin = () => {
         <div className="text-center">
           <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-brand-500 mx-auto mb-4"></div>
           <p className="text-gray-600">Loading admin dashboard...</p>
+          {retryCount > 0 && (
+            <p className="text-gray-500 mt-2">Attempt {retryCount + 1}...</p>
+          )}
         </div>
       </div>
     );
