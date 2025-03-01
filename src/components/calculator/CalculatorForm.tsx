@@ -55,7 +55,7 @@ export const CalculatorForm: React.FC<CalculatorFormProps> = ({ inputs, onInputC
       toast({
         title: "Conversational Voice Not Available",
         description: "Conversational Voice AI requires the Premium Plan. Switching to basic voice capabilities.",
-        variant: "warning",
+        variant: "warning", // Now using our new warning variant
       });
       onInputChange('aiType', 'voice');
     }
