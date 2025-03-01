@@ -86,28 +86,31 @@ export const useCalculator = (inputs: CalculatorInputs): CalculationResults => {
     const hourlyRateWithBenefits = baseHourlyRate * 1.3;
     const monthlyHumanCost = hourlyRateWithBenefits * monthlyTotalHours;
 
+    // Determine the appropriate tier based on needs
+    const effectiveTier = inputs.aiTier;
+    
     // Calculate AI costs monthly based on the selected tier
     let monthlyVoiceCost = 0;
     let monthlyChatbotCost = 0;
-    let setupFee = aiRates.chatbot[inputs.aiTier].setupFee || 0;
-    let annualPlan = aiRates.chatbot[inputs.aiTier].annualPrice || 0;
+    let setupFee = aiRates.chatbot[effectiveTier].setupFee || 0;
+    let annualPlan = aiRates.chatbot[effectiveTier].annualPrice || 0;
     
     // Calculate voice costs only if voice is enabled
     if (inputs.aiType === 'voice' || inputs.aiType === 'both') {
       const totalMinutesPerMonth = inputs.callVolume * inputs.avgCallDuration;
-      const includedMinutes = aiRates.chatbot[inputs.aiTier].includedVoiceMinutes || 0;
+      const includedMinutes = aiRates.chatbot[effectiveTier].includedVoiceMinutes || 0;
       const chargeableMinutes = Math.max(0, totalMinutesPerMonth - includedMinutes);
       
       // Apply premium conversational voice factor if premium tier
-      const voiceRate = aiRates.voice[inputs.aiTier];
-      const conversationalFactor = inputs.aiTier === 'premium' ? 1.15 : 1.0; // 15% premium for conversational capabilities
+      const voiceRate = aiRates.voice[effectiveTier];
+      const conversationalFactor = effectiveTier === 'premium' ? 1.15 : 1.0; // 15% premium for conversational capabilities
       
       monthlyVoiceCost = chargeableMinutes * voiceRate * conversationalFactor;
     }
     
     // Calculate chatbot costs only if chatbot is enabled
     if (inputs.aiType === 'chatbot' || inputs.aiType === 'both') {
-      const chatbotRates = aiRates.chatbot[inputs.aiTier];
+      const chatbotRates = aiRates.chatbot[effectiveTier];
       
       // Start with base cost
       monthlyChatbotCost = chatbotRates.base;

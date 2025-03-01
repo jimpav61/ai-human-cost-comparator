@@ -18,11 +18,18 @@ export const TierComparison: React.FC<TierComparisonProps> = ({
   const isVoiceEnabled = currentAIType === 'voice' || currentAIType === 'both';
   const isChatEnabled = currentAIType === 'chatbot' || currentAIType === 'both';
 
+  // Use this to determine if a tier is compatible with the current AI type
+  const getTierCompatibility = (tier: string): {isCompatible: boolean; reason?: string} => {
+    if (tier === 'starter' && isVoiceEnabled) {
+      return { isCompatible: false, reason: 'Starter plan does not support voice capabilities' };
+    }
+    return { isCompatible: true };
+  };
+
   return (
     <div className="grid grid-cols-3 gap-4">
       {['starter', 'growth', 'premium'].map((tier) => {
-        // Determine if this tier is compatible with the current AI type selection
-        const isCompatible = !(tier === 'starter' && isVoiceEnabled);
+        const { isCompatible, reason } = getTierCompatibility(tier);
         
         return (
           <div 
@@ -129,7 +136,7 @@ export const TierComparison: React.FC<TierComparisonProps> = ({
             
             {!isCompatible && (
               <div className="mt-3 bg-red-50 p-2 rounded text-xs text-red-500 border border-red-100">
-                Not compatible with Voice AI
+                {reason || "Not compatible with current selection"}
               </div>
             )}
           </div>

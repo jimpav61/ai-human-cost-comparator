@@ -18,7 +18,12 @@ export const calculatePricingDetails = (inputs: CalculatorInputs): PricingDetail
     const conversationalFactor = inputs.aiTier === 'premium' ? 1.15 : 1.0;
     const usageCost = chargeableMinutes * minuteRate * conversationalFactor;
     
-    const voiceType = inputs.aiTier === 'premium' ? 'Conversational Voice AI' : 'Basic Voice AI';
+    // Determine voice type based on tier
+    const voiceType = inputs.aiTier === 'premium' 
+      ? 'Conversational Voice AI' 
+      : inputs.aiTier === 'growth' 
+        ? 'Basic Voice AI' 
+        : 'Voice AI';
     
     pricingDetails.push({
       title: voiceType,

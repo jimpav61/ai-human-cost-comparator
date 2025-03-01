@@ -43,7 +43,8 @@ const AIFeatures: React.FC = () => {
           "Pre-recorded voice responses",
           "Simple call routing",
           "Basic information gathering",
-          "Limited to predefined scripts"
+          "Limited to predefined scripts",
+          "Ideal for simple, structured interactions"
         ]}
       />
       <AIFeatureCard
@@ -60,7 +61,9 @@ const AIFeatures: React.FC = () => {
           "Advanced call understanding",
           "Complex problem solving",
           "Natural dialogue flow",
-          "Multi-turn conversations"
+          "Multi-turn conversations",
+          "Customer sentiment analysis",
+          "15% premium for advanced capabilities"
         ]}
       />
     </div>
