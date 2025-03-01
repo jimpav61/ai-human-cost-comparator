@@ -8,20 +8,7 @@ const SUPABASE_PUBLISHABLE_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiO
 
 export const supabase = createClient<Database>(
   SUPABASE_URL, 
-  SUPABASE_PUBLISHABLE_KEY,
-  {
-    auth: {
-      autoRefreshToken: true,
-      persistSession: true,
-      detectSessionInUrl: false,
-      storage: typeof window !== 'undefined' ? localStorage : undefined,
-    },
-    global: {
-      headers: {
-        'x-client-info': '@supabase/js@unknown'
-      },
-    },
-  }
+  SUPABASE_PUBLISHABLE_KEY
 );
 
 // Add a helper function to check auth status without session detection issues
