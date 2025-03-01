@@ -30,3 +30,15 @@ export const supabase = createClient<Database>(
     },
   }
 );
+
+// Add a helper function to check auth status without session detection issues
+export const checkAuthStatus = async () => {
+  try {
+    const { data, error } = await supabase.auth.getSession();
+    console.log("Auth status check:", data, error);
+    return { data, error };
+  } catch (e) {
+    console.error("Auth status check failed:", e);
+    return { data: null, error: e };
+  }
+};

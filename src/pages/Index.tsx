@@ -23,8 +23,25 @@ const Index = () => {
   };
 
   const handleAdminClick = () => {
-    // Navigate to admin page
-    window.location.href = '/admin';
+    // Improved admin navigation with fallback
+    try {
+      // First try the programmatic navigation
+      window.location.href = '/admin';
+    } catch (e) {
+      console.error("Navigation error:", e);
+      
+      // If that fails, try a different approach
+      const a = document.createElement('a');
+      a.href = '/admin';
+      a.target = '_self'; // Ensure it opens in the same tab
+      document.body.appendChild(a);
+      a.click();
+      
+      // Cleanup
+      setTimeout(() => {
+        document.body.removeChild(a);
+      }, 100);
+    }
   };
 
   return (
