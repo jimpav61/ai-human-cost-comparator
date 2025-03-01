@@ -1,13 +1,15 @@
 
 import { useState, useEffect } from "react";
 import { Navigate, useNavigate } from "react-router-dom";
-import { supabase } from "@/integrations/supabase/client";
+import { supabase, checkAuthStatus } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { Label } from "@/components/ui/label";
 import { toast } from "@/hooks/use-toast";
-import { Mail, Lock, Info } from "lucide-react";
+import { Mail, Lock, Info, ArrowLeft } from "lucide-react";
+
+const MAX_AUTH_CHECK_TIME = 15000; // 15 seconds timeout
 
 const Auth = () => {
   const [email, setEmail] = useState("");
@@ -18,34 +20,61 @@ const Auth = () => {
   const [isAdmin, setIsAdmin] = useState(false);
   const [isCheckingAuth, setIsCheckingAuth] = useState(true);
   const [authError, setAuthError] = useState<string | null>(null);
+  const [timedOut, setTimedOut] = useState(false);
   const navigate = useNavigate();
 
-  console.log("Auth component rendering with state:", { isCheckingAuth, session, isAdmin, authError });
+  console.log("Auth component rendering with state:", { 
+    isCheckingAuth, 
+    session, 
+    isAdmin, 
+    authError,
+    timedOut,
+    now: new Date().toISOString()
+  });
 
-  // Enhanced session check with timeout handling
+  // Enhanced session check with improved timeout handling
   useEffect(() => {
+    let isMounted = true;
+    let attemptCount = 0;
+    const maxAttempts = 3;
+    
     const authTimeout = setTimeout(() => {
-      console.log("Auth check timed out");
-      setIsCheckingAuth(false);
-      setAuthError("Authentication check timed out. Please try again.");
-    }, 10000); // 10 second timeout
+      if (isMounted) {
+        console.log("Auth check timed out after", MAX_AUTH_CHECK_TIME, "ms");
+        setTimedOut(true);
+        setIsCheckingAuth(false);
+        setAuthError("Authentication check timed out. Please try again or go back to home page.");
+      }
+    }, MAX_AUTH_CHECK_TIME);
     
     const checkUserSession = async () => {
+      if (!isMounted) return;
+      
+      attemptCount++;
+      console.log(`Checking user session (attempt ${attemptCount}/${maxAttempts})`);
+      
       try {
-        console.log("Checking user session");
-        const { data, error } = await supabase.auth.getSession();
+        // Use our improved checkAuthStatus helper
+        const { data, error } = await checkAuthStatus();
         
         if (error) {
           console.error("Error checking session:", error);
           setAuthError(`Session check error: ${error.message}`);
+          
+          if (attemptCount < maxAttempts) {
+            console.log(`Retrying in 1.5 seconds... (${attemptCount}/${maxAttempts})`);
+            setTimeout(checkUserSession, 1500);
+            return;
+          }
+          
           setIsCheckingAuth(false);
           return;
         }
         
-        console.log("Session data:", data.session);
-        setSession(data.session);
+        console.log("Session data:", data);
         
         if (data.session) {
+          setSession(data.session);
           try {
             // Check for admin role
             const { data: userData, error: userError } = await supabase
@@ -69,13 +98,23 @@ const Auth = () => {
             setAuthError(`Role check exception: ${err.message}`);
             setIsAdmin(false);
           }
+        } else {
+          console.log("No active session found");
         }
       } catch (err: any) {
         console.error("Session check error:", err);
         setAuthError(`Session check exception: ${err.message}`);
+        
+        if (attemptCount < maxAttempts) {
+          console.log(`Retrying in 1.5 seconds... (${attemptCount}/${maxAttempts})`);
+          setTimeout(checkUserSession, 1500);
+          return;
+        }
       } finally {
-        clearTimeout(authTimeout);
-        setIsCheckingAuth(false);
+        if (isMounted && attemptCount >= maxAttempts) {
+          clearTimeout(authTimeout);
+          setIsCheckingAuth(false);
+        }
       }
     };
     
@@ -84,6 +123,8 @@ const Auth = () => {
     // Enhanced auth state listener
     const { data: authListener } = supabase.auth.onAuthStateChange(async (event, session) => {
       console.log("Auth state changed:", event, "Session:", session);
+      if (!isMounted) return;
+      
       setSession(session);
       
       if (session) {
@@ -100,9 +141,9 @@ const Auth = () => {
             console.log("User admin status on auth change:", userData);
             setIsAdmin(userData || false);
             
-            // If admin, navigate to admin page
+            // If admin, use direct window navigation instead of React Router
             if (userData) {
-              navigate("/admin");
+              window.location.href = "/admin";
             }
           }
         } catch (err: any) {
@@ -116,6 +157,7 @@ const Auth = () => {
     });
     
     return () => {
+      isMounted = false;
       clearTimeout(authTimeout);
       authListener.subscription.unsubscribe();
     };
@@ -200,8 +242,8 @@ const Auth = () => {
         }
         
         if (userData) {
-          // Navigate to admin page after successful login
-          navigate("/admin");
+          // Navigate to admin page after successful login - use direct location change
+          window.location.href = "/admin";
         } else {
           toast({
             title: "Access Denied",
@@ -222,6 +264,10 @@ const Auth = () => {
       setLoading(false);
     }
   };
+
+  const handleGoHome = () => {
+    window.location.href = "/";
+  };
   
   // Show loading spinner while checking authentication
   if (isCheckingAuth) {
@@ -230,6 +276,19 @@ const Auth = () => {
         <div className="text-center">
           <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-brand-500 mx-auto mb-4"></div>
           <p className="text-gray-600">Checking authentication...</p>
+          {timedOut && (
+            <div className="mt-4">
+              <p className="text-red-600 mb-2">Authentication check is taking longer than expected</p>
+              <Button 
+                variant="outline" 
+                onClick={handleGoHome}
+                className="mt-2"
+              >
+                <ArrowLeft className="h-4 w-4 mr-2" />
+                Go back to home
+              </Button>
+            </div>
+          )}
         </div>
       </div>
     );
@@ -266,11 +325,10 @@ const Auth = () => {
           </CardContent>
           <CardFooter className="flex justify-center">
             <Button 
-              onClick={async () => {
-                await supabase.auth.signOut();
-                window.location.href = "/";
-              }}
+              onClick={handleGoHome}
+              className="w-full"
             >
+              <ArrowLeft className="h-4 w-4 mr-2" />
               Back to Home
             </Button>
           </CardFooter>
@@ -360,8 +418,9 @@ const Auth = () => {
           <Button 
             variant="outline" 
             className="w-full"
-            onClick={() => window.location.href = "/"}
+            onClick={handleGoHome}
           >
+            <ArrowLeft className="h-4 w-4 mr-2" />
             Back to Home
           </Button>
         </CardFooter>
