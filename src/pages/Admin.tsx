@@ -1,15 +1,10 @@
 
-import { useState, useEffect, useCallback } from "react";
-import { Navigate, useNavigate } from "react-router-dom";
-import { LeadsTable } from "@/components/admin/LeadsTable";
-import { PricingManager } from "@/components/admin/PricingManager";
-import { supabase } from "@/integrations/supabase/client";
+import { useState } from "react";
+import { Navigate } from "react-router-dom";
 import { Lead } from "@/types/leads";
-import { AdminHeader } from "@/components/admin/AdminHeader";
-import { CsvUploader } from "@/components/admin/CsvUploader";
-import { toast } from "@/components/ui/use-toast";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Button } from "@/components/ui/button";
+import { AdminAuth } from "@/components/admin/AdminAuth";
+import { AdminDashboard } from "@/components/admin/AdminDashboard";
+import { LoadingState, LoadingTimeout, AuthError } from "@/components/admin/AdminStateHandlers";
 
 const Admin = () => {
   const [session, setSession] = useState<any>(null);
@@ -19,153 +14,12 @@ const Admin = () => {
   const [leads, setLeads] = useState<Lead[]>([]);
   const [loadingTimeout, setLoadingTimeout] = useState<boolean>(false);
   const [retryCount, setRetryCount] = useState(0);
-  const navigate = useNavigate();
-
-  const checkAuth = useCallback(async () => {
-    let timeoutId: number;
-    
-    try {
-      // Set a timeout to notify the user if authentication check takes too long
-      timeoutId = window.setTimeout(() => {
-        console.log("Auth check taking too long");
-        setLoadingTimeout(true);
-      }, 5000);
-      
-      console.log("Admin page: Checking authentication");
-      const { data, error } = await supabase.auth.getSession();
-      
-      clearTimeout(timeoutId);
-      
-      if (error) {
-        console.error("Session error:", error);
-        setAuthError(error.message);
-        throw error;
-      }
-      
-      console.log("Admin page: Session data:", data.session);
-      setSession(data.session);
-      
-      if (!data.session) {
-        console.log("No active session, redirecting to login");
-        window.location.href = "/auth";
-        return;
-      }
-      
-      // Check if the user has admin role
-      const { data: userData, error: userError } = await supabase
-        .rpc('has_role', { role_to_check: 'admin' });
-        
-      if (userError) {
-        console.error("Role check error:", userError);
-        setAuthError(userError.message);
-        throw userError;
-      }
-      
-      console.log("Admin role check:", userData);
-      setIsAdmin(userData === true);
-      
-      if (userData) {
-        // Fetch leads for admin
-        const { data: leadsData, error: leadsError } = await supabase
-          .from('leads')
-          .select('*')
-          .order('created_at', { ascending: false });
-          
-        if (leadsError) {
-          console.error("Leads fetch error:", leadsError);
-          throw leadsError;
-        }
-        
-        console.log("Fetched leads:", leadsData?.length || 0);
-        setLeads(leadsData as Lead[] || []);
-      } else {
-        console.log("User is not an admin, redirecting");
-        window.location.href = "/auth";
-      }
-    } catch (error: any) {
-      console.error('Auth error:', error);
-      setAuthError(error.message || "Authentication failed");
-      toast({
-        title: "Authentication Error",
-        description: error.message,
-        variant: "destructive",
-      });
-    } finally {
-      clearTimeout(timeoutId);
-      setIsLoading(false);
-    }
-  }, [navigate]);
-
-  useEffect(() => {
-    checkAuth();
-    
-    const { data: authListener } = supabase.auth.onAuthStateChange(
-      async (event, session) => {
-        console.log("Admin page: Auth state changed:", event);
-        setSession(session);
-        setIsLoading(true);
-        
-        if (!session) {
-          console.log("Session ended, redirecting to login");
-          setIsAdmin(false);
-          setLeads([]);
-          window.location.href = "/auth";
-          setIsLoading(false);
-          return;
-        }
-        
-        try {
-          // Check if the user has admin role
-          const { data: userData, error: userError } = await supabase
-            .rpc('has_role', { role_to_check: 'admin' });
-            
-          if (userError) {
-            console.error('Role check error:', userError);
-            setAuthError(userError.message);
-            setIsAdmin(false);
-            window.location.href = "/auth";
-            return;
-          }
-          
-          setIsAdmin(userData === true);
-          
-          if (userData) {
-            // Fetch leads for admin
-            const { data: leadsData, error: leadsError } = await supabase
-              .from('leads')
-              .select('*')
-              .order('created_at', { ascending: false });
-              
-            if (leadsError) {
-              console.error('Leads fetch error:', leadsError);
-              setAuthError(leadsError.message);
-            } else {
-              setLeads(leadsData as Lead[] || []);
-            }
-          } else {
-            window.location.href = "/auth";
-          }
-        } catch (error: any) {
-          console.error("Error during auth state change:", error);
-          setAuthError(error.message || "Authentication error");
-          window.location.href = "/auth";
-        } finally {
-          setIsLoading(false);
-        }
-      }
-    );
-    
-    return () => {
-      authListener.subscription.unsubscribe();
-    };
-  }, [navigate, checkAuth]);
 
   const handleRetry = () => {
     setIsLoading(true);
     setAuthError(null);
     setLoadingTimeout(false);
     setRetryCount(retryCount + 1);
-    checkAuth();
   };
 
   const handleGoBack = () => {
@@ -174,53 +28,17 @@ const Admin = () => {
 
   // Authentication timeout screen
   if (loadingTimeout) {
-    return (
-      <div className="min-h-screen flex flex-col items-center justify-center bg-gray-50 p-4">
-        <div className="bg-white rounded-lg shadow-md p-8 max-w-md w-full text-center">
-          <h1 className="text-2xl font-bold mb-4">Authentication Taking Too Long</h1>
-          <p className="text-gray-600 mb-6">
-            We're having trouble verifying your admin credentials. This could be due to network issues or server response delays.
-          </p>
-          <div className="flex flex-col space-y-3">
-            <Button onClick={handleRetry}>Try Again</Button>
-            <Button variant="outline" onClick={handleGoBack}>Back to Home</Button>
-          </div>
-        </div>
-      </div>
-    );
+    return <LoadingTimeout onRetry={handleRetry} onGoBack={handleGoBack} />;
   }
 
   // Loading state
   if (isLoading) {
-    return (
-      <div className="min-h-screen flex items-center justify-center bg-gray-50">
-        <div className="text-center">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-brand-500 mx-auto mb-4"></div>
-          <p className="text-gray-600">Loading admin dashboard...</p>
-          {retryCount > 0 && (
-            <p className="text-gray-500 mt-2">Attempt {retryCount + 1}...</p>
-          )}
-        </div>
-      </div>
-    );
+    return <LoadingState retryCount={retryCount} />;
   }
 
   // Authentication error screen
   if (authError) {
-    return (
-      <div className="min-h-screen flex flex-col items-center justify-center bg-gray-50 p-4">
-        <div className="bg-white rounded-lg shadow-md p-8 max-w-md w-full text-center">
-          <h1 className="text-2xl font-bold mb-4">Authentication Error</h1>
-          <p className="text-gray-600 mb-6">
-            {authError}
-          </p>
-          <div className="flex flex-col space-y-3">
-            <Button onClick={handleRetry}>Try Again</Button>
-            <Button variant="outline" onClick={handleGoBack}>Back to Home</Button>
-          </div>
-        </div>
-      </div>
-    );
+    return <AuthError error={authError} onRetry={handleRetry} onGoBack={handleGoBack} />;
   }
 
   // No session redirect
@@ -235,31 +53,18 @@ const Admin = () => {
 
   // Main admin dashboard
   return (
-    <div className="min-h-screen bg-gray-50">
-      <AdminHeader isLoading={isLoading} />
-      
-      <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        <Tabs defaultValue="leads" className="w-full">
-          <TabsList className="mb-6">
-            <TabsTrigger value="leads">Leads Management</TabsTrigger>
-            <TabsTrigger value="pricing">Pricing Configuration</TabsTrigger>
-            <TabsTrigger value="import">Import Leads</TabsTrigger>
-          </TabsList>
-          
-          <TabsContent value="leads" className="space-y-8">
-            <LeadsTable leads={leads} />
-          </TabsContent>
-          
-          <TabsContent value="pricing">
-            <PricingManager />
-          </TabsContent>
-          
-          <TabsContent value="import">
-            <CsvUploader />
-          </TabsContent>
-        </Tabs>
-      </main>
-    </div>
+    <AdminAuth
+      setSession={setSession}
+      setIsAdmin={setIsAdmin}
+      setLeads={setLeads}
+      setIsLoading={setIsLoading}
+      setAuthError={setAuthError}
+      setLoadingTimeout={setLoadingTimeout}
+      setRetryCount={setRetryCount}
+      retryCount={retryCount}
+    >
+      <AdminDashboard leads={leads} isLoading={isLoading} />
+    </AdminAuth>
   );
 };
 
