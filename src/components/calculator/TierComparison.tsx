@@ -6,7 +6,7 @@ import { AI_RATES, TIER_DESCRIPTIONS, TIER_FEATURES } from '@/constants/pricing'
 
 interface TierComparisonProps {
   currentTier: string;
-  currentAIType: 'voice' | 'chatbot' | 'both';
+  currentAIType: string;
   onSelectTier: (tier: string) => void;
 }
 
@@ -15,13 +15,17 @@ export const TierComparison: React.FC<TierComparisonProps> = ({
   currentAIType,
   onSelectTier
 }) => {
-  const isVoiceEnabled = currentAIType === 'voice' || currentAIType === 'both';
-  const isChatEnabled = currentAIType === 'chatbot' || currentAIType === 'both';
+  const isVoiceEnabled = ['voice', 'conversationalVoice', 'both', 'both-premium'].includes(currentAIType);
+  const isConversationalVoice = ['conversationalVoice', 'both-premium'].includes(currentAIType);
+  const isChatEnabled = ['chatbot', 'both', 'both-premium'].includes(currentAIType);
 
   // Use this to determine if a tier is compatible with the current AI type
   const getTierCompatibility = (tier: string): {isCompatible: boolean; reason?: string} => {
     if (tier === 'starter' && isVoiceEnabled) {
       return { isCompatible: false, reason: 'Starter plan does not support voice capabilities' };
+    }
+    if (tier === 'growth' && isConversationalVoice) {
+      return { isCompatible: false, reason: 'Conversational Voice requires Premium plan' };
     }
     return { isCompatible: true };
   };

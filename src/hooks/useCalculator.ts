@@ -1,9 +1,8 @@
-
 import { useState, useEffect } from 'react';
 import { DEFAULT_AI_RATES, HUMAN_HOURLY_RATES, fetchPricingConfigurations, type AIRates } from '@/constants/pricing';
 
 export interface CalculatorInputs {
-  aiType: 'voice' | 'chatbot' | 'both';
+  aiType: 'voice' | 'chatbot' | 'both' | 'conversationalVoice' | 'both-premium';
   aiTier: 'starter' | 'growth' | 'premium';
   role: keyof typeof HUMAN_HOURLY_RATES;
   numEmployees: number;
@@ -67,68 +66,60 @@ export const useCalculator = (inputs: CalculatorInputs): CalculationResults => {
   }, []);
 
   useEffect(() => {
-    // Constants for time calculations
     const HOURS_PER_SHIFT = 8;
     const DAYS_PER_WEEK = 5;
     const WEEKS_PER_YEAR = 52;
     const MONTHS_PER_YEAR = 12;
 
-    // Calculate human hours based on number of employees
     const dailyHoursPerEmployee = HOURS_PER_SHIFT;
     const weeklyHoursPerEmployee = dailyHoursPerEmployee * DAYS_PER_WEEK;
     const weeklyTotalHours = weeklyHoursPerEmployee * inputs.numEmployees;
     const monthlyTotalHours = (weeklyTotalHours * WEEKS_PER_YEAR) / MONTHS_PER_YEAR;
     const yearlyTotalHours = weeklyTotalHours * WEEKS_PER_YEAR;
 
-    // Calculate human cost with industry-specific rates
     const baseHourlyRate = HUMAN_HOURLY_RATES[inputs.role];
-    // Add benefits and overhead (typically 30% additional cost)
     const hourlyRateWithBenefits = baseHourlyRate * 1.3;
     const monthlyHumanCost = hourlyRateWithBenefits * monthlyTotalHours;
 
-    // Determine the appropriate tier based on needs
-    const effectiveTier = inputs.aiTier;
+    let effectiveTier = inputs.aiTier;
     
-    // Calculate AI costs monthly based on the selected tier
+    if (inputs.aiType === 'conversationalVoice' || inputs.aiType === 'both-premium') {
+      effectiveTier = 'premium';
+    }
+    
     let monthlyVoiceCost = 0;
     let monthlyChatbotCost = 0;
     let setupFee = aiRates.chatbot[effectiveTier].setupFee || 0;
     let annualPlan = aiRates.chatbot[effectiveTier].annualPrice || 0;
     
-    // Calculate voice costs only if voice is enabled
-    if (inputs.aiType === 'voice' || inputs.aiType === 'both') {
+    if (inputs.aiType === 'voice' || inputs.aiType === 'conversationalVoice' || inputs.aiType === 'both' || inputs.aiType === 'both-premium') {
       const totalMinutesPerMonth = inputs.callVolume * inputs.avgCallDuration;
       const includedMinutes = aiRates.chatbot[effectiveTier].includedVoiceMinutes || 0;
       const chargeableMinutes = Math.max(0, totalMinutesPerMonth - includedMinutes);
       
-      // Apply premium conversational voice factor if premium tier
       const voiceRate = aiRates.voice[effectiveTier];
-      const conversationalFactor = effectiveTier === 'premium' ? 1.15 : 1.0; // 15% premium for conversational capabilities
+      const isConversational = inputs.aiType === 'conversationalVoice' || inputs.aiType === 'both-premium';
+      const conversationalFactor = (effectiveTier === 'premium' || isConversational) ? 1.15 : 1.0;
       
       monthlyVoiceCost = chargeableMinutes * voiceRate * conversationalFactor;
     }
     
-    // Calculate chatbot costs only if chatbot is enabled
-    if (inputs.aiType === 'chatbot' || inputs.aiType === 'both') {
+    if (inputs.aiType === 'chatbot' || inputs.aiType === 'both' || inputs.aiType === 'both-premium') {
       const chatbotRates = aiRates.chatbot[effectiveTier];
       
-      // Start with base cost
-      monthlyChatbotCost = chatbotRates.base;
+      const baseCost = chatbotRates.base;
       
-      // Calculate message costs
       const totalMessages = inputs.chatVolume * inputs.avgChatLength;
       const messageUsageCost = totalMessages * chatbotRates.perMessage;
       
-      // Apply volume discounts if applicable
       let finalMessageCost = messageUsageCost;
       if (totalMessages > 50000) {
-        finalMessageCost = messageUsageCost * 0.8; // 20% discount
+        finalMessageCost = messageUsageCost * 0.8;
       } else if (totalMessages > 10000) {
-        finalMessageCost = messageUsageCost * 0.9; // 10% discount
+        finalMessageCost = messageUsageCost * 0.9;
       }
       
-      // Add message costs to base cost
-      monthlyChatbotCost += finalMessageCost;
+      monthlyChatbotCost = baseCost + finalMessageCost;
     }
     
     const monthlyAiCost = monthlyVoiceCost + monthlyChatbotCost;

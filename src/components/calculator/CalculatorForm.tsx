@@ -1,3 +1,4 @@
+
 import React, { useEffect } from 'react';
 import { ROLE_LABELS } from '@/constants/pricing';
 import { TierComparison } from './TierComparison';
@@ -20,25 +21,43 @@ export const CalculatorForm: React.FC<CalculatorFormProps> = ({ inputs, onInputC
         description: "Switched to Starter Plan since only text capabilities are needed.",
         variant: "default",
       });
-    } else if ((inputs.aiType === 'voice' || inputs.aiType === 'both') && inputs.aiTier === 'starter') {
-      // If voice is needed, upgrade to at least growth plan
+    } else if (inputs.aiType === 'voice' && inputs.aiTier === 'starter') {
+      // If basic voice is needed, upgrade to growth plan
       onInputChange('aiTier', 'growth');
       toast({
         title: "Plan Upgraded",
         description: "Voice features require at least the Growth Plan. We've automatically upgraded your selection.",
         variant: "default",
       });
+    } else if (inputs.aiType === 'conversationalVoice' || inputs.aiType === 'both-premium') {
+      // If conversational voice is needed, upgrade to premium plan
+      onInputChange('aiTier', 'premium');
+      toast({
+        title: "Premium Plan Selected",
+        description: "Conversational Voice AI requires the Premium Plan. We've automatically selected it for you.",
+        variant: "default",
+      });
     }
   }, [inputs.aiType]);
 
   const handleTierSelect = (tier: string) => {
-    if (tier === 'starter' && (inputs.aiType === 'voice' || inputs.aiType === 'both')) {
+    if (tier === 'starter' && (inputs.aiType === 'voice' || inputs.aiType === 'conversationalVoice' || inputs.aiType === 'both' || inputs.aiType === 'both-premium')) {
       toast({
         title: "Voice Features Not Available",
         description: "The Starter Plan doesn't support voice features. Please select Growth or Premium Plan for voice capabilities.",
         variant: "destructive",
       });
       return;
+    }
+    
+    // If selecting growth tier but using conversational voice, warn the user
+    if (tier === 'growth' && (inputs.aiType === 'conversationalVoice' || inputs.aiType === 'both-premium')) {
+      toast({
+        title: "Conversational Voice Not Available",
+        description: "Conversational Voice AI requires the Premium Plan. Switching to basic voice capabilities.",
+        variant: "warning",
+      });
+      onInputChange('aiType', 'voice');
     }
     
     onInputChange('aiTier', tier as any);
@@ -103,17 +122,24 @@ export const CalculatorForm: React.FC<CalculatorFormProps> = ({ inputs, onInputC
             className="calculator-input"
           >
             <option value="chatbot">Text Only</option>
-            <option value="voice">Voice Only</option>
-            <option value="both">Both Text & Voice</option>
+            <option value="voice">Basic Voice Only</option>
+            <option value="conversationalVoice">Conversational Voice Only</option>
+            <option value="both">Text & Basic Voice</option>
+            <option value="both-premium">Text & Conversational Voice</option>
           </select>
           {inputs.aiTier === 'starter' && (
             <p className="text-sm text-amber-600 mt-1">
               Note: Starter Plan only supports text capabilities. Select Growth or Premium Plan for voice.
             </p>
           )}
+          {inputs.aiType === 'conversationalVoice' || inputs.aiType === 'both-premium' ? (
+            <p className="text-sm text-green-600 mt-1">
+              Conversational Voice AI requires the Premium Plan.
+            </p>
+          ) : null}
         </div>
         
-        {(inputs.aiType === 'voice' || inputs.aiType === 'both') && (
+        {(inputs.aiType === 'voice' || inputs.aiType === 'conversationalVoice' || inputs.aiType === 'both' || inputs.aiType === 'both-premium') && (
           <>
             {/* Voice-specific inputs */}
             <div className="mb-4">
@@ -145,7 +171,7 @@ export const CalculatorForm: React.FC<CalculatorFormProps> = ({ inputs, onInputC
           </>
         )}
         
-        {(inputs.aiType === 'chatbot' || inputs.aiType === 'both') && (
+        {(inputs.aiType === 'chatbot' || inputs.aiType === 'both' || inputs.aiType === 'both-premium') && (
           <>
             {/* Chatbot-specific inputs */}
             <div className="mb-4">
