@@ -11,14 +11,17 @@ export const supabase = createClient<Database>(
   SUPABASE_PUBLISHABLE_KEY
 );
 
-// Add a helper function to check auth status without session detection issues
-export const checkAuthStatus = async () => {
+// Simple function to check if user is authenticated
+export const isAuthenticated = async () => {
   try {
     const { data, error } = await supabase.auth.getSession();
-    console.log("Auth status check:", data, error);
-    return { data, error };
+    return { 
+      authenticated: !!data?.session, 
+      session: data?.session, 
+      error 
+    };
   } catch (e) {
-    console.error("Auth status check failed:", e);
-    return { data: null, error: e };
+    console.error("Auth check failed:", e);
+    return { authenticated: false, session: null, error: e };
   }
 };

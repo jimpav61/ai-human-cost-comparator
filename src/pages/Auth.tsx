@@ -7,57 +7,58 @@ import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { Label } from "@/components/ui/label";
 import { toast } from "@/hooks/use-toast";
-import { Mail, Lock, Info, ArrowLeft } from "lucide-react";
+import { Mail, Lock, ArrowLeft } from "lucide-react";
 
 const Auth = () => {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [loading, setLoading] = useState(false);
   const [isSignup, setIsSignup] = useState(false);
-  const [authError, setAuthError] = useState<string | null>(null);
+  const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const navigate = useNavigate();
 
-  // More robust login handler
-  const handleLogin = async (e: React.FormEvent) => {
+  const handleAuth = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
-    setAuthError(null);
+    setErrorMessage(null);
     
     try {
       if (isSignup) {
-        // Proceed with registration
-        const { data, error } = await supabase.auth.signUp({
+        // Sign up flow
+        const { data: signUpData, error: signUpError } = await supabase.auth.signUp({
           email,
           password,
         });
         
-        if (error) throw error;
+        if (signUpError) throw signUpError;
         
-        console.log("Signup successful:", data);
+        console.log("Sign up response:", signUpData);
         
         // Try to sign in immediately after signup
-        const { error: signInError } = await supabase.auth.signInWithPassword({
+        const { data: signInData, error: signInError } = await supabase.auth.signInWithPassword({
           email,
           password
         });
         
-        if (!signInError) {
+        if (signInError) {
+          console.log("Immediate sign in failed:", signInError);
           toast({
-            title: "Account created and logged in",
-            description: "Your account has been created successfully."
+            title: "Account Created",
+            description: "Your account has been created. Please sign in with your credentials."
           });
-          navigate("/admin");
+          setIsSignup(false);
+          setLoading(false);
           return;
         }
         
-        // If immediate sign-in fails, show message and switch to login view
+        console.log("Immediate sign in successful:", signInData);
         toast({
-          title: "Account Created",
-          description: "Your account has been created. Please sign in with your credentials.",
+          title: "Success",
+          description: "Account created and logged in successfully."
         });
-        setIsSignup(false);
+        navigate("/admin");
       } else {
-        // Regular login flow
+        // Login flow
         console.log("Attempting login with:", email);
         const { data, error } = await supabase.auth.signInWithPassword({
           email,
@@ -69,15 +70,13 @@ const Auth = () => {
         console.log("Login successful:", data);
         toast({
           title: "Login Successful",
-          description: "You have been logged in successfully.",
+          description: "You have been logged in successfully."
         });
-
-        // Redirect to admin page
         navigate("/admin");
       }
     } catch (error: any) {
       console.error("Auth error:", error);
-      setAuthError(error.message || "Failed to authenticate");
+      setErrorMessage(error.message || "Authentication failed");
       toast({
         title: "Authentication Error",
         description: error.message || "Failed to authenticate",
@@ -88,15 +87,13 @@ const Auth = () => {
     }
   };
 
-  const handleGoHome = () => {
-    navigate("/");
-  };
-
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-gray-50 to-gray-100">
-      <Card className="w-[450px]">
+    <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-gray-50 to-gray-100 p-4">
+      <Card className="w-full max-w-md">
         <CardHeader>
-          <CardTitle className="text-center text-2xl">{isSignup ? "Create Admin Account" : "Admin Login"}</CardTitle>
+          <CardTitle className="text-center text-2xl">
+            {isSignup ? "Create Admin Account" : "Admin Login"}
+          </CardTitle>
           <CardDescription className="text-center">
             {isSignup 
               ? "Create a new admin account to access the dashboard" 
@@ -104,7 +101,7 @@ const Auth = () => {
           </CardDescription>
         </CardHeader>
         <CardContent>
-          <form onSubmit={handleLogin} className="space-y-4">
+          <form onSubmit={handleAuth} className="space-y-4">
             <div className="space-y-2">
               <Label htmlFor="email">Email</Label>
               <div className="relative">
@@ -136,9 +133,9 @@ const Auth = () => {
               </div>
             </div>
             
-            {authError && (
+            {errorMessage && (
               <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded text-sm">
-                <p>Error: {authError}</p>
+                <p>Error: {errorMessage}</p>
               </div>
             )}
             
@@ -173,7 +170,7 @@ const Auth = () => {
           <Button 
             variant="outline" 
             className="w-full"
-            onClick={handleGoHome}
+            onClick={() => navigate("/")}
           >
             <ArrowLeft className="h-4 w-4 mr-2" />
             Back to Home
