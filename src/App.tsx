@@ -28,9 +28,16 @@ const ProtectedRoute = ({ children }: { children: React.ReactNode }) => {
 
   useEffect(() => {
     const checkAuth = async () => {
-      const { authenticated } = await isAuthenticated();
-      setIsAuthed(authenticated);
-      setAuthChecked(true);
+      try {
+        const { authenticated } = await isAuthenticated();
+        console.log("Protection check - authenticated:", authenticated);
+        setIsAuthed(authenticated);
+      } catch (error) {
+        console.error("Auth check error:", error);
+        setIsAuthed(false);
+      } finally {
+        setAuthChecked(true);
+      }
     };
     
     checkAuth();
