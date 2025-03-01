@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from "react";
 import { Navigate, useNavigate } from "react-router-dom";
 import { LeadsTable } from "@/components/admin/LeadsTable";
@@ -46,7 +45,7 @@ const Admin = () => {
         }
         
         console.log("Admin role check:", userData);
-        setIsAdmin(userData || false);
+        setIsAdmin(userData === true);
         
         if (userData) {
           // Fetch leads for admin
@@ -61,7 +60,7 @@ const Admin = () => {
           }
           
           console.log("Fetched leads:", leadsData?.length || 0);
-          setLeads(leadsData || []);
+          setLeads(leadsData as Lead[] || []);
         } else {
           console.log("User is not an admin, redirecting");
           navigate("/auth");
@@ -108,7 +107,7 @@ const Admin = () => {
             return;
           }
           
-          setIsAdmin(userData || false);
+          setIsAdmin(userData === true);
           
           if (userData) {
             // Fetch leads for admin
@@ -120,7 +119,7 @@ const Admin = () => {
             if (leadsError) {
               console.error('Leads fetch error:', leadsError);
             } else {
-              setLeads(leadsData || []);
+              setLeads(leadsData as Lead[] || []);
             }
           } else {
             navigate("/auth");

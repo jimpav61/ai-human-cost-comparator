@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from 'react';
 import { toast } from "@/components/ui/use-toast";
 import { Button } from "@/components/ui/button";
@@ -63,13 +62,13 @@ export const PricingManager = () => {
         const updatedConfigurations = data.map(config => {
           // Create a new object with all the expected properties
           const typedConfig: PricingConfiguration = {
-            id: config.id,
-            created_at: config.created_at,
-            updated_at: config.updated_at || config.created_at,
+            id: config.id as string,
+            created_at: config.created_at as string,
+            updated_at: (config.updated_at || config.created_at) as string,
             tier: config.tier as PricingConfiguration['tier'],
-            voice_per_minute: config.voice_per_minute,
-            chatbot_base_price: config.chatbot_base_price,
-            chatbot_per_message: config.chatbot_per_message,
+            voice_per_minute: config.voice_per_minute as number,
+            chatbot_base_price: config.chatbot_base_price as number,
+            chatbot_per_message: config.chatbot_per_message as number,
             setup_fee: typeof config.setup_fee === 'number' ? config.setup_fee : 0,
             annual_price: typeof config.annual_price === 'number' ? config.annual_price : 0,
             included_voice_minutes: typeof config.included_voice_minutes === 'number' ? config.included_voice_minutes : 0
@@ -126,7 +125,7 @@ export const PricingManager = () => {
         
         const { error } = await supabase
           .from('pricing_configurations')
-          .upsert(updateData);
+          .upsert([updateData]);
 
         if (error) throw error;
       }

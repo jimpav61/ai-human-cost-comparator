@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { toast } from "@/components/ui/use-toast";
 import { supabase } from "@/integrations/supabase/client";
@@ -206,8 +205,8 @@ export const LeadForm: React.FC<LeadFormProps> = ({ onSubmit }) => {
           website: finalWebsite,
           industry: "Not yet provided", // Placeholder until step 2
           employee_count: 0, // Placeholder until step 2
-          calculator_inputs: {},
-          calculator_results: {},
+          calculator_inputs: {} as any,
+          calculator_results: {} as any,
           proposal_sent: false,
           form_completed: false
         }])
@@ -219,7 +218,8 @@ export const LeadForm: React.FC<LeadFormProps> = ({ onSubmit }) => {
       }
 
       if (data && data.length > 0) {
-        setLeadId(data[0].id);
+        const leadRecord = data[0] as any;
+        setLeadId(leadRecord.id);
         
         // Update the form data with the properly formatted website
         setFormData(prev => ({ ...prev, website: finalWebsite }));
@@ -274,7 +274,7 @@ export const LeadForm: React.FC<LeadFormProps> = ({ onSubmit }) => {
             industry: formData.industry,
             employee_count: formData.employeeCount,
             form_completed: true
-          })
+          } as any)
           .eq('id', leadId);
 
         if (error) {
@@ -299,8 +299,8 @@ export const LeadForm: React.FC<LeadFormProps> = ({ onSubmit }) => {
             website: finalWebsite,
             industry: formData.industry,
             employee_count: formData.employeeCount,
-            calculator_inputs: {},
-            calculator_results: {},
+            calculator_inputs: {} as any,
+            calculator_results: {} as any,
             proposal_sent: false,
             form_completed: true
           }]);

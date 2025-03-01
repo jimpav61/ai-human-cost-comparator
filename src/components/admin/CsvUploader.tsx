@@ -1,4 +1,3 @@
-
 import { useState } from 'react';
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -123,7 +122,7 @@ export const CsvUploader = () => {
           calculator_inputs: row.calculator_inputs ? JSON.parse(row.calculator_inputs) : {},
           calculator_results: row.calculator_results ? JSON.parse(row.calculator_results) : {},
           proposal_sent: row.proposal_sent === "true" || row.proposal_sent === "TRUE" || row.proposal_sent === "1"
-        }));
+        } as any));
         
         // Insert batch into Supabase
         const { data, error } = await supabase
