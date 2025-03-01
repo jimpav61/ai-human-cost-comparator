@@ -45,13 +45,14 @@ export const AIVsHumanCalculator: React.FC<AIVsHumanCalculatorProps> = ({ leadDa
         company_name: leadData.companyName,
         email: leadData.email,
         phone_number: leadData.phoneNumber || null,
-        calculator_inputs: calculatorInputs as any,
-        calculator_results: calculationResults as any,
+        calculator_inputs: calculatorInputs,
+        calculator_results: calculationResults,
       };
       
+      // Fix TypeScript error by using type assertion
       const { error } = await supabase
         .from('generated_reports')
-        .insert([reportData]);
+        .insert([reportData] as any); // Use type assertion to bypass TypeScript check
 
       if (error) throw error;
 
