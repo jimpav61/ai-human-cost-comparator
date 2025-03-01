@@ -13,12 +13,17 @@ export const calculatePricingDetails = (inputs: CalculatorInputs): PricingDetail
     const includedMinutes = AI_RATES.chatbot[inputs.aiTier].includedVoiceMinutes || 0;
     const chargeableMinutes = Math.max(0, totalMinutes - includedMinutes);
     const minuteRate = AI_RATES.voice[inputs.aiTier];
-    const usageCost = chargeableMinutes * minuteRate;
+    
+    // Apply conversational factor for premium tier
+    const conversationalFactor = inputs.aiTier === 'premium' ? 1.15 : 1.0;
+    const usageCost = chargeableMinutes * minuteRate * conversationalFactor;
+    
+    const voiceType = inputs.aiTier === 'premium' ? 'Conversational Voice AI' : 'Basic Voice AI';
     
     pricingDetails.push({
-      title: 'Voice AI',
+      title: voiceType,
       base: null,
-      rate: `${formatCurrency(minuteRate)}/minute after ${includedMinutes} included minutes`,
+      rate: `${formatCurrency(minuteRate)}${inputs.aiTier === 'premium' ? ' + 15% premium' : ''}/minute after ${includedMinutes} included minutes`,
       totalMinutes: totalMinutes,
       monthlyCost: usageCost,
       usageCost: usageCost
@@ -62,9 +67,9 @@ export const calculatePricingDetails = (inputs: CalculatorInputs): PricingDetail
 
 export const getTierDisplayName = (aiTier: string): string => {
   switch(aiTier) {
-    case 'starter': return 'Starter Plan';
-    case 'growth': return 'Growth Plan';
-    case 'premium': return 'Premium Plan';
+    case 'starter': return 'Starter Plan (Text Only)';
+    case 'growth': return 'Growth Plan (Text & Basic Voice)';
+    case 'premium': return 'Premium Plan (Text & Conversational Voice)';
     default: return 'Custom Plan';
   }
 };

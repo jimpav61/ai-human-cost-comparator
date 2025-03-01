@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from 'react';
 import { DEFAULT_AI_RATES, HUMAN_HOURLY_RATES, fetchPricingConfigurations, type AIRates } from '@/constants/pricing';
 
@@ -96,7 +97,12 @@ export const useCalculator = (inputs: CalculatorInputs): CalculationResults => {
       const totalMinutesPerMonth = inputs.callVolume * inputs.avgCallDuration;
       const includedMinutes = aiRates.chatbot[inputs.aiTier].includedVoiceMinutes || 0;
       const chargeableMinutes = Math.max(0, totalMinutesPerMonth - includedMinutes);
-      monthlyVoiceCost = chargeableMinutes * aiRates.voice[inputs.aiTier];
+      
+      // Apply premium conversational voice factor if premium tier
+      const voiceRate = aiRates.voice[inputs.aiTier];
+      const conversationalFactor = inputs.aiTier === 'premium' ? 1.15 : 1.0; // 15% premium for conversational capabilities
+      
+      monthlyVoiceCost = chargeableMinutes * voiceRate * conversationalFactor;
     }
     
     // Calculate chatbot costs only if chatbot is enabled

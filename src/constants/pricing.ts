@@ -67,8 +67,8 @@ export const ROLE_LABELS = {
 
 export const TIER_DESCRIPTIONS = {
   starter: "Perfect for businesses looking for basic text-based customer interaction.",
-  growth: "Ideal for businesses that want to add voice capabilities.",
-  premium: "For businesses that want the most advanced communication options."
+  growth: "Ideal for businesses that want to add basic voice capabilities with scripted responses.",
+  premium: "For businesses that need advanced conversational voice capabilities with natural dialogue."
 };
 
 export const TIER_FEATURES = {
@@ -82,12 +82,17 @@ export const TIER_FEATURES = {
   ],
   growth: [
     "Everything in the Starter Plan",
-    "Voice Integration"
+    "Basic Voice Integration",
+    "Scripted Voice Responses",
+    "Simple Call Routing"
   ],
   premium: [
     "Everything in the Growth Plan",
+    "Advanced Conversational Voice",
+    "Dynamic Dialogue",
+    "Complex Problem Solving",
     "SMS Messaging",
-    "Voice Calls"
+    "Multi-turn Conversations"
   ]
 };
 

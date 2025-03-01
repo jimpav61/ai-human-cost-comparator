@@ -44,8 +44,8 @@ export const TierComparison: React.FC<TierComparisonProps> = ({
               </h5>
               <div className="text-xs text-gray-500 mt-1">
                 {tier === 'starter' ? '– Text Only' : 
-                 tier === 'growth' ? '– Text & Voice' : 
-                 '– Full Voice & Text'}
+                 tier === 'growth' ? '– Text & Basic Voice' : 
+                 '– Text & Conversational Voice'}
               </div>
             </div>
             
@@ -69,14 +69,29 @@ export const TierComparison: React.FC<TierComparisonProps> = ({
               </div>
             </div>
 
-            {(tier === 'growth' || tier === 'premium') && (
+            {tier === 'growth' && (
               <div className="text-sm mb-2">
-                <div className="font-medium">Voice AI:</div>
+                <div className="font-medium">Basic Voice AI:</div>
                 <div className="text-gray-600">
                   Includes {AI_RATES.chatbot[tier as keyof typeof AI_RATES.chatbot].includedVoiceMinutes} voice minutes
                 </div>
                 <div className="text-gray-600">
                   12¢ per minute after {AI_RATES.chatbot[tier as keyof typeof AI_RATES.chatbot].includedVoiceMinutes} minutes
+                </div>
+              </div>
+            )}
+
+            {tier === 'premium' && (
+              <div className="text-sm mb-2">
+                <div className="font-medium">Conversational Voice AI:</div>
+                <div className="text-gray-600">
+                  Includes {AI_RATES.chatbot[tier as keyof typeof AI_RATES.chatbot].includedVoiceMinutes} voice minutes
+                </div>
+                <div className="text-gray-600">
+                  12¢ per minute after {AI_RATES.chatbot[tier as keyof typeof AI_RATES.chatbot].includedVoiceMinutes} minutes
+                </div>
+                <div className="text-green-600 font-medium text-xs mt-1">
+                  Advanced conversational capabilities included!
                 </div>
               </div>
             )}
@@ -102,6 +117,13 @@ export const TierComparison: React.FC<TierComparisonProps> = ({
               <div className="mt-3 text-xs text-gray-500 flex items-center">
                 <X className="h-3 w-3 mr-1 text-red-500" /> 
                 AI-Powered Voice Responses
+              </div>
+            )}
+            
+            {tier === 'growth' && (
+              <div className="mt-3 text-xs text-gray-500 flex items-center">
+                <X className="h-3 w-3 mr-1 text-red-500" /> 
+                Advanced Conversational Voice
               </div>
             )}
             
