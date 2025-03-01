@@ -14,9 +14,16 @@ export const supabase = createClient<Database>(
       autoRefreshToken: true,
       persistSession: true,
       detectSessionInUrl: true,
-      storage: localStorage,
+      storage: typeof window !== 'undefined' ? localStorage : undefined,
       flowType: 'pkce',
-      debug: true // Enable debug mode to help troubleshoot
+      debug: true, // Keep debug mode on to help troubleshoot
+      cookieOptions: {
+        name: 'sb-auth-token',
+        lifetime: 60 * 60 * 24 * 7, // 7 days
+        domain: '',
+        path: '/',
+        sameSite: 'lax'
+      }
     }
   }
 );

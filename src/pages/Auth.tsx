@@ -17,8 +17,12 @@ const Auth = () => {
   const [session, setSession] = useState<any>(null);
   const [isAdmin, setIsAdmin] = useState(false);
   const [isCheckingAuth, setIsCheckingAuth] = useState(true);
+  const [authError, setAuthError] = useState<string | null>(null);
   const navigate = useNavigate();
 
+  console.log("Auth component rendering");
+
+  // Enhanced session check
   useEffect(() => {
     const checkUserSession = async () => {
       try {
@@ -27,6 +31,7 @@ const Auth = () => {
         
         if (error) {
           console.error("Error checking session:", error);
+          setAuthError(`Session check error: ${error.message}`);
           setIsCheckingAuth(false);
           return;
         }
@@ -35,20 +40,33 @@ const Auth = () => {
         setSession(data.session);
         
         if (data.session) {
-          // Check for admin role
-          const { data: userData, error: userError } = await supabase
-            .rpc('has_role', { role_to_check: 'admin' });
-            
-          if (userError) {
-            console.error("Error checking user role:", userError);
+          try {
+            // Check for admin role
+            const { data: userData, error: userError } = await supabase
+              .rpc('has_role', { role_to_check: 'admin' });
+              
+            if (userError) {
+              console.error("Error checking user role:", userError);
+              setAuthError(`Role check error: ${userError.message}`);
+              setIsAdmin(false);
+            } else {
+              console.log("User admin status:", userData);
+              setIsAdmin(userData || false);
+              
+              // If admin, navigate to admin page
+              if (userData) {
+                navigate("/admin");
+              }
+            }
+          } catch (err: any) {
+            console.error("Role check exception:", err);
+            setAuthError(`Role check exception: ${err.message}`);
             setIsAdmin(false);
-          } else {
-            console.log("User admin status:", userData);
-            setIsAdmin(userData || false);
           }
         }
-      } catch (err) {
+      } catch (err: any) {
         console.error("Session check error:", err);
+        setAuthError(`Session check exception: ${err.message}`);
       } finally {
         setIsCheckingAuth(false);
       }
@@ -56,6 +74,7 @@ const Auth = () => {
     
     checkUserSession();
     
+    // Enhanced auth state listener
     const { data: authListener } = supabase.auth.onAuthStateChange(async (event, session) => {
       console.log("Auth state changed:", event, "Session:", session);
       setSession(session);
@@ -68,13 +87,20 @@ const Auth = () => {
             
           if (userError) {
             console.error("Error checking user role:", userError);
+            setAuthError(`Role check error: ${userError.message}`);
             setIsAdmin(false);
           } else {
-            console.log("User admin status:", userData);
+            console.log("User admin status on auth change:", userData);
             setIsAdmin(userData || false);
+            
+            // If admin, navigate to admin page
+            if (userData) {
+              navigate("/admin");
+            }
           }
-        } catch (err) {
+        } catch (err: any) {
           console.error("Error checking admin role:", err);
+          setAuthError(`Role check exception: ${err.message}`);
           setIsAdmin(false);
         }
       } else {
@@ -85,11 +111,13 @@ const Auth = () => {
     return () => {
       authListener.subscription.unsubscribe();
     };
-  }, []);
+  }, [navigate]);
 
+  // More robust login handler
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
+    setAuthError(null);
     
     try {
       if (isSignup) {
@@ -100,7 +128,7 @@ const Auth = () => {
         
         if (isAllowedError) {
           console.error("Error checking if admin is allowed:", isAllowedError);
-          throw new Error("Error verifying admin status");
+          throw new Error(`Admin check error: ${isAllowedError.message}`);
         }
         
         console.log("Is allowed admin:", isAllowedData);
@@ -154,11 +182,29 @@ const Auth = () => {
           description: "You have been logged in successfully.",
         });
 
-        // Navigate to admin page after successful login
-        navigate("/admin");
+        // Check role and navigate
+        const { data: userData, error: roleError } = await supabase
+          .rpc('has_role', { role_to_check: 'admin' });
+          
+        if (roleError) {
+          console.error("Error checking role after login:", roleError);
+          throw new Error(`Role check failed: ${roleError.message}`);
+        }
+        
+        if (userData) {
+          // Navigate to admin page after successful login
+          navigate("/admin");
+        } else {
+          toast({
+            title: "Access Denied",
+            description: "Your account doesn't have administrator privileges.",
+            variant: "destructive",
+          });
+        }
       }
     } catch (error: any) {
       console.error("Auth error:", error);
+      setAuthError(error.message || "Failed to authenticate");
       toast({
         title: "Authentication Error",
         description: error.message || "Failed to authenticate",
@@ -204,6 +250,11 @@ const Auth = () => {
             <p className="text-center text-gray-600 mb-4">
               Please contact an administrator if you believe this is a mistake.
             </p>
+            {authError && (
+              <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded mb-4 text-sm">
+                <p>Error details: {authError}</p>
+              </div>
+            )}
           </CardContent>
           <CardFooter className="flex justify-center">
             <Button 
@@ -263,6 +314,12 @@ const Auth = () => {
                 />
               </div>
             </div>
+            
+            {authError && (
+              <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded text-sm">
+                <p>Error: {authError}</p>
+              </div>
+            )}
             
             <Button
               type="submit"
