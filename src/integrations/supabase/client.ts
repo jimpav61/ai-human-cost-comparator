@@ -20,7 +20,7 @@ export const supabase = createClient<Database>(
     },
     global: {
       headers: {
-        'x-client-info': `@supabase/js@${process.env.npm_package_dependencies_supabase_js || 'unknown'}`
+        'x-client-info': `@supabase/js@${'unknown'}`
       },
     },
     realtime: {
