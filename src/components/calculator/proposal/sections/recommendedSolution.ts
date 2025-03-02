@@ -47,13 +47,22 @@ export const addRecommendedSolution = (doc: JsPDFWithAutoTable, yPosition: numbe
       0: { fontStyle: 'bold' },
       2: { halign: 'right' }
     },
-    rowStyles: {
-      0: { fillColor: [226, 240, 217], fontStyle: 'bold' }, // Highlight monthly fee
-      1: { fillColor: [240, 240, 240] },
-      2: { fillColor: [226, 240, 217] },  // Highlight annual plan
-      3: { fillColor: [240, 240, 240] },
-      4: { fillColor: [240, 240, 240] },
-    },
+    // Use willDrawCell instead of rowStyles for more control over cell styling
+    willDrawCell: function(data) {
+      // Apply specific styling based on row index
+      if (data.section === 'body') {
+        if (data.row.index === 0 || data.row.index === 2) {
+          // Highlight monthly fee and annual plan with green
+          data.cell.styles.fillColor = [226, 240, 217];
+          if (data.row.index === 0) {
+            data.cell.styles.fontStyle = 'bold';
+          }
+        } else {
+          // Apply light gray background to other rows
+          data.cell.styles.fillColor = [240, 240, 240];
+        }
+      }
+    }
   });
   
   // Get the last Y position after the table

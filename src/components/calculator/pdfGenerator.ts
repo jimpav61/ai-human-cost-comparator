@@ -1,3 +1,4 @@
+
 import jsPDF from 'jspdf';
 import autoTable from 'jspdf-autotable';
 import { formatCurrency } from '@/utils/formatters';
@@ -89,9 +90,14 @@ export const generatePDF = (params: GeneratePDFParams) => {
     styles: { fontSize: 11 },
     bodyStyles: { textColor: [0, 0, 0] },
     alternateRowStyles: { fillColor: [240, 240, 240] },
-    rowStyles: {
-      1: { fillColor: [226, 240, 217], fontStyle: 'bold' } // Light green background for AI Solution row
-    },
+    // Use a more specific styling approach for individual rows
+    willDrawCell: function(data) {
+      // Highlight the AI Solution row with a green background
+      if (data.row.index === 1 && data.section === 'body') {
+        data.cell.styles.fillColor = [226, 240, 217];
+        data.cell.styles.fontStyle = 'bold';
+      }
+    }
   });
 
   currentY = (doc as any).lastAutoTable.finalY + 15;

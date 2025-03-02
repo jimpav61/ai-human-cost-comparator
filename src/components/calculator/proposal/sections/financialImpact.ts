@@ -64,9 +64,14 @@ export const addFinancialImpact = (doc: JsPDFWithAutoTable, yPosition: number, p
     ],
     styles: { fontSize: 11 },
     bodyStyles: { textColor: [0, 0, 0] },
-    rowStyles: {
-      1: { fillColor: [226, 240, 217], fontStyle: 'bold' } // Light green background for AI Solution row
-    },
+    // Use willDrawCell instead of rowStyles
+    willDrawCell: function(data) {
+      // Highlight the AI Solution row with a green background
+      if (data.row.index === 1 && data.section === 'body') {
+        data.cell.styles.fillColor = [226, 240, 217];
+        data.cell.styles.fontStyle = 'bold';
+      }
+    }
   });
   
   // Get the last Y position after the table
