@@ -1,4 +1,3 @@
-
 import React from 'react';
 import { BarChart, Clock, DollarSign } from 'lucide-react';
 import { formatCurrency, formatNumber, formatPercent } from '@/utils/formatters';
@@ -20,10 +19,8 @@ export const ResultsSummary: React.FC<ResultsSummaryProps> = ({
   tierDisplayName,
   aiTypeDisplay,
 }) => {
-  // Fix the duplication by ensuring aiTypeDisplay is not repeated in tierDisplayName
-  // Create a clean display that doesn't duplicate "Text Only"
   const planDisplay = aiTypeDisplay === 'Text Only' && tierDisplayName.includes('Text Only')
-    ? tierDisplayName.replace(' (Text Only)', '')
+    ? tierDisplayName
     : `${tierDisplayName} (${aiTypeDisplay})`;
 
   return (
