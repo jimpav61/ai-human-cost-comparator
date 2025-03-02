@@ -27,14 +27,17 @@ export const calculatePricingDetails = (inputs: CalculatorInputs): PricingDetail
       voiceType = 'Basic Voice AI';
     }
     
-    pricingDetails.push({
-      title: voiceType,
-      base: null,
-      rate: `${formatCurrency(minuteRate)}${(inputs.aiTier === 'premium' || isConversational) ? ' + 15% premium' : ''}/minute after ${includedMinutes} included minutes`,
-      totalMinutes: totalMinutes,
-      monthlyCost: usageCost,
-      usageCost: usageCost
-    });
+    // Only add voice details if there's actual usage or it's a combined plan
+    if (totalMinutes > 0 || inputs.aiType === 'both' || inputs.aiType === 'both-premium') {
+      pricingDetails.push({
+        title: voiceType,
+        base: null,
+        rate: `${formatCurrency(minuteRate)}${(inputs.aiTier === 'premium' || isConversational) ? ' + 15% premium' : ''}/minute after ${includedMinutes} included minutes`,
+        totalMinutes: totalMinutes,
+        monthlyCost: usageCost,
+        usageCost: usageCost
+      });
+    }
   }
 
   if (inputs.aiType === 'chatbot' || inputs.aiType === 'both' || inputs.aiType === 'both-premium') {

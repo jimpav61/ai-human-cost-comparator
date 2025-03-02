@@ -22,12 +22,12 @@ export const ReportGenerator = ({ lead, buttonStyle = "default" }: ReportGenerat
     try {
       // Create default values for missing data
       const defaultResults = {
-        aiCostMonthly: { voice: 85, chatbot: 99, total: 184, setupFee: 749 },
+        aiCostMonthly: { voice: 0, chatbot: 99, total: 99, setupFee: 249 },
         humanCostMonthly: 3800,
-        monthlySavings: 3616,
-        yearlySavings: 43392,
-        savingsPercentage: 95.2,
-        breakEvenPoint: { voice: 240, chatbot: 520 },
+        monthlySavings: 3701,
+        yearlySavings: 44412,
+        savingsPercentage: 97.4,
+        breakEvenPoint: { voice: 0, chatbot: 520 },
         humanHours: {
           dailyPerEmployee: 8,
           weeklyTotal: 200,
@@ -44,12 +44,12 @@ export const ReportGenerator = ({ lead, buttonStyle = "default" }: ReportGenerat
       
       // Define inputs object for pricing details calculation
       const inputs = lead.calculator_inputs || {
-        aiType: 'both',
-        aiTier: 'growth',
+        aiType: 'chatbot',
+        aiTier: 'starter',
         role: 'customerService',
         numEmployees: 5,
-        callVolume: 1000, 
-        avgCallDuration: 5,
+        callVolume: 0, 
+        avgCallDuration: 0,
         chatVolume: 2000,
         avgChatLength: 8,
         avgChatResolutionTime: 10
