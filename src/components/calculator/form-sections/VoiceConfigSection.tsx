@@ -1,18 +1,24 @@
 
 import React from 'react';
 import type { CalculatorInputs } from '@/hooks/useCalculator';
+import { AI_RATES } from '@/constants/pricing';
 
 interface VoiceConfigSectionProps {
   callVolume: number;
   avgCallDuration: number;
+  aiTier: string;
   onInputChange: (field: keyof CalculatorInputs, value: any) => void;
 }
 
 export const VoiceConfigSection: React.FC<VoiceConfigSectionProps> = ({
   callVolume,
   avgCallDuration,
+  aiTier,
   onInputChange
 }) => {
+  const includedMinutes = AI_RATES.chatbot[aiTier as keyof typeof AI_RATES.chatbot].includedVoiceMinutes || 0;
+  const isStarterPlan = aiTier === 'starter';
+  
   return (
     <>
       <div className="mb-4">
@@ -21,11 +27,22 @@ export const VoiceConfigSection: React.FC<VoiceConfigSectionProps> = ({
         </label>
         <input 
           type="number" 
-          min="1"
+          min={isStarterPlan ? "0" : includedMinutes.toString()}
           value={callVolume}
           onChange={(e) => onInputChange('callVolume', parseInt(e.target.value) || 0)}
           className="calculator-input"
+          disabled={isStarterPlan} // Disable for starter plan
         />
+        {!isStarterPlan && includedMinutes > 0 && (
+          <p className="text-xs text-green-600 mt-1">
+            Your plan includes {includedMinutes} free voice minutes per month
+          </p>
+        )}
+        {isStarterPlan && (
+          <p className="text-xs text-amber-600 mt-1">
+            The Starter Plan does not include voice capabilities
+          </p>
+        )}
       </div>
       
       <div className="mb-4">
@@ -39,6 +56,7 @@ export const VoiceConfigSection: React.FC<VoiceConfigSectionProps> = ({
           value={avgCallDuration}
           onChange={(e) => onInputChange('avgCallDuration', parseFloat(e.target.value) || 0)}
           className="calculator-input"
+          disabled={isStarterPlan} // Disable for starter plan
         />
       </div>
     </>

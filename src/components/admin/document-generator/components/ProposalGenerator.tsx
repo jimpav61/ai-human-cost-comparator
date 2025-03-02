@@ -7,6 +7,7 @@ import { DownloadButton } from "./DownloadButton";
 import { useDownloadState } from "../hooks/useDownloadState";
 import { calculatePricingDetails, getTierDisplayName, getAITypeDisplay } from "@/components/calculator/pricingDetailsCalculator";
 import { useNavigate } from "react-router-dom";
+import { AI_RATES } from "@/constants/pricing";
 
 interface ProposalGeneratorProps {
   lead: Lead;
@@ -23,23 +24,43 @@ export const ProposalGenerator = ({ lead }: ProposalGeneratorProps) => {
     try {
       console.log('Generating proposal for lead:', lead);
       
+      // Get default tier for this lead
+      const defaultTier = 'growth'; 
+      const defaultIncludedMinutes = AI_RATES.chatbot[defaultTier].includedVoiceMinutes || 600;
+
       // Create default values for missing data based on the tier
       const defaultInputs = {
         aiType: 'both',
-        aiTier: 'growth',
+        aiTier: defaultTier,
         role: 'customerService',
         numEmployees: 5,
-        callVolume: 1000, 
+        callVolume: defaultIncludedMinutes, // Start with the included minutes 
         avgCallDuration: 5,
         chatVolume: 2000,
         avgChatLength: 8,
         avgChatResolutionTime: 10
       };
       
-      // Use actual data if available, otherwise use defaults
-      const inputs = lead.calculator_inputs || defaultInputs;
+      // If user has actual calculator inputs, use those, otherwise default
+      let inputs = defaultInputs;
+      if (lead.calculator_inputs) {
+        inputs = lead.calculator_inputs;
+        
+        // Ensure call volume respects included minutes for the selected plan
+        const selectedTier = inputs.aiTier || defaultTier;
+        const tierIncludedMinutes = AI_RATES.chatbot[selectedTier as keyof typeof AI_RATES.chatbot].includedVoiceMinutes || 0;
+        
+        // If starter plan, set call volume to 0
+        if (selectedTier === 'starter') {
+          inputs.callVolume = 0;
+        } 
+        // For other plans, ensure call volume is at least the included minutes
+        else if (inputs.callVolume < tierIncludedMinutes) {
+          inputs.callVolume = tierIncludedMinutes;
+        }
+      }
       
-      // Default results based on the tier
+      // Use actual data if available, otherwise use defaults
       const defaultResults = {
         aiCostMonthly: { 
           voice: inputs.aiTier === 'starter' ? 0 : 55, 
@@ -61,7 +82,7 @@ export const ProposalGenerator = ({ lead }: ProposalGeneratorProps) => {
         annualPlan: inputs.aiTier === 'starter' ? 990 : (inputs.aiTier === 'growth' ? 2290 : 4290)
       };
       
-      // Use actual data if available, otherwise use defaults
+      // Use actual results if available, otherwise use defaults
       const results = lead.calculator_results && Object.keys(lead.calculator_results).length > 0 
         ? lead.calculator_results 
         : defaultResults;

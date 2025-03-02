@@ -7,6 +7,7 @@ import { JobConfigurationSection } from './form-sections/JobConfigurationSection
 import { AITypeSection } from './form-sections/AITypeSection';
 import { VoiceConfigSection } from './form-sections/VoiceConfigSection';
 import { ChatConfigSection } from './form-sections/ChatConfigSection';
+import { AI_RATES } from '@/constants/pricing';
 
 interface CalculatorFormProps {
   inputs: CalculatorInputs;
@@ -42,6 +43,19 @@ export const CalculatorForm: React.FC<CalculatorFormProps> = ({ inputs, onInputC
       });
     }
   }, [inputs.aiType]);
+
+  // Adjust call volume based on tier selection
+  useEffect(() => {
+    const includedMinutes = AI_RATES.chatbot[inputs.aiTier].includedVoiceMinutes;
+    
+    // If we switch to a plan with voice minutes, initialize with those minutes
+    if (inputs.aiTier !== 'starter' && includedMinutes > 0 && inputs.callVolume < includedMinutes) {
+      onInputChange('callVolume', includedMinutes);
+    } else if (inputs.aiTier === 'starter' && inputs.callVolume > 0) {
+      // If starter plan is selected, reset call volume to 0
+      onInputChange('callVolume', 0);
+    }
+  }, [inputs.aiTier]);
 
   const handleTierSelect = (tier: string) => {
     if (tier === 'starter' && (inputs.aiType === 'voice' || inputs.aiType === 'conversationalVoice' || inputs.aiType === 'both' || inputs.aiType === 'both-premium')) {

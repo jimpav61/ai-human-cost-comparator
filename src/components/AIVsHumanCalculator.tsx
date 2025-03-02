@@ -7,19 +7,24 @@ import { toast } from "@/components/ui/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 import { BusinessSuggestionsAndPlacements } from './calculator/BusinessSuggestionsAndPlacements';
 import type { LeadData } from './calculator/types';
+import { AI_RATES } from '@/constants/pricing';
 
 interface AIVsHumanCalculatorProps {
   leadData: LeadData;
 }
 
 export const AIVsHumanCalculator: React.FC<AIVsHumanCalculatorProps> = ({ leadData }) => {
+  // Get the default included minutes for the growth plan
+  const defaultTier = 'growth';
+  const defaultIncludedMinutes = AI_RATES.chatbot[defaultTier].includedVoiceMinutes || 600;
+  
   // Initialize with defaults
   const [calculatorInputs, setCalculatorInputs] = useState<CalculatorInputs>({
     aiType: 'chatbot',
     aiTier: 'growth',
     role: 'customerService',
     numEmployees: leadData.employeeCount || 10,
-    callVolume: 2000,
+    callVolume: defaultIncludedMinutes, // Start with the included minutes
     avgCallDuration: 4.5,
     chatVolume: 5000,
     avgChatLength: 8,
