@@ -20,13 +20,19 @@ export const ResultsSummary: React.FC<ResultsSummaryProps> = ({
   tierDisplayName,
   aiTypeDisplay,
 }) => {
+  // Fix the duplication by ensuring aiTypeDisplay is not repeated in tierDisplayName
+  // Create a clean display that doesn't duplicate "Text Only"
+  const planDisplay = aiTypeDisplay === 'Text Only' && tierDisplayName.includes('Text Only')
+    ? tierDisplayName.replace(' (Text Only)', '')
+    : `${tierDisplayName} (${aiTypeDisplay})`;
+
   return (
     <div>
       <div className="bg-brand-50 p-3 rounded-lg mb-4 border border-brand-100">
         <div className="flex items-center">
           <div className="text-brand-600 font-medium">Selected Plan:</div>
           <div className="ml-2 text-gray-800">
-            {tierDisplayName} ({aiTypeDisplay})
+            {planDisplay}
           </div>
         </div>
       </div>
