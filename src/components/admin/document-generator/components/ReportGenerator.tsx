@@ -130,7 +130,7 @@ export const ReportGenerator = ({ lead, buttonStyle = "default" }: ReportGenerat
         variant={hasDownloaded ? "secondary" : "default"}
       >
         <Download className="h-5 w-5" />
-        {hasDownloaded ? "Report Downloaded" : "Download Detailed Report & ROI Analysis"}
+        {hasDownloaded ? "Report Downloaded" : "Download Report"}
       </Button>
     );
   }
