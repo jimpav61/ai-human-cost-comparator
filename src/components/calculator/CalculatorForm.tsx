@@ -20,6 +20,8 @@ export const CalculatorForm: React.FC<CalculatorFormProps> = ({ inputs, onInputC
     if (inputs.aiType === 'chatbot' && inputs.aiTier !== 'starter') {
       // If only text is needed, default to starter plan
       onInputChange('aiTier', 'starter');
+      // Ensure call volume is set to 0 for starter plan
+      onInputChange('callVolume', 0);
       toast({
         title: "Plan Updated",
         description: "Switched to Starter Plan since only text capabilities are needed.",
@@ -28,6 +30,9 @@ export const CalculatorForm: React.FC<CalculatorFormProps> = ({ inputs, onInputC
     } else if (inputs.aiType === 'voice' && inputs.aiTier === 'starter') {
       // If basic voice is needed, upgrade to growth plan
       onInputChange('aiTier', 'growth');
+      // Set call volume to the included minutes
+      const growthIncludedMinutes = AI_RATES.chatbot['growth']?.includedVoiceMinutes || 600;
+      onInputChange('callVolume', growthIncludedMinutes);
       toast({
         title: "Plan Upgraded",
         description: "Voice features require at least the Growth Plan. We've automatically upgraded your selection.",
@@ -36,6 +41,9 @@ export const CalculatorForm: React.FC<CalculatorFormProps> = ({ inputs, onInputC
     } else if (inputs.aiType === 'conversationalVoice' || inputs.aiType === 'both-premium') {
       // If conversational voice is needed, upgrade to premium plan
       onInputChange('aiTier', 'premium');
+      // Set call volume to the included minutes
+      const premiumIncludedMinutes = AI_RATES.chatbot['premium']?.includedVoiceMinutes || 600;
+      onInputChange('callVolume', premiumIncludedMinutes);
       toast({
         title: "Premium Plan Selected",
         description: "Conversational Voice AI requires the Premium Plan. We've automatically selected it for you.",
@@ -46,7 +54,7 @@ export const CalculatorForm: React.FC<CalculatorFormProps> = ({ inputs, onInputC
 
   // Adjust call volume based on tier selection
   useEffect(() => {
-    const includedMinutes = AI_RATES.chatbot[inputs.aiTier].includedVoiceMinutes;
+    const includedMinutes = AI_RATES.chatbot[inputs.aiTier]?.includedVoiceMinutes || 0;
     
     // If we switch to a plan with voice minutes, initialize with those minutes
     if (inputs.aiTier !== 'starter' && includedMinutes > 0 && inputs.callVolume < includedMinutes) {
@@ -78,6 +86,16 @@ export const CalculatorForm: React.FC<CalculatorFormProps> = ({ inputs, onInputC
     }
     
     onInputChange('aiTier', tier as any);
+    
+    // Update call volume based on the tier
+    if (tier === 'starter') {
+      onInputChange('callVolume', 0);
+    } else {
+      const includedMinutes = AI_RATES.chatbot[tier as keyof typeof AI_RATES.chatbot]?.includedVoiceMinutes || 0;
+      if (inputs.callVolume < includedMinutes) {
+        onInputChange('callVolume', includedMinutes);
+      }
+    }
   };
 
   const handleAITypeChange = (value: string) => {

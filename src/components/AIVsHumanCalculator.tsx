@@ -18,13 +18,13 @@ export const AIVsHumanCalculator: React.FC<AIVsHumanCalculatorProps> = ({ leadDa
   const defaultTier = 'growth';
   const defaultIncludedMinutes = AI_RATES.chatbot[defaultTier]?.includedVoiceMinutes || 600;
   
-  // Initialize with defaults
+  // Initialize with defaults - ensure chatbot type has 0 call volume
   const [calculatorInputs, setCalculatorInputs] = useState<CalculatorInputs>({
     aiType: 'chatbot',
-    aiTier: 'growth',
+    aiTier: 'starter',
     role: 'customerService',
     numEmployees: leadData.employeeCount || 10,
-    callVolume: defaultIncludedMinutes, // Start with the included minutes
+    callVolume: 0, // Start with 0 for starter plan
     avgCallDuration: 4.5,
     chatVolume: 5000,
     avgChatLength: 8,
@@ -38,7 +38,23 @@ export const AIVsHumanCalculator: React.FC<AIVsHumanCalculatorProps> = ({ leadDa
   
   // Handle input changes from the calculator form
   const handleInputChange = (field: keyof CalculatorInputs, value: any) => {
-    setCalculatorInputs(prev => ({ ...prev, [field]: value }));
+    setCalculatorInputs(prev => {
+      const updatedInputs = { ...prev, [field]: value };
+      
+      // If changing to starter plan, ensure call volume is 0
+      if (field === 'aiTier' && value === 'starter') {
+        updatedInputs.callVolume = 0;
+      }
+      // If changing to a plan with voice, ensure call volume is at least the included minutes
+      else if (field === 'aiTier' && value !== 'starter') {
+        const includedMinutes = AI_RATES.chatbot[value]?.includedVoiceMinutes || 0;
+        if (updatedInputs.callVolume < includedMinutes) {
+          updatedInputs.callVolume = includedMinutes;
+        }
+      }
+      
+      return updatedInputs;
+    });
   };
   
   // Generate report and save to database - removing proposal references

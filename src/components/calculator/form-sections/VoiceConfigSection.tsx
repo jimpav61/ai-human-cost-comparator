@@ -2,6 +2,7 @@
 import React, { useEffect } from 'react';
 import type { CalculatorInputs } from '@/hooks/useCalculator';
 import { AI_RATES } from '@/constants/pricing';
+import { toast } from "@/components/ui/use-toast";
 
 interface VoiceConfigSectionProps {
   callVolume: number;
@@ -18,6 +19,30 @@ export const VoiceConfigSection: React.FC<VoiceConfigSectionProps> = ({
 }) => {
   const includedMinutes = AI_RATES.chatbot[aiTier as keyof typeof AI_RATES.chatbot]?.includedVoiceMinutes || 0;
   const isStarterPlan = aiTier === 'starter';
+  
+  // Handle call volume changes
+  const handleCallVolumeChange = (value: number) => {
+    if (isStarterPlan && value > 0) {
+      // If user tries to add minutes in starter plan, auto-upgrade to growth
+      onInputChange('aiTier', 'growth');
+      // Set to the included minutes of growth plan
+      const growthIncludedMinutes = AI_RATES.chatbot['growth']?.includedVoiceMinutes || 600;
+      onInputChange('callVolume', growthIncludedMinutes);
+      
+      toast({
+        title: "Plan Upgraded",
+        description: "Voice capabilities require Growth Plan or higher. We've automatically upgraded your selection.",
+        variant: "default",
+      });
+    } else {
+      // Normal handling for non-starter plans
+      // Ensure value is a multiple of 50 for increments
+      const roundedValue = Math.ceil(value / 50) * 50;
+      // Ensure it's at least the included minutes
+      const finalValue = Math.max(roundedValue, includedMinutes);
+      onInputChange('callVolume', finalValue);
+    }
+  };
   
   // Ensure call volume respects included minutes whenever the tier changes
   useEffect(() => {
@@ -40,8 +65,9 @@ export const VoiceConfigSection: React.FC<VoiceConfigSectionProps> = ({
         <input 
           type="number" 
           min={isStarterPlan ? "0" : includedMinutes.toString()}
+          step="50"
           value={callVolume}
-          onChange={(e) => onInputChange('callVolume', parseInt(e.target.value) || 0)}
+          onChange={(e) => handleCallVolumeChange(parseInt(e.target.value) || 0)}
           className="calculator-input"
           disabled={isStarterPlan} // Disable for starter plan
         />
