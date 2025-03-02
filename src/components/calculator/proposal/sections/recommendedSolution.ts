@@ -1,8 +1,8 @@
-
 import { JsPDFWithAutoTable } from '../types';
 import autoTable from 'jspdf-autotable';
 import { formatCurrency } from '@/utils/formatters';
 import { getTierDisplayName, getAITypeDisplay } from '@/components/calculator/pricingDetailsCalculator';
+import { AI_RATES } from '@/constants/pricing';
 
 export const addRecommendedSolution = (doc: JsPDFWithAutoTable, yPosition: number, params: any): number => {
   // Add header with some spacing
@@ -17,8 +17,24 @@ export const addRecommendedSolution = (doc: JsPDFWithAutoTable, yPosition: numbe
   const tierName = params.tierName || getTierDisplayName(params.results?.aiTier || 'growth');
   const aiType = params.aiType || getAITypeDisplay(params.results?.aiType || 'both');
   
+  // Extract tier key from the name
+  const tierKey = tierName.toLowerCase().includes('starter') ? 'starter' : 
+                tierName.toLowerCase().includes('growth') ? 'growth' : 
+                tierName.toLowerCase().includes('premium') ? 'premium' : 'growth';
+  
+  // Get the correct included minutes based on the tier
+  const includedMinutes = AI_RATES.chatbot[tierKey]?.includedVoiceMinutes || 0;
+  
   // Plan details - Use tierName exactly as provided from our standard plans
   let planText = `Based on your specific needs, we recommend our ${tierName} solution. This tailored package provides optimal functionality while maximizing your return on investment.`;
+  
+  // Add voice capabilities information if not starter plan
+  if (tierKey !== 'starter' && (aiType.toLowerCase().includes('voice') || aiType.toLowerCase().includes('both'))) {
+    planText += ` The plan includes ${includedMinutes} free voice minutes per month.`;
+  } else if (tierKey === 'starter') {
+    planText += ` Note that the Starter Plan does not include voice capabilities.`;
+  }
+  
   const splitPlanText = doc.splitTextToSize(planText, 170);
   doc.text(splitPlanText, 20, yPosition);
   

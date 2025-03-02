@@ -1,5 +1,5 @@
 
-import React from 'react';
+import React, { useEffect } from 'react';
 import type { CalculatorInputs } from '@/hooks/useCalculator';
 import { AI_RATES } from '@/constants/pricing';
 
@@ -18,6 +18,18 @@ export const VoiceConfigSection: React.FC<VoiceConfigSectionProps> = ({
 }) => {
   const includedMinutes = AI_RATES.chatbot[aiTier as keyof typeof AI_RATES.chatbot]?.includedVoiceMinutes || 0;
   const isStarterPlan = aiTier === 'starter';
+  
+  // Ensure call volume respects included minutes whenever the tier changes
+  useEffect(() => {
+    // For starter plan, set to 0
+    if (isStarterPlan && callVolume !== 0) {
+      onInputChange('callVolume', 0);
+    }
+    // For other plans, ensure call volume is at least the included minutes
+    else if (!isStarterPlan && callVolume < includedMinutes) {
+      onInputChange('callVolume', includedMinutes);
+    }
+  }, [aiTier, includedMinutes, isStarterPlan, callVolume, onInputChange]);
   
   return (
     <>

@@ -1,9 +1,9 @@
-
 import jsPDF from 'jspdf';
 import autoTable from 'jspdf-autotable';
-import { formatCurrency } from '@/utils/formatters';
+import { formatCurrency, formatNumber } from '@/utils/formatters';
 import type { CalculationResults } from '@/hooks/useCalculator';
 import type { BusinessSuggestion, AIPlacement } from './types';
+import { AI_RATES } from '@/constants/pricing';
 
 // Add custom interface to handle the jsPDF extension from autotable
 interface JsPDFWithAutoTable extends jsPDF {
@@ -60,7 +60,7 @@ export const generatePDF = (params: GeneratePDFParams) => {
   doc.text(`Date: ${reportDate}`, 20, currentY);
   currentY += 14;
 
-  // Add selected plan information
+  // Add selected plan information with voice minutes details
   if (params.tierName && params.aiType) {
     doc.setFontSize(14);
     doc.setTextColor(0, 0, 0);
@@ -68,8 +68,26 @@ export const generatePDF = (params: GeneratePDFParams) => {
     currentY += 8;
     
     doc.setFontSize(12);
+    const tierKey = params.tierName.toLowerCase().includes('starter') ? 'starter' : 
+                   params.tierName.toLowerCase().includes('growth') ? 'growth' : 
+                   params.tierName.toLowerCase().includes('premium') ? 'premium' : 'growth';
+    
+    const includedMinutes = AI_RATES.chatbot[tierKey]?.includedVoiceMinutes || 0;
+    const voiceCapability = tierKey === 'starter' ? 'No voice capabilities' : 
+                          `Includes ${includedMinutes} free voice minutes per month`;
+    
     doc.text(`${params.tierName} (${params.aiType})`, 20, currentY);
-    currentY += 14;
+    currentY += 7;
+    
+    // Only show voice capabilities line if not starter plan or if explicitly mentioned
+    if (tierKey !== 'starter' || params.aiType.toLowerCase().includes('voice')) {
+      doc.setFontSize(10);
+      doc.setTextColor(100, 100, 100);
+      doc.text(voiceCapability, 20, currentY);
+      currentY += 7;
+    }
+    
+    currentY += 7; // Extra spacing
   }
 
   // Cost Summary

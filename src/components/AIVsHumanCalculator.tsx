@@ -14,9 +14,9 @@ interface AIVsHumanCalculatorProps {
 }
 
 export const AIVsHumanCalculator: React.FC<AIVsHumanCalculatorProps> = ({ leadData }) => {
-  // Get the default included minutes for the growth plan
+  // Get the default included minutes for the selected plan
   const defaultTier = 'growth';
-  const defaultIncludedMinutes = AI_RATES.chatbot[defaultTier].includedVoiceMinutes || 600;
+  const defaultIncludedMinutes = AI_RATES.chatbot[defaultTier]?.includedVoiceMinutes || 600;
   
   // Initialize with defaults
   const [calculatorInputs, setCalculatorInputs] = useState<CalculatorInputs>({
