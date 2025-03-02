@@ -130,7 +130,7 @@ export const ReportGenerator = ({ lead, buttonStyle = "default" }: ReportGenerat
         variant={hasDownloaded ? "secondary" : "default"}
       >
         <Download className="h-5 w-5" />
-        {hasDownloaded ? "Report Downloaded" : "Download Report"}
+        {hasDownloaded ? "Download Report" : "Download Report"}
       </Button>
     );
   }
@@ -140,7 +140,7 @@ export const ReportGenerator = ({ lead, buttonStyle = "default" }: ReportGenerat
     <DownloadButton
       hasDownloaded={hasDownloaded}
       label="Report"
-      downloadedLabel="Downloaded"
+      downloadedLabel="Download"
       icon={<Download className="h-4 w-4 mr-1" />}
       onClick={handleDownloadReport}
     />
