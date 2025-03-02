@@ -61,21 +61,32 @@ export const addRecommendedSolution = (doc: JsPDFWithAutoTable, yPosition: numbe
     params.pricingDetails.forEach(detail => {
       if (detail.title === 'Text AI') {
         pricingBreakdownData.push(
-          ["Text AI Base Fee", "", formatCurrency(detail.base || 0)],
-          ["Message Volume", `${formatCurrency(detail.totalMessages || 0)} messages/month`, ""],
-          ["Message Rate", detail.rate, ""],
-          ["Message Usage Cost", "", formatCurrency(detail.usageCost || 0)]
+          ["Text AI Base Fee", "", formatCurrency(detail.base || 0)]
         );
         
-        if (detail.volumeDiscount && detail.volumeDiscount > 0) {
+        // For Starter plan, we don't show message costs
+        if (params.tierName && params.tierName.includes('Starter')) {
           pricingBreakdownData.push(
-            ["Volume Discount", "Based on message volume", `-${formatCurrency(detail.volumeDiscount)}`]
+            ["Message Volume", `${formatCurrency(detail.totalMessages || 0)} messages/month`, "Included in base fee"],
+            ["Total Text AI Cost", "", formatCurrency(detail.base || 0)]
+          );
+        } else {
+          pricingBreakdownData.push(
+            ["Message Volume", `${formatCurrency(detail.totalMessages || 0)} messages/month`, ""],
+            ["Message Rate", detail.rate, ""],
+            ["Message Usage Cost", "", formatCurrency(detail.usageCost || 0)]
+          );
+          
+          if (detail.volumeDiscount && detail.volumeDiscount > 0) {
+            pricingBreakdownData.push(
+              ["Volume Discount", "Based on message volume", `-${formatCurrency(detail.volumeDiscount)}`]
+            );
+          }
+          
+          pricingBreakdownData.push(
+            ["Total Text AI Cost", "", formatCurrency(detail.monthlyCost)]
           );
         }
-        
-        pricingBreakdownData.push(
-          ["Total Text AI Cost", "", formatCurrency(detail.monthlyCost)]
-        );
       } else if (detail.title === 'Voice AI' || detail.title.includes("Voice AI")) {
         pricingBreakdownData.push(
           ["Included Voice Minutes", detail.rate.includes("included") ? detail.rate.split("after ")[1].split(" included")[0] : "0", "Included"],

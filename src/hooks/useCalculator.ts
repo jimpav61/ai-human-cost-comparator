@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from 'react';
 import { DEFAULT_AI_RATES, HUMAN_HOURLY_RATES, fetchPricingConfigurations, type AIRates } from '@/constants/pricing';
 
@@ -109,17 +110,22 @@ export const useCalculator = (inputs: CalculatorInputs): CalculationResults => {
       
       const baseCost = chatbotRates.base;
       
-      const totalMessages = inputs.chatVolume * inputs.avgChatLength;
-      const messageUsageCost = totalMessages * chatbotRates.perMessage;
-      
-      let finalMessageCost = messageUsageCost;
-      if (totalMessages > 50000) {
-        finalMessageCost = messageUsageCost * 0.8;
-      } else if (totalMessages > 10000) {
-        finalMessageCost = messageUsageCost * 0.9;
+      // For starter plan, there are no per-message costs
+      if (effectiveTier === 'starter') {
+        monthlyChatbotCost = baseCost;
+      } else {
+        const totalMessages = inputs.chatVolume * inputs.avgChatLength;
+        const messageUsageCost = totalMessages * chatbotRates.perMessage;
+        
+        let finalMessageCost = messageUsageCost;
+        if (totalMessages > 50000) {
+          finalMessageCost = messageUsageCost * 0.8;
+        } else if (totalMessages > 10000) {
+          finalMessageCost = messageUsageCost * 0.9;
+        }
+        
+        monthlyChatbotCost = baseCost + finalMessageCost;
       }
-      
-      monthlyChatbotCost = baseCost + finalMessageCost;
     }
     
     const monthlyAiCost = monthlyVoiceCost + monthlyChatbotCost;

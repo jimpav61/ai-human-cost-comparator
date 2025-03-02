@@ -1,3 +1,4 @@
+
 import { formatCurrency } from '@/utils/formatters';
 import type { CalculatorInputs } from '@/hooks/useCalculator';
 import type { PricingDetail } from './types';
@@ -37,35 +38,49 @@ export const calculatePricingDetails = (inputs: CalculatorInputs): PricingDetail
   }
 
   if (inputs.aiType === 'chatbot' || inputs.aiType === 'both' || inputs.aiType === 'both-premium') {
-    const totalMessages = inputs.chatVolume * inputs.avgChatLength;
     const baseRate = AI_RATES.chatbot[inputs.aiTier].base;
-    const perMessageRate = AI_RATES.chatbot[inputs.aiTier].perMessage;
-    const messageUsageCost = totalMessages * perMessageRate;
     
-    // Calculate volume discount
-    let volumeDiscount = 0;
-    let finalMessageCost = messageUsageCost;
-    if (totalMessages > 50000) {
-      volumeDiscount = messageUsageCost * 0.2; // 20% discount
-      finalMessageCost = messageUsageCost * 0.8;
-    } else if (totalMessages > 10000) {
-      volumeDiscount = messageUsageCost * 0.1; // 10% discount
-      finalMessageCost = messageUsageCost * 0.9;
+    // For starter plan, there are no per-message costs
+    if (inputs.aiTier === 'starter') {
+      pricingDetails.push({
+        title: 'Text AI',
+        base: baseRate,
+        rate: '$0.00/message',
+        totalMessages: inputs.chatVolume * inputs.avgChatLength,
+        monthlyCost: baseRate,
+        usageCost: 0
+      });
+    } else {
+      // For other plans, calculate per-message costs
+      const totalMessages = inputs.chatVolume * inputs.avgChatLength;
+      const perMessageRate = AI_RATES.chatbot[inputs.aiTier].perMessage;
+      const messageUsageCost = totalMessages * perMessageRate;
+      
+      // Calculate volume discount
+      let volumeDiscount = 0;
+      let finalMessageCost = messageUsageCost;
+      if (totalMessages > 50000) {
+        volumeDiscount = messageUsageCost * 0.2; // 20% discount
+        finalMessageCost = messageUsageCost * 0.8;
+      } else if (totalMessages > 10000) {
+        volumeDiscount = messageUsageCost * 0.1; // 10% discount
+        finalMessageCost = messageUsageCost * 0.9;
+      }
+      
+      // Calculate complexity factor
+      const complexityFactor = Math.min(1.5, Math.max(1.0, inputs.avgChatResolutionTime / 10));
+      
+      pricingDetails.push({
+        title: 'Text AI',
+        base: baseRate,
+        rate: `${formatCurrency(perMessageRate)}/message`,
+        totalMessages: totalMessages,
+        monthlyCost: baseRate + finalMessageCost,
+        usageCost: messageUsageCost,
+        volumeDiscount: volumeDiscount,
+        complexityFactor: complexityFactor
+      });
     }
-    
-    // Calculate complexity factor
-    const complexityFactor = Math.min(1.5, Math.max(1.0, inputs.avgChatResolutionTime / 10));
-    
-    pricingDetails.push({
-      title: 'Text AI',
-      base: baseRate,
-      rate: `${formatCurrency(perMessageRate)}/message`,
-      totalMessages: totalMessages,
-      monthlyCost: baseRate + finalMessageCost,
-      usageCost: messageUsageCost,
-      volumeDiscount: volumeDiscount,
-      complexityFactor: complexityFactor
-    });
   }
 
   return pricingDetails;

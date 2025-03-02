@@ -22,11 +22,11 @@ export const ReportGenerator = ({ lead, buttonStyle = "default" }: ReportGenerat
     try {
       // Create default values for missing data
       const defaultResults = {
-        aiCostMonthly: { voice: 85, chatbot: 199, total: 284, setupFee: 749 },
+        aiCostMonthly: { voice: 85, chatbot: 99, total: 184, setupFee: 749 },
         humanCostMonthly: 3800,
-        monthlySavings: 3516,
-        yearlySavings: 42192,
-        savingsPercentage: 92.5,
+        monthlySavings: 3616,
+        yearlySavings: 43392,
+        savingsPercentage: 95.2,
         breakEvenPoint: { voice: 240, chatbot: 520 },
         humanHours: {
           dailyPerEmployee: 8,
@@ -34,7 +34,7 @@ export const ReportGenerator = ({ lead, buttonStyle = "default" }: ReportGenerat
           monthlyTotal: 850,
           yearlyTotal: 10200
         },
-        annualPlan: 2840
+        annualPlan: 990
       };
       
       // Use actual data if available, otherwise use defaults
