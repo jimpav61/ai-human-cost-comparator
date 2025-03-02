@@ -17,7 +17,7 @@ export const addRecommendedSolution = (doc: JsPDFWithAutoTable, yPosition: numbe
   const tierName = params.tierName || getTierDisplayName(params.results?.aiTier || 'growth');
   const aiType = params.aiType || getAITypeDisplay(params.results?.aiType || 'both');
   
-  // Plan details - Use tierName directly without fallback to "Custom Plan"
+  // Plan details - Use tierName exactly as provided from our standard plans
   let planText = `Based on your specific needs, we recommend our ${tierName} (${aiType}) solution. This tailored package provides optimal functionality while maximizing your return on investment.`;
   const splitPlanText = doc.splitTextToSize(planText, 170);
   doc.text(splitPlanText, 20, yPosition);

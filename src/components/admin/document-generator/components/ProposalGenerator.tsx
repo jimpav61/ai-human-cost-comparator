@@ -6,12 +6,14 @@ import { generateProposal } from "@/components/calculator/proposalGenerator";
 import { DownloadButton } from "./DownloadButton";
 import { useDownloadState } from "../hooks/useDownloadState";
 import { calculatePricingDetails, getTierDisplayName, getAITypeDisplay } from "@/components/calculator/pricingDetailsCalculator";
+import { useNavigate } from "react-router-dom";
 
 interface ProposalGeneratorProps {
   lead: Lead;
 }
 
 export const ProposalGenerator = ({ lead }: ProposalGeneratorProps) => {
+  const navigate = useNavigate();
   const { hasDownloaded, markAsDownloaded } = useDownloadState({
     storageKey: 'downloadedProposals',
     leadId: lead.id
@@ -80,6 +82,9 @@ export const ProposalGenerator = ({ lead }: ProposalGeneratorProps) => {
       
       // Mark as downloaded
       markAsDownloaded();
+
+      // Navigate back to admin dashboard
+      navigate('/admin');
 
       toast({
         title: "Success",
