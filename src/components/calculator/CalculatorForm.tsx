@@ -115,6 +115,7 @@ export const CalculatorForm: React.FC<CalculatorFormProps> = ({ inputs, onInputC
           <VoiceConfigSection 
             callVolume={inputs.callVolume}
             avgCallDuration={inputs.avgCallDuration}
+            aiTier={inputs.aiTier}
             onInputChange={onInputChange}
           />
         )}

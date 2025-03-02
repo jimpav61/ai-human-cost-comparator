@@ -16,7 +16,7 @@ export const VoiceConfigSection: React.FC<VoiceConfigSectionProps> = ({
   aiTier,
   onInputChange
 }) => {
-  const includedMinutes = AI_RATES.chatbot[aiTier as keyof typeof AI_RATES.chatbot].includedVoiceMinutes || 0;
+  const includedMinutes = AI_RATES.chatbot[aiTier as keyof typeof AI_RATES.chatbot]?.includedVoiceMinutes || 0;
   const isStarterPlan = aiTier === 'starter';
   
   return (

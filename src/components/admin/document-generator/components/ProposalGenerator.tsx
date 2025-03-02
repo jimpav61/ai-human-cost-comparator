@@ -8,6 +8,7 @@ import { useDownloadState } from "../hooks/useDownloadState";
 import { calculatePricingDetails, getTierDisplayName, getAITypeDisplay } from "@/components/calculator/pricingDetailsCalculator";
 import { useNavigate } from "react-router-dom";
 import { AI_RATES } from "@/constants/pricing";
+import type { CalculatorInputs } from "@/hooks/useCalculator";
 
 interface ProposalGeneratorProps {
   lead: Lead;
@@ -29,7 +30,7 @@ export const ProposalGenerator = ({ lead }: ProposalGeneratorProps) => {
       const defaultIncludedMinutes = AI_RATES.chatbot[defaultTier].includedVoiceMinutes || 600;
 
       // Create default values for missing data based on the tier
-      const defaultInputs = {
+      const defaultInputs: CalculatorInputs = {
         aiType: 'both',
         aiTier: defaultTier,
         role: 'customerService',
@@ -42,9 +43,9 @@ export const ProposalGenerator = ({ lead }: ProposalGeneratorProps) => {
       };
       
       // If user has actual calculator inputs, use those, otherwise default
-      let inputs = defaultInputs;
+      let inputs: CalculatorInputs = defaultInputs;
       if (lead.calculator_inputs) {
-        inputs = lead.calculator_inputs;
+        inputs = lead.calculator_inputs as CalculatorInputs;
         
         // Ensure call volume respects included minutes for the selected plan
         const selectedTier = inputs.aiTier || defaultTier;
