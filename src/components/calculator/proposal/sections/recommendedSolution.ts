@@ -17,7 +17,7 @@ export const addRecommendedSolution = (doc: JsPDFWithAutoTable, yPosition: numbe
   const tierName = params.tierName || getTierDisplayName(params.results?.aiTier || 'growth');
   const aiType = params.aiType || getAITypeDisplay(params.results?.aiType || 'both');
   
-  // Plan details
+  // Plan details - Use tierName directly without fallback to "Custom Plan"
   let planText = `Based on your specific needs, we recommend our ${tierName} (${aiType}) solution. This tailored package provides optimal functionality while maximizing your return on investment.`;
   const splitPlanText = doc.splitTextToSize(planText, 170);
   doc.text(splitPlanText, 20, yPosition);
@@ -30,7 +30,7 @@ export const addRecommendedSolution = (doc: JsPDFWithAutoTable, yPosition: numbe
     startY: yPosition + splitPlanText.length * 7 + 5,
     head: [["Pricing Component", "Details", "Cost"]],
     body: [
-      ["Monthly Base Fee", tierName || "Custom Plan", formatCurrency(params.results.aiCostMonthly?.total || 0)],
+      ["Monthly Base Fee", tierName, formatCurrency(params.results.aiCostMonthly?.total || 0)],
       ["One-time Setup Fee", "Non-refundable", formatCurrency(setupFee)],
       ["Annual Plan Option", "Includes 2 months FREE!", formatCurrency(annualPlanCost)],
       ["Estimated Monthly Savings", "vs. current operations", formatCurrency(params.results.monthlySavings || 0)],
