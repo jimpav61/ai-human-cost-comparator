@@ -94,7 +94,7 @@ export const getTierDisplayName = (aiTier: string): string => {
     case 'starter': return 'Starter Plan (Text Only)';
     case 'growth': return 'Growth Plan (Text & Basic Voice)';
     case 'premium': return 'Premium Plan (Text & Conversational Voice)';
-    default: return 'Custom Plan';
+    default: return 'Growth Plan (Text & Basic Voice)'; // Never return "Custom Plan", default to Growth
   }
 };
 
