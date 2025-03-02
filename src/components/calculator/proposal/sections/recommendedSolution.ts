@@ -2,6 +2,7 @@
 import { JsPDFWithAutoTable } from '../types';
 import autoTable from 'jspdf-autotable';
 import { formatCurrency } from '@/utils/formatters';
+import { getTierDisplayName, getAITypeDisplay } from '@/components/calculator/pricingDetailsCalculator';
 
 export const addRecommendedSolution = (doc: JsPDFWithAutoTable, yPosition: number, params: any): number => {
   // Add header with some spacing
@@ -12,8 +13,12 @@ export const addRecommendedSolution = (doc: JsPDFWithAutoTable, yPosition: numbe
   yPosition += 8;
   doc.setFontSize(12);
   
+  // Get tier name and AI type
+  const tierName = params.tierName || getTierDisplayName(params.results?.aiTier || 'growth');
+  const aiType = params.aiType || getAITypeDisplay(params.results?.aiType || 'both');
+  
   // Plan details
-  let planText = `Based on your specific needs, we recommend our ${params.tierName || ''} (${params.aiType || ''}) solution. This tailored package provides optimal functionality while maximizing your return on investment.`;
+  let planText = `Based on your specific needs, we recommend our ${tierName} (${aiType}) solution. This tailored package provides optimal functionality while maximizing your return on investment.`;
   const splitPlanText = doc.splitTextToSize(planText, 170);
   doc.text(splitPlanText, 20, yPosition);
   
@@ -25,7 +30,7 @@ export const addRecommendedSolution = (doc: JsPDFWithAutoTable, yPosition: numbe
     startY: yPosition + splitPlanText.length * 7 + 5,
     head: [["Pricing Component", "Details", "Cost"]],
     body: [
-      ["Monthly Base Fee", params.tierName || "Custom Plan", formatCurrency(params.results.aiCostMonthly?.total || 0)],
+      ["Monthly Base Fee", tierName || "Custom Plan", formatCurrency(params.results.aiCostMonthly?.total || 0)],
       ["One-time Setup Fee", "Non-refundable", formatCurrency(setupFee)],
       ["Annual Plan Option", "Includes 2 months FREE!", formatCurrency(annualPlanCost)],
       ["Estimated Monthly Savings", "vs. current operations", formatCurrency(params.results.monthlySavings || 0)],

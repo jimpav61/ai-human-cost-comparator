@@ -5,6 +5,7 @@ import { toast } from "@/hooks/use-toast";
 import { generateProposal } from "@/components/calculator/proposalGenerator";
 import { DownloadButton } from "./DownloadButton";
 import { useDownloadState } from "../hooks/useDownloadState";
+import { calculatePricingDetails, getTierDisplayName, getAITypeDisplay } from "@/components/calculator/pricingDetailsCalculator";
 
 interface ProposalGeneratorProps {
   lead: Lead;
@@ -22,7 +23,7 @@ export const ProposalGenerator = ({ lead }: ProposalGeneratorProps) => {
       
       // Create default values for missing data
       const defaultResults = {
-        aiCostMonthly: { voice: 85, chatbot: 199, total: 284 },
+        aiCostMonthly: { voice: 85, chatbot: 199, total: 284, setupFee: 749 },
         humanCostMonthly: 3800,
         monthlySavings: 3516,
         yearlySavings: 42192,
@@ -33,13 +34,34 @@ export const ProposalGenerator = ({ lead }: ProposalGeneratorProps) => {
           weeklyTotal: 200,
           monthlyTotal: 850,
           yearlyTotal: 10200
-        }
+        },
+        annualPlan: 2840
       };
       
       // Use actual data if available, otherwise use defaults
       const results = lead.calculator_results && Object.keys(lead.calculator_results).length > 0 
         ? lead.calculator_results 
         : defaultResults;
+      
+      // Define inputs object for pricing details calculation
+      const inputs = lead.calculator_inputs || {
+        aiType: 'both',
+        aiTier: 'growth',
+        role: 'customerService',
+        numEmployees: 5,
+        callVolume: 1000, 
+        avgCallDuration: 5,
+        chatVolume: 2000,
+        avgChatLength: 8,
+        avgChatResolutionTime: 10
+      };
+      
+      // Calculate pricing details
+      const pricingDetails = calculatePricingDetails(inputs);
+      
+      // Get tier and AI type display names
+      const tierName = getTierDisplayName(inputs.aiTier);
+      const aiType = getAITypeDisplay(inputs.aiType);
       
       const doc = generateProposal({
         contactInfo: lead.name || 'Valued Client',
@@ -49,6 +71,9 @@ export const ProposalGenerator = ({ lead }: ProposalGeneratorProps) => {
         industry: lead.industry,
         employeeCount: lead.employee_count,
         results: results,
+        tierName: tierName,
+        aiType: aiType,
+        pricingDetails: pricingDetails
       });
       
       doc.save(`${lead.company_name}-Proposal.pdf`);
