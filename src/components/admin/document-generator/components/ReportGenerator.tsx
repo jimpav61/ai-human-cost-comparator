@@ -5,12 +5,14 @@ import { toast } from "@/hooks/use-toast";
 import { DownloadButton } from "./DownloadButton";
 import { useDownloadState } from "../hooks/useDownloadState";
 import { calculatePricingDetails, getTierDisplayName, getAITypeDisplay } from "@/components/calculator/pricingDetailsCalculator";
+import { Button } from "@/components/ui/button";
 
 interface ReportGeneratorProps {
   lead: Lead;
+  buttonStyle?: "default" | "large";
 }
 
-export const ReportGenerator = ({ lead }: ReportGeneratorProps) => {
+export const ReportGenerator = ({ lead, buttonStyle = "default" }: ReportGeneratorProps) => {
   const { hasDownloaded, markAsDownloaded } = useDownloadState({
     storageKey: 'downloadedReports',
     leadId: lead.id
@@ -119,6 +121,21 @@ export const ReportGenerator = ({ lead }: ReportGeneratorProps) => {
     }
   };
 
+  // Return different button styles based on the buttonStyle prop
+  if (buttonStyle === "large") {
+    return (
+      <Button
+        onClick={handleDownloadReport}
+        className="w-full flex items-center justify-center gap-2 py-3"
+        variant={hasDownloaded ? "secondary" : "default"}
+      >
+        <Download className="h-5 w-5" />
+        {hasDownloaded ? "Report Downloaded" : "Download Detailed Report & ROI Analysis"}
+      </Button>
+    );
+  }
+
+  // Default button style for admin interface
   return (
     <DownloadButton
       hasDownloaded={hasDownloaded}

@@ -1,9 +1,12 @@
+
 import React, { useState } from 'react';
 import { ResultsSummary } from './ResultsSummary';
 import { ResultsDetailView } from './ResultsDetailView';
 import { calculatePricingDetails, getTierDisplayName, getAITypeDisplay } from './pricingDetailsCalculator';
 import type { CalculationResults, CalculatorInputs } from '@/hooks/useCalculator';
 import type { LeadData } from './types';
+import { ReportGenerator } from '@/components/admin/document-generator/components/ReportGenerator';
+import { Lead } from '@/types/leads';
 
 interface ResultsDisplayProps {
   results: CalculationResults;
@@ -25,6 +28,24 @@ export const ResultsDisplay: React.FC<ResultsDisplayProps> = ({
   const tierDisplayName = getTierDisplayName(inputs.aiTier);
   const aiTypeDisplay = getAITypeDisplay(inputs.aiType);
 
+  // Create a Lead object from the leadData and calculator results
+  const leadForReport: Lead = {
+    id: leadData.id || 'temp-id',
+    name: leadData.name,
+    company_name: leadData.companyName,
+    email: leadData.email,
+    phone_number: leadData.phoneNumber || '',
+    website: leadData.website || '',
+    industry: leadData.industry || '',
+    employee_count: leadData.employeeCount || 0,
+    calculator_inputs: inputs,
+    calculator_results: results,
+    created_at: new Date().toISOString(),
+    updated_at: new Date().toISOString(),
+    proposal_sent: false,
+    form_completed: true
+  };
+
   return (
     <div className="animate-fadeIn">
       <ResultsSummary
@@ -34,6 +55,12 @@ export const ResultsDisplay: React.FC<ResultsDisplayProps> = ({
         tierDisplayName={tierDisplayName}
         aiTypeDisplay={aiTypeDisplay}
       />
+
+      {reportGenerated && (
+        <div className="mt-4">
+          <ReportGenerator lead={leadForReport} buttonStyle="large" />
+        </div>
+      )}
 
       <div className="mt-6">
         <button
