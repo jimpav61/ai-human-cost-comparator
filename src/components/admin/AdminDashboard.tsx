@@ -1,4 +1,3 @@
-
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { LeadsTable } from "@/components/admin/LeadsTable";
 import { PricingManager } from "@/components/admin/PricingManager";
