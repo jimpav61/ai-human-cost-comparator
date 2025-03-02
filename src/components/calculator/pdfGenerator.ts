@@ -1,4 +1,3 @@
-
 import jsPDF from 'jspdf';
 import autoTable from 'jspdf-autotable';
 import { formatCurrency } from '@/utils/formatters';
@@ -78,8 +77,8 @@ export const generatePDF = (params: GeneratePDFParams) => {
   doc.text("Cost Summary", 20, currentY);
   
   const costData = [
-    ["Human Resources", formatCurrency(params.results.humanCostMonthly), formatCurrency(params.results.humanCostMonthly * 12)],
-    ["AI Solution", formatCurrency(params.results.aiCostMonthly.total), formatCurrency(params.results.aiCostMonthly.total * 12)],
+    ["Current Human Resources Cost", formatCurrency(params.results.humanCostMonthly), formatCurrency(params.results.humanCostMonthly * 12)],
+    ["ChatSites.ai Solution (Your Cost)", formatCurrency(params.results.aiCostMonthly.total), formatCurrency(params.results.aiCostMonthly.total * 12)],
     ["Potential Savings", formatCurrency(params.results.monthlySavings), formatCurrency(params.results.yearlySavings)]
   ];
 
@@ -87,6 +86,12 @@ export const generatePDF = (params: GeneratePDFParams) => {
     startY: currentY + 5,
     head: [["Category", "Monthly Cost", "Annual Cost"]],
     body: costData,
+    styles: { fontSize: 11 },
+    bodyStyles: { textColor: [0, 0, 0] },
+    alternateRowStyles: { fillColor: [240, 240, 240] },
+    rowStyles: {
+      1: { fillColor: [226, 240, 217], fontStyle: 'bold' } // Light green background for AI Solution row
+    },
   });
 
   currentY = (doc as any).lastAutoTable.finalY + 15;

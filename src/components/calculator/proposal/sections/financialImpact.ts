@@ -48,5 +48,27 @@ export const addFinancialImpact = (doc: JsPDFWithAutoTable, yPosition: number, p
   });
   
   // Get the last Y position after the table
+  const finalY = doc.lastAutoTable?.finalY || yPosition + 60;
+  
+  // Add a cost comparison table
+  yPosition = finalY + 15;
+  doc.setFontSize(12);
+  doc.text("Cost Comparison", 20, yPosition);
+  
+  autoTable(doc, {
+    startY: yPosition + 5,
+    head: [["Solution", "Monthly Cost", "Annual Cost"]],
+    body: [
+      ["Current Human Staff", formatCurrency(params.results.humanCostMonthly), formatCurrency(params.results.humanCostMonthly * 12)],
+      ["ChatSites.ai Solution (Your Cost)", formatCurrency(params.results.aiCostMonthly.total), formatCurrency(params.results.aiCostMonthly.total * 12)],
+    ],
+    styles: { fontSize: 11 },
+    bodyStyles: { textColor: [0, 0, 0] },
+    rowStyles: {
+      1: { fillColor: [226, 240, 217], fontStyle: 'bold' } // Light green background for AI Solution row
+    },
+  });
+  
+  // Get the last Y position after the table
   return (doc.lastAutoTable?.finalY || yPosition + 60) + 20;
 };

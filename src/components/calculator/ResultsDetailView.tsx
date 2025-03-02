@@ -63,27 +63,19 @@ export const ResultsDetailView: React.FC<ResultsDetailViewProps> = ({
       </div>
       
       <h4 className="font-medium text-gray-900 mt-6 mb-3">Cost Comparison</h4>
-      <div className="border border-gray-200 rounded-lg p-4">
-        <div className="grid grid-cols-2 gap-4 text-sm">
-          <div>
-            <div className="text-gray-600 mb-1">Monthly Savings</div>
+      <div className="border border-gray-200 rounded-lg overflow-hidden">
+        <div className="grid grid-cols-1 gap-4">
+          <div className="bg-gray-100 p-4">
+            <div className="text-gray-700 mb-1">Current Human Staff Cost</div>
+            <div className="text-xl font-semibold text-gray-900">{formatCurrency(results.humanCostMonthly)}/month</div>
+          </div>
+          <div className="bg-green-50 p-4 border-t border-b border-green-100">
+            <div className="text-brand-700 mb-1">Your ChatSites.ai Cost</div>
+            <div className="text-xl font-semibold text-brand-600">{formatCurrency(results.aiCostMonthly.total)}/month</div>
+          </div>
+          <div className="bg-gray-50 p-4">
+            <div className="text-green-700 mb-1">Monthly Savings</div>
             <div className="text-xl font-semibold text-green-600">{formatCurrency(results.monthlySavings)}</div>
-          </div>
-          <div>
-            <div className="text-gray-600 mb-1">Annual Savings</div>
-            <div className="text-xl font-semibold text-green-600">{formatCurrency(results.yearlySavings)}</div>
-          </div>
-          <div>
-            <div className="text-gray-600 mb-1">Cost Reduction</div>
-            <div className="text-xl font-semibold text-brand-600">{formatPercent(results.savingsPercentage)}</div>
-          </div>
-          <div>
-            <div className="text-gray-600 mb-1">Break-even</div>
-            <div className="text-xl font-semibold">
-              {results.monthlySavings > 0 
-                ? `${Math.ceil(results.aiCostMonthly.setupFee / results.monthlySavings)} months` 
-                : 'N/A'}
-            </div>
           </div>
         </div>
       </div>

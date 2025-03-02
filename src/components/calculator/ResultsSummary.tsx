@@ -33,8 +33,17 @@ export const ResultsSummary: React.FC<ResultsSummaryProps> = ({
       
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
         <div className="bg-gray-50 p-4 rounded-lg">
-          <div className="text-gray-500 text-sm mb-1">Monthly Cost</div>
-          <div className="text-2xl font-semibold text-gray-900">{formatCurrency(results.aiCostMonthly.total)}</div>
+          <div className="text-gray-500 text-sm mb-1">Current Staff Cost</div>
+          <div className="text-2xl font-semibold text-gray-900">{formatCurrency(results.humanCostMonthly)}</div>
+          <div className="mt-2 flex items-center text-xs">
+            <Clock className="h-3 w-3 mr-1 text-gray-400" />
+            <span className="text-gray-500">{formatNumber(results.humanHours.monthlyTotal)} labor hours/month</span>
+          </div>
+        </div>
+        
+        <div className="bg-green-50 p-4 rounded-lg border border-green-100">
+          <div className="text-brand-600 text-sm font-medium mb-1">Your ChatSites.ai Cost</div>
+          <div className="text-2xl font-semibold text-brand-700">{formatCurrency(results.aiCostMonthly.total)}</div>
           <div className="mt-2 flex items-center text-xs">
             <Clock className="h-3 w-3 mr-1 text-gray-400" />
             <span className="text-gray-500">One-time setup: {formatCurrency(results.aiCostMonthly.setupFee)}</span>
@@ -47,15 +56,6 @@ export const ResultsSummary: React.FC<ResultsSummaryProps> = ({
           <div className="mt-2 flex items-center text-xs">
             <BarChart className="h-3 w-3 mr-1 text-gray-400" />
             <span className="text-gray-500">{formatPercent(results.savingsPercentage)} vs. human labor</span>
-          </div>
-        </div>
-        
-        <div className="bg-gray-50 p-4 rounded-lg">
-          <div className="text-gray-500 text-sm mb-1">Annual Savings</div>
-          <div className="text-2xl font-semibold text-green-600">{formatCurrency(results.yearlySavings)}</div>
-          <div className="mt-2 flex items-center text-xs">
-            <DollarSign className="h-3 w-3 mr-1 text-gray-400" />
-            <span className="text-gray-500">Annual plan: {formatCurrency(results.annualPlan)}</span>
           </div>
         </div>
       </div>
@@ -85,12 +85,12 @@ export const ResultsSummary: React.FC<ResultsSummaryProps> = ({
             <div className="text-gray-700 font-medium mb-2">Labor Costs</div>
             <ul className="text-sm text-gray-600 space-y-2">
               <li className="flex justify-between">
-                <span>Human-only monthly cost:</span>
+                <span>Current human staff cost:</span>
                 <span>{formatCurrency(results.humanCostMonthly)}</span>
               </li>
-              <li className="flex justify-between">
-                <span>AI monthly cost:</span>
-                <span>{formatCurrency(results.aiCostMonthly.total)}</span>
+              <li className="flex justify-between bg-green-50 p-1 rounded border border-green-100">
+                <span className="text-brand-600 font-medium">Your ChatSites.ai cost:</span>
+                <span className="text-brand-600 font-medium">{formatCurrency(results.aiCostMonthly.total)}</span>
               </li>
               <li className="flex justify-between border-t border-gray-100 pt-1 font-medium text-green-600">
                 <span>Monthly savings:</span>

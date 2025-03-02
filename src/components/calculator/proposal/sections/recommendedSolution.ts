@@ -26,8 +26,13 @@ export const addRecommendedSolution = (doc: JsPDFWithAutoTable, yPosition: numbe
   const setupFee = params.results.aiCostMonthly?.setupFee || 0;
   const annualPlanCost = params.results.annualPlan || (params.results.aiCostMonthly?.total * 10 || 0);
   
+  // Add a heading for our pricing before the table
+  const tableY = yPosition + splitPlanText.length * 7 + 8;
+  doc.setFontSize(12);
+  doc.text("Your ChatSites.ai Investment", 20, tableY - 5);
+  
   autoTable(doc, {
-    startY: yPosition + splitPlanText.length * 7 + 5,
+    startY: tableY,
     head: [["Pricing Component", "Details", "Cost"]],
     body: [
       ["Monthly Base Fee", tierName, formatCurrency(params.results.aiCostMonthly?.total || 0)],
@@ -41,6 +46,13 @@ export const addRecommendedSolution = (doc: JsPDFWithAutoTable, yPosition: numbe
     columnStyles: {
       0: { fontStyle: 'bold' },
       2: { halign: 'right' }
+    },
+    rowStyles: {
+      0: { fillColor: [226, 240, 217], fontStyle: 'bold' }, // Highlight monthly fee
+      1: { fillColor: [240, 240, 240] },
+      2: { fillColor: [226, 240, 217] },  // Highlight annual plan
+      3: { fillColor: [240, 240, 240] },
+      4: { fillColor: [240, 240, 240] },
     },
   });
   
