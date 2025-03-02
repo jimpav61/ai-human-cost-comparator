@@ -46,8 +46,8 @@ export const AdminHeader = ({ isLoading = false }) => {
   };
 
   const handleGoBack = () => {
-    // Use direct location change to ensure it works
-    window.location.href = '/';
+    // Use navigate instead of window.location to prevent page reload
+    navigate('/');
   };
 
   const handleAddAdmin = async () => {

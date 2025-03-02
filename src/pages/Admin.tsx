@@ -1,4 +1,3 @@
-
 import { useState, useEffect, useCallback } from "react";
 import { Navigate, useNavigate } from "react-router-dom";
 import { LeadsTable } from "@/components/admin/LeadsTable";
@@ -25,7 +24,6 @@ const Admin = () => {
     let timeoutId: number;
     
     try {
-      // Set a timeout to notify the user if authentication check takes too long
       timeoutId = window.setTimeout(() => {
         console.log("Auth check taking too long");
         setLoadingTimeout(true);
@@ -47,11 +45,10 @@ const Admin = () => {
       
       if (!data.session) {
         console.log("No active session, redirecting to login");
-        window.location.href = "/auth";
+        navigate("/auth", { replace: true });
         return;
       }
       
-      // Check if the user has admin role
       const { data: userData, error: userError } = await supabase
         .rpc('has_role', { role_to_check: 'admin' });
         
@@ -65,7 +62,6 @@ const Admin = () => {
       setIsAdmin(userData === true);
       
       if (userData) {
-        // Fetch leads for admin
         const { data: leadsData, error: leadsError } = await supabase
           .from('leads')
           .select('*')
@@ -80,7 +76,7 @@ const Admin = () => {
         setLeads(leadsData as Lead[] || []);
       } else {
         console.log("User is not an admin, redirecting");
-        window.location.href = "/auth";
+        navigate("/auth", { replace: true });
       }
     } catch (error: any) {
       console.error('Auth error:', error);
@@ -109,13 +105,12 @@ const Admin = () => {
           console.log("Session ended, redirecting to login");
           setIsAdmin(false);
           setLeads([]);
-          window.location.href = "/auth";
+          navigate("/auth", { replace: true });
           setIsLoading(false);
           return;
         }
         
         try {
-          // Check if the user has admin role
           const { data: userData, error: userError } = await supabase
             .rpc('has_role', { role_to_check: 'admin' });
             
@@ -123,14 +118,13 @@ const Admin = () => {
             console.error('Role check error:', userError);
             setAuthError(userError.message);
             setIsAdmin(false);
-            window.location.href = "/auth";
+            navigate("/auth", { replace: true });
             return;
           }
           
           setIsAdmin(userData === true);
           
           if (userData) {
-            // Fetch leads for admin
             const { data: leadsData, error: leadsError } = await supabase
               .from('leads')
               .select('*')
@@ -143,12 +137,12 @@ const Admin = () => {
               setLeads(leadsData as Lead[] || []);
             }
           } else {
-            window.location.href = "/auth";
+            navigate("/auth", { replace: true });
           }
         } catch (error: any) {
           console.error("Error during auth state change:", error);
           setAuthError(error.message || "Authentication error");
-          window.location.href = "/auth";
+          navigate("/auth", { replace: true });
         } finally {
           setIsLoading(false);
         }
@@ -169,10 +163,9 @@ const Admin = () => {
   };
 
   const handleGoBack = () => {
-    window.location.href = '/';
+    navigate('/');
   };
 
-  // Authentication timeout screen
   if (loadingTimeout) {
     return (
       <div className="min-h-screen flex flex-col items-center justify-center bg-gray-50 p-4">
@@ -190,7 +183,6 @@ const Admin = () => {
     );
   }
 
-  // Loading state
   if (isLoading) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-gray-50">
@@ -205,7 +197,6 @@ const Admin = () => {
     );
   }
 
-  // Authentication error screen
   if (authError) {
     return (
       <div className="min-h-screen flex flex-col items-center justify-center bg-gray-50 p-4">
@@ -223,17 +214,14 @@ const Admin = () => {
     );
   }
 
-  // No session redirect
   if (!session) {
     return <Navigate to="/auth" replace />;
   }
 
-  // Not admin redirect
   if (!isAdmin) {
     return <Navigate to="/auth" replace />;
   }
 
-  // Main admin dashboard
   return (
     <div className="min-h-screen bg-gray-50">
       <AdminHeader isLoading={isLoading} />
