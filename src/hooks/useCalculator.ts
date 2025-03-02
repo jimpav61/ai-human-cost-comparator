@@ -90,10 +90,19 @@ export const useCalculator = (inputs: CalculatorInputs): CalculationResults => {
     
     let monthlyVoiceCost = 0;
     let monthlyChatbotCost = 0;
-    let setupFee = aiRates.chatbot[effectiveTier].setupFee || 0;
-    let annualPlan = aiRates.chatbot[effectiveTier].annualPrice || 0;
     
-    if (inputs.aiType === 'voice' || inputs.aiType === 'conversationalVoice' || inputs.aiType === 'both' || inputs.aiType === 'both-premium') {
+    // Get base costs from the correct tier
+    const chatbotRates = aiRates.chatbot[effectiveTier];
+    const setupFee = chatbotRates.setupFee || 0;
+    const annualPlan = chatbotRates.annualPrice || 0;
+    
+    // For starter plan, no voice capabilities
+    if (effectiveTier === 'starter' && (inputs.aiType === 'voice' || inputs.aiType === 'conversationalVoice' || inputs.aiType === 'both' || inputs.aiType === 'both-premium')) {
+      // Voice not available in starter plan, force to chatbot only
+      monthlyVoiceCost = 0;
+    } 
+    // For other plans with voice capabilities
+    else if (inputs.aiType === 'voice' || inputs.aiType === 'conversationalVoice' || inputs.aiType === 'both' || inputs.aiType === 'both-premium') {
       const totalMinutesPerMonth = inputs.callVolume * inputs.avgCallDuration;
       const includedMinutes = aiRates.chatbot[effectiveTier].includedVoiceMinutes || 0;
       const chargeableMinutes = Math.max(0, totalMinutesPerMonth - includedMinutes);
@@ -106,8 +115,6 @@ export const useCalculator = (inputs: CalculatorInputs): CalculationResults => {
     }
     
     if (inputs.aiType === 'chatbot' || inputs.aiType === 'both' || inputs.aiType === 'both-premium') {
-      const chatbotRates = aiRates.chatbot[effectiveTier];
-      
       const baseCost = chatbotRates.base;
       
       // For starter plan, there are no per-message costs

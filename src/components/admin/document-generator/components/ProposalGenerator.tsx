@@ -23,9 +23,30 @@ export const ProposalGenerator = ({ lead }: ProposalGeneratorProps) => {
     try {
       console.log('Generating proposal for lead:', lead);
       
-      // Create default values for missing data
+      // Create default values for missing data based on the tier
+      const defaultInputs = {
+        aiType: 'both',
+        aiTier: 'growth',
+        role: 'customerService',
+        numEmployees: 5,
+        callVolume: 1000, 
+        avgCallDuration: 5,
+        chatVolume: 2000,
+        avgChatLength: 8,
+        avgChatResolutionTime: 10
+      };
+      
+      // Use actual data if available, otherwise use defaults
+      const inputs = lead.calculator_inputs || defaultInputs;
+      
+      // Default results based on the tier
       const defaultResults = {
-        aiCostMonthly: { voice: 85, chatbot: 199, total: 284, setupFee: 749 },
+        aiCostMonthly: { 
+          voice: inputs.aiTier === 'starter' ? 0 : 55, 
+          chatbot: inputs.aiTier === 'starter' ? 99 : (inputs.aiTier === 'growth' ? 229 : 429), 
+          total: inputs.aiTier === 'starter' ? 99 : (inputs.aiTier === 'growth' ? 229 + 55 : 429 + 55), 
+          setupFee: inputs.aiTier === 'starter' ? 249 : (inputs.aiTier === 'growth' ? 749 : 1149) 
+        },
         humanCostMonthly: 3800,
         monthlySavings: 3516,
         yearlySavings: 42192,
@@ -37,26 +58,13 @@ export const ProposalGenerator = ({ lead }: ProposalGeneratorProps) => {
           monthlyTotal: 850,
           yearlyTotal: 10200
         },
-        annualPlan: 2840
+        annualPlan: inputs.aiTier === 'starter' ? 990 : (inputs.aiTier === 'growth' ? 2290 : 4290)
       };
       
       // Use actual data if available, otherwise use defaults
       const results = lead.calculator_results && Object.keys(lead.calculator_results).length > 0 
         ? lead.calculator_results 
         : defaultResults;
-      
-      // Define inputs object for pricing details calculation
-      const inputs = lead.calculator_inputs || {
-        aiType: 'both',
-        aiTier: 'growth',
-        role: 'customerService',
-        numEmployees: 5,
-        callVolume: 1000, 
-        avgCallDuration: 5,
-        chatVolume: 2000,
-        avgChatLength: 8,
-        avgChatResolutionTime: 10
-      };
       
       // Calculate pricing details
       const pricingDetails = calculatePricingDetails(inputs);
