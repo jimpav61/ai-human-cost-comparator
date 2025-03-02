@@ -10,12 +10,14 @@ export interface AIPlacement {
 }
 
 export interface LeadData {
+  id?: string;
   name: string;
   companyName: string;
   email: string;
   phoneNumber: string | null;
   industry?: string;
   employeeCount?: number;
+  website?: string;
 }
 
 export interface PricingDetail {

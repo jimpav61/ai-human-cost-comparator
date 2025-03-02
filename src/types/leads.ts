@@ -12,5 +12,6 @@ export interface Lead {
   calculator_results: any;
   proposal_sent: boolean;
   created_at: string;
+  updated_at: string; // Added this property
   form_completed?: boolean;
 }
