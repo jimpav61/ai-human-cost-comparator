@@ -22,18 +22,20 @@ export const addFinancialImpact = (doc: JsPDFWithAutoTable, yPosition: number, p
   // Calculate ROI based on employee count if available
   const employeeMultiplier = params.employeeCount ? Math.min(params.employeeCount / 10, 5) : 1;
   
-  // Fix for ROI Timeline calculation to ensure a meaningful range
-  const minDays = Math.max(1, Math.round(3 - employeeMultiplier * 0.5));
-  let maxDays = Math.round(3 + employeeMultiplier);
+  // Calculate realistic ROI timeline in months, not days
+  // Base value of 3 months minimum, adjusted by company size
+  let minMonths = Math.round(3 + (employeeMultiplier * 0.5));
+  let maxMonths = Math.round(6 + employeeMultiplier);
   
-  // Ensure the maximum is at least 2 days more than the minimum for a meaningful range
-  if (maxDays - minDays < 2) {
-    maxDays = minDays + 2;
+  // Ensure a meaningful range with at least 2 months difference
+  if (maxMonths - minMonths < 2) {
+    maxMonths = minMonths + 2;
   }
   
+  // Format ROI timeline
   const employeeBasedROI = params.employeeCount 
-    ? `${minDays} to ${maxDays} days` 
-    : "1 to 3 days";
+    ? `${minMonths} to ${maxMonths} months` 
+    : "3 to 6 months";
 
   // Try to safely parse the yearly savings for 5-year projection
   let fiveYearSavings;

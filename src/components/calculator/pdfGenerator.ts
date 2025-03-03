@@ -188,6 +188,18 @@ export const generatePDF = (params: GeneratePDFParams) => {
     currentY += 15;
   }
 
+  // Calculate realistic ROI timeline based on employee count
+  const employeeMultiplier = params.employeeCount ? Math.min(params.employeeCount / 10, 5) : 1;
+  let minMonths = Math.round(3 + (employeeMultiplier * 0.5));
+  let maxMonths = Math.round(6 + employeeMultiplier);
+  
+  // Ensure meaningful range
+  if (maxMonths - minMonths < 2) {
+    maxMonths = minMonths + 2;
+  }
+  
+  const roiTimeline = params.employeeCount ? `${minMonths} to ${maxMonths} months` : "3 to 6 months";
+
   // Final contact section with only email and phone
   doc.setFontSize(14);
   doc.setTextColor(0, 0, 0);
@@ -201,7 +213,7 @@ export const generatePDF = (params: GeneratePDFParams) => {
   doc.setFontSize(10);
   doc.text("• Custom AI solutions tailored to your business needs", 25, currentY);
   doc.text("• Expert implementation and support", 25, currentY + 7);
-  doc.text("• Proven ROI and cost savings", 25, currentY + 14);
+  doc.text(`• Typical ROI timeline: ${roiTimeline}`, 25, currentY + 14);
   
   currentY += 25;
   doc.setFontSize(12);
