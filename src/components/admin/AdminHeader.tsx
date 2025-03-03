@@ -1,3 +1,4 @@
+
 import { Button } from "@/components/ui/button";
 import {
   Dialog,
@@ -8,7 +9,7 @@ import {
 } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { useState } from "react";
-import { supabase, safeSignOut } from "@/integrations/supabase/client";
+import { supabase } from "@/integrations/supabase/client";
 import { toast } from "@/components/ui/use-toast";
 import { useNavigate } from "react-router-dom";
 
@@ -21,11 +22,17 @@ export const AdminHeader = ({ isLoading = false }) => {
     try {
       console.log("Logging out user");
       
-      const { success, error } = await safeSignOut();
+      // Updated logout approach: directly sign out without checking for session
+      const { error } = await supabase.auth.signOut();
       
-      if (error) {
+      if (error && error.message !== "Session not found") {
         console.error("Logout error:", error);
-        throw error;
+        toast({
+          title: "Error",
+          description: "Failed to log out: " + (error.message || "Unknown error"),
+          variant: "destructive",
+        });
+        return;
       }
       
       console.log("Logout successful");
