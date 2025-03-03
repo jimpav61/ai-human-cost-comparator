@@ -1,3 +1,4 @@
+
 import { JsPDFWithAutoTable } from '../types';
 import { GenerateProposalParams } from '../types';
 import { formatCurrency } from '@/utils/formatters';
@@ -39,6 +40,7 @@ export const addFinancialImpact = (doc: JsPDFWithAutoTable, yPosition: number, p
   doc.setTextColor(100, 100, 100);
   doc.text(`• Current Monthly Human Resources Cost: ${formatCurrency(params.results.humanCostMonthly)}`, 25, yPosition);
   doc.text(`• Monthly Cost of AI Solution: ${formatCurrency(params.results.aiCostMonthly.total)}`, 25, yPosition + 7);
+  doc.text(`• One-time Onboarding Fee: ${formatCurrency(params.results.aiCostMonthly.setupFee)}`, 25, yPosition + 14);
 
   yPosition += 20;
   doc.setFontSize(12);

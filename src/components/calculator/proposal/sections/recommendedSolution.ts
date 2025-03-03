@@ -1,3 +1,4 @@
+
 import { JsPDFWithAutoTable } from '../types';
 import { GenerateProposalParams } from '../types';
 import { formatCurrency } from '@/utils/formatters';
@@ -47,11 +48,21 @@ export const addRecommendedSolution = (doc: JsPDFWithAutoTable, yPosition: numbe
       doc.setTextColor(100, 100, 100);
       doc.text(`${detail.title}: ${formatCurrency(detail.monthlyCost)}/month`, 25, yPosition);
     });
+    
+    // Add one-time onboarding fee
+    yPosition += 10;
+    doc.setFontSize(10);
+    doc.setTextColor(100, 100, 100);
+    doc.text(`One-time Onboarding Fee: ${formatCurrency(params.results.aiCostMonthly.setupFee)}`, 25, yPosition);
   } else {
     yPosition += 10;
     doc.setFontSize(10);
     doc.setTextColor(100, 100, 100);
     doc.text(`Monthly cost: ${formatCurrency(params.results.aiCostMonthly.total)}`, 25, yPosition);
+    
+    // Add one-time onboarding fee
+    yPosition += 10;
+    doc.text(`One-time Onboarding Fee: ${formatCurrency(params.results.aiCostMonthly.setupFee)}`, 25, yPosition);
   }
 
   return yPosition + 15;
