@@ -60,7 +60,7 @@ export const ReportGenerator = ({ lead, buttonStyle = "default" }: ReportGenerat
       const aiType = getAITypeDisplay(inputs.aiType);
       
       // Import dynamically to avoid TypeScript errors
-      const { generatePDF } = await import('@/components/calculator/pdfGenerator');
+      const { generatePDF } = await import('@/components/calculator/pdf');
       
       const doc = generatePDF({
         contactInfo: lead.name || 'Valued Client',
