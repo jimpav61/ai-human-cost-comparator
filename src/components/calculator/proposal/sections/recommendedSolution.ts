@@ -1,6 +1,6 @@
 
 import { JsPDFWithAutoTable } from '../types';
-import 'jspdf-autotable';
+import autoTable from 'jspdf-autotable';
 import { formatCurrency } from '@/utils/formatters';
 import { getTierDisplayName, getAITypeDisplay } from '@/components/calculator/pricingDetailsCalculator';
 import { AI_RATES } from '@/constants/pricing';
@@ -23,7 +23,7 @@ export const addRecommendedSolution = (doc: JsPDFWithAutoTable, yPosition: numbe
                 tierName.toLowerCase().includes('growth') ? 'growth' : 
                 tierName.toLowerCase().includes('premium') ? 'premium' : 'growth';
   
-  // Get the correct included minutes based on the tier - with safety check
+  // Get the correct included minutes based on the tier
   const includedMinutes = AI_RATES.chatbot[tierKey]?.includedVoiceMinutes || 0;
   
   // Plan details - Use tierName exactly as provided from our standard plans
@@ -40,8 +40,7 @@ export const addRecommendedSolution = (doc: JsPDFWithAutoTable, yPosition: numbe
   doc.text(splitPlanText, 20, yPosition);
   
   // Add pricing table for the detailed plan breakdown
-  // Get the setup fee specifically from AI_RATES instead of from params - with safety check
-  const setupFee = AI_RATES.chatbot[tierKey]?.setupFee || 0;
+  const setupFee = params.results.aiCostMonthly?.setupFee || 0;
   const annualPlanCost = params.results.annualPlan || (params.results.aiCostMonthly?.total * 10 || 0);
   
   // Add a heading for our pricing before the table
@@ -52,7 +51,7 @@ export const addRecommendedSolution = (doc: JsPDFWithAutoTable, yPosition: numbe
   // Get the exact monthly fee from the base price in AI_RATES
   const monthlyBaseFee = AI_RATES.chatbot[tierKey]?.base || 0;
   
-  doc.autoTable({
+  autoTable(doc, {
     startY: tableY,
     head: [["Pricing Component", "Details", "Cost"]],
     body: [
@@ -68,17 +67,22 @@ export const addRecommendedSolution = (doc: JsPDFWithAutoTable, yPosition: numbe
       0: { fontStyle: 'bold' },
       2: { halign: 'right' }
     },
+    // Use willDrawCell instead of rowStyles for more control over cell styling
     willDrawCell: function(data) {
+      // Apply specific styling based on row index
       if (data.section === 'body') {
         if (data.row.index === 0 || data.row.index === 2) {
+          // Highlight monthly fee and annual plan with green
           data.cell.styles.fillColor = [226, 240, 217];
           if (data.row.index === 0) {
             data.cell.styles.fontStyle = 'bold';
           }
         } else if (data.row.index === 1) {
+          // Highlight the one-time setup fee with a different color
           data.cell.styles.fillColor = [255, 242, 204];
           data.cell.styles.fontStyle = 'bold';
         } else {
+          // Apply light gray background to other rows
           data.cell.styles.fillColor = [240, 240, 240];
         }
       }
@@ -139,13 +143,13 @@ export const addRecommendedSolution = (doc: JsPDFWithAutoTable, yPosition: numbe
       }
     });
     
-    // Add a row for the one-time setup fee - get from AI_RATES
+    // Add a row for the one-time setup fee
     pricingBreakdownData.push(
       ["One-time Setup/Onboarding Fee", "Required for all plans", formatCurrency(setupFee)]
     );
     
     // Add detailed pricing breakdown table
-    doc.autoTable({
+    autoTable(doc, {
       startY: detailYPosition,
       body: pricingBreakdownData,
       theme: 'striped',
