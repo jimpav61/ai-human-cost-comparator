@@ -1,6 +1,6 @@
 
 import { JsPDFWithAutoTable } from '../types';
-import autoTable from 'jspdf-autotable';
+import 'jspdf-autotable';
 import { formatCurrency } from '@/utils/formatters';
 import { AI_RATES } from '@/constants/pricing';
 
@@ -33,17 +33,24 @@ export const addFinancialImpact = (doc: JsPDFWithAutoTable, yPosition: number, p
     fiveYearSavings = formatCurrency(210000);
   }
 
-  // Add the one-time setup fee to the table
-  const setupFee = formatCurrency(params.results.aiCostMonthly.setupFee || 0);
+  // Extract tier key from the tierName if available
+  const tierName = params.tierName || '';
+  const tierKey = tierName.toLowerCase().includes('starter') ? 'starter' : 
+               tierName.toLowerCase().includes('growth') ? 'growth' : 
+               tierName.toLowerCase().includes('premium') ? 'premium' : 
+               params.results?.aiTier || 'growth';
+               
+  // Get the setup fee from AI_RATES
+  const setupFee = AI_RATES.chatbot[tierKey].setupFee || 0;
 
-  autoTable(doc, {
+  doc.autoTable({
     startY: yPosition + 5,
     head: [["Metric", "Potential Impact"]],
     body: [
       ["Monthly Cost Reduction", monthlySavings],
       ["Annual Cost Reduction", yearlySavings],
       ["Efficiency Improvement", `${savingsPercent}%`],
-      ["One-Time Setup Fee", setupFee],
+      ["One-Time Setup Fee", formatCurrency(setupFee)],
       ["Implementation Timeline", "5 business days or less"],
       ["ROI Timeline", employeeBasedROI],
       ["5-Year Projected Savings", fiveYearSavings]
@@ -60,22 +67,15 @@ export const addFinancialImpact = (doc: JsPDFWithAutoTable, yPosition: number, p
   doc.setFontSize(12);
   doc.text("Cost Comparison", 20, yPosition);
   
-  // Extract tier key from the tierName if available
-  const tierName = params.tierName || '';
-  const tierKey = tierName.toLowerCase().includes('starter') ? 'starter' : 
-               tierName.toLowerCase().includes('growth') ? 'growth' : 
-               tierName.toLowerCase().includes('premium') ? 'premium' : 
-               params.results?.aiTier || 'growth';
-  
   // Get the exact monthly fee from AI_RATES instead of the calculated total
-  const monthlyBaseFee = AI_RATES.chatbot[tierKey]?.base || params.results.aiCostMonthly.total;
+  const monthlyBaseFee = AI_RATES.chatbot[tierKey]?.base || 0;
   
-  autoTable(doc, {
+  doc.autoTable({
     startY: yPosition + 5,
     head: [["Solution", "Monthly Cost", "Annual Cost", "One-Time Setup Fee"]],
     body: [
       ["Current Human Staff", formatCurrency(params.results.humanCostMonthly), formatCurrency(params.results.humanCostMonthly * 12), "N/A"],
-      ["ChatSites.ai Solution (Your Cost)", formatCurrency(monthlyBaseFee), formatCurrency(monthlyBaseFee * 12), formatCurrency(params.results.aiCostMonthly.setupFee || 0)],
+      ["ChatSites.ai Solution (Your Cost)", formatCurrency(monthlyBaseFee), formatCurrency(monthlyBaseFee * 12), formatCurrency(setupFee)],
     ],
     styles: { fontSize: 11 },
     bodyStyles: { textColor: [0, 0, 0] },

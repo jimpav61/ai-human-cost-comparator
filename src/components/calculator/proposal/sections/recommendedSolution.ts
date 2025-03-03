@@ -1,6 +1,6 @@
 
 import { JsPDFWithAutoTable } from '../types';
-import autoTable from 'jspdf-autotable';
+import 'jspdf-autotable';
 import { formatCurrency } from '@/utils/formatters';
 import { getTierDisplayName, getAITypeDisplay } from '@/components/calculator/pricingDetailsCalculator';
 import { AI_RATES } from '@/constants/pricing';
@@ -40,7 +40,8 @@ export const addRecommendedSolution = (doc: JsPDFWithAutoTable, yPosition: numbe
   doc.text(splitPlanText, 20, yPosition);
   
   // Add pricing table for the detailed plan breakdown
-  const setupFee = params.results.aiCostMonthly?.setupFee || 0;
+  // Get the setup fee specifically from AI_RATES instead of from params
+  const setupFee = AI_RATES.chatbot[tierKey].setupFee || 0;
   const annualPlanCost = params.results.annualPlan || (params.results.aiCostMonthly?.total * 10 || 0);
   
   // Add a heading for our pricing before the table
@@ -51,7 +52,7 @@ export const addRecommendedSolution = (doc: JsPDFWithAutoTable, yPosition: numbe
   // Get the exact monthly fee from the base price in AI_RATES
   const monthlyBaseFee = AI_RATES.chatbot[tierKey]?.base || 0;
   
-  autoTable(doc, {
+  doc.autoTable({
     startY: tableY,
     head: [["Pricing Component", "Details", "Cost"]],
     body: [
@@ -143,13 +144,13 @@ export const addRecommendedSolution = (doc: JsPDFWithAutoTable, yPosition: numbe
       }
     });
     
-    // Add a row for the one-time setup fee
+    // Add a row for the one-time setup fee - get from AI_RATES
     pricingBreakdownData.push(
       ["One-time Setup/Onboarding Fee", "Required for all plans", formatCurrency(setupFee)]
     );
     
     // Add detailed pricing breakdown table
-    autoTable(doc, {
+    doc.autoTable({
       startY: detailYPosition,
       body: pricingBreakdownData,
       theme: 'striped',
