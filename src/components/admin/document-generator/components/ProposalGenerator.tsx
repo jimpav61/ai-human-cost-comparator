@@ -1,4 +1,3 @@
-
 import { Lead } from "@/types/leads";
 import { FileDown } from "lucide-react";
 import { toast } from "@/hooks/use-toast";
@@ -22,10 +21,10 @@ export const ProposalGenerator = ({ lead }: ProposalGeneratorProps) => {
     try {
       console.log('Generating proposal for lead:', lead);
       
-      // Use the calculator inputs from lead or fallback to defaults
+      // Use the calculator inputs from lead or fallback to defaults - preserving original aiTier and aiType
       const inputs = lead.calculator_inputs || {
         aiType: 'chatbot',
-        aiTier: 'growth',
+        aiTier: 'starter',
         role: 'customerService',
         numEmployees: lead.employee_count || 5,
         callVolume: 0, 
@@ -35,27 +34,28 @@ export const ProposalGenerator = ({ lead }: ProposalGeneratorProps) => {
         avgChatResolutionTime: 10
       };
       
-      // Get the tier to use from inputs
-      const tierToUse = inputs.aiTier || 'growth';
+      // Get the tier from the lead's original inputs - not defaulting to growth
+      const tierToUse = inputs.aiTier || 'starter';
+      const aiTypeToUse = inputs.aiType || 'chatbot';
       
-      // Get setup fee from rates
+      // Get setup fee from rates using the original tier
       const setupFee = AI_RATES.chatbot[tierToUse].setupFee;
       
-      // Use the calculator results from lead or create a complete default object
+      // Use the calculator results from lead or create a complete default object based on the ORIGINAL tier
       const results = lead.calculator_results || {
         aiCostMonthly: { 
-          voice: inputs.aiType === 'starter' ? 0 : 55, 
+          voice: aiTypeToUse === 'chatbot' ? 0 : 55, 
           chatbot: AI_RATES.chatbot[tierToUse].base, 
-          total: inputs.aiType === 'starter' ? AI_RATES.chatbot[tierToUse].base : 
+          total: aiTypeToUse === 'chatbot' ? AI_RATES.chatbot[tierToUse].base : 
                 (AI_RATES.chatbot[tierToUse].base + 55), 
           setupFee: setupFee
         },
         humanCostMonthly: 3800,
-        monthlySavings: 3800 - (inputs.aiType === 'starter' ? AI_RATES.chatbot[tierToUse].base : 
+        monthlySavings: 3800 - (aiTypeToUse === 'chatbot' ? AI_RATES.chatbot[tierToUse].base : 
                               (AI_RATES.chatbot[tierToUse].base + 55)),
-        yearlySavings: (3800 - (inputs.aiType === 'starter' ? AI_RATES.chatbot[tierToUse].base : 
+        yearlySavings: (3800 - (aiTypeToUse === 'chatbot' ? AI_RATES.chatbot[tierToUse].base : 
                                (AI_RATES.chatbot[tierToUse].base + 55))) * 12,
-        savingsPercentage: ((3800 - (inputs.aiType === 'starter' ? AI_RATES.chatbot[tierToUse].base : 
+        savingsPercentage: ((3800 - (aiTypeToUse === 'chatbot' ? AI_RATES.chatbot[tierToUse].base : 
                                (AI_RATES.chatbot[tierToUse].base + 55))) / 3800) * 100,
         breakEvenPoint: { voice: 240, chatbot: 520 },
         humanHours: {
@@ -90,12 +90,12 @@ export const ProposalGenerator = ({ lead }: ProposalGeneratorProps) => {
         };
       }
       
-      // Calculate pricing details based on inputs
+      // Calculate pricing details based on the ORIGINAL inputs
       const pricingDetails = calculatePricingDetails(inputs);
       
-      // Get display names
-      const tierName = getTierDisplayName(inputs.aiTier || 'growth');
-      const aiType = getAITypeDisplay(inputs.aiType || 'chatbot');
+      // Get display names based on the ORIGINAL tier and aiType
+      const tierName = getTierDisplayName(tierToUse);
+      const aiType = getAITypeDisplay(aiTypeToUse);
       
       console.log("Before generating proposal document with:", {
         contactInfo: lead.name,
@@ -103,6 +103,8 @@ export const ProposalGenerator = ({ lead }: ProposalGeneratorProps) => {
         email: lead.email,
         tierName,
         aiType,
+        tierToUse,
+        aiTypeToUse,
         results
       });
 
