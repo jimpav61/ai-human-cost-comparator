@@ -1,6 +1,6 @@
 
 import { JsPDFWithAutoTable } from '../types';
-import autoTable from 'jspdf-autotable';
+import 'jspdf-autotable';
 
 export const addImplementationProcess = (doc: JsPDFWithAutoTable, yPosition: number): number => {
   // Check if we need a new page
@@ -13,7 +13,7 @@ export const addImplementationProcess = (doc: JsPDFWithAutoTable, yPosition: num
   doc.setFontSize(14);
   doc.text("Rapid Implementation Process", 20, yPosition);
   
-  autoTable(doc, {
+  doc.autoTable({
     startY: yPosition + 5,
     body: [
       ["1. Discovery & Planning (Day 1)", "Our team conducts a thorough assessment of your current systems, workflows, and customer interaction points to identify the optimal integration approach."],
