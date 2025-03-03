@@ -23,7 +23,7 @@ export const addRecommendedSolution = (doc: JsPDFWithAutoTable, yPosition: numbe
                 tierName.toLowerCase().includes('growth') ? 'growth' : 
                 tierName.toLowerCase().includes('premium') ? 'premium' : 'growth';
   
-  // Get the correct included minutes based on the tier
+  // Get the correct included minutes based on the tier - with safety check
   const includedMinutes = AI_RATES.chatbot[tierKey]?.includedVoiceMinutes || 0;
   
   // Plan details - Use tierName exactly as provided from our standard plans
@@ -40,8 +40,8 @@ export const addRecommendedSolution = (doc: JsPDFWithAutoTable, yPosition: numbe
   doc.text(splitPlanText, 20, yPosition);
   
   // Add pricing table for the detailed plan breakdown
-  // Get the setup fee specifically from AI_RATES instead of from params
-  const setupFee = AI_RATES.chatbot[tierKey].setupFee || 0;
+  // Get the setup fee specifically from AI_RATES instead of from params - with safety check
+  const setupFee = AI_RATES.chatbot[tierKey]?.setupFee || 0;
   const annualPlanCost = params.results.annualPlan || (params.results.aiCostMonthly?.total * 10 || 0);
   
   // Add a heading for our pricing before the table

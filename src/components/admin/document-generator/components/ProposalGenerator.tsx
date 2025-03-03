@@ -49,7 +49,7 @@ export const ProposalGenerator = ({ lead }: ProposalGeneratorProps) => {
         
         // Ensure call volume respects included minutes for the selected plan
         const selectedTier = inputs.aiTier || defaultTier;
-        const tierIncludedMinutes = AI_RATES.chatbot[selectedTier as keyof typeof AI_RATES.chatbot].includedVoiceMinutes || 0;
+        const tierIncludedMinutes = AI_RATES.chatbot[selectedTier as keyof typeof AI_RATES.chatbot]?.includedVoiceMinutes || 0;
         
         // If starter plan, set call volume to 0
         if (selectedTier === 'starter') {
@@ -66,8 +66,11 @@ export const ProposalGenerator = ({ lead }: ProposalGeneratorProps) => {
       const growthBasePrice = AI_RATES.chatbot['growth'].base;
       const premiumBasePrice = AI_RATES.chatbot['premium'].base;
       
-      // Get the correct setup fee for the selected tier
-      const setupFee = AI_RATES.chatbot[inputs.aiTier as keyof typeof AI_RATES.chatbot].setupFee || 0;
+      // Safely get the tier key
+      const tierKey = (inputs.aiTier as keyof typeof AI_RATES.chatbot) || defaultTier;
+      
+      // Get the correct setup fee for the selected tier - with safety check
+      const setupFee = AI_RATES.chatbot[tierKey]?.setupFee || 0;
       
       // Use actual data if available, otherwise use defaults
       const defaultResults = {
@@ -93,8 +96,9 @@ export const ProposalGenerator = ({ lead }: ProposalGeneratorProps) => {
           monthlyTotal: 850,
           yearlyTotal: 10200
         },
-        annualPlan: inputs.aiTier === 'starter' ? AI_RATES.chatbot['starter'].annualPrice : 
-                   (inputs.aiTier === 'growth' ? AI_RATES.chatbot['growth'].annualPrice : AI_RATES.chatbot['premium'].annualPrice)
+        annualPlan: AI_RATES.chatbot[tierKey]?.annualPrice || 
+                   (inputs.aiTier === 'starter' ? AI_RATES.chatbot['starter'].annualPrice : 
+                   (inputs.aiTier === 'growth' ? AI_RATES.chatbot['growth'].annualPrice : AI_RATES.chatbot['premium'].annualPrice))
       };
       
       // Use actual results if available, otherwise use defaults

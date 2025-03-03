@@ -23,8 +23,8 @@ export const ResultsDetailView: React.FC<ResultsDetailViewProps> = ({
 }) => {
   // Get the exact base price from AI_RATES instead of the calculated total
   const basePrice = AI_RATES.chatbot[inputs.aiTier].base;
-  // Get the correct setup fee
-  const setupFee = AI_RATES.chatbot[inputs.aiTier].setupFee;
+  // Get the correct setup fee with safety check
+  const setupFee = AI_RATES.chatbot[inputs.aiTier]?.setupFee || 0;
   
   return (
     <div>

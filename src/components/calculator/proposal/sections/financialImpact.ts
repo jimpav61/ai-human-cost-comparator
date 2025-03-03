@@ -40,8 +40,8 @@ export const addFinancialImpact = (doc: JsPDFWithAutoTable, yPosition: number, p
                tierName.toLowerCase().includes('premium') ? 'premium' : 
                params.results?.aiTier || 'growth';
                
-  // Get the setup fee from AI_RATES
-  const setupFee = AI_RATES.chatbot[tierKey].setupFee || 0;
+  // Get the setup fee from AI_RATES with safety check
+  const setupFee = AI_RATES.chatbot[tierKey]?.setupFee || 0;
 
   doc.autoTable({
     startY: yPosition + 5,
@@ -67,7 +67,7 @@ export const addFinancialImpact = (doc: JsPDFWithAutoTable, yPosition: number, p
   doc.setFontSize(12);
   doc.text("Cost Comparison", 20, yPosition);
   
-  // Get the exact monthly fee from AI_RATES instead of the calculated total
+  // Get the exact monthly fee from AI_RATES instead of the calculated total - with safety check
   const monthlyBaseFee = AI_RATES.chatbot[tierKey]?.base || 0;
   
   doc.autoTable({
