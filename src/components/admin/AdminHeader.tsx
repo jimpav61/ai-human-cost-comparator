@@ -1,4 +1,3 @@
-
 import { Button } from "@/components/ui/button";
 import {
   Dialog,
@@ -22,18 +21,11 @@ export const AdminHeader = ({ isLoading = false }) => {
     try {
       console.log("Logging out user");
       
-      // Updated logout approach: directly sign out without checking for session
-      const { error } = await supabase.auth.signOut();
+      // Clean up local storage manually first to ensure we're starting fresh
+      localStorage.removeItem('supabase.auth.token');
       
-      if (error && error.message !== "Session not found") {
-        console.error("Logout error:", error);
-        toast({
-          title: "Error",
-          description: "Failed to log out: " + (error.message || "Unknown error"),
-          variant: "destructive",
-        });
-        return;
-      }
+      // Direct approach without checking for session
+      await supabase.auth.signOut();
       
       console.log("Logout successful");
       toast({
@@ -41,14 +33,17 @@ export const AdminHeader = ({ isLoading = false }) => {
         description: "Logged out successfully",
       });
       
-      // Force navigation after logout
+      // Force hard reload to clear any cached auth state
       window.location.href = '/';
     } catch (error: any) {
       console.error("Logout error:", error);
+      
+      // Even if there's an error, we'll force navigation to home
+      window.location.href = '/';
+      
       toast({
-        title: "Error",
-        description: "Failed to log out: " + (error.message || "Unknown error"),
-        variant: "destructive",
+        title: "Notification",
+        description: "You have been logged out",
       });
     }
   };
