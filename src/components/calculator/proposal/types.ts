@@ -9,7 +9,7 @@ export interface JsPDFWithAutoTable extends jsPDF {
   lastAutoTable?: {
     finalY?: number;
   };
-  autoTable: (options: any) => jsPDF;
+  autoTable: (options: any) => JsPDFWithAutoTable;
 }
 
 export interface GenerateProposalParams {
