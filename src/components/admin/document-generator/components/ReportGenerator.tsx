@@ -7,6 +7,7 @@ import { useDownloadState } from "../hooks/useDownloadState";
 import { calculatePricingDetails, getTierDisplayName, getAITypeDisplay } from "@/components/calculator/pricingDetailsCalculator";
 import { Button } from "@/components/ui/button";
 import { AI_RATES } from "@/constants/pricing";
+import { generatePDF } from "@/components/calculator/pdfGenerator";
 
 interface ReportGeneratorProps {
   lead: Lead;
@@ -21,12 +22,14 @@ export const ReportGenerator = ({ lead, buttonStyle = "default" }: ReportGenerat
 
   const handleDownloadReport = async () => {
     try {
-      // Use the actual data from the lead object
+      console.log('Generating report for lead:', lead);
+      
+      // Use the calculator inputs from lead or fallback to defaults
       const inputs = lead.calculator_inputs || {
         aiType: 'chatbot',
         aiTier: 'growth',
         role: 'customerService',
-        numEmployees: 5,
+        numEmployees: lead.employee_count || 5,
         callVolume: 0, 
         avgCallDuration: 0,
         chatVolume: 2000,
@@ -34,25 +37,29 @@ export const ReportGenerator = ({ lead, buttonStyle = "default" }: ReportGenerat
         avgChatResolutionTime: 10
       };
       
-      // Get the correct tier to use from the lead data
+      // Get the tier to use from inputs
       const tierToUse = inputs.aiTier || 'growth';
       
-      // Get the correct setup fee directly from AI_RATES
+      // Setup fee from rates
       const setupFee = AI_RATES.chatbot[tierToUse].setupFee;
       
-      // Use the actual results if available
+      // Use the calculator results from lead or fallback to calculated defaults
       const results = lead.calculator_results || {
         aiCostMonthly: { 
-          voice: 0, 
-          chatbot: 99, 
-          total: 99, 
+          voice: inputs.aiType === 'starter' ? 0 : 55, 
+          chatbot: AI_RATES.chatbot[tierToUse].base, 
+          total: inputs.aiType === 'starter' ? AI_RATES.chatbot[tierToUse].base : 
+                (AI_RATES.chatbot[tierToUse].base + 55), 
           setupFee: setupFee
         },
         humanCostMonthly: 3800,
-        monthlySavings: 3701,
-        yearlySavings: 44412,
-        savingsPercentage: 97.4,
-        breakEvenPoint: { voice: 0, chatbot: 520 },
+        monthlySavings: 3800 - (inputs.aiType === 'starter' ? AI_RATES.chatbot[tierToUse].base : 
+                              (AI_RATES.chatbot[tierToUse].base + 55)),
+        yearlySavings: (3800 - (inputs.aiType === 'starter' ? AI_RATES.chatbot[tierToUse].base : 
+                               (AI_RATES.chatbot[tierToUse].base + 55))) * 12,
+        savingsPercentage: ((3800 - (inputs.aiType === 'starter' ? AI_RATES.chatbot[tierToUse].base : 
+                               (AI_RATES.chatbot[tierToUse].base + 55))) / 3800) * 100,
+        breakEvenPoint: { voice: 240, chatbot: 520 },
         humanHours: {
           dailyPerEmployee: 8,
           weeklyTotal: 200,
@@ -62,13 +69,11 @@ export const ReportGenerator = ({ lead, buttonStyle = "default" }: ReportGenerat
         annualPlan: AI_RATES.chatbot[tierToUse].annualPrice
       };
       
-      // Get tier and AI type display names based on the actual inputs
+      // Get display names
       const tierName = getTierDisplayName(inputs.aiTier);
       const aiType = getAITypeDisplay(inputs.aiType);
       
-      // Use pdfGenerator for creating the report
-      const { generatePDF } = await import('@/components/calculator/pdfGenerator');
-      
+      // Generate and download the PDF
       const doc = generatePDF({
         contactInfo: lead.name || 'Valued Client',
         companyName: lead.company_name || 'Your Company',
@@ -109,6 +114,7 @@ export const ReportGenerator = ({ lead, buttonStyle = "default" }: ReportGenerat
         ]
       });
       
+      // Save the document with proper company name
       doc.save(`${lead.company_name}-Report.pdf`);
       
       // Mark as downloaded

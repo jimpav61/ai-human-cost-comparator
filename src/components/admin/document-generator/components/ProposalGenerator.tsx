@@ -8,7 +8,6 @@ import { useDownloadState } from "../hooks/useDownloadState";
 import { calculatePricingDetails, getTierDisplayName, getAITypeDisplay } from "@/components/calculator/pricingDetailsCalculator";
 import { useNavigate } from "react-router-dom";
 import { AI_RATES } from "@/constants/pricing";
-import type { CalculatorInputs } from "@/hooks/useCalculator";
 
 interface ProposalGeneratorProps {
   lead: Lead;
@@ -25,7 +24,7 @@ export const ProposalGenerator = ({ lead }: ProposalGeneratorProps) => {
     try {
       console.log('Generating proposal for lead:', lead);
       
-      // Use the actual inputs from lead data
+      // Use the calculator inputs from lead or fallback to defaults
       const inputs = lead.calculator_inputs || {
         aiType: 'chatbot',
         aiTier: 'growth',
@@ -38,13 +37,13 @@ export const ProposalGenerator = ({ lead }: ProposalGeneratorProps) => {
         avgChatResolutionTime: 10
       };
       
-      // Get the correct tier to use from the lead inputs
+      // Get the tier to use from inputs
       const tierToUse = inputs.aiTier || 'growth';
       
-      // Get the correct setup fee directly from AI_RATES
+      // Get setup fee from rates
       const setupFee = AI_RATES.chatbot[tierToUse].setupFee;
       
-      // Use the actual results from lead data if available
+      // Use the calculator results from lead or fallback to calculated defaults
       const results = lead.calculator_results || {
         aiCostMonthly: { 
           voice: inputs.aiType === 'starter' ? 0 : 55, 
@@ -70,13 +69,14 @@ export const ProposalGenerator = ({ lead }: ProposalGeneratorProps) => {
         annualPlan: AI_RATES.chatbot[tierToUse].annualPrice
       };
       
-      // Calculate pricing details based on the actual inputs
+      // Calculate pricing details based on inputs
       const pricingDetails = calculatePricingDetails(inputs);
       
-      // Get tier and AI type display names based on the actual inputs
+      // Get display names
       const tierName = getTierDisplayName(inputs.aiTier);
       const aiType = getAITypeDisplay(inputs.aiType);
       
+      // Generate the proposal document
       const doc = generateProposal({
         contactInfo: lead.name || 'Valued Client',
         companyName: lead.company_name || 'Your Company',
@@ -90,6 +90,7 @@ export const ProposalGenerator = ({ lead }: ProposalGeneratorProps) => {
         pricingDetails: pricingDetails
       });
       
+      // Save the document with proper company name
       doc.save(`${lead.company_name}-Proposal.pdf`);
       
       // Mark as downloaded
