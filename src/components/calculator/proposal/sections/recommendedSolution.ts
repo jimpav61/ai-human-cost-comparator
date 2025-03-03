@@ -68,22 +68,17 @@ export const addRecommendedSolution = (doc: JsPDFWithAutoTable, yPosition: numbe
       0: { fontStyle: 'bold' },
       2: { halign: 'right' }
     },
-    // Use willDrawCell instead of rowStyles for more control over cell styling
     willDrawCell: function(data) {
-      // Apply specific styling based on row index
       if (data.section === 'body') {
         if (data.row.index === 0 || data.row.index === 2) {
-          // Highlight monthly fee and annual plan with green
           data.cell.styles.fillColor = [226, 240, 217];
           if (data.row.index === 0) {
             data.cell.styles.fontStyle = 'bold';
           }
         } else if (data.row.index === 1) {
-          // Highlight the one-time setup fee with a different color
           data.cell.styles.fillColor = [255, 242, 204];
           data.cell.styles.fontStyle = 'bold';
         } else {
-          // Apply light gray background to other rows
           data.cell.styles.fillColor = [240, 240, 240];
         }
       }

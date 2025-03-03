@@ -23,6 +23,8 @@ export const ResultsDetailView: React.FC<ResultsDetailViewProps> = ({
 }) => {
   // Get the exact base price from AI_RATES instead of the calculated total
   const basePrice = AI_RATES.chatbot[inputs.aiTier].base;
+  // Get the correct setup fee
+  const setupFee = AI_RATES.chatbot[inputs.aiTier].setupFee;
   
   return (
     <div>
@@ -38,7 +40,7 @@ export const ResultsDetailView: React.FC<ResultsDetailViewProps> = ({
       <h4 className="font-medium text-gray-900 mb-3">AI Cost Breakdown</h4>
       <PricingDetails 
         details={pricingDetails}
-        setupFee={results.aiCostMonthly.setupFee}
+        setupFee={setupFee}
         annualPlan={results.annualPlan}
         includedVoiceMinutes={AI_RATES.chatbot[inputs.aiTier].includedVoiceMinutes}
       />
