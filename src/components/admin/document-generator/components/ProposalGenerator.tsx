@@ -41,7 +41,7 @@ export const ProposalGenerator = ({ lead }: ProposalGeneratorProps) => {
       // Get setup fee from rates
       const setupFee = AI_RATES.chatbot[tierToUse].setupFee;
       
-      // Use the calculator results from lead or fallback to calculated defaults
+      // Use the calculator results from lead or create a complete default object
       const results = lead.calculator_results || {
         aiCostMonthly: { 
           voice: inputs.aiType === 'starter' ? 0 : 55, 
@@ -67,12 +67,35 @@ export const ProposalGenerator = ({ lead }: ProposalGeneratorProps) => {
         annualPlan: AI_RATES.chatbot[tierToUse].annualPrice
       };
       
+      // Ensure all nested objects and properties exist to prevent undefined errors
+      if (!results.aiCostMonthly) {
+        results.aiCostMonthly = { 
+          voice: 0, 
+          chatbot: AI_RATES.chatbot[tierToUse].base, 
+          total: AI_RATES.chatbot[tierToUse].base,
+          setupFee: setupFee 
+        };
+      }
+      
+      if (!results.breakEvenPoint) {
+        results.breakEvenPoint = { voice: 240, chatbot: 520 };
+      }
+      
+      if (!results.humanHours) {
+        results.humanHours = {
+          dailyPerEmployee: 8,
+          weeklyTotal: 200,
+          monthlyTotal: 850,
+          yearlyTotal: 10200
+        };
+      }
+      
       // Calculate pricing details based on inputs
       const pricingDetails = calculatePricingDetails(inputs);
       
       // Get display names
-      const tierName = getTierDisplayName(inputs.aiTier);
-      const aiType = getAITypeDisplay(inputs.aiType);
+      const tierName = getTierDisplayName(inputs.aiTier || 'growth');
+      const aiType = getAITypeDisplay(inputs.aiType || 'chatbot');
       
       console.log("Before generating proposal document with:", {
         contactInfo: lead.name,
@@ -89,9 +112,9 @@ export const ProposalGenerator = ({ lead }: ProposalGeneratorProps) => {
           contactInfo: lead.name || 'Valued Client',
           companyName: lead.company_name || 'Your Company',
           email: lead.email || 'client@example.com',
-          phoneNumber: lead.phone_number,
-          industry: lead.industry,
-          employeeCount: lead.employee_count,
+          phoneNumber: lead.phone_number || '',
+          industry: lead.industry || 'Other',
+          employeeCount: lead.employee_count || 5,
           results: results,
           tierName: tierName,
           aiType: aiType,
@@ -115,13 +138,18 @@ export const ProposalGenerator = ({ lead }: ProposalGeneratorProps) => {
         });
       } catch (error) {
         console.error("Error in document generation step:", error);
+        toast({
+          title: "Error",
+          description: `Failed to generate proposal: ${error instanceof Error ? error.message : 'Unknown error'}`,
+          variant: "destructive",
+        });
         throw error;
       }
     } catch (error) {
       console.error('Proposal generation error:', error);
       toast({
         title: "Error",
-        description: "Failed to generate proposal",
+        description: `Failed to generate proposal: ${error instanceof Error ? error.message : 'Unknown error'}`,
         variant: "destructive",
       });
     }
