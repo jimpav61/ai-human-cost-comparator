@@ -1,6 +1,6 @@
 
 import { JsPDFWithAutoTable } from '../types';
-import autoTable from 'jspdf-autotable';
+import 'jspdf-autotable';
 
 export const addAdditionalResources = (doc: JsPDFWithAutoTable, yPosition: number): number => {
   // Additional Resources Section
@@ -14,7 +14,7 @@ export const addAdditionalResources = (doc: JsPDFWithAutoTable, yPosition: numbe
   const splitResources = doc.splitTextToSize(resourcesText, 170);
   doc.text(splitResources, 20, yPosition);
   
-  autoTable(doc, {
+  doc.autoTable({
     startY: yPosition + splitResources.length * 7 + 5,
     body: [
       ["• Detailed Technical Documentation", "Comprehensive guides for IT teams on integration and management"],

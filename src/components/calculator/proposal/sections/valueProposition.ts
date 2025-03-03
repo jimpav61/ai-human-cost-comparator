@@ -1,6 +1,6 @@
 
 import { JsPDFWithAutoTable } from '../types';
-import autoTable from 'jspdf-autotable';
+import 'jspdf-autotable';
 
 export const addValueProposition = (doc: JsPDFWithAutoTable, yPosition: number): number => {
   // Check if we need a new page
@@ -13,7 +13,7 @@ export const addValueProposition = (doc: JsPDFWithAutoTable, yPosition: number):
   doc.text("Value Proposition", 20, yPosition);
   
   // Benefits table
-  autoTable(doc, {
+  doc.autoTable({
     startY: yPosition + 5,
     head: [["Key Benefits"]],
     body: [

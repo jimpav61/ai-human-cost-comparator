@@ -1,6 +1,6 @@
 
 import { JsPDFWithAutoTable } from '../types';
-import autoTable from 'jspdf-autotable';
+import 'jspdf-autotable';
 
 export const addNextSteps = (doc: JsPDFWithAutoTable, yPosition: number): number => {
   // Check if we need a new page
@@ -18,7 +18,7 @@ export const addNextSteps = (doc: JsPDFWithAutoTable, yPosition: number): number
   const splitNextSteps = doc.splitTextToSize(nextStepsText, 170);
   doc.text(splitNextSteps, 20, yPosition + 10);
 
-  autoTable(doc, {
+  doc.autoTable({
     startY: yPosition + splitNextSteps.length * 7 + 15,
     body: [
       ["1. Executive Strategy Session", "Schedule a 60-minute executive briefing where we'll walk through the comprehensive proposal and address any strategic questions."],
