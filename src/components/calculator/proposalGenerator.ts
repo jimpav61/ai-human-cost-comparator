@@ -98,16 +98,23 @@ export const generateProposal = (params: GenerateProposalParams) => {
   doc.text("Your ChatSites.ai Investment", 20, yPosition);
   yPosition += 10;
 
-  // Create pricing table with values exactly matching the image
+  // Format values to ensure they're proper strings with dollar signs
+  const monthlyFee = formatCurrency(params.results.aiCostMonthly.chatbot || 99);
+  const setupFee = formatCurrency(params.results.aiCostMonthly.setupFee || 249);
+  const annualPlan = formatCurrency(params.results.annualPlan || 990);
+  const monthlySavings = formatCurrency(params.results.monthlySavings || 3701);
+  const yearlySavings = formatCurrency(params.results.yearlySavings || 44412);
+
+  // Create pricing table
   autoTable(doc, {
     startY: yPosition,
     head: [['Pricing Component', 'Details', 'Cost']],
     body: [
-      ['Monthly Base Fee', tierName, '$99.00'],
-      ['One-time Setup/Onboarding Fee', 'Non-refundable', '$249.00'],
-      ['Annual Plan Option', 'Includes 2 months FREE!', '$990.00'],
-      ['Estimated Monthly Savings', 'vs. current operations', '$3,701.00'],
-      ['Projected Annual Savings', 'First year', '$44,412.00']
+      ['Monthly Base Fee', tierName, monthlyFee],
+      ['One-time Setup/Onboarding Fee', 'Non-refundable', setupFee],
+      ['Annual Plan Option', 'Includes 2 months FREE!', annualPlan],
+      ['Estimated Monthly Savings', 'vs. current operations', monthlySavings],
+      ['Projected Annual Savings', 'First year', yearlySavings]
     ],
     theme: 'grid',
     headStyles: {
@@ -168,18 +175,23 @@ export const generateProposal = (params: GenerateProposalParams) => {
   doc.text("Financial Impact & ROI Analysis", 20, yPosition);
   yPosition += 10;
 
-  // Create ROI table with fixed values matching the image
+  // Format the percentage to ensure it's a proper number
+  const efficiencyImprovement = params.results.savingsPercentage > 0 
+    ? `${params.results.savingsPercentage.toFixed(1)}%` 
+    : '97.4%';
+
+  // Create ROI table with dynamically calculated values
   autoTable(doc, {
     startY: yPosition,
     head: [['Metric', 'Potential Impact']],
     body: [
-      ['Monthly Cost Reduction', '$3,701.00'],
-      ['Annual Cost Reduction', '$44,412.00'],
-      ['Efficiency Improvement', '97.4%'],
-      ['One-Time Setup Fee', '$249.00'],
+      ['Monthly Cost Reduction', monthlySavings],
+      ['Annual Cost Reduction', yearlySavings],
+      ['Efficiency Improvement', efficiencyImprovement],
+      ['One-Time Setup Fee', setupFee],
       ['Implementation Timeline', '5 business days or less'],
       ['ROI Timeline', '3 to 6 months'],
-      ['5-Year Projected Savings', '$222,060.00']
+      ['5-Year Projected Savings', formatCurrency(params.results.yearlySavings * 5 || 222060)]
     ],
     theme: 'striped',
     headStyles: {
@@ -203,13 +215,19 @@ export const generateProposal = (params: GenerateProposalParams) => {
   doc.text("Cost Comparison", 20, yPosition);
   yPosition += 10;
   
-  // Create cost comparison table with fixed values
+  // Format human staff costs
+  const humanMonthly = formatCurrency(params.results.humanCostMonthly || 3800);
+  const humanAnnual = formatCurrency((params.results.humanCostMonthly || 3800) * 12);
+  const aiMonthly = formatCurrency(params.results.aiCostMonthly.total || 99);
+  const aiAnnual = formatCurrency((params.results.aiCostMonthly.total || 99) * 12);
+  
+  // Create cost comparison table
   autoTable(doc, {
     startY: yPosition,
     head: [['Solution', 'Monthly Cost', 'Annual Cost', 'One-Time Setup Fee']],
     body: [
-      ['Current Human Staff', '$3,800.00', '$45,600.00', 'N/A'],
-      ['ChatSites.ai Solution (Your Cost)', '$99.00', '$1,188.00', '$249.00']
+      ['Current Human Staff', humanMonthly, humanAnnual, 'N/A'],
+      ['ChatSites.ai Solution (Your Cost)', aiMonthly, aiAnnual, setupFee]
     ],
     theme: 'striped',
     headStyles: {
@@ -238,7 +256,7 @@ export const generateProposal = (params: GenerateProposalParams) => {
   doc.text("Rapid Implementation Process", 20, yPosition);
   yPosition += 15;
   
-  // Implementation Process details as shown in the image
+  // Implementation Process details
   const implementationSteps = [
     {
       title: "1. Discovery & Planning (Day 1)",

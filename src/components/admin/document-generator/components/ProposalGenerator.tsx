@@ -41,39 +41,44 @@ export const ProposalGenerator = ({ lead }: ProposalGeneratorProps) => {
       
       // Get setup fee from rates using the correct tier
       const setupFee = AI_RATES.chatbot[tierToUse].setupFee;
+      const annualPrice = AI_RATES.chatbot[tierToUse].annualPrice;
+      const baseMonthlyPrice = AI_RATES.chatbot[tierToUse].base;
       
-      // Create complete results object with proper defaults that match the image examples
+      // Create complete results object with proper defaults
       const results = lead.calculator_results || {
         aiCostMonthly: { 
-          voice: 0, 
-          chatbot: 99, 
-          total: 99, 
-          setupFee: 249
+          voice: aiTypeToUse.includes('voice') ? 55 : 0, 
+          chatbot: baseMonthlyPrice, 
+          total: aiTypeToUse.includes('voice') ? (baseMonthlyPrice + 55) : baseMonthlyPrice,
+          setupFee: setupFee
         },
         humanCostMonthly: 3800,
-        monthlySavings: 3701,
-        yearlySavings: 44412,
-        savingsPercentage: 97.4,
-        breakEvenPoint: { 
-          voice: 240, 
-          chatbot: 520 
-        },
+        monthlySavings: aiTypeToUse.includes('voice') 
+          ? (3800 - (baseMonthlyPrice + 55)) 
+          : (3800 - baseMonthlyPrice),
+        yearlySavings: aiTypeToUse.includes('voice')
+          ? (3800 - (baseMonthlyPrice + 55)) * 12
+          : (3800 - baseMonthlyPrice) * 12,
+        savingsPercentage: aiTypeToUse.includes('voice')
+          ? ((3800 - (baseMonthlyPrice + 55)) / 3800) * 100
+          : ((3800 - baseMonthlyPrice) / 3800) * 100,
+        breakEvenPoint: { voice: 240, chatbot: 520 },
         humanHours: {
           dailyPerEmployee: 8,
           weeklyTotal: 200,
           monthlyTotal: 850,
           yearlyTotal: 10200
         },
-        annualPlan: 990
+        annualPlan: annualPrice
       };
       
       // Ensure all nested objects and properties exist to prevent undefined errors
       if (!results.aiCostMonthly) {
         results.aiCostMonthly = { 
-          voice: 0, 
-          chatbot: 99, 
-          total: 99,
-          setupFee: 249
+          voice: aiTypeToUse.includes('voice') ? 55 : 0, 
+          chatbot: baseMonthlyPrice, 
+          total: aiTypeToUse.includes('voice') ? (baseMonthlyPrice + 55) : baseMonthlyPrice,
+          setupFee: setupFee 
         };
       }
       
