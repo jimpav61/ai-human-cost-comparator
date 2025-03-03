@@ -114,8 +114,11 @@ export const ReportGenerator = ({ lead, buttonStyle = "default" }: ReportGenerat
         ]
       });
       
+      // Make sure we have a valid company name for the file
+      const safeCompanyName = lead.company_name ? lead.company_name.replace(/[^\w\s-]/gi, '') : 'Client';
+      
       // Save the document with proper company name
-      doc.save(`${lead.company_name || 'Client'}-Report.pdf`);
+      doc.save(`${safeCompanyName}-Report.pdf`);
       
       // Mark as downloaded
       markAsDownloaded();

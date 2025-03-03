@@ -90,8 +90,11 @@ export const ProposalGenerator = ({ lead }: ProposalGeneratorProps) => {
         pricingDetails: pricingDetails
       });
       
+      // Make sure we have a valid company name for the file
+      const safeCompanyName = lead.company_name ? lead.company_name.replace(/[^\w\s-]/gi, '') : 'Client';
+      
       // Save the document with proper company name
-      doc.save(`${lead.company_name || 'Client'}-Proposal.pdf`);
+      doc.save(`${safeCompanyName}-Proposal.pdf`);
       
       // Mark as downloaded
       markAsDownloaded();
