@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from "react";
 import { Lead } from "@/types/leads";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
@@ -22,19 +23,33 @@ export const EditLeadDialog = ({ lead, open, onClose }: EditLeadDialogProps) => 
   const [updatedLead, setUpdatedLead] = useState<Lead>({...lead});
   const [isLoading, setIsLoading] = useState(false);
   
-  // Create a CalculatorInputs object from the lead's calculator_inputs
+  // Create default calculator inputs if none exist
+  const defaultInputs: CalculatorInputs = {
+    aiType: 'chatbot',
+    aiTier: 'starter',
+    role: 'customerService',
+    numEmployees: lead.employee_count || 5,
+    callVolume: 0,
+    avgCallDuration: 4.5,
+    chatVolume: 5000,
+    avgChatLength: 8,
+    avgChatResolutionTime: 10,
+  };
+  
+  // Initialize calculator inputs with data from lead or defaults
   const [calculatorInputs, setCalculatorInputs] = useState<CalculatorInputs>(
-    lead.calculator_inputs || {
-      aiType: 'chatbot',
-      aiTier: 'starter',
-      role: 'customerService',
-      numEmployees: lead.employee_count || 5,
-      callVolume: 0,
-      avgCallDuration: 4.5,
-      chatVolume: 5000,
-      avgChatLength: 8,
-      avgChatResolutionTime: 10,
-    }
+    lead.calculator_inputs ? 
+    {
+      aiType: lead.calculator_inputs.aiType || defaultInputs.aiType,
+      aiTier: lead.calculator_inputs.aiTier || defaultInputs.aiTier,
+      role: lead.calculator_inputs.role || defaultInputs.role,
+      numEmployees: Number(lead.calculator_inputs.numEmployees) || defaultInputs.numEmployees,
+      callVolume: Number(lead.calculator_inputs.callVolume) || defaultInputs.callVolume,
+      avgCallDuration: Number(lead.calculator_inputs.avgCallDuration) || defaultInputs.avgCallDuration,
+      chatVolume: Number(lead.calculator_inputs.chatVolume) || defaultInputs.chatVolume,
+      avgChatLength: Number(lead.calculator_inputs.avgChatLength) || defaultInputs.avgChatLength,
+      avgChatResolutionTime: Number(lead.calculator_inputs.avgChatResolutionTime) || defaultInputs.avgChatResolutionTime
+    } : defaultInputs
   );
   
   // Use the calculator hook to get updated calculations
@@ -131,6 +146,14 @@ export const EditLeadDialog = ({ lead, open, onClose }: EditLeadDialogProps) => 
     } finally {
       setIsLoading(false);
     }
+  };
+
+  // Helper function to safely format numbers
+  const safeFormatNumber = (value: number | undefined): string => {
+    if (value === undefined || isNaN(value)) {
+      return '0.00';
+    }
+    return value.toFixed(2);
   };
 
   return (
@@ -352,16 +375,16 @@ export const EditLeadDialog = ({ lead, open, onClose }: EditLeadDialogProps) => 
               <h3 className="text-sm font-medium text-gray-900 mb-3">Recalculated Values Preview:</h3>
               <div className="text-sm grid grid-cols-2 gap-2">
                 <div>Monthly AI Cost:</div>
-                <div className="font-medium">${calculationResults.aiCostMonthly.total.toFixed(2)}</div>
+                <div className="font-medium">${safeFormatNumber(calculationResults.aiCostMonthly.total)}</div>
                 
                 <div>Setup Fee:</div>
-                <div className="font-medium">${calculationResults.aiCostMonthly.setupFee.toFixed(2)}</div>
+                <div className="font-medium">${safeFormatNumber(calculationResults.aiCostMonthly.setupFee)}</div>
                 
                 <div>Monthly Savings:</div>
-                <div className="font-medium text-green-600">${calculationResults.monthlySavings.toFixed(2)}</div>
+                <div className="font-medium text-green-600">${safeFormatNumber(calculationResults.monthlySavings)}</div>
                 
                 <div>Savings Percentage:</div>
-                <div className="font-medium text-green-600">{calculationResults.savingsPercentage.toFixed(1)}%</div>
+                <div className="font-medium text-green-600">{safeFormatNumber(calculationResults.savingsPercentage)}%</div>
               </div>
             </div>
           </TabsContent>
