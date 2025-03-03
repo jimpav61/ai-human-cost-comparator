@@ -1,3 +1,4 @@
+
 import { JsPDFWithAutoTable, SectionParams } from '../types';
 
 export const addIndustryChallenges = (doc: JsPDFWithAutoTable, yPosition: number, params: SectionParams): number => {
@@ -9,7 +10,7 @@ export const addIndustryChallenges = (doc: JsPDFWithAutoTable, yPosition: number
   
   // Industry Challenges Section
   doc.setFontSize(16);
-  doc.setTextColor(0, 0, 0);
+  doc.setTextColor(0, 121, 183); // Blue color for section header
   doc.text("Industry Challenges", 20, yPosition);
   
   yPosition += 10;
@@ -21,6 +22,7 @@ export const addIndustryChallenges = (doc: JsPDFWithAutoTable, yPosition: number
   
   // Introduction to challenges
   const introText = `Organizations in the ${industry} industry face several key challenges that our AI solution addresses:`;
+  doc.setTextColor(0, 0, 0); // Reset text color for body text
   doc.text(introText, 20, yPosition);
   
   yPosition += 10;
@@ -29,10 +31,12 @@ export const addIndustryChallenges = (doc: JsPDFWithAutoTable, yPosition: number
   challenges.forEach((challenge, index) => {
     doc.setFontSize(11);
     doc.setFont(undefined, 'bold');
+    doc.setTextColor(46, 125, 50); // Green color for challenge titles
     doc.text(`• ${challenge.title}`, 20, yPosition + (index * 15));
     
     doc.setFontSize(10);
     doc.setFont(undefined, 'normal');
+    doc.setTextColor(0, 0, 0); // Reset text color for descriptions
     const descLines = doc.splitTextToSize(challenge.description, 170);
     doc.text(descLines, 25, yPosition + 5 + (index * 15));
   });

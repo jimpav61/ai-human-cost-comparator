@@ -11,6 +11,7 @@ export const addFinancialImpact = (doc: JsPDFWithAutoTable, yPosition: number, p
 
   // Financial Impact & ROI Analysis
   doc.setFontSize(16);
+  doc.setTextColor(0, 121, 183); // Blue color for section header
   doc.text("Financial Impact & ROI Analysis", 20, yPosition);
   yPosition += 10;
 
@@ -24,7 +25,7 @@ export const addFinancialImpact = (doc: JsPDFWithAutoTable, yPosition: number, p
   const yearlySavings = formatCurrency(params.results?.yearlySavings || 44412);
   const setupFee = formatCurrency(params.results?.aiCostMonthly.setupFee || 249);
 
-  // Create ROI table with dynamically calculated values
+  // Create ROI table with dynamically calculated values and green headers
   autoTable(doc, {
     startY: yPosition,
     head: [['Metric', 'Potential Impact']],
@@ -39,7 +40,7 @@ export const addFinancialImpact = (doc: JsPDFWithAutoTable, yPosition: number, p
     ],
     theme: 'striped',
     headStyles: {
-      fillColor: [0, 121, 183],
+      fillColor: [46, 125, 50], // Green color for table header
       textColor: [255, 255, 255],
       fontStyle: 'bold'
     },
@@ -56,6 +57,7 @@ export const addFinancialImpact = (doc: JsPDFWithAutoTable, yPosition: number, p
   
   // Cost Comparison
   doc.setFontSize(14);
+  doc.setTextColor(46, 125, 50); // Green color for sub-section header
   doc.text("Cost Comparison", 20, yPosition);
   yPosition += 10;
   
@@ -65,7 +67,7 @@ export const addFinancialImpact = (doc: JsPDFWithAutoTable, yPosition: number, p
   const aiMonthly = formatCurrency(params.results?.aiCostMonthly.total || 99);
   const aiAnnual = formatCurrency((params.results?.aiCostMonthly.total || 99) * 12);
   
-  // Create cost comparison table
+  // Create cost comparison table with blue headers
   autoTable(doc, {
     startY: yPosition,
     head: [['Solution', 'Monthly Cost', 'Annual Cost', 'One-Time Setup Fee']],
@@ -75,7 +77,7 @@ export const addFinancialImpact = (doc: JsPDFWithAutoTable, yPosition: number, p
     ],
     theme: 'striped',
     headStyles: {
-      fillColor: [0, 121, 183],
+      fillColor: [0, 121, 183], // Blue color for table header
       textColor: [255, 255, 255],
       fontStyle: 'bold'
     },
