@@ -21,6 +21,21 @@ export const AdminHeader = ({ isLoading = false }) => {
   const handleLogout = async () => {
     try {
       console.log("Logging out user");
+      
+      // First check if there's a session before trying to sign out
+      const { data: sessionData } = await supabase.auth.getSession();
+      
+      if (!sessionData.session) {
+        console.log("No active session found, redirecting anyway");
+        toast({
+          title: "Success",
+          description: "Logged out successfully",
+        });
+        window.location.href = '/';
+        return;
+      }
+      
+      // If we have a session, proceed with logout
       const { error } = await supabase.auth.signOut();
       
       if (error) {
