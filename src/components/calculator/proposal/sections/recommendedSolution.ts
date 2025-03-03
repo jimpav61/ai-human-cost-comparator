@@ -4,11 +4,12 @@ import { JsPDFWithAutoTable, SectionParams } from '../types';
 export const addRecommendedSolution = (doc: JsPDFWithAutoTable, yPosition: number, params: SectionParams): number => {
   // Recommended Solution
   doc.setFontSize(16);
-  doc.setTextColor(0, 0, 0);
+  doc.setTextColor(246, 82, 40); // Brand color for section header (f65228)
   doc.text("Recommended Solution", 20, yPosition);
   
   yPosition += 8;
   doc.setFontSize(12);
+  doc.setTextColor(0, 0, 0); // Regular text in black
   
   // Get tier name and AI type
   const tierName = params.tierName || 'Starter Plan';

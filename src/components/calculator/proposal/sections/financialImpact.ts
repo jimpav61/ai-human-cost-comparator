@@ -11,7 +11,7 @@ export const addFinancialImpact = (doc: JsPDFWithAutoTable, yPosition: number, p
 
   // Financial Impact & ROI Analysis
   doc.setFontSize(16);
-  doc.setTextColor(246, 82, 40); // Brand color for section header
+  doc.setTextColor(246, 82, 40); // Brand color for section header (f65228)
   doc.text("Financial Impact & ROI Analysis", 20, yPosition);
   yPosition += 10;
 
@@ -40,7 +40,7 @@ export const addFinancialImpact = (doc: JsPDFWithAutoTable, yPosition: number, p
     ],
     theme: 'striped',
     headStyles: {
-      fillColor: [246, 82, 40], // Brand color for table header
+      fillColor: [246, 82, 40], // Brand color for table header (f65228)
       textColor: [255, 255, 255],
       fontStyle: 'bold'
     },
@@ -57,7 +57,7 @@ export const addFinancialImpact = (doc: JsPDFWithAutoTable, yPosition: number, p
   
   // Cost Comparison
   doc.setFontSize(14);
-  doc.setTextColor(246, 82, 40); // Brand color for sub-section header
+  doc.setTextColor(246, 82, 40); // Brand color for sub-section header (f65228)
   doc.text("Cost Comparison", 20, yPosition);
   yPosition += 10;
   
@@ -77,7 +77,7 @@ export const addFinancialImpact = (doc: JsPDFWithAutoTable, yPosition: number, p
     ],
     theme: 'striped',
     headStyles: {
-      fillColor: [246, 82, 40], // Brand color for table header
+      fillColor: [246, 82, 40], // Brand color for table header (f65228)
       textColor: [255, 255, 255],
       fontStyle: 'bold'
     },

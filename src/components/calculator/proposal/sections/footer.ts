@@ -4,7 +4,7 @@ import { JsPDFWithAutoTable, SectionParams } from '../types';
 export const addFooter = (doc: JsPDFWithAutoTable, params: SectionParams, reportDate: string): void => {
   // Footer with contact information
   doc.setFontSize(12);
-  doc.setTextColor(246, 82, 40); // Brand color for contact header
+  doc.setTextColor(246, 82, 40); // Brand color for contact header (f65228)
   doc.text("Contact Us:", 20, 270);
   doc.setFontSize(10);
   doc.setTextColor(0, 0, 0); // Keep contact details black
