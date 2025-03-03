@@ -115,7 +115,7 @@ export const ReportGenerator = ({ lead, buttonStyle = "default" }: ReportGenerat
       });
       
       // Save the document with proper company name
-      doc.save(`${lead.company_name}-Report.pdf`);
+      doc.save(`${lead.company_name || 'Client'}-Report.pdf`);
       
       // Mark as downloaded
       markAsDownloaded();

@@ -2,7 +2,7 @@
 import { Lead } from "@/types/leads";
 import { FileDown } from "lucide-react";
 import { toast } from "@/hooks/use-toast";
-import { generateProposal } from "@/components/calculator/proposalGenerator";
+import { generateProposal } from "@/components/calculator/proposal/generateProposal";
 import { DownloadButton } from "./DownloadButton";
 import { useDownloadState } from "../hooks/useDownloadState";
 import { calculatePricingDetails, getTierDisplayName, getAITypeDisplay } from "@/components/calculator/pricingDetailsCalculator";
@@ -91,7 +91,7 @@ export const ProposalGenerator = ({ lead }: ProposalGeneratorProps) => {
       });
       
       // Save the document with proper company name
-      doc.save(`${lead.company_name}-Proposal.pdf`);
+      doc.save(`${lead.company_name || 'Client'}-Proposal.pdf`);
       
       // Mark as downloaded
       markAsDownloaded();
