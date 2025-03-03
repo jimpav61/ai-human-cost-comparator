@@ -20,10 +20,14 @@ const Auth = () => {
   // Check if already authenticated
   useEffect(() => {
     const checkSession = async () => {
-      const { data } = await supabase.auth.getSession();
-      console.log("Current session:", data.session);
-      if (data.session) {
-        navigate("/admin");
+      try {
+        const { data } = await supabase.auth.getSession();
+        console.log("Current session:", data.session);
+        if (data.session) {
+          navigate("/admin");
+        }
+      } catch (error) {
+        console.error("Error checking session:", error);
       }
     };
     

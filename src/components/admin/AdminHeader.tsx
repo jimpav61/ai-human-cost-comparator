@@ -1,4 +1,3 @@
-
 import { Button } from "@/components/ui/button";
 import {
   Dialog,
@@ -9,7 +8,7 @@ import {
 } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { useState } from "react";
-import { supabase } from "@/integrations/supabase/client";
+import { supabase, safeSignOut } from "@/integrations/supabase/client";
 import { toast } from "@/components/ui/use-toast";
 import { useNavigate } from "react-router-dom";
 
@@ -22,21 +21,7 @@ export const AdminHeader = ({ isLoading = false }) => {
     try {
       console.log("Logging out user");
       
-      // First check if there's a session before trying to sign out
-      const { data: sessionData } = await supabase.auth.getSession();
-      
-      if (!sessionData.session) {
-        console.log("No active session found, redirecting anyway");
-        toast({
-          title: "Success",
-          description: "Logged out successfully",
-        });
-        window.location.href = '/';
-        return;
-      }
-      
-      // If we have a session, proceed with logout
-      const { error } = await supabase.auth.signOut();
+      const { success, error } = await safeSignOut();
       
       if (error) {
         console.error("Logout error:", error);
@@ -48,6 +33,7 @@ export const AdminHeader = ({ isLoading = false }) => {
         title: "Success",
         description: "Logged out successfully",
       });
+      
       // Force navigation after logout
       window.location.href = '/';
     } catch (error: any) {

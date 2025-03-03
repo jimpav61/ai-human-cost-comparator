@@ -7,7 +7,14 @@ const SUPABASE_PUBLISHABLE_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiO
 
 export const supabase = createClient<Database>(
   SUPABASE_URL, 
-  SUPABASE_PUBLISHABLE_KEY
+  SUPABASE_PUBLISHABLE_KEY,
+  {
+    auth: {
+      persistSession: true,
+      autoRefreshToken: true,
+      detectSessionInUrl: true
+    }
+  }
 );
 
 // Simple function to check if user is authenticated
@@ -23,5 +30,22 @@ export const isAuthenticated = async () => {
   } catch (e) {
     console.error("Auth check failed:", e);
     return { authenticated: false, session: null, error: e };
+  }
+};
+
+// Safe sign out function that handles missing sessions
+export const safeSignOut = async () => {
+  try {
+    const { data } = await supabase.auth.getSession();
+    
+    if (!data.session) {
+      return { success: true, error: null };
+    }
+    
+    const { error } = await supabase.auth.signOut();
+    return { success: !error, error };
+  } catch (error) {
+    console.error("Sign out error:", error);
+    return { success: false, error };
   }
 };
