@@ -1,7 +1,7 @@
-
 import { JsPDFWithAutoTable } from '../types';
+import { GenerateProposalParams } from '../types';
 
-export const addIndustryChallenges = (doc: JsPDFWithAutoTable, yPosition: number, params: any): number => {
+export const addIndustryChallenges = (doc: JsPDFWithAutoTable, yPosition: number, params: GenerateProposalParams): number => {
   let challengesText = "";
   if (params.industry) {
     switch(params.industry) {

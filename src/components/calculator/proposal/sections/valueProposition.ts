@@ -1,35 +1,39 @@
-
 import { JsPDFWithAutoTable } from '../types';
-import autoTable from 'jspdf-autotable';
 
 export const addValueProposition = (doc: JsPDFWithAutoTable, yPosition: number): number => {
-  // Check if we need a new page
-  if (yPosition > 230) {
-    doc.addPage();
-    yPosition = 20;
-  }
-  
-  doc.setFontSize(14);
-  doc.text("Value Proposition", 20, yPosition);
-  
-  // Benefits table
-  autoTable(doc, {
-    startY: yPosition + 5,
-    head: [["Key Benefits"]],
-    body: [
-      ["24/7 Customer Support Availability - Never miss another inquiry regardless of time zone or hour"],
-      ["Instant Response Times - Eliminate wait times and increase customer satisfaction rates"],
-      ["Consistent Service Quality - Deliver the same high standard of service with every interaction"],
-      ["Multilingual Support Capabilities - Engage with your global customer base in their preferred language"],
-      ["Scalable Solution - Easily accommodate growth without proportional increases in operational costs"],
-      ["Valuable Customer Insights - Gain deeper understanding of customer needs through AI-powered analytics"]
-    ],
-    styles: { fontSize: 11 },
-    theme: 'plain',
-    rowPageBreak: 'auto',
-    bodyStyles: { minCellHeight: 10 },
+  const sectionTitle = "Value Proposition";
+  const valuePoints = [
+    "Increased Efficiency: Automate repetitive tasks, freeing up human agents for complex issues.",
+    "Cost Savings: Reduce labor costs and operational expenses through AI-driven automation.",
+    "Improved Customer Satisfaction: Provide instant support and personalized experiences, leading to happier customers.",
+    "Scalability: Easily handle fluctuations in demand without increasing headcount.",
+    "Data-Driven Insights: Gain valuable insights into customer behavior and preferences through AI analytics."
+  ];
+
+  // Title
+  doc.setFontSize(16);
+  doc.setTextColor(0, 0, 0);
+  doc.text(sectionTitle, 20, yPosition);
+  yPosition += 10;
+
+  // Introduction
+  doc.setFontSize(12);
+  doc.setTextColor(70, 70, 70);
+  const introductionText = "Our AI solutions deliver significant value to your business by:";
+  doc.text(introductionText, 20, yPosition);
+  yPosition += 8;
+
+  // Value Points
+  doc.setFontSize(11);
+  doc.setTextColor(30, 30, 30);
+  valuePoints.forEach(point => {
+    const wrappedText = doc.splitTextToSize(`• ${point}`, doc.internal.pageSize.getWidth() - 40);
+    wrappedText.forEach(line => {
+      doc.text(line, 25, yPosition);
+      yPosition += 6;
+    });
   });
-  
-  // Get the last Y position after the table
-  return (doc.lastAutoTable?.finalY || yPosition + 60) + 20;
+
+  yPosition += 5;
+  return yPosition;
 };

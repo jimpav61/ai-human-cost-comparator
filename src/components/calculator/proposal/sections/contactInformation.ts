@@ -1,5 +1,6 @@
 
 import { JsPDFWithAutoTable } from '../types';
+import { GenerateProposalParams } from '../types';
 
 export const addContactInformation = (doc: JsPDFWithAutoTable, yPosition: number): number => {
   // Get Started Today

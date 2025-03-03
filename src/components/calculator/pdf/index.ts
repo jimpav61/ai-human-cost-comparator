@@ -1,3 +1,3 @@
 
 export { generatePDF } from './generatePDF';
-export { GeneratePDFParams } from './types';
+export type { GeneratePDFParams } from './types';
