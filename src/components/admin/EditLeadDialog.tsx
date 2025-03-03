@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from "react";
 import { Lead } from "@/types/leads";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
@@ -63,6 +62,11 @@ export const EditLeadDialog = ({ lead, open, onClose }: EditLeadDialogProps) => 
     }));
   }, [calculationResults]);
 
+  // Sync AI type with plan tier on initialization
+  useEffect(() => {
+    updateAITypeBasedOnTier(calculatorInputs.aiTier);
+  }, []);
+
   // Handle basic lead info changes
   const handleBasicInfoChange = (field: keyof Lead, value: string | number) => {
     setUpdatedLead(prev => ({
@@ -71,20 +75,103 @@ export const EditLeadDialog = ({ lead, open, onClose }: EditLeadDialogProps) => 
     }));
   };
 
+  // Automatically update the AI type when the tier changes
+  const updateAITypeBasedOnTier = (tier: string) => {
+    let newAIType = calculatorInputs.aiType;
+    
+    // Set appropriate AI type based on tier
+    if (tier === 'starter') {
+      newAIType = 'chatbot'; // Text Only
+    } else if (tier === 'growth') {
+      // If current type is chatbot or conversational, update appropriately
+      if (newAIType === 'chatbot' || newAIType === 'conversationalVoice' || newAIType === 'both-premium') {
+        newAIType = 'both'; // Text & Basic Voice
+      }
+    } else if (tier === 'premium') {
+      // If current type involves voice, upgrade to conversational
+      if (newAIType === 'voice' || newAIType === 'both') {
+        newAIType = 'both-premium'; // Text & Conversational Voice
+      } else if (newAIType === 'chatbot') {
+        // Keep as chatbot if no voice was requested
+        newAIType = 'chatbot';
+      }
+    }
+    
+    // Update AI type if it changed
+    if (newAIType !== calculatorInputs.aiType) {
+      setCalculatorInputs(prev => ({
+        ...prev,
+        aiType: newAIType as any
+      }));
+      
+      // Also update in lead data
+      setUpdatedLead(prev => ({
+        ...prev,
+        calculator_inputs: {
+          ...prev.calculator_inputs,
+          aiType: newAIType
+        }
+      }));
+    }
+    
+    // Update call volume based on tier's included minutes
+    const includedMinutes = AI_RATES.chatbot[tier as keyof typeof AI_RATES.chatbot]?.includedVoiceMinutes || 0;
+    if (tier !== 'starter' && includedMinutes > calculatorInputs.callVolume) {
+      handleCalculatorInputChange('callVolume', includedMinutes);
+    } else if (tier === 'starter' && calculatorInputs.callVolume > 0) {
+      handleCalculatorInputChange('callVolume', 0);
+    }
+  };
+
   // Handle calculator input changes
   const handleCalculatorInputChange = (field: string, value: any) => {
     setCalculatorInputs(prev => {
       const updatedInputs = { ...prev, [field]: value } as CalculatorInputs;
       
-      // If changing to starter plan, ensure call volume is 0
-      if (field === 'aiTier' && value === 'starter') {
-        updatedInputs.callVolume = 0;
+      // Special handling for tier changes to update AI type and call volume
+      if (field === 'aiTier') {
+        updateAITypeBasedOnTier(value);
       }
-      // If changing to a plan with voice, ensure call volume is at least the included minutes
-      else if (field === 'aiTier' && value !== 'starter') {
-        const includedMinutes = AI_RATES.chatbot[value as keyof typeof AI_RATES.chatbot]?.includedVoiceMinutes || 0;
-        if (updatedInputs.callVolume < includedMinutes) {
-          updatedInputs.callVolume = includedMinutes;
+      // If changing AI type, ensure it's compatible with the tier
+      else if (field === 'aiType') {
+        // If selecting a voice option but on starter plan, upgrade to growth
+        if ((value === 'voice' || value === 'conversationalVoice' || value === 'both' || value === 'both-premium') 
+            && prev.aiTier === 'starter') {
+          updatedInputs.aiTier = 'growth';
+          
+          // Update call volume to match included minutes for growth
+          const growthIncludedMinutes = AI_RATES.chatbot['growth']?.includedVoiceMinutes || 600;
+          updatedInputs.callVolume = growthIncludedMinutes;
+          
+          // Also update in lead data
+          setUpdatedLead(prevLead => ({
+            ...prevLead,
+            calculator_inputs: {
+              ...prevLead.calculator_inputs,
+              aiTier: 'growth',
+              callVolume: growthIncludedMinutes
+            }
+          }));
+        }
+        
+        // If selecting conversational voice but not on premium, upgrade to premium
+        if ((value === 'conversationalVoice' || value === 'both-premium') 
+            && prev.aiTier !== 'premium') {
+          updatedInputs.aiTier = 'premium';
+          
+          // Update call volume to match included minutes for premium
+          const premiumIncludedMinutes = AI_RATES.chatbot['premium']?.includedVoiceMinutes || 600;
+          updatedInputs.callVolume = premiumIncludedMinutes;
+          
+          // Also update in lead data
+          setUpdatedLead(prevLead => ({
+            ...prevLead,
+            calculator_inputs: {
+              ...prevLead.calculator_inputs,
+              aiTier: 'premium',
+              callVolume: premiumIncludedMinutes
+            }
+          }));
         }
       }
       
@@ -276,12 +363,22 @@ export const EditLeadDialog = ({ lead, open, onClose }: EditLeadDialogProps) => 
                   </SelectTrigger>
                   <SelectContent>
                     <SelectItem value="chatbot">Text Only</SelectItem>
-                    <SelectItem value="voice">Basic Voice Only</SelectItem>
-                    <SelectItem value="conversationalVoice">Conversational Voice Only</SelectItem>
-                    <SelectItem value="both">Text & Basic Voice</SelectItem>
-                    <SelectItem value="both-premium">Text & Conversational Voice</SelectItem>
+                    <SelectItem value="voice" disabled={calculatorInputs.aiTier === 'starter'}>Basic Voice Only</SelectItem>
+                    <SelectItem value="conversationalVoice" disabled={calculatorInputs.aiTier !== 'premium'}>Conversational Voice Only</SelectItem>
+                    <SelectItem value="both" disabled={calculatorInputs.aiTier === 'starter'}>Text & Basic Voice</SelectItem>
+                    <SelectItem value="both-premium" disabled={calculatorInputs.aiTier !== 'premium'}>Text & Conversational Voice</SelectItem>
                   </SelectContent>
                 </Select>
+                {calculatorInputs.aiTier === 'starter' && calculatorInputs.aiType !== 'chatbot' && (
+                  <p className="text-xs text-amber-600 mt-1">
+                    Starter Plan only supports text capabilities
+                  </p>
+                )}
+                {calculatorInputs.aiTier !== 'premium' && (calculatorInputs.aiType === 'conversationalVoice' || calculatorInputs.aiType === 'both-premium') && (
+                  <p className="text-xs text-amber-600 mt-1">
+                    Conversational voice requires Premium Plan
+                  </p>
+                )}
               </div>
               
               <div className="space-y-2">

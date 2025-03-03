@@ -22,6 +22,76 @@ export const ProposalGenerator = ({ lead }: ProposalGeneratorProps) => {
     try {
       console.log('Generating proposal for lead:', lead);
       
+      // If we have calculator_results directly from the lead, use those
+      if (lead.calculator_results && typeof lead.calculator_results === 'object') {
+        const tierToUse = lead.calculator_inputs?.aiTier || 'starter';
+        const aiTypeToUse = lead.calculator_inputs?.aiType || 'chatbot';
+        
+        // Get display names based on tier and aiType
+        const tierName = getTierDisplayName(tierToUse);
+        const aiType = getAITypeDisplay(aiTypeToUse);
+        
+        // Calculate pricing details based on the inputs
+        const pricingDetails = calculatePricingDetails(lead.calculator_inputs || {
+          aiType: aiTypeToUse,
+          aiTier: tierToUse,
+          role: 'customerService',
+          numEmployees: lead.employee_count || 5,
+          callVolume: 0,
+          avgCallDuration: 4.5,
+          chatVolume: 2000,
+          avgChatLength: 8,
+          avgChatResolutionTime: 10
+        });
+        
+        console.log("Using lead's existing calculator results:", lead.calculator_results);
+        
+        try {
+          // Generate the proposal document using the imported function with the existing results
+          const doc = generateProposal({
+            contactInfo: lead.name || 'Valued Client',
+            companyName: lead.company_name || 'Your Company',
+            email: lead.email || 'client@example.com',
+            phoneNumber: lead.phone_number || '',
+            industry: lead.industry || 'Other',
+            employeeCount: lead.employee_count || 5,
+            results: lead.calculator_results,
+            tierName: tierName,
+            aiType: aiType,
+            pricingDetails: pricingDetails
+          });
+          
+          // Make sure we have a valid company name for the file
+          const safeCompanyName = lead.company_name ? lead.company_name.replace(/[^\w\s-]/gi, '') : 'Client';
+          
+          console.log("Document generated, saving as:", `${safeCompanyName}-Proposal.pdf`);
+          
+          // Save the document with proper company name
+          doc.save(`${safeCompanyName}-Proposal.pdf`);
+          
+          // Mark as downloaded
+          markAsDownloaded();
+
+          toast({
+            title: "Success",
+            description: "Proposal generated and downloaded successfully",
+          });
+        } catch (error) {
+          console.error("Error in document generation step:", error);
+          toast({
+            title: "Error",
+            description: `Failed to generate proposal: ${error instanceof Error ? error.message : 'Unknown error'}`,
+            variant: "destructive",
+          });
+          throw error;
+        }
+        
+        return;
+      }
+      
+      // Fallback logic if we don't have calculator_results
+      console.log("No calculator results found, calculating values");
+      
       // Use the calculator inputs from lead or fallback to defaults
       const inputs = lead.calculator_inputs || {
         aiType: 'chatbot',
@@ -43,6 +113,7 @@ export const ProposalGenerator = ({ lead }: ProposalGeneratorProps) => {
       const setupFee = AI_RATES.chatbot[tierToUse].setupFee;
       const annualPrice = AI_RATES.chatbot[tierToUse].annualPrice;
       const baseMonthlyPrice = AI_RATES.chatbot[tierToUse].base;
+      const includedVoiceMinutes = AI_RATES.chatbot[tierToUse].includedVoiceMinutes || 0;
       
       // Calculate pricing details based on the inputs
       const pricingDetails = calculatePricingDetails(inputs);
@@ -50,10 +121,26 @@ export const ProposalGenerator = ({ lead }: ProposalGeneratorProps) => {
       // Calculate the total monthly cost (base + usage)
       let totalMonthlyAICost = baseMonthlyPrice;
       
-      // Add voice costs if applicable
+      // Calculate voice costs if applicable
+      let voiceCost = 0;
       if (aiTypeToUse === 'voice' || aiTypeToUse === 'conversationalVoice' || 
           aiTypeToUse === 'both' || aiTypeToUse === 'both-premium') {
-        const voiceCost = 55; // Default voice cost
+          
+        // Calculate total minutes used
+        const totalMinutes = inputs.callVolume * inputs.avgCallDuration;
+        
+        // Only charge for minutes above the included amount
+        const chargeableMinutes = Math.max(0, totalMinutes - includedVoiceMinutes);
+        
+        // Get the per-minute rate for this tier
+        const voiceRate = AI_RATES.voice[tierToUse as keyof typeof AI_RATES.voice];
+        
+        // Apply conversational factor for premium/conversational voice
+        const isConversational = aiTypeToUse === 'conversationalVoice' || aiTypeToUse === 'both-premium';
+        const conversationalFactor = (tierToUse === 'premium' || isConversational) ? 1.15 : 1.0;
+        
+        // Calculate voice cost
+        voiceCost = chargeableMinutes * voiceRate * conversationalFactor;
         totalMonthlyAICost += voiceCost;
       }
       
@@ -68,7 +155,7 @@ export const ProposalGenerator = ({ lead }: ProposalGeneratorProps) => {
       // Create complete results object
       const results = {
         aiCostMonthly: { 
-          voice: aiTypeToUse.includes('voice') ? 55 : 0, 
+          voice: voiceCost, 
           chatbot: baseMonthlyPrice, 
           total: totalMonthlyAICost,
           setupFee: setupFee

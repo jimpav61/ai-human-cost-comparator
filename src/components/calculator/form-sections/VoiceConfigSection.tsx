@@ -36,11 +36,18 @@ export const VoiceConfigSection: React.FC<VoiceConfigSectionProps> = ({
       });
     } else {
       // Normal handling for non-starter plans
-      // Ensure value is a multiple of 50 for increments
-      const roundedValue = Math.ceil(value / 50) * 50;
-      // Ensure it's at least the included minutes
-      const finalValue = Math.max(roundedValue, includedMinutes);
-      onInputChange('callVolume', finalValue);
+      // Ensure value is at least the included minutes if it's a non-zero value
+      if (value > 0 && value < includedMinutes) {
+        onInputChange('callVolume', includedMinutes);
+        
+        toast({
+          title: "Included Minutes Applied",
+          description: `Your plan includes ${includedMinutes} free voice minutes. We've set this as the minimum.`,
+          variant: "default",
+        });
+      } else {
+        onInputChange('callVolume', value);
+      }
     }
   };
   
@@ -50,8 +57,8 @@ export const VoiceConfigSection: React.FC<VoiceConfigSectionProps> = ({
     if (isStarterPlan && callVolume !== 0) {
       onInputChange('callVolume', 0);
     }
-    // For other plans, ensure call volume is at least the included minutes
-    else if (!isStarterPlan && callVolume < includedMinutes) {
+    // For other plans, ensure call volume is at least the included minutes if it's not 0
+    else if (!isStarterPlan && callVolume > 0 && callVolume < includedMinutes) {
       onInputChange('callVolume', includedMinutes);
     }
   }, [aiTier, includedMinutes, isStarterPlan, callVolume, onInputChange]);
@@ -64,7 +71,7 @@ export const VoiceConfigSection: React.FC<VoiceConfigSectionProps> = ({
         </label>
         <input 
           type="number" 
-          min={isStarterPlan ? "0" : includedMinutes.toString()}
+          min={0}
           step="50"
           value={callVolume}
           onChange={(e) => handleCallVolumeChange(parseInt(e.target.value) || 0)}

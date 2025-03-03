@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from 'react';
 import { DEFAULT_AI_RATES, HUMAN_HOURLY_RATES, fetchPricingConfigurations, type AIRates } from '@/constants/pricing';
 
@@ -81,8 +82,9 @@ export const useCalculator = (inputs: CalculatorInputs): CalculationResults => {
     const hourlyRateWithBenefits = baseHourlyRate * 1.3;
     const monthlyHumanCost = hourlyRateWithBenefits * monthlyTotalHours;
 
+    // Determine the effective tier for pricing calculations
+    // If using conversational voice, we must be on premium tier
     let effectiveTier = inputs.aiTier;
-    
     if (inputs.aiType === 'conversationalVoice' || inputs.aiType === 'both-premium') {
       effectiveTier = 'premium';
     }
@@ -90,29 +92,41 @@ export const useCalculator = (inputs: CalculatorInputs): CalculationResults => {
     let monthlyVoiceCost = 0;
     let monthlyChatbotCost = 0;
     
-    // Get base costs from the correct tier
+    // Get base costs and setup fees from the correct tier
     const chatbotRates = aiRates.chatbot[effectiveTier];
     const setupFee = chatbotRates.setupFee || 0;
     const annualPlan = chatbotRates.annualPrice || 0;
     
-    // For starter plan, no voice capabilities
-    if (effectiveTier === 'starter' && (inputs.aiType === 'voice' || inputs.aiType === 'conversationalVoice' || inputs.aiType === 'both' || inputs.aiType === 'both-premium')) {
-      // Voice not available in starter plan, force to chatbot only
-      monthlyVoiceCost = 0;
-    } 
-    // For other plans with voice capabilities
-    else if (inputs.aiType === 'voice' || inputs.aiType === 'conversationalVoice' || inputs.aiType === 'both' || inputs.aiType === 'both-premium') {
-      const totalMinutesPerMonth = inputs.callVolume * inputs.avgCallDuration;
-      const includedMinutes = aiRates.chatbot[effectiveTier].includedVoiceMinutes || 0;
-      const chargeableMinutes = Math.max(0, totalMinutesPerMonth - includedMinutes);
+    // Calculate voice costs (if applicable)
+    if (inputs.aiType === 'voice' || inputs.aiType === 'conversationalVoice' || 
+        inputs.aiType === 'both' || inputs.aiType === 'both-premium') {
       
-      const voiceRate = aiRates.voice[effectiveTier];
-      const isConversational = inputs.aiType === 'conversationalVoice' || inputs.aiType === 'both-premium';
-      const conversationalFactor = (effectiveTier === 'premium' || isConversational) ? 1.15 : 1.0;
-      
-      monthlyVoiceCost = chargeableMinutes * voiceRate * conversationalFactor;
+      // Starter plan has no voice capabilities
+      if (effectiveTier === 'starter') {
+        monthlyVoiceCost = 0;
+      } else {
+        // Calculate total minutes used
+        const totalMinutesPerMonth = inputs.callVolume * inputs.avgCallDuration;
+        
+        // Get the included minutes for this tier
+        const includedMinutes = aiRates.chatbot[effectiveTier].includedVoiceMinutes || 0;
+        
+        // Only charge for minutes above the included amount
+        const chargeableMinutes = Math.max(0, totalMinutesPerMonth - includedMinutes);
+        
+        // Get the per-minute rate for this tier
+        const voiceRate = aiRates.voice[effectiveTier];
+        
+        // Apply conversational factor for premium/conversational voice
+        const isConversational = inputs.aiType === 'conversationalVoice' || inputs.aiType === 'both-premium';
+        const conversationalFactor = (effectiveTier === 'premium' || isConversational) ? 1.15 : 1.0;
+        
+        // Calculate the voice cost
+        monthlyVoiceCost = chargeableMinutes * voiceRate * conversationalFactor;
+      }
     }
     
+    // Calculate chatbot costs (if applicable)
     if (inputs.aiType === 'chatbot' || inputs.aiType === 'both' || inputs.aiType === 'both-premium') {
       const baseCost = chatbotRates.base;
       
@@ -120,23 +134,34 @@ export const useCalculator = (inputs: CalculatorInputs): CalculationResults => {
       if (effectiveTier === 'starter') {
         monthlyChatbotCost = baseCost;
       } else {
+        // Calculate the total number of messages
         const totalMessages = inputs.chatVolume * inputs.avgChatLength;
+        
+        // Calculate the message usage cost
         const messageUsageCost = totalMessages * chatbotRates.perMessage;
         
+        // Apply volume discounts
         let finalMessageCost = messageUsageCost;
         if (totalMessages > 50000) {
-          finalMessageCost = messageUsageCost * 0.8;
+          finalMessageCost = messageUsageCost * 0.8; // 20% discount
         } else if (totalMessages > 10000) {
-          finalMessageCost = messageUsageCost * 0.9;
+          finalMessageCost = messageUsageCost * 0.9; // 10% discount
         }
         
+        // Add base cost and message costs
         monthlyChatbotCost = baseCost + finalMessageCost;
       }
     }
     
+    // Calculate total monthly AI cost
     const monthlyAiCost = monthlyVoiceCost + monthlyChatbotCost;
+    
+    // Calculate savings
     const monthlySavings = monthlyHumanCost - monthlyAiCost;
     const yearlySavings = monthlySavings * MONTHS_PER_YEAR;
+    
+    // Calculate savings percentage
+    const savingsPercentage = monthlyHumanCost > 0 ? (monthlySavings / monthlyHumanCost) * 100 : 0;
     
     setResults({
       aiCostMonthly: {
@@ -148,7 +173,7 @@ export const useCalculator = (inputs: CalculatorInputs): CalculationResults => {
       humanCostMonthly: monthlyHumanCost,
       monthlySavings: monthlySavings,
       yearlySavings: yearlySavings,
-      savingsPercentage: monthlyHumanCost > 0 ? (monthlySavings / monthlyHumanCost) * 100 : 0,
+      savingsPercentage: savingsPercentage,
       breakEvenPoint: { 
         voice: Math.ceil(monthlyVoiceCost / (hourlyRateWithBenefits / 60)), 
         chatbot: Math.ceil(monthlyChatbotCost / (hourlyRateWithBenefits / 60))
