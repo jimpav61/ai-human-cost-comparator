@@ -76,6 +76,15 @@ export const ProposalGenerator = ({ lead }: ProposalGeneratorProps) => {
       const tierName = getTierDisplayName(inputs.aiTier);
       const aiType = getAITypeDisplay(inputs.aiType);
       
+      console.log("Before generating proposal document with:", {
+        contactInfo: lead.name,
+        companyName: lead.company_name,
+        email: lead.email,
+        tierName,
+        aiType,
+        results
+      });
+      
       // Generate the proposal document
       const doc = generateProposal({
         contactInfo: lead.name || 'Valued Client',
@@ -92,6 +101,8 @@ export const ProposalGenerator = ({ lead }: ProposalGeneratorProps) => {
       
       // Make sure we have a valid company name for the file
       const safeCompanyName = lead.company_name ? lead.company_name.replace(/[^\w\s-]/gi, '') : 'Client';
+      
+      console.log("Document generated, saving as:", `${safeCompanyName}-Proposal.pdf`);
       
       // Save the document with proper company name
       doc.save(`${safeCompanyName}-Proposal.pdf`);

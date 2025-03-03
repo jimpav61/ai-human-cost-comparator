@@ -73,6 +73,15 @@ export const ReportGenerator = ({ lead, buttonStyle = "default" }: ReportGenerat
       const tierName = getTierDisplayName(inputs.aiTier);
       const aiType = getAITypeDisplay(inputs.aiType);
       
+      console.log("Before generating PDF report with:", {
+        contactInfo: lead.name,
+        companyName: lead.company_name,
+        email: lead.email,
+        tierName,
+        aiType,
+        results
+      });
+      
       // Generate and download the PDF
       const doc = generatePDF({
         contactInfo: lead.name || 'Valued Client',
@@ -116,6 +125,8 @@ export const ReportGenerator = ({ lead, buttonStyle = "default" }: ReportGenerat
       
       // Make sure we have a valid company name for the file
       const safeCompanyName = lead.company_name ? lead.company_name.replace(/[^\w\s-]/gi, '') : 'Client';
+      
+      console.log("Document generated, saving as:", `${safeCompanyName}-Report.pdf`);
       
       // Save the document with proper company name
       doc.save(`${safeCompanyName}-Report.pdf`);
