@@ -25,70 +25,41 @@ export const ProposalGenerator = ({ lead }: ProposalGeneratorProps) => {
     try {
       console.log('Generating proposal for lead:', lead);
       
-      // Get default tier for this lead
-      const defaultTier = 'growth'; 
-      const defaultIncludedMinutes = AI_RATES.chatbot[defaultTier].includedVoiceMinutes || 600;
-
-      // Create default values for missing data based on the tier
-      const defaultInputs: CalculatorInputs = {
-        aiType: 'both',
-        aiTier: defaultTier,
+      // Use the actual inputs from lead data
+      const inputs = lead.calculator_inputs || {
+        aiType: 'chatbot',
+        aiTier: 'growth',
         role: 'customerService',
-        numEmployees: 5,
-        callVolume: defaultIncludedMinutes, // Start with the included minutes 
-        avgCallDuration: 5,
+        numEmployees: lead.employee_count || 5,
+        callVolume: 0, 
+        avgCallDuration: 0,
         chatVolume: 2000,
         avgChatLength: 8,
         avgChatResolutionTime: 10
       };
       
-      // If user has actual calculator inputs, use those, otherwise default
-      let inputs: CalculatorInputs = defaultInputs;
-      if (lead.calculator_inputs) {
-        inputs = lead.calculator_inputs as CalculatorInputs;
-        
-        // Ensure call volume respects included minutes for the selected plan
-        const selectedTier = inputs.aiTier || defaultTier;
-        const tierIncludedMinutes = AI_RATES.chatbot[selectedTier as keyof typeof AI_RATES.chatbot].includedVoiceMinutes || 0;
-        
-        // If starter plan, set call volume to 0
-        if (selectedTier === 'starter') {
-          inputs.callVolume = 0;
-        } 
-        // For other plans, ensure call volume is at least the included minutes
-        else if (inputs.callVolume < tierIncludedMinutes) {
-          inputs.callVolume = tierIncludedMinutes;
-        }
-      }
+      // Get the correct tier to use from the lead inputs
+      const tierToUse = inputs.aiTier || 'growth';
       
-      // Get the correct tier to use
-      const tierToUse = inputs.aiTier || defaultTier;
-      
-      // Get the correct setup fee directly from AI_RATES for the selected tier
+      // Get the correct setup fee directly from AI_RATES
       const setupFee = AI_RATES.chatbot[tierToUse].setupFee;
       
-      // Get the correct base prices for each tier from AI_RATES
-      const starterBasePrice = AI_RATES.chatbot['starter'].base;
-      const growthBasePrice = AI_RATES.chatbot['growth'].base;
-      const premiumBasePrice = AI_RATES.chatbot['premium'].base;
-      
-      // Use actual data if available, otherwise use defaults
-      const defaultResults = {
+      // Use the actual results from lead data if available
+      const results = lead.calculator_results || {
         aiCostMonthly: { 
-          voice: inputs.aiTier === 'starter' ? 0 : 55, 
-          chatbot: inputs.aiTier === 'starter' ? starterBasePrice : 
-                  (inputs.aiTier === 'growth' ? growthBasePrice : premiumBasePrice), 
-          total: inputs.aiTier === 'starter' ? starterBasePrice : 
-                (inputs.aiTier === 'growth' ? growthBasePrice + 55 : premiumBasePrice + 55), 
-          setupFee: setupFee // Use the correct setup fee for the selected tier
+          voice: inputs.aiType === 'starter' ? 0 : 55, 
+          chatbot: AI_RATES.chatbot[tierToUse].base, 
+          total: inputs.aiType === 'starter' ? AI_RATES.chatbot[tierToUse].base : 
+                (AI_RATES.chatbot[tierToUse].base + 55), 
+          setupFee: setupFee
         },
         humanCostMonthly: 3800,
-        monthlySavings: 3800 - (inputs.aiTier === 'starter' ? starterBasePrice : 
-                              (inputs.aiTier === 'growth' ? growthBasePrice + 55 : premiumBasePrice + 55)),
-        yearlySavings: (3800 - (inputs.aiTier === 'starter' ? starterBasePrice : 
-                               (inputs.aiTier === 'growth' ? growthBasePrice + 55 : premiumBasePrice + 55))) * 12,
-        savingsPercentage: ((3800 - (inputs.aiTier === 'starter' ? starterBasePrice : 
-                               (inputs.aiTier === 'growth' ? growthBasePrice + 55 : premiumBasePrice + 55))) / 3800) * 100,
+        monthlySavings: 3800 - (inputs.aiType === 'starter' ? AI_RATES.chatbot[tierToUse].base : 
+                              (AI_RATES.chatbot[tierToUse].base + 55)),
+        yearlySavings: (3800 - (inputs.aiType === 'starter' ? AI_RATES.chatbot[tierToUse].base : 
+                               (AI_RATES.chatbot[tierToUse].base + 55))) * 12,
+        savingsPercentage: ((3800 - (inputs.aiType === 'starter' ? AI_RATES.chatbot[tierToUse].base : 
+                               (AI_RATES.chatbot[tierToUse].base + 55))) / 3800) * 100,
         breakEvenPoint: { voice: 240, chatbot: 520 },
         humanHours: {
           dailyPerEmployee: 8,
@@ -96,24 +67,13 @@ export const ProposalGenerator = ({ lead }: ProposalGeneratorProps) => {
           monthlyTotal: 850,
           yearlyTotal: 10200
         },
-        annualPlan: inputs.aiTier === 'starter' ? AI_RATES.chatbot['starter'].annualPrice : 
-                   (inputs.aiTier === 'growth' ? AI_RATES.chatbot['growth'].annualPrice : AI_RATES.chatbot['premium'].annualPrice)
+        annualPlan: AI_RATES.chatbot[tierToUse].annualPrice
       };
       
-      // Use actual results if available, otherwise use defaults
-      const results = lead.calculator_results && Object.keys(lead.calculator_results).length > 0 
-        ? lead.calculator_results 
-        : defaultResults;
-      
-      // Ensure the setup fee is correctly set in the results
-      if (!results.aiCostMonthly.setupFee || results.aiCostMonthly.setupFee !== setupFee) {
-        results.aiCostMonthly.setupFee = setupFee;
-      }
-      
-      // Calculate pricing details
+      // Calculate pricing details based on the actual inputs
       const pricingDetails = calculatePricingDetails(inputs);
       
-      // Get tier and AI type display names
+      // Get tier and AI type display names based on the actual inputs
       const tierName = getTierDisplayName(inputs.aiTier);
       const aiType = getAITypeDisplay(inputs.aiType);
       
@@ -134,9 +94,6 @@ export const ProposalGenerator = ({ lead }: ProposalGeneratorProps) => {
       
       // Mark as downloaded
       markAsDownloaded();
-
-      // Navigate back to admin dashboard
-      navigate('/admin');
 
       toast({
         title: "Success",

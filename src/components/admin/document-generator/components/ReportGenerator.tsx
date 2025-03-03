@@ -21,17 +21,27 @@ export const ReportGenerator = ({ lead, buttonStyle = "default" }: ReportGenerat
 
   const handleDownloadReport = async () => {
     try {
-      // Get default tier
-      const defaultTier = 'growth';
+      // Use the actual data from the lead object
+      const inputs = lead.calculator_inputs || {
+        aiType: 'chatbot',
+        aiTier: 'growth',
+        role: 'customerService',
+        numEmployees: 5,
+        callVolume: 0, 
+        avgCallDuration: 0,
+        chatVolume: 2000,
+        avgChatLength: 8,
+        avgChatResolutionTime: 10
+      };
       
-      // Determine which tier to use
-      const tierToUse = lead.calculator_inputs?.aiTier || defaultTier;
+      // Get the correct tier to use from the lead data
+      const tierToUse = inputs.aiTier || 'growth';
       
       // Get the correct setup fee directly from AI_RATES
       const setupFee = AI_RATES.chatbot[tierToUse].setupFee;
       
-      // Create default values for missing data
-      const defaultResults = {
+      // Use the actual results if available
+      const results = lead.calculator_results || {
         aiCostMonthly: { 
           voice: 0, 
           chatbot: 99, 
@@ -52,30 +62,7 @@ export const ReportGenerator = ({ lead, buttonStyle = "default" }: ReportGenerat
         annualPlan: AI_RATES.chatbot[tierToUse].annualPrice
       };
       
-      // Use actual data if available, otherwise use defaults
-      const results = lead.calculator_results && Object.keys(lead.calculator_results).length > 0 
-        ? lead.calculator_results 
-        : defaultResults;
-      
-      // Ensure the setup fee is correctly set in the results
-      if (!results.aiCostMonthly.setupFee || results.aiCostMonthly.setupFee !== setupFee) {
-        results.aiCostMonthly.setupFee = setupFee;
-      }
-      
-      // Define inputs object for pricing details calculation
-      const inputs = lead.calculator_inputs || {
-        aiType: 'chatbot',
-        aiTier: tierToUse,
-        role: 'customerService',
-        numEmployees: 5,
-        callVolume: 0, 
-        avgCallDuration: 0,
-        chatVolume: 2000,
-        avgChatLength: 8,
-        avgChatResolutionTime: 10
-      };
-      
-      // Get tier and AI type display names
+      // Get tier and AI type display names based on the actual inputs
       const tierName = getTierDisplayName(inputs.aiTier);
       const aiType = getAITypeDisplay(inputs.aiType);
       
