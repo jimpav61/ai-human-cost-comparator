@@ -36,14 +36,17 @@ export const isAuthenticated = async () => {
 // Safe sign out function that handles missing sessions
 export const safeSignOut = async () => {
   try {
-    const { data } = await supabase.auth.getSession();
+    // Directly call signOut without checking for session first
+    // This addresses the issue where session checks were returning errors
+    const { error } = await supabase.auth.signOut();
     
-    if (!data.session) {
-      return { success: true, error: null };
+    if (error && error.message !== "Session not found") {
+      // Only treat as a real error if it's not the "Session not found" error
+      return { success: false, error };
     }
     
-    const { error } = await supabase.auth.signOut();
-    return { success: !error, error };
+    // Consider both cases a success - either signed out or no session to sign out from
+    return { success: true, error: null };
   } catch (error) {
     console.error("Sign out error:", error);
     return { success: false, error };
