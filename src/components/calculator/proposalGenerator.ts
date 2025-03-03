@@ -82,8 +82,8 @@ export const generateProposal = (params: GenerateProposalParams) => {
   doc.setFontSize(12);
   
   // Get tier name and AI type
-  const tierName = params.tierName || 'Growth Plan';
-  const aiType = params.aiType || 'Chatbot & Voice AI';
+  const tierName = params.tierName || 'Starter Plan';
+  const aiType = params.aiType || 'Text Only';
   
   // Plan details
   let planText = `Based on your specific needs, we recommend our ${tierName}. This provides optimal functionality while maximizing your return on investment. The plan includes ${params.results.aiCostMonthly.setupFee > 500 ? '600' : '0'} free voice minutes per month.`;
@@ -103,7 +103,7 @@ export const generateProposal = (params: GenerateProposalParams) => {
     startY: yPosition,
     head: [['Pricing Component', 'Details', 'Cost']],
     body: [
-      ['Monthly Base Fee', params.tierName || 'Growth Plan (Text & Basic Voice)', formatCurrency(params.results.aiCostMonthly.chatbot)],
+      ['Monthly Base Fee', tierName, formatCurrency(params.results.aiCostMonthly.chatbot)],
       ['One-time Setup/Onboarding Fee', 'Non-refundable', formatCurrency(params.results.aiCostMonthly.setupFee)],
       ['Annual Plan Option', 'Includes 2 months FREE!', formatCurrency(params.results.annualPlan)],
       ['Estimated Monthly Savings', 'vs. current operations', formatCurrency(params.results.monthlySavings)],
