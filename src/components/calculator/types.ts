@@ -18,6 +18,8 @@ export interface LeadData {
   industry?: string;
   employeeCount?: number;
   website?: string;
+  calculator_inputs?: Record<string, any>;
+  calculator_results?: Record<string, any>;
 }
 
 export interface PricingDetail {

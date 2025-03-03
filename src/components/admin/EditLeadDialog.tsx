@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from "react";
 import { Lead } from "@/types/leads";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
@@ -91,26 +90,23 @@ export const EditLeadDialog = ({ lead, open, onClose }: EditLeadDialogProps) => 
     try {
       setIsLoading(true);
       
-      // Make sure the latest calculator inputs and results are saved
-      const finalLeadData = {
-        ...updatedLead,
-        calculator_inputs: calculatorInputs,
-        calculator_results: calculationResults
-      };
+      // Convert CalculatorInputs and CalculationResults to plain objects for Supabase
+      const calculatorInputsForDB = { ...calculatorInputs } as Record<string, any>;
+      const calculationResultsForDB = { ...calculationResults } as Record<string, any>;
       
       // Update lead in the database
       const { error } = await supabase
         .from('leads')
         .update({
-          name: finalLeadData.name,
-          company_name: finalLeadData.company_name,
-          email: finalLeadData.email,
-          phone_number: finalLeadData.phone_number,
-          website: finalLeadData.website,
-          industry: finalLeadData.industry,
-          employee_count: finalLeadData.employee_count,
-          calculator_inputs: finalLeadData.calculator_inputs,
-          calculator_results: finalLeadData.calculator_results,
+          name: updatedLead.name,
+          company_name: updatedLead.company_name,
+          email: updatedLead.email,
+          phone_number: updatedLead.phone_number,
+          website: updatedLead.website,
+          industry: updatedLead.industry,
+          employee_count: updatedLead.employee_count,
+          calculator_inputs: calculatorInputsForDB,
+          calculator_results: calculationResultsForDB,
           updated_at: new Date().toISOString(),
         })
         .eq('id', lead.id);

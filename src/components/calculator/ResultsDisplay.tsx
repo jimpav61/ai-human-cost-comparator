@@ -29,6 +29,7 @@ export const ResultsDisplay: React.FC<ResultsDisplayProps> = ({
   const aiTypeDisplay = getAITypeDisplay(inputs.aiType);
 
   // Create a Lead object from the leadData and calculator results
+  // Convert typed objects to plain objects for database compatibility
   const leadForReport: Lead = {
     id: leadData.id || 'temp-id',
     name: leadData.name,
@@ -38,8 +39,8 @@ export const ResultsDisplay: React.FC<ResultsDisplayProps> = ({
     website: leadData.website || '',
     industry: leadData.industry || '',
     employee_count: leadData.employeeCount || 0,
-    calculator_inputs: inputs,
-    calculator_results: results,
+    calculator_inputs: { ...inputs } as any,
+    calculator_results: { ...results } as any,
     created_at: new Date().toISOString(),
     updated_at: new Date().toISOString(),
     proposal_sent: false,
