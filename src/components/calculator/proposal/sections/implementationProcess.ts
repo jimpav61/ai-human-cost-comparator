@@ -1,23 +1,36 @@
+
 import { JsPDFWithAutoTable } from '../types';
+import autoTable from 'jspdf-autotable';
 
 export const addImplementationProcess = (doc: JsPDFWithAutoTable, yPosition: number): number => {
+  // Check if we need a new page
+  if (yPosition > 230) {
+    doc.addPage();
+    yPosition = 20;
+  }
+
+  // Implementation Process - updated to reflect rapid 5-day timeline
   doc.setFontSize(14);
-  doc.setTextColor(0, 0, 0);
-  doc.text("Implementation Process", 20, yPosition);
+  doc.text("Rapid Implementation Process", 20, yPosition);
   
-  yPosition += 10;
-  doc.setFontSize(12);
-  doc.text("Our proven implementation process ensures a smooth transition:", 20, yPosition);
+  autoTable(doc, {
+    startY: yPosition + 5,
+    body: [
+      ["1. Discovery & Planning (Day 1)", "Our team conducts a thorough assessment of your current systems, workflows, and customer interaction points to identify the optimal integration approach."],
+      ["2. AI Model Customization (Day 2)", "We configure and fine-tune our pre-trained AI models using industry-specific data to ensure contextually appropriate responses for your business needs."],
+      ["3. Integration & Testing (Day 3)", "Seamless integration with your existing systems followed by rigorous testing across various scenarios to ensure reliable performance."],
+      ["4. Team Training (Day 4)", "Comprehensive training for your staff on how to monitor, manage, and maximize the AI system to ensure optimal performance."],
+      ["5. Live Deployment (Day 5)", "Swift deployment with careful monitoring and real-time adjustments to ensure smooth operation from day one."]
+    ],
+    styles: { fontSize: 11 },
+    theme: 'plain',
+    columnStyles: {
+      0: { fontStyle: 'bold', cellWidth: 60 },
+      1: { cellWidth: 'auto' }
+    },
+    rowPageBreak: 'auto',
+  });
   
-  yPosition += 10;
-  doc.setFontSize(10);
-  doc.setTextColor(100, 100, 100);
-  doc.text("1. Initial Consultation: Understand your specific needs and goals.", 25, yPosition);
-  doc.text("2. Solution Design: Customize the AI solution to fit your unique requirements.", 25, yPosition + 7);
-  doc.text("3. Implementation: Integrate the AI seamlessly into your existing systems.", 25, yPosition + 14);
-  doc.text("4. Training: Provide comprehensive training for your team.", 25, yPosition + 21);
-  doc.text("5. Ongoing Support: Offer continuous support and optimization.", 25, yPosition + 28);
-  
-  yPosition += 35;
-  return yPosition;
+  // Get the last Y position after the table
+  return (doc.lastAutoTable?.finalY || yPosition + 60) + 20;
 };

@@ -1,7 +1,7 @@
-import { JsPDFWithAutoTable } from '../types';
-import { GenerateProposalParams } from '../types';
 
-export const addFooter = (doc: JsPDFWithAutoTable, params: GenerateProposalParams, reportDate: string): void => {
+import { JsPDFWithAutoTable } from '../types';
+
+export const addFooter = (doc: JsPDFWithAutoTable, params: any, reportDate: string): void => {
   // Footer with personalization and industry/employee info if available
   doc.setFontSize(10);
   doc.setTextColor(128, 128, 128);

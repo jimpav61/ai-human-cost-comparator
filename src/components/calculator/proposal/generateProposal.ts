@@ -1,6 +1,6 @@
 
 import jsPDF from 'jspdf';
-import 'jspdf-autotable';
+import autoTable from 'jspdf-autotable';
 import { formatCurrency, formatNumber } from '@/utils/formatters';
 import type { CalculationResults } from '@/hooks/useCalculator';
 import { PricingDetail } from '../types';
@@ -15,7 +15,20 @@ import { addNextSteps } from './sections/nextSteps';
 import { addAdditionalResources } from './sections/additionalResources';
 import { addContactInformation } from './sections/contactInformation';
 import { addFooter } from './sections/footer';
-import { JsPDFWithAutoTable, GenerateProposalParams } from './types';
+import { JsPDFWithAutoTable } from './types';
+
+interface GenerateProposalParams {
+  contactInfo: string;
+  companyName: string;
+  email: string;
+  phoneNumber: string | null;
+  industry?: string;
+  employeeCount?: number;
+  results: CalculationResults;
+  tierName?: string;
+  aiType?: string;
+  pricingDetails?: PricingDetail[];
+}
 
 export const generateProposal = (params: GenerateProposalParams) => {
   console.log('Generating proposal with params:', params);

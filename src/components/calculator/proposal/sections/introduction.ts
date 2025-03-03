@@ -1,7 +1,7 @@
-import { JsPDFWithAutoTable } from '../types';
-import { GenerateProposalParams } from '../types';
 
-export const addIntroduction = (doc: JsPDFWithAutoTable, yPosition: number, params: GenerateProposalParams): number => {
+import { JsPDFWithAutoTable } from '../types';
+
+export const addIntroduction = (doc: JsPDFWithAutoTable, yPosition: number, params: any): number => {
   // Personalized Introduction
   yPosition += 15;
   doc.setFontSize(14);
