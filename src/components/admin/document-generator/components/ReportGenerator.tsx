@@ -6,6 +6,7 @@ import { DownloadButton } from "./DownloadButton";
 import { useDownloadState } from "../hooks/useDownloadState";
 import { calculatePricingDetails, getTierDisplayName, getAITypeDisplay } from "@/components/calculator/pricingDetailsCalculator";
 import { Button } from "@/components/ui/button";
+import { AI_RATES } from "@/constants/pricing";
 
 interface ReportGeneratorProps {
   lead: Lead;
@@ -20,9 +21,23 @@ export const ReportGenerator = ({ lead, buttonStyle = "default" }: ReportGenerat
 
   const handleDownloadReport = async () => {
     try {
+      // Get default tier
+      const defaultTier = 'growth';
+      
+      // Determine which tier to use
+      const tierToUse = lead.calculator_inputs?.aiTier || defaultTier;
+      
+      // Get the correct setup fee directly from AI_RATES
+      const setupFee = AI_RATES.chatbot[tierToUse].setupFee;
+      
       // Create default values for missing data
       const defaultResults = {
-        aiCostMonthly: { voice: 0, chatbot: 99, total: 99, setupFee: 249 },
+        aiCostMonthly: { 
+          voice: 0, 
+          chatbot: 99, 
+          total: 99, 
+          setupFee: setupFee
+        },
         humanCostMonthly: 3800,
         monthlySavings: 3701,
         yearlySavings: 44412,
@@ -34,7 +49,7 @@ export const ReportGenerator = ({ lead, buttonStyle = "default" }: ReportGenerat
           monthlyTotal: 850,
           yearlyTotal: 10200
         },
-        annualPlan: 990
+        annualPlan: AI_RATES.chatbot[tierToUse].annualPrice
       };
       
       // Use actual data if available, otherwise use defaults
@@ -42,10 +57,15 @@ export const ReportGenerator = ({ lead, buttonStyle = "default" }: ReportGenerat
         ? lead.calculator_results 
         : defaultResults;
       
+      // Ensure the setup fee is correctly set in the results
+      if (!results.aiCostMonthly.setupFee || results.aiCostMonthly.setupFee !== setupFee) {
+        results.aiCostMonthly.setupFee = setupFee;
+      }
+      
       // Define inputs object for pricing details calculation
       const inputs = lead.calculator_inputs || {
         aiType: 'chatbot',
-        aiTier: 'starter',
+        aiTier: tierToUse,
         role: 'customerService',
         numEmployees: 5,
         callVolume: 0, 

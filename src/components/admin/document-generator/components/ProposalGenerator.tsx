@@ -61,6 +61,12 @@ export const ProposalGenerator = ({ lead }: ProposalGeneratorProps) => {
         }
       }
       
+      // Get the correct tier to use
+      const tierToUse = inputs.aiTier || defaultTier;
+      
+      // Get the correct setup fee directly from AI_RATES for the selected tier
+      const setupFee = AI_RATES.chatbot[tierToUse].setupFee;
+      
       // Get the correct base prices for each tier from AI_RATES
       const starterBasePrice = AI_RATES.chatbot['starter'].base;
       const growthBasePrice = AI_RATES.chatbot['growth'].base;
@@ -74,8 +80,7 @@ export const ProposalGenerator = ({ lead }: ProposalGeneratorProps) => {
                   (inputs.aiTier === 'growth' ? growthBasePrice : premiumBasePrice), 
           total: inputs.aiTier === 'starter' ? starterBasePrice : 
                 (inputs.aiTier === 'growth' ? growthBasePrice + 55 : premiumBasePrice + 55), 
-          setupFee: inputs.aiTier === 'starter' ? AI_RATES.chatbot['starter'].setupFee : 
-                   (inputs.aiTier === 'growth' ? AI_RATES.chatbot['growth'].setupFee : AI_RATES.chatbot['premium'].setupFee) 
+          setupFee: setupFee // Use the correct setup fee for the selected tier
         },
         humanCostMonthly: 3800,
         monthlySavings: 3800 - (inputs.aiTier === 'starter' ? starterBasePrice : 
@@ -99,6 +104,11 @@ export const ProposalGenerator = ({ lead }: ProposalGeneratorProps) => {
       const results = lead.calculator_results && Object.keys(lead.calculator_results).length > 0 
         ? lead.calculator_results 
         : defaultResults;
+      
+      // Ensure the setup fee is correctly set in the results
+      if (!results.aiCostMonthly.setupFee || results.aiCostMonthly.setupFee !== setupFee) {
+        results.aiCostMonthly.setupFee = setupFee;
+      }
       
       // Calculate pricing details
       const pricingDetails = calculatePricingDetails(inputs);
