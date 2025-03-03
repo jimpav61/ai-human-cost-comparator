@@ -1,3 +1,4 @@
+
 import { JsPDFWithAutoTable } from '../types';
 import autoTable from 'jspdf-autotable';
 import { formatCurrency } from '@/utils/formatters';
@@ -47,11 +48,14 @@ export const addRecommendedSolution = (doc: JsPDFWithAutoTable, yPosition: numbe
   doc.setFontSize(12);
   doc.text("Your ChatSites.ai Investment", 20, tableY - 5);
   
+  // Get the exact monthly fee from the base price in AI_RATES
+  const monthlyBaseFee = AI_RATES.chatbot[tierKey]?.base || 0;
+  
   autoTable(doc, {
     startY: tableY,
     head: [["Pricing Component", "Details", "Cost"]],
     body: [
-      ["Monthly Base Fee", tierName, formatCurrency(params.results.aiCostMonthly?.total || 0)],
+      ["Monthly Base Fee", tierName, formatCurrency(monthlyBaseFee)],
       ["One-time Setup Fee", "Non-refundable", formatCurrency(setupFee)],
       ["Annual Plan Option", "Includes 2 months FREE!", formatCurrency(annualPlanCost)],
       ["Estimated Monthly Savings", "vs. current operations", formatCurrency(params.results.monthlySavings || 0)],
@@ -101,7 +105,7 @@ export const addRecommendedSolution = (doc: JsPDFWithAutoTable, yPosition: numbe
           ["Text AI Base Fee", "", formatCurrency(detail.base || 0)]
         );
         
-        // For Starter plan, we don't show message costs
+        // For Starter plan, there are no per-message costs
         if (params.tierName && params.tierName.includes('Starter')) {
           pricingBreakdownData.push(
             ["Message Volume", `${formatCurrency(detail.totalMessages || 0)} messages/month`, "Included in base fee"],

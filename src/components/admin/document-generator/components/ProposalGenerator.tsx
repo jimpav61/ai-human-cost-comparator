@@ -61,18 +61,29 @@ export const ProposalGenerator = ({ lead }: ProposalGeneratorProps) => {
         }
       }
       
+      // Get the correct base prices for each tier from AI_RATES
+      const starterBasePrice = AI_RATES.chatbot['starter'].base;
+      const growthBasePrice = AI_RATES.chatbot['growth'].base;
+      const premiumBasePrice = AI_RATES.chatbot['premium'].base;
+      
       // Use actual data if available, otherwise use defaults
       const defaultResults = {
         aiCostMonthly: { 
           voice: inputs.aiTier === 'starter' ? 0 : 55, 
-          chatbot: inputs.aiTier === 'starter' ? 99 : (inputs.aiTier === 'growth' ? 229 : 429), 
-          total: inputs.aiTier === 'starter' ? 99 : (inputs.aiTier === 'growth' ? 229 + 55 : 429 + 55), 
-          setupFee: inputs.aiTier === 'starter' ? 249 : (inputs.aiTier === 'growth' ? 749 : 1149) 
+          chatbot: inputs.aiTier === 'starter' ? starterBasePrice : 
+                  (inputs.aiTier === 'growth' ? growthBasePrice : premiumBasePrice), 
+          total: inputs.aiTier === 'starter' ? starterBasePrice : 
+                (inputs.aiTier === 'growth' ? growthBasePrice + 55 : premiumBasePrice + 55), 
+          setupFee: inputs.aiTier === 'starter' ? AI_RATES.chatbot['starter'].setupFee : 
+                   (inputs.aiTier === 'growth' ? AI_RATES.chatbot['growth'].setupFee : AI_RATES.chatbot['premium'].setupFee) 
         },
         humanCostMonthly: 3800,
-        monthlySavings: 3516,
-        yearlySavings: 42192,
-        savingsPercentage: 92.5,
+        monthlySavings: 3800 - (inputs.aiTier === 'starter' ? starterBasePrice : 
+                              (inputs.aiTier === 'growth' ? growthBasePrice + 55 : premiumBasePrice + 55)),
+        yearlySavings: (3800 - (inputs.aiTier === 'starter' ? starterBasePrice : 
+                               (inputs.aiTier === 'growth' ? growthBasePrice + 55 : premiumBasePrice + 55))) * 12,
+        savingsPercentage: ((3800 - (inputs.aiTier === 'starter' ? starterBasePrice : 
+                               (inputs.aiTier === 'growth' ? growthBasePrice + 55 : premiumBasePrice + 55))) / 3800) * 100,
         breakEvenPoint: { voice: 240, chatbot: 520 },
         humanHours: {
           dailyPerEmployee: 8,
@@ -80,7 +91,8 @@ export const ProposalGenerator = ({ lead }: ProposalGeneratorProps) => {
           monthlyTotal: 850,
           yearlyTotal: 10200
         },
-        annualPlan: inputs.aiTier === 'starter' ? 990 : (inputs.aiTier === 'growth' ? 2290 : 4290)
+        annualPlan: inputs.aiTier === 'starter' ? AI_RATES.chatbot['starter'].annualPrice : 
+                   (inputs.aiTier === 'growth' ? AI_RATES.chatbot['growth'].annualPrice : AI_RATES.chatbot['premium'].annualPrice)
       };
       
       // Use actual results if available, otherwise use defaults

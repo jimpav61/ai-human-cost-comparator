@@ -2,6 +2,7 @@
 import { JsPDFWithAutoTable } from '../types';
 import autoTable from 'jspdf-autotable';
 import { formatCurrency } from '@/utils/formatters';
+import { AI_RATES } from '@/constants/pricing';
 
 export const addFinancialImpact = (doc: JsPDFWithAutoTable, yPosition: number, params: any): number => {
   // Check if we need a new page
@@ -55,12 +56,22 @@ export const addFinancialImpact = (doc: JsPDFWithAutoTable, yPosition: number, p
   doc.setFontSize(12);
   doc.text("Cost Comparison", 20, yPosition);
   
+  // Extract tier key from the tierName if available
+  const tierName = params.tierName || '';
+  const tierKey = tierName.toLowerCase().includes('starter') ? 'starter' : 
+               tierName.toLowerCase().includes('growth') ? 'growth' : 
+               tierName.toLowerCase().includes('premium') ? 'premium' : 
+               params.results?.aiTier || 'growth';
+  
+  // Get the exact monthly fee from AI_RATES instead of the calculated total
+  const monthlyBaseFee = AI_RATES.chatbot[tierKey]?.base || params.results.aiCostMonthly.total;
+  
   autoTable(doc, {
     startY: yPosition + 5,
     head: [["Solution", "Monthly Cost", "Annual Cost"]],
     body: [
       ["Current Human Staff", formatCurrency(params.results.humanCostMonthly), formatCurrency(params.results.humanCostMonthly * 12)],
-      ["ChatSites.ai Solution (Your Cost)", formatCurrency(params.results.aiCostMonthly.total), formatCurrency(params.results.aiCostMonthly.total * 12)],
+      ["ChatSites.ai Solution (Your Cost)", formatCurrency(monthlyBaseFee), formatCurrency(monthlyBaseFee * 12)],
     ],
     styles: { fontSize: 11 },
     bodyStyles: { textColor: [0, 0, 0] },

@@ -21,6 +21,9 @@ export const ResultsDetailView: React.FC<ResultsDetailViewProps> = ({
   tierDisplayName,
   aiTypeDisplay,
 }) => {
+  // Get the exact base price from AI_RATES instead of the calculated total
+  const basePrice = AI_RATES.chatbot[inputs.aiTier].base;
+  
   return (
     <div>
       <div className="bg-brand-50 p-3 rounded-lg mb-4 border border-brand-100">
@@ -71,11 +74,11 @@ export const ResultsDetailView: React.FC<ResultsDetailViewProps> = ({
           </div>
           <div className="bg-green-50 p-4 border-t border-b border-green-100">
             <div className="text-brand-700 mb-1">Your ChatSites.ai Cost</div>
-            <div className="text-xl font-semibold text-brand-600">{formatCurrency(results.aiCostMonthly.total)}/month</div>
+            <div className="text-xl font-semibold text-brand-600">{formatCurrency(basePrice)}/month</div>
           </div>
           <div className="bg-gray-50 p-4">
             <div className="text-green-700 mb-1">Monthly Savings</div>
-            <div className="text-xl font-semibold text-green-600">{formatCurrency(results.monthlySavings)}</div>
+            <div className="text-xl font-semibold text-green-600">{formatCurrency(results.humanCostMonthly - basePrice)}</div>
           </div>
         </div>
       </div>
