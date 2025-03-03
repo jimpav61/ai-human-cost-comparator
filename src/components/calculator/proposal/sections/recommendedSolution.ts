@@ -37,33 +37,37 @@ export const addRecommendedSolution = (doc: JsPDFWithAutoTable, yPosition: numbe
   doc.text("• Cost savings", 25, yPosition + 21);
 
   yPosition += 30;
-  doc.setFontSize(12);
-  doc.setTextColor(0, 0, 0);
-  doc.text("Pricing:", 20, yPosition);
+  
+  // Add pricing table as in the screenshots
+  const tableData = [
+    ['Pricing Component', 'Details', 'Cost'],
+    ['Monthly Base Fee', `${params.tierName} Plan`, formatCurrency(params.results.aiCostMonthly.total)],
+    ['One-time Setup Fee', 'Non-refundable', formatCurrency(params.results.aiCostMonthly.setupFee)],
+    ['Annual Plan Option', 'Includes 2 months FREE!', formatCurrency(params.results.annualPlan || params.results.aiCostMonthly.total * 10)],
+    ['Estimated Monthly Savings', 'vs. current operations', formatCurrency(params.results.monthlySavings)],
+    ['Projected Annual Savings', 'First year', formatCurrency(params.results.yearlySavings)]
+  ];
 
-  if (params.pricingDetails && params.pricingDetails.length > 0) {
-    params.pricingDetails.forEach((detail, index) => {
-      yPosition += 10;
-      doc.setFontSize(10);
-      doc.setTextColor(100, 100, 100);
-      doc.text(`${detail.title}: ${formatCurrency(detail.monthlyCost)}/month`, 25, yPosition);
-    });
-    
-    // Add one-time onboarding fee
-    yPosition += 10;
-    doc.setFontSize(10);
-    doc.setTextColor(100, 100, 100);
-    doc.text(`One-time Onboarding Fee: ${formatCurrency(params.results.aiCostMonthly.setupFee)}`, 25, yPosition);
-  } else {
-    yPosition += 10;
-    doc.setFontSize(10);
-    doc.setTextColor(100, 100, 100);
-    doc.text(`Monthly cost: ${formatCurrency(params.results.aiCostMonthly.total)}`, 25, yPosition);
-    
-    // Add one-time onboarding fee
-    yPosition += 10;
-    doc.text(`One-time Onboarding Fee: ${formatCurrency(params.results.aiCostMonthly.setupFee)}`, 25, yPosition);
-  }
+  doc.autoTable({
+    startY: yPosition,
+    head: [tableData[0]],
+    body: tableData.slice(1),
+    theme: 'grid',
+    headStyles: {
+      fillColor: [0, 168, 132],
+      textColor: [255, 255, 255],
+      fontStyle: 'bold',
+    },
+    styles: {
+      overflow: 'linebreak',
+      cellPadding: 5,
+    },
+    columnStyles: {
+      0: { cellWidth: 150 },
+      1: { cellWidth: 150 },
+      2: { cellWidth: 100, halign: 'right' },
+    },
+  });
 
-  return yPosition + 15;
+  return doc.lastAutoTable?.finalY ? doc.lastAutoTable.finalY + 15 : yPosition + 100;
 };
