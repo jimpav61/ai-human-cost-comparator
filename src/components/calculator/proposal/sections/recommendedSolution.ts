@@ -56,7 +56,7 @@ export const addRecommendedSolution = (doc: JsPDFWithAutoTable, yPosition: numbe
     head: [["Pricing Component", "Details", "Cost"]],
     body: [
       ["Monthly Base Fee", tierName, formatCurrency(monthlyBaseFee)],
-      ["One-time Setup Fee", "Non-refundable", formatCurrency(setupFee)],
+      ["One-time Setup/Onboarding Fee", "Non-refundable", formatCurrency(setupFee)],
       ["Annual Plan Option", "Includes 2 months FREE!", formatCurrency(annualPlanCost)],
       ["Estimated Monthly Savings", "vs. current operations", formatCurrency(params.results.monthlySavings || 0)],
       ["Projected Annual Savings", "First year", formatCurrency(params.results.yearlySavings || 0)]
@@ -77,6 +77,10 @@ export const addRecommendedSolution = (doc: JsPDFWithAutoTable, yPosition: numbe
           if (data.row.index === 0) {
             data.cell.styles.fontStyle = 'bold';
           }
+        } else if (data.row.index === 1) {
+          // Highlight the one-time setup fee with a different color
+          data.cell.styles.fillColor = [255, 242, 204];
+          data.cell.styles.fontStyle = 'bold';
         } else {
           // Apply light gray background to other rows
           data.cell.styles.fillColor = [240, 240, 240];
@@ -139,6 +143,11 @@ export const addRecommendedSolution = (doc: JsPDFWithAutoTable, yPosition: numbe
       }
     });
     
+    // Add a row for the one-time setup fee
+    pricingBreakdownData.push(
+      ["One-time Setup/Onboarding Fee", "Required for all plans", formatCurrency(setupFee)]
+    );
+    
     // Add detailed pricing breakdown table
     autoTable(doc, {
       startY: detailYPosition,
@@ -149,6 +158,13 @@ export const addRecommendedSolution = (doc: JsPDFWithAutoTable, yPosition: numbe
         0: { fontStyle: 'bold' },
         2: { halign: 'right' }
       },
+      willDrawCell: function(data) {
+        // Highlight the setup fee row
+        if (data.row.index === pricingBreakdownData.length - 1 && data.section === 'body') {
+          data.cell.styles.fillColor = [255, 242, 204];
+          data.cell.styles.fontStyle = 'bold';
+        }
+      }
     });
     
     // Get the last Y position after the table

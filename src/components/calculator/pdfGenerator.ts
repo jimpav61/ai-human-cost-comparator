@@ -87,7 +87,11 @@ export const generatePDF = (params: GeneratePDFParams) => {
       currentY += 7;
     }
     
-    currentY += 7; // Extra spacing
+    // Add the one-time setup fee information
+    doc.setFontSize(10);
+    doc.setTextColor(100, 100, 100);
+    doc.text(`One-time setup fee: ${formatCurrency(params.results.aiCostMonthly.setupFee || 0)}`, 20, currentY);
+    currentY += 12; // Extra spacing
   }
 
   // Cost Summary
@@ -96,14 +100,14 @@ export const generatePDF = (params: GeneratePDFParams) => {
   doc.text("Cost Summary", 20, currentY);
   
   const costData = [
-    ["Current Human Resources Cost", formatCurrency(params.results.humanCostMonthly), formatCurrency(params.results.humanCostMonthly * 12)],
-    ["ChatSites.ai Solution (Your Cost)", formatCurrency(params.results.aiCostMonthly.total), formatCurrency(params.results.aiCostMonthly.total * 12)],
-    ["Potential Savings", formatCurrency(params.results.monthlySavings), formatCurrency(params.results.yearlySavings)]
+    ["Current Human Resources Cost", formatCurrency(params.results.humanCostMonthly), formatCurrency(params.results.humanCostMonthly * 12), "N/A"],
+    ["ChatSites.ai Solution (Your Cost)", formatCurrency(params.results.aiCostMonthly.total), formatCurrency(params.results.aiCostMonthly.total * 12), formatCurrency(params.results.aiCostMonthly.setupFee)],
+    ["Potential Savings", formatCurrency(params.results.monthlySavings), formatCurrency(params.results.yearlySavings), "N/A"]
   ];
 
   autoTable(doc, {
     startY: currentY + 5,
-    head: [["Category", "Monthly Cost", "Annual Cost"]],
+    head: [["Category", "Monthly Cost", "Annual Cost", "One-Time Setup Fee"]],
     body: costData,
     styles: { fontSize: 11 },
     bodyStyles: { textColor: [0, 0, 0] },

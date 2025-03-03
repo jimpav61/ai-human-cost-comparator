@@ -33,6 +33,9 @@ export const addFinancialImpact = (doc: JsPDFWithAutoTable, yPosition: number, p
     fiveYearSavings = formatCurrency(210000);
   }
 
+  // Add the one-time setup fee to the table
+  const setupFee = formatCurrency(params.results.aiCostMonthly.setupFee || 0);
+
   autoTable(doc, {
     startY: yPosition + 5,
     head: [["Metric", "Potential Impact"]],
@@ -40,6 +43,7 @@ export const addFinancialImpact = (doc: JsPDFWithAutoTable, yPosition: number, p
       ["Monthly Cost Reduction", monthlySavings],
       ["Annual Cost Reduction", yearlySavings],
       ["Efficiency Improvement", `${savingsPercent}%`],
+      ["One-Time Setup Fee", setupFee],
       ["Implementation Timeline", "5 business days or less"],
       ["ROI Timeline", employeeBasedROI],
       ["5-Year Projected Savings", fiveYearSavings]
@@ -68,10 +72,10 @@ export const addFinancialImpact = (doc: JsPDFWithAutoTable, yPosition: number, p
   
   autoTable(doc, {
     startY: yPosition + 5,
-    head: [["Solution", "Monthly Cost", "Annual Cost"]],
+    head: [["Solution", "Monthly Cost", "Annual Cost", "One-Time Setup Fee"]],
     body: [
-      ["Current Human Staff", formatCurrency(params.results.humanCostMonthly), formatCurrency(params.results.humanCostMonthly * 12)],
-      ["ChatSites.ai Solution (Your Cost)", formatCurrency(monthlyBaseFee), formatCurrency(monthlyBaseFee * 12)],
+      ["Current Human Staff", formatCurrency(params.results.humanCostMonthly), formatCurrency(params.results.humanCostMonthly * 12), "N/A"],
+      ["ChatSites.ai Solution (Your Cost)", formatCurrency(monthlyBaseFee), formatCurrency(monthlyBaseFee * 12), formatCurrency(params.results.aiCostMonthly.setupFee || 0)],
     ],
     styles: { fontSize: 11 },
     bodyStyles: { textColor: [0, 0, 0] },

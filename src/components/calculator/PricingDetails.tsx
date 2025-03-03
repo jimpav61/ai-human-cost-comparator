@@ -21,13 +21,13 @@ export const PricingDetails: React.FC<PricingDetailsProps> = ({
     <div className="space-y-4">
       <div className="border-b border-gray-200 pb-3">
         <div className="flex justify-between items-center mb-2">
-          <span className="font-medium text-gray-900">One-time Setup Fee</span>
+          <span className="font-medium text-gray-900">One-time Setup/Onboarding Fee</span>
           <span className="text-brand-600 font-semibold">{formatCurrency(setupFee)}</span>
         </div>
         <div className="text-sm text-gray-600">
           <div className="flex items-center">
             <CreditCard className="h-4 w-4 mr-1" />
-            Non-refundable one-time fee
+            Required non-refundable one-time fee
           </div>
         </div>
       </div>
