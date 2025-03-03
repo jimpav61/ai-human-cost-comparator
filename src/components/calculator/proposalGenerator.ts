@@ -32,15 +32,10 @@ export const generateProposal = (params: GenerateProposalParams) => {
   const reportDate = new Date().toLocaleDateString();
   let yPosition = 20;
 
-  // Branding
-  doc.setFontSize(24);
+  // Title
+  doc.setFontSize(20);
   doc.setTextColor(40, 40, 40);
-  doc.text("ChatSites.ai", 20, yPosition);
-  
-  // Add line under the logo
-  doc.setDrawColor(246, 82, 40); // brand color
-  doc.setLineWidth(0.5);
-  doc.line(20, yPosition + 5, 190, yPosition + 5);
+  doc.text("ChatSites.ai Proposal", 20, yPosition);
   
   yPosition += 15;
 
@@ -71,46 +66,16 @@ export const generateProposal = (params: GenerateProposalParams) => {
     ? `in the ${params.industry} industry` 
     : "in your industry";
     
-  const employeeSizePhrase = params.employeeCount 
-    ? `with ${params.employeeCount} employees` 
-    : "of your size";
-    
-  const introText = `Thank you for considering ChatSites.ai as your AI solution provider. After a detailed analysis of ${params.companyName}'s current operations and benchmarks ${industrySpecificPhrase}, we've crafted a transformative AI implementation strategy specifically tailored for organizations ${employeeSizePhrase}. Our approach is designed to revolutionize your customer service operations while delivering substantial and sustainable cost savings.`;
+  const introText = `Thank you for considering ChatSites.ai as your AI solution provider. Based on our analysis of your requirements, we've prepared the following proposal tailored for organizations ${industrySpecificPhrase}.`;
   
   const splitIntro = doc.splitTextToSize(introText, 170);
   doc.text(splitIntro, 20, yPosition);
   
-  yPosition += splitIntro.length * 7;
-
-  // Industry Challenges
-  let challengesText = "";
-  if (params.industry) {
-    switch(params.industry) {
-      case "Healthcare":
-        challengesText = "In today's rapidly evolving healthcare landscape, organizations face unique challenges including patient information management, appointment scheduling, and providing timely care information. Our AI-powered solution addresses these specific healthcare challenges.";
-        break;
-      case "Retail":
-        challengesText = "Retail businesses today must balance personalized customer service with efficient operations and inventory management. Our AI solution helps you deliver exceptional shopping experiences while optimizing operational costs.";
-        break;
-      case "Financial Services":
-      case "Banking & Finance":
-        challengesText = "Financial service providers must maintain regulatory compliance while delivering responsive customer service and managing complex transactions. Our AI tools can streamline operations while ensuring security and compliance.";
-        break;
-      default:
-        challengesText = `In today's rapidly evolving ${params.industry} landscape, organizations like yours face increasing pressure to deliver exceptional customer experiences while managing operational costs. Our AI-powered solution addresses these challenges head-on.`;
-    }
-  } else {
-    challengesText = "In today's rapidly evolving business landscape, organizations like yours face increasing pressure to deliver exceptional customer experiences while managing operational costs. Our AI-powered solution addresses these challenges head-on, allowing you to stay competitive and agile.";
-  }
-  
-  const splitChallenges = doc.splitTextToSize(challengesText, 170);
-  doc.text(splitChallenges, 20, yPosition);
-  
-  yPosition += splitChallenges.length * 7;
+  yPosition += splitIntro.length * 7 + 10;
 
   // Recommended Solution
-  yPosition += 10;
-  doc.setFontSize(14);
+  doc.setFontSize(16);
+  doc.setTextColor(0, 0, 0);
   doc.text("Recommended Solution", 20, yPosition);
   
   yPosition += 8;
@@ -121,167 +86,255 @@ export const generateProposal = (params: GenerateProposalParams) => {
   const aiType = params.aiType || 'Chatbot & Voice AI';
   
   // Plan details
-  let planText = `Based on your specific needs, we recommend our ${tierName} solution. This tailored package provides optimal functionality while maximizing your return on investment.`;
+  let planText = `Based on your specific needs, we recommend our ${tierName}. This provides optimal functionality while maximizing your return on investment. The plan includes ${params.results.aiCostMonthly.setupFee > 500 ? '600' : '0'} free voice minutes per month.`;
   
   const splitPlanText = doc.splitTextToSize(planText, 170);
   doc.text(splitPlanText, 20, yPosition);
   
-  // Financial Impact & ROI Analysis
   yPosition += splitPlanText.length * 7 + 15;
-  if (yPosition > 230) {
-    doc.addPage();
-    yPosition = 20;
-  }
-  
-  doc.setFontSize(14);
-  doc.text("Financial Impact & ROI Analysis", 20, yPosition);
 
-  // Create a professional summary of savings
-  const monthlySavings = formatCurrency(params.results.monthlySavings || 3500);
-  const yearlySavings = formatCurrency(params.results.yearlySavings || 42000);
-  const savingsPercent = Math.round(params.results.savingsPercentage * 100) || 90;
+  // Your ChatSites.ai Investment
+  doc.setFontSize(16);
+  doc.text("Your ChatSites.ai Investment", 20, yPosition);
+  yPosition += 10;
 
+  // Create pricing table exactly as shown in the image
   autoTable(doc, {
-    startY: yPosition + 5,
-    head: [["Metric", "Potential Impact"]],
+    startY: yPosition,
+    head: [['Pricing Component', 'Details', 'Cost']],
     body: [
-      ["Monthly Cost Reduction", monthlySavings],
-      ["Annual Cost Reduction", yearlySavings],
-      ["Efficiency Improvement", `${savingsPercent}%`],
-      ["One-Time Setup Fee", formatCurrency(params.results.aiCostMonthly.setupFee || 0)],
-      ["Implementation Timeline", "5 business days or less"],
-      ["ROI Timeline", "3 to 6 months"],
-      ["5-Year Projected Savings", formatCurrency((params.results.yearlySavings || 42000) * 5)]
+      ['Monthly Base Fee', params.tierName || 'Growth Plan (Text & Basic Voice)', formatCurrency(params.results.aiCostMonthly.chatbot)],
+      ['One-time Setup/Onboarding Fee', 'Non-refundable', formatCurrency(params.results.aiCostMonthly.setupFee)],
+      ['Annual Plan Option', 'Includes 2 months FREE!', formatCurrency(params.results.annualPlan)],
+      ['Estimated Monthly Savings', 'vs. current operations', formatCurrency(params.results.monthlySavings)],
+      ['Projected Annual Savings', 'First year', formatCurrency(params.results.yearlySavings)]
     ],
-    styles: { fontSize: 11 },
-    rowPageBreak: 'auto',
-  });
-  
-  // Implementation Process
-  yPosition = (doc.lastAutoTable?.finalY || yPosition + 60) + 15;
-  if (yPosition > 230) {
-    doc.addPage();
-    yPosition = 20;
-  }
-
-  doc.setFontSize(14);
-  doc.text("Rapid Implementation Process", 20, yPosition);
-  
-  autoTable(doc, {
-    startY: yPosition + 5,
-    body: [
-      ["1. Discovery & Planning (Day 1)", "Our team conducts a thorough assessment of your current systems, workflows, and customer interaction points to identify the optimal integration approach."],
-      ["2. AI Model Customization (Day 2)", "We configure and fine-tune our pre-trained AI models using industry-specific data to ensure contextually appropriate responses for your business needs."],
-      ["3. Integration & Testing (Day 3)", "Seamless integration with your existing systems followed by rigorous testing across various scenarios to ensure reliable performance."],
-      ["4. Team Training (Day 4)", "Comprehensive training for your staff on how to monitor, manage, and maximize the AI system to ensure optimal performance."],
-      ["5. Live Deployment (Day 5)", "Swift deployment with careful monitoring and real-time adjustments to ensure smooth operation from day one."]
-    ],
-    styles: { fontSize: 11 },
-    theme: 'plain',
-    columnStyles: {
-      0: { fontStyle: 'bold', cellWidth: 60 },
-      1: { cellWidth: 'auto' }
+    theme: 'grid',
+    headStyles: {
+      fillColor: [0, 179, 136],
+      textColor: [255, 255, 255],
+      fontStyle: 'bold'
     },
-    rowPageBreak: 'auto',
-  });
-  
-  // Next Steps
-  yPosition = (doc.lastAutoTable?.finalY || yPosition + 60) + 15;
-  if (yPosition > 230) {
-    doc.addPage();
-    yPosition = 20;
-  }
-
-  doc.setFontSize(14);
-  doc.text("Strategic Next Steps", 20, yPosition);
-
-  doc.setFontSize(12);
-  const nextStepsText = "To ensure a successful AI implementation for your organization, we recommend the following structured approach:";
-  const splitNextSteps = doc.splitTextToSize(nextStepsText, 170);
-  doc.text(splitNextSteps, 20, yPosition + 10);
-
-  autoTable(doc, {
-    startY: yPosition + splitNextSteps.length * 7 + 15,
-    body: [
-      ["1. Executive Strategy Session", "Schedule a 60-minute executive briefing where we'll walk through the comprehensive proposal and address any strategic questions."],
-      ["2. Technical Discovery Meeting", "Arrange a brief session with your IT team to discuss integration details and security protocols."],
-      ["3. Same-Day Implementation Plan", "Receive a tailored implementation roadmap with specific milestones and responsibilities."],
-      ["4. Rapid Deployment", "Start with immediate implementation to demonstrate value from day one."],
-      ["5. Continuous Optimization", "Our team provides ongoing support to ensure maximum ROI from your AI investment."]
-    ],
-    styles: { fontSize: 11 },
-    theme: 'plain',
-    columnStyles: {
-      0: { fontStyle: 'bold', cellWidth: 60 },
-      1: { cellWidth: 'auto' }
+    alternateRowStyles: {
+      fillColor: [245, 245, 245]
     },
-    rowPageBreak: 'auto',
+    styles: {
+      cellPadding: 5,
+      fontSize: 10,
+      lineWidth: 0.1,
+      lineColor: [220, 220, 220]
+    },
+    columnStyles: {
+      0: { fontStyle: 'bold' },
+      2: { halign: 'right' }
+    }
   });
+
+  yPosition = (doc.lastAutoTable?.finalY || yPosition) + 20;
   
-  // Add a new page for contact information and additional resources
-  doc.addPage();
-  yPosition = 20;
-  
-  // Additional Resources Section
-  doc.setFontSize(14);
-  doc.text("Additional Resources", 20, yPosition);
+  // Value Proposition
+  doc.setFontSize(16);
+  doc.text("Value Proposition", 20, yPosition);
   
   yPosition += 10;
-  doc.setFontSize(12);
+  doc.setFontSize(14);
+  doc.text("Key Benefits", 20, yPosition);
   
-  const resourcesText = "We provide comprehensive support to ensure your AI transformation is successful. Our resources include:";
-  const splitResources = doc.splitTextToSize(resourcesText, 170);
-  doc.text(splitResources, 20, yPosition);
+  yPosition += 10;
+  doc.setFontSize(10);
   
-  autoTable(doc, {
-    startY: yPosition + splitResources.length * 7 + 5,
-    body: [
-      ["• Detailed Technical Documentation", "Comprehensive guides for IT teams on integration and management"],
-      ["• Training Materials", "Video tutorials and step-by-step guides for all user levels"],
-      ["• ROI Calculator", "Online tool to continue tracking and projecting your savings"],
-      ["• 24/7 Support Team", "Dedicated technical assistance throughout implementation and beyond"],
-      ["• Regular Performance Reviews", "Monthly analysis of AI performance and optimization opportunities"]
-    ],
-    styles: { fontSize: 11 },
-    theme: 'plain',
-    columnStyles: {
-      0: { fontStyle: 'bold', cellWidth: 60 },
-      1: { cellWidth: 'auto' }
-    },
+  // Benefits list
+  const benefits = [
+    "24/7 Customer Support - Provide round-the-clock assistance without additional staffing costs",
+    "Improved Response Time - Instant responses to customer inquiries",
+    "Consistent Quality - Every interaction follows best practices and company standards",
+    "Multilingual Support - Communicate with customers in their preferred language",
+    "Valuable Customer Insights - Gain deeper understanding of customer needs through AI-powered analytics"
+  ];
+  
+  benefits.forEach((benefit, index) => {
+    doc.text(benefit, 20, yPosition + (index * 7));
   });
   
-  yPosition = (doc.lastAutoTable?.finalY || yPosition + 60) + 20;
+  yPosition += (benefits.length * 7) + 20;
   
-  // Get Started Today
+  if (yPosition > 250) {
+    doc.addPage();
+    yPosition = 20;
+  }
+
+  // Financial Impact & ROI Analysis
+  doc.setFontSize(16);
+  doc.text("Financial Impact & ROI Analysis", 20, yPosition);
+  yPosition += 10;
+
+  // Create ROI table as shown in the image
+  autoTable(doc, {
+    startY: yPosition,
+    head: [['Metric', 'Potential Impact']],
+    body: [
+      ['Monthly Cost Reduction', formatCurrency(params.results.monthlySavings)],
+      ['Annual Cost Reduction', formatCurrency(params.results.yearlySavings)],
+      ['Efficiency Improvement', `${Math.round(params.results.savingsPercentage)}%`],
+      ['One-Time Setup Fee', formatCurrency(params.results.aiCostMonthly.setupFee)],
+      ['Implementation Timeline', '5 business days or less'],
+      ['ROI Timeline', '3 to 6 months'],
+      ['5-Year Projected Savings', formatCurrency(params.results.yearlySavings * 5)]
+    ],
+    theme: 'striped',
+    headStyles: {
+      fillColor: [0, 121, 183],
+      textColor: [255, 255, 255],
+      fontStyle: 'bold'
+    },
+    styles: {
+      cellPadding: 5,
+      fontSize: 10
+    },
+    columnStyles: {
+      0: { fontStyle: 'bold' }
+    }
+  });
+  
+  yPosition = (doc.lastAutoTable?.finalY || yPosition) + 15;
+  
+  // Cost Comparison
   doc.setFontSize(14);
-  doc.text("Get Started Today", 20, yPosition);
+  doc.text("Cost Comparison", 20, yPosition);
+  yPosition += 10;
+  
+  // Create cost comparison table
+  autoTable(doc, {
+    startY: yPosition,
+    head: [['Solution', 'Monthly Cost', 'Annual Cost', 'One-Time Setup Fee']],
+    body: [
+      ['Current Human Staff', formatCurrency(params.results.humanCostMonthly), formatCurrency(params.results.humanCostMonthly * 12), 'N/A'],
+      ['ChatSites.ai Solution (Your Cost)', formatCurrency(params.results.aiCostMonthly.total), formatCurrency(params.results.aiCostMonthly.total * 12), formatCurrency(params.results.aiCostMonthly.setupFee)]
+    ],
+    theme: 'striped',
+    headStyles: {
+      fillColor: [0, 121, 183],
+      textColor: [255, 255, 255],
+      fontStyle: 'bold'
+    },
+    styles: {
+      cellPadding: 5,
+      fontSize: 10
+    },
+    columnStyles: {
+      0: { fontStyle: 'bold' }
+    }
+  });
+  
+  yPosition = (doc.lastAutoTable?.finalY || yPosition) + 20;
+  
+  if (yPosition > 200) {
+    doc.addPage();
+    yPosition = 20;
+  }
 
-  doc.setFontSize(12);
-  const getStartedText = "Contact our dedicated implementation team to begin your AI transformation journey. We're ready to help you revolutionize your customer service operations and achieve significant cost savings within just 5 business days.";
-  const splitGetStarted = doc.splitTextToSize(getStartedText, 170);
-  doc.text(splitGetStarted, 20, yPosition + 10);
+  // Rapid Implementation Process
+  doc.setFontSize(16);
+  doc.text("Rapid Implementation Process", 20, yPosition);
+  yPosition += 15;
   
-  // Contact Information with only email, phone, and website
-  yPosition += splitGetStarted.length * 7 + 20;
-  doc.setTextColor(246, 82, 40); // brand color
-  doc.setFontSize(12);
-  doc.text("Contact Us:", 20, yPosition);
-  doc.text("Email: info@chatsites.ai", 20, yPosition + 8);
-  doc.text("Phone: +1 480 862 0288", 20, yPosition + 16);
-  doc.text("Website: www.chatsites.ai", 20, yPosition + 24);
+  // Implementation Process details as shown in the image
+  const implementationSteps = [
+    {
+      title: "1. Discovery & Planning (Day 1)",
+      description: "Our team conducts a thorough assessment of your current systems, workflows, and customer interaction points to identify the optimal integration approach."
+    },
+    {
+      title: "2. AI Model Customization (Day 2)",
+      description: "We configure and fine-tune our pre-trained AI models using industry-specific data to ensure contextually appropriate responses for your business needs."
+    },
+    {
+      title: "3. Integration & Testing (Day 3)",
+      description: "Seamless integration with your existing systems followed by rigorous testing across various scenarios to ensure reliable performance."
+    },
+    {
+      title: "4. Team Training (Day 4)",
+      description: "Comprehensive training for your staff on how to monitor, manage, and maximize the AI system to ensure optimal performance."
+    },
+    {
+      title: "5. Live Deployment (Day 5)",
+      description: "Swift deployment with careful monitoring and real-time adjustments to ensure smooth operation from day one."
+    }
+  ];
   
-  // Footer with personalization and industry/employee info if available
+  implementationSteps.forEach((step, index) => {
+    const stepY = yPosition + (index * 20);
+    doc.setFontSize(12);
+    doc.setFont(undefined, 'bold');
+    doc.text(step.title, 20, stepY);
+    doc.setFont(undefined, 'normal');
+    
+    const descLines = doc.splitTextToSize(step.description, 170);
+    doc.setFontSize(10);
+    doc.text(descLines, 20, stepY + 5, { align: 'left' });
+  });
+  
+  yPosition += (implementationSteps.length * 20) + 15;
+  
+  if (yPosition > 220) {
+    doc.addPage();
+    yPosition = 20;
+  }
+  
+  // Strategic Next Steps
+  doc.setFontSize(16);
+  doc.text("Strategic Next Steps", 20, yPosition);
+  yPosition += 10;
+  
   doc.setFontSize(10);
-  doc.setTextColor(128, 128, 128);
-  let footerText = `Proposal prepared exclusively for ${params.companyName}`;
-  if (params.industry) {
-    footerText += ` (${params.industry})`;
-  }
-  if (params.employeeCount) {
-    footerText += ` with ${params.employeeCount} employees`;
-  }
-  doc.text(footerText, 20, 280);
-  doc.text(`Generated on ${reportDate} | Valid for 30 days`, 20, 287);
-
+  const nextStepsText = "To ensure a successful AI implementation for your organization, we recommend the following structured approach:";
+  doc.text(nextStepsText, 20, yPosition);
+  yPosition += 10;
+  
+  const nextSteps = [
+    {
+      title: "1. Executive Strategy Session",
+      description: "Schedule a 60-minute executive briefing where we'll walk through the comprehensive proposal and address any strategic questions."
+    },
+    {
+      title: "2. Technical Discovery Meeting",
+      description: "Arrange a brief session with your IT team to discuss integration details and security protocols."
+    },
+    {
+      title: "3. Same-Day Implementation Plan",
+      description: "Receive a tailored implementation roadmap with specific milestones and responsibilities."
+    },
+    {
+      title: "4. Rapid Deployment",
+      description: "Start with immediate implementation to demonstrate value from day one."
+    },
+    {
+      title: "5. Continuous Optimization",
+      description: "Our team provides ongoing support to ensure maximum ROI from your AI investment."
+    }
+  ];
+  
+  nextSteps.forEach((step, index) => {
+    const stepY = yPosition + (index * 15);
+    doc.setFontSize(12);
+    doc.setFont(undefined, 'bold');
+    doc.text(step.title, 20, stepY);
+    doc.setFont(undefined, 'normal');
+    
+    doc.setFontSize(10);
+    doc.text(step.description, 20, stepY + 5);
+  });
+  
+  yPosition += (nextSteps.length * 15) + 20;
+  
+  // Footer with contact information
+  doc.setFontSize(12);
+  doc.setTextColor(0, 121, 183);
+  doc.text("Contact Us:", 20, 270);
+  doc.setFontSize(10);
+  doc.text("Email: info@chatsites.ai", 20, 277);
+  doc.text("Phone: +1 480 862 0288", 20, 284);
+  doc.text("Website: www.chatsites.ai", 20, 291);
+  
   return doc;
 };
