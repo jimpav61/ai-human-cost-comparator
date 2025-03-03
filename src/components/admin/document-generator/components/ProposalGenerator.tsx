@@ -2,7 +2,7 @@
 import { Lead } from "@/types/leads";
 import { FileDown } from "lucide-react";
 import { toast } from "@/hooks/use-toast";
-import { generateProposal } from "@/components/calculator/proposal/generateProposal";
+import { generateProposal } from "@/components/calculator/proposalGenerator";
 import { DownloadButton } from "./DownloadButton";
 import { useDownloadState } from "../hooks/useDownloadState";
 import { calculatePricingDetails, getTierDisplayName, getAITypeDisplay } from "@/components/calculator/pricingDetailsCalculator";
