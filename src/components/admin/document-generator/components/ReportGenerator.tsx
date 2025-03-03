@@ -79,7 +79,7 @@ export const ReportGenerator = ({ lead, buttonStyle = "default" }: ReportGenerat
       const tierName = getTierDisplayName(inputs.aiTier);
       const aiType = getAITypeDisplay(inputs.aiType);
       
-      // Import dynamically to avoid TypeScript errors
+      // Use pdfGenerator for creating the report
       const { generatePDF } = await import('@/components/calculator/pdfGenerator');
       
       const doc = generatePDF({
