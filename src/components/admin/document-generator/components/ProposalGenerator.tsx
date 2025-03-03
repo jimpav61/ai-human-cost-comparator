@@ -44,24 +44,39 @@ export const ProposalGenerator = ({ lead }: ProposalGeneratorProps) => {
       const annualPrice = AI_RATES.chatbot[tierToUse].annualPrice;
       const baseMonthlyPrice = AI_RATES.chatbot[tierToUse].base;
       
-      // Create complete results object with proper defaults
-      const results = lead.calculator_results || {
+      // Calculate pricing details based on the inputs
+      const pricingDetails = calculatePricingDetails(inputs);
+      
+      // Calculate the total monthly cost (base + usage)
+      let totalMonthlyAICost = baseMonthlyPrice;
+      
+      // Add voice costs if applicable
+      if (aiTypeToUse === 'voice' || aiTypeToUse === 'conversationalVoice' || 
+          aiTypeToUse === 'both' || aiTypeToUse === 'both-premium') {
+        const voiceCost = 55; // Default voice cost
+        totalMonthlyAICost += voiceCost;
+      }
+      
+      // Calculate human cost based on role and employees
+      const humanCostMonthly = 3800; // Default human cost if not calculated
+      
+      // Calculate savings
+      const monthlySavings = humanCostMonthly - totalMonthlyAICost;
+      const yearlySavings = monthlySavings * 12;
+      const savingsPercentage = (monthlySavings / humanCostMonthly) * 100;
+      
+      // Create complete results object
+      const results = {
         aiCostMonthly: { 
           voice: aiTypeToUse.includes('voice') ? 55 : 0, 
           chatbot: baseMonthlyPrice, 
-          total: aiTypeToUse.includes('voice') ? (baseMonthlyPrice + 55) : baseMonthlyPrice,
+          total: totalMonthlyAICost,
           setupFee: setupFee
         },
-        humanCostMonthly: 3800,
-        monthlySavings: aiTypeToUse.includes('voice') 
-          ? (3800 - (baseMonthlyPrice + 55)) 
-          : (3800 - baseMonthlyPrice),
-        yearlySavings: aiTypeToUse.includes('voice')
-          ? (3800 - (baseMonthlyPrice + 55)) * 12
-          : (3800 - baseMonthlyPrice) * 12,
-        savingsPercentage: aiTypeToUse.includes('voice')
-          ? ((3800 - (baseMonthlyPrice + 55)) / 3800) * 100
-          : ((3800 - baseMonthlyPrice) / 3800) * 100,
+        humanCostMonthly: humanCostMonthly,
+        monthlySavings: monthlySavings,
+        yearlySavings: yearlySavings,
+        savingsPercentage: savingsPercentage,
         breakEvenPoint: { voice: 240, chatbot: 520 },
         humanHours: {
           dailyPerEmployee: 8,
@@ -71,32 +86,6 @@ export const ProposalGenerator = ({ lead }: ProposalGeneratorProps) => {
         },
         annualPlan: annualPrice
       };
-      
-      // Ensure all nested objects and properties exist to prevent undefined errors
-      if (!results.aiCostMonthly) {
-        results.aiCostMonthly = { 
-          voice: aiTypeToUse.includes('voice') ? 55 : 0, 
-          chatbot: baseMonthlyPrice, 
-          total: aiTypeToUse.includes('voice') ? (baseMonthlyPrice + 55) : baseMonthlyPrice,
-          setupFee: setupFee 
-        };
-      }
-      
-      if (!results.breakEvenPoint) {
-        results.breakEvenPoint = { voice: 240, chatbot: 520 };
-      }
-      
-      if (!results.humanHours) {
-        results.humanHours = {
-          dailyPerEmployee: 8,
-          weeklyTotal: 200,
-          monthlyTotal: 850,
-          yearlyTotal: 10200
-        };
-      }
-      
-      // Calculate pricing details based on the inputs
-      const pricingDetails = calculatePricingDetails(inputs);
       
       // Get display names based on tier and aiType
       const tierName = getTierDisplayName(tierToUse);

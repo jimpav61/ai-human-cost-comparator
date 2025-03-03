@@ -8,7 +8,7 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { Button } from '@/components/ui/button';
-import { FileText, ChevronDown, ChevronUp } from 'lucide-react';
+import { FileText, ChevronDown, ChevronUp, Pencil } from 'lucide-react';
 import { Lead } from "@/types/leads";
 import { CompanyDisplay } from "./CompanyDisplay";
 import { ContactDisplay } from "./ContactDisplay";
@@ -17,6 +17,7 @@ import { DocumentGenerator } from "./DocumentGenerator";
 import { exportLeadsToCSV } from "@/utils/exportUtils";
 import { useState } from "react";
 import { Card, CardContent } from "@/components/ui/card";
+import { EditLeadDialog } from "./EditLeadDialog";
 
 interface LeadsTableProps {
   leads: Lead[];
@@ -24,12 +25,24 @@ interface LeadsTableProps {
 
 export const LeadsTable = ({ leads }: LeadsTableProps) => {
   const [expandedLeads, setExpandedLeads] = useState<Record<string, boolean>>({});
+  const [editingLead, setEditingLead] = useState<Lead | null>(null);
+  const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
 
   const toggleLeadExpansion = (leadId: string) => {
     setExpandedLeads(prev => ({
       ...prev,
       [leadId]: !prev[leadId]
     }));
+  };
+
+  const handleOpenEditDialog = (lead: Lead) => {
+    setEditingLead(lead);
+    setIsEditDialogOpen(true);
+  };
+
+  const handleCloseEditDialog = () => {
+    setIsEditDialogOpen(false);
+    setEditingLead(null);
   };
 
   return (
@@ -56,7 +69,7 @@ export const LeadsTable = ({ leads }: LeadsTableProps) => {
               <TableHead>Size</TableHead>
               <TableHead>Contact Info</TableHead>
               <TableHead>Created</TableHead>
-              <TableHead>Actions</TableHead>
+              <TableHead className="text-right">Actions</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
@@ -80,7 +93,16 @@ export const LeadsTable = ({ leads }: LeadsTableProps) => {
                 <TableCell>
                   <DateDisplay dateString={lead.created_at} />
                 </TableCell>
-                <TableCell>
+                <TableCell className="space-x-2 text-right">
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    onClick={() => handleOpenEditDialog(lead)}
+                    className="mr-2"
+                  >
+                    <Pencil className="h-4 w-4 mr-1" />
+                    Edit
+                  </Button>
                   <DocumentGenerator lead={lead} />
                 </TableCell>
               </TableRow>
@@ -150,7 +172,20 @@ export const LeadsTable = ({ leads }: LeadsTableProps) => {
                     
                     <div>
                       <div className="text-sm font-medium text-gray-500 mb-2">Actions</div>
-                      <DocumentGenerator lead={lead} />
+                      <div className="flex gap-2">
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            handleOpenEditDialog(lead);
+                          }}
+                        >
+                          <Pencil className="h-4 w-4 mr-1" />
+                          Edit
+                        </Button>
+                        <DocumentGenerator lead={lead} />
+                      </div>
                     </div>
                   </div>
                 </CardContent>
@@ -159,6 +194,15 @@ export const LeadsTable = ({ leads }: LeadsTableProps) => {
           ))}
         </div>
       </div>
+
+      {/* Edit Lead Dialog */}
+      {editingLead && (
+        <EditLeadDialog
+          lead={editingLead}
+          open={isEditDialogOpen}
+          onClose={handleCloseEditDialog}
+        />
+      )}
     </div>
   );
 };
