@@ -75,7 +75,6 @@ export const addFinancialImpact = (doc: JsPDFWithAutoTable, yPosition: number, p
     ],
     styles: { fontSize: 11 },
     bodyStyles: { textColor: [0, 0, 0] },
-    // Use willDrawCell instead of rowStyles
     willDrawCell: function(data) {
       // Highlight the AI Solution row with a green background
       if (data.row.index === 1 && data.section === 'body') {
