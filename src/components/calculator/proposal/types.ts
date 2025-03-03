@@ -2,12 +2,14 @@
 import jsPDF from 'jspdf';
 import type { CalculationResults } from '@/hooks/useCalculator';
 import type { PricingDetail } from '../types';
+import 'jspdf-autotable';
 
 // Add custom interface to handle the jsPDF extension from autotable
 export interface JsPDFWithAutoTable extends jsPDF {
   lastAutoTable?: {
     finalY?: number;
   };
+  autoTable: (options: any) => jsPDF;
 }
 
 export interface GenerateProposalParams {
