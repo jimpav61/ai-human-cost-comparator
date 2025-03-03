@@ -1,35 +1,30 @@
 
 import { JsPDFWithAutoTable } from '../types';
-import autoTable from 'jspdf-autotable';
 
 export const addValueProposition = (doc: JsPDFWithAutoTable, yPosition: number): number => {
-  // Check if we need a new page
-  if (yPosition > 230) {
-    doc.addPage();
-    yPosition = 20;
-  }
-  
-  doc.setFontSize(14);
+  // Value Proposition
+  doc.setFontSize(16);
   doc.text("Value Proposition", 20, yPosition);
   
-  // Benefits table
-  autoTable(doc, {
-    startY: yPosition + 5,
-    head: [["Key Benefits"]],
-    body: [
-      ["24/7 Customer Support Availability - Never miss another inquiry regardless of time zone or hour"],
-      ["Instant Response Times - Eliminate wait times and increase customer satisfaction rates"],
-      ["Consistent Service Quality - Deliver the same high standard of service with every interaction"],
-      ["Multilingual Support Capabilities - Engage with your global customer base in their preferred language"],
-      ["Scalable Solution - Easily accommodate growth without proportional increases in operational costs"],
-      ["Valuable Customer Insights - Gain deeper understanding of customer needs through AI-powered analytics"]
-    ],
-    styles: { fontSize: 11 },
-    theme: 'plain',
-    rowPageBreak: 'auto',
-    bodyStyles: { minCellHeight: 10 },
+  yPosition += 10;
+  doc.setFontSize(14);
+  doc.text("Key Benefits", 20, yPosition);
+  
+  yPosition += 10;
+  doc.setFontSize(10);
+  
+  // Benefits list
+  const benefits = [
+    "24/7 Customer Support - Provide round-the-clock assistance without additional staffing costs",
+    "Improved Response Time - Instant responses to customer inquiries",
+    "Consistent Quality - Every interaction follows best practices and company standards",
+    "Multilingual Support - Communicate with customers in their preferred language",
+    "Valuable Customer Insights - Gain deeper understanding of customer needs through AI-powered analytics"
+  ];
+  
+  benefits.forEach((benefit, index) => {
+    doc.text(benefit, 20, yPosition + (index * 7));
   });
   
-  // Get the last Y position after the table
-  return (doc.lastAutoTable?.finalY || yPosition + 60) + 20;
+  return yPosition + (benefits.length * 7) + 20;
 };

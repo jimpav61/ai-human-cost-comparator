@@ -1,9 +1,9 @@
 
 import { JsPDFWithAutoTable } from '../types';
+import { SectionParams } from '../types';
 
-export const addIntroduction = (doc: JsPDFWithAutoTable, yPosition: number, params: any): number => {
+export const addIntroduction = (doc: JsPDFWithAutoTable, yPosition: number, params: SectionParams): number => {
   // Personalized Introduction
-  yPosition += 15;
   doc.setFontSize(14);
   doc.setTextColor(40, 40, 40);
   doc.text(`Dear ${params.contactInfo},`, 20, yPosition);
@@ -24,22 +24,16 @@ export const addIntroduction = (doc: JsPDFWithAutoTable, yPosition: number, para
     yPosition += 7;
   }
   
-  // Add some spacing
-  yPosition += 5;
-
   // Introduction paragraph - customized with industry if available
+  yPosition += 5;
   const industrySpecificPhrase = params.industry 
     ? `in the ${params.industry} industry` 
     : "in your industry";
     
-  const employeeSizePhrase = params.employeeCount 
-    ? `with ${params.employeeCount} employees` 
-    : "of your size";
-    
-  const introText = `Thank you for considering ChatSites.ai as your AI solution provider. After a detailed analysis of ${params.companyName}'s current operations and benchmarks ${industrySpecificPhrase}, we've crafted a transformative AI implementation strategy specifically tailored for organizations ${employeeSizePhrase}. Our approach is designed to revolutionize your customer service operations while delivering substantial and sustainable cost savings.`;
+  const introText = `Thank you for considering ChatSites.ai as your AI solution provider. Based on our analysis of your requirements, we've prepared the following proposal tailored for organizations ${industrySpecificPhrase}.`;
   
   const splitIntro = doc.splitTextToSize(introText, 170);
   doc.text(splitIntro, 20, yPosition);
   
-  return yPosition + splitIntro.length * 7;
+  return yPosition + splitIntro.length * 7 + 10;
 };
