@@ -80,6 +80,7 @@ export const EditLeadDialog = ({ lead, open, onClose }: EditLeadDialogProps) => 
       if (newAIType !== 'chatbot') {
         newAIType = 'chatbot';
         callVolumeToSet = 0;
+        tierChanged = true;
       }
     } 
     else if (tier === 'growth') {
@@ -120,6 +121,7 @@ export const EditLeadDialog = ({ lead, open, onClose }: EditLeadDialogProps) => 
     }
     
     if (newAIType !== calculatorInputs.aiType || callVolumeToSet !== calculatorInputs.callVolume) {
+      console.log(`Updating AI type from ${calculatorInputs.aiType} to ${newAIType} due to tier change to ${tier}`);
       setCalculatorInputs(prev => ({
         ...prev,
         aiType: newAIType as any,

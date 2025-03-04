@@ -68,10 +68,11 @@ export const AIVsHumanCalculator: React.FC<AIVsHumanCalculatorProps> = ({ leadDa
       if (field === 'aiTier' && value === 'growth') {
         if (prev.aiType === 'conversationalVoice') {
           updatedInputs.aiType = 'voice';
+          console.log("Downgraded from premium to growth tier, changed AI type from conversationalVoice to voice");
         } else if (prev.aiType === 'both-premium') {
           updatedInputs.aiType = 'both';
+          console.log("Downgraded from premium to growth tier, changed AI type from both-premium to both");
         }
-        console.log("Downgraded from premium tier, new AI type:", updatedInputs.aiType);
       }
       
       // If changing AI type to voice-based option from text, ensure tier is at least growth

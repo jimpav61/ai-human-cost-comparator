@@ -14,8 +14,8 @@ export const AITypeSection: React.FC<AITypeSectionProps> = ({
 }) => {
   // Force AI type update when tier changes
   useEffect(() => {
+    // If on starter plan but not using chatbot, switch to chatbot
     if (aiTier === 'starter' && aiType !== 'chatbot') {
-      // If on starter plan but not using chatbot, switch to chatbot
       handleAITypeChange('chatbot');
     }
     // If on premium plan and using basic voice features, upgrade to premium voice
@@ -30,6 +30,7 @@ export const AITypeSection: React.FC<AITypeSectionProps> = ({
     // If downgraded from premium and using premium features, downgrade features
     else if (aiTier === 'growth' && (aiType === 'conversationalVoice' || aiType === 'both-premium')) {
       handleAITypeChange(aiType === 'conversationalVoice' ? 'voice' : 'both');
+      console.log('Downgrading from premium to growth, changing AI type to:', aiType === 'conversationalVoice' ? 'voice' : 'both');
     }
   }, [aiTier, aiType, handleAITypeChange]);
 
