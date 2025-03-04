@@ -31,7 +31,7 @@ serve(async (req) => {
     const aiTier = lead.calculatorResults.tierKey || 'growth';
     const aiType = lead.calculatorResults.aiType || 'chatbot';
     
-    // Get the correct base price based on tier
+    // Get the correct base price based on tier - these are the exact prices
     let basePrice = 0;
     switch(aiTier) {
       case 'starter':

@@ -46,6 +46,9 @@ export const TierComparison: React.FC<TierComparisonProps> = ({
       {['starter', 'growth', 'premium'].map((tier) => {
         const { isCompatible, reason } = getTierCompatibility(tier);
         
+        // Get the exact fixed price for this tier
+        const exactPrice = tier === 'starter' ? 99 : tier === 'growth' ? 229 : 429;
+        
         return (
           <div 
             key={tier}
@@ -72,7 +75,7 @@ export const TierComparison: React.FC<TierComparisonProps> = ({
             <div className="text-sm mb-2">
               <div className="font-medium">Monthly Price:</div>
               <div className={`font-semibold text-lg ${!isCompatible ? 'text-gray-500' : 'text-gray-800'}`}>
-                {formatCurrency(AI_RATES.chatbot[tier as keyof typeof AI_RATES.chatbot].base)}/month
+                {formatCurrency(exactPrice)}/month
               </div>
               <div className="text-xs text-gray-600">
                 + One-time Setup Fee: {formatCurrency(AI_RATES.chatbot[tier as keyof typeof AI_RATES.chatbot].setupFee)} (Non-Refundable)

@@ -19,13 +19,13 @@ export const PlanSelectionSection: React.FC<PlanSelectionSectionProps> = ({
   const handleTierSelection = (tier: string) => {
     console.log(`User selected tier: ${tier} from the plan selection section, current AI type: ${currentAIType}`);
     
-    // Display pricing info in a toast notification
-    const basePrice = AI_RATES.chatbot[tier as keyof typeof AI_RATES.chatbot].base;
+    // Get exact prices based on tier
+    const exactPrice = tier === 'starter' ? 99 : tier === 'growth' ? 229 : 429;
     const setupFee = AI_RATES.chatbot[tier as keyof typeof AI_RATES.chatbot].setupFee;
     
     toast({
       title: `${tier.charAt(0).toUpperCase() + tier.slice(1)} Plan Selected`,
-      description: `Base price: $${basePrice}/month. Setup fee: $${setupFee}. ${tier === 'starter' ? 'No voice capabilities.' : 
+      description: `Price: $${exactPrice}/month. Setup fee: $${setupFee}. ${tier === 'starter' ? 'No voice capabilities.' : 
         `Includes ${AI_RATES.chatbot[tier as keyof typeof AI_RATES.chatbot].includedVoiceMinutes} voice minutes.`}`,
     });
     
