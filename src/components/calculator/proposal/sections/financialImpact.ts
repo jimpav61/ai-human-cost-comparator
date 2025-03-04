@@ -2,6 +2,7 @@
 import { JsPDFWithAutoTable, SectionParams } from '../types';
 import { formatCurrency } from '@/utils/formatters';
 import autoTable from 'jspdf-autotable';
+import { AI_RATES } from '@/constants/pricing';
 
 export const addFinancialImpact = (doc: JsPDFWithAutoTable, yPosition: number, params: SectionParams): number => {
   if (yPosition > 250) {
@@ -23,7 +24,27 @@ export const addFinancialImpact = (doc: JsPDFWithAutoTable, yPosition: number, p
   // Format currency values
   const monthlySavings = formatCurrency(params.results?.monthlySavings || 3701);
   const yearlySavings = formatCurrency(params.results?.yearlySavings || 44412);
-  const setupFee = formatCurrency(params.results?.aiCostMonthly.setupFee || 249);
+  
+  // Get setup fee from results or determine from tier
+  let setupFee = 0;
+  if (params.results?.aiCostMonthly?.setupFee !== undefined) {
+    setupFee = params.results.aiCostMonthly.setupFee;
+  } else if (params.results?.tierKey) {
+    // Get from tier key
+    setupFee = AI_RATES.chatbot[params.results.tierKey]?.setupFee || 249;
+  } else if (params.tierName) {
+    // Derive from tier name
+    const tierLower = params.tierName.toLowerCase();
+    if (tierLower.includes('premium')) {
+      setupFee = AI_RATES.chatbot.premium.setupFee;
+    } else if (tierLower.includes('growth')) {
+      setupFee = AI_RATES.chatbot.growth.setupFee;
+    } else {
+      setupFee = AI_RATES.chatbot.starter.setupFee;
+    }
+  }
+  
+  const setupFeeFormatted = formatCurrency(setupFee);
 
   // Create ROI table with dynamically calculated values and brand headers
   autoTable(doc, {
@@ -33,7 +54,7 @@ export const addFinancialImpact = (doc: JsPDFWithAutoTable, yPosition: number, p
       ['Monthly Cost Reduction', monthlySavings],
       ['Annual Cost Reduction', yearlySavings],
       ['Efficiency Improvement', efficiencyImprovement],
-      ['One-Time Setup Fee', setupFee],
+      ['One-Time Setup Fee', setupFeeFormatted],
       ['Implementation Timeline', '5 business days or less'],
       ['ROI Timeline', '3 to 6 months'],
       ['5-Year Projected Savings', formatCurrency(params.results?.yearlySavings * 5 || 222060)]
@@ -64,8 +85,28 @@ export const addFinancialImpact = (doc: JsPDFWithAutoTable, yPosition: number, p
   // Format human staff costs
   const humanMonthly = formatCurrency(params.results?.humanCostMonthly || 3800);
   const humanAnnual = formatCurrency((params.results?.humanCostMonthly || 3800) * 12);
-  const aiMonthly = formatCurrency(params.results?.aiCostMonthly.total || 99);
-  const aiAnnual = formatCurrency((params.results?.aiCostMonthly.total || 99) * 12);
+  
+  // Get AI monthly cost based on the selected tier
+  let aiMonthly = 0;
+  if (params.results?.aiCostMonthly?.total !== undefined) {
+    aiMonthly = params.results.aiCostMonthly.total;
+  } else if (params.results?.tierKey) {
+    // Get base price from tier
+    aiMonthly = AI_RATES.chatbot[params.results.tierKey]?.base || 99;
+  } else if (params.tierName) {
+    // Derive from tier name
+    const tierLower = params.tierName.toLowerCase();
+    if (tierLower.includes('premium')) {
+      aiMonthly = AI_RATES.chatbot.premium.base;
+    } else if (tierLower.includes('growth')) {
+      aiMonthly = AI_RATES.chatbot.growth.base;
+    } else {
+      aiMonthly = AI_RATES.chatbot.starter.base;
+    }
+  }
+  
+  const aiMonthlyFormatted = formatCurrency(aiMonthly);
+  const aiAnnual = formatCurrency(aiMonthly * 12);
   
   // Create cost comparison table with brand headers
   autoTable(doc, {
@@ -73,7 +114,7 @@ export const addFinancialImpact = (doc: JsPDFWithAutoTable, yPosition: number, p
     head: [['Solution', 'Monthly Cost', 'Annual Cost', 'One-Time Setup Fee']],
     body: [
       ['Current Human Staff', humanMonthly, humanAnnual, 'N/A'],
-      ['ChatSites.ai Solution (Your Cost)', aiMonthly, aiAnnual, setupFee]
+      ['ChatSites.ai Solution (Your Cost)', aiMonthlyFormatted, aiAnnual, setupFeeFormatted]
     ],
     theme: 'striped',
     headStyles: {

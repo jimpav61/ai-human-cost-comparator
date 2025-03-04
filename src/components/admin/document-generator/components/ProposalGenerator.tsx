@@ -55,7 +55,10 @@ export const ProposalGenerator = ({ lead }: ProposalGeneratorProps) => {
             phoneNumber: lead.phone_number || '',
             industry: lead.industry || 'Other',
             employeeCount: lead.employee_count || 5,
-            results: lead.calculator_results || {},
+            results: {
+              ...lead.calculator_results,
+              tierKey: tierToUse // Add the tier key to be used in recommendedSolution
+            },
             tierName: tierName,
             aiType: aiType,
             pricingDetails: pricingDetails
@@ -171,7 +174,8 @@ export const ProposalGenerator = ({ lead }: ProposalGeneratorProps) => {
           monthlyTotal: 850,
           yearlyTotal: 10200
         },
-        annualPlan: annualPrice
+        annualPlan: annualPrice,
+        tierKey: tierToUse // Add the tier key to be used in recommendedSolution
       };
       
       // Get display names based on tier and aiType
