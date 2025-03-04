@@ -45,7 +45,17 @@ export const VoiceConfigSection: React.FC<VoiceConfigSectionProps> = ({
     if (isStarterPlan && callVolume !== 0) {
       onInputChange('callVolume', 0);
     }
-  }, [aiTier, isStarterPlan, callVolume, onInputChange]);
+    
+    // For growth or premium, set a default if currently at 0
+    if (!isStarterPlan && callVolume === 0 && includedMinutes > 0) {
+      // Set to a value that uses included minutes but doesn't go over
+      const suggestedVolume = Math.floor(includedMinutes / avgCallDuration);
+      if (suggestedVolume > 0) {
+        console.log(`Setting default call volume to ${suggestedVolume} based on ${includedMinutes} included minutes`);
+        onInputChange('callVolume', suggestedVolume);
+      }
+    }
+  }, [aiTier, isStarterPlan, callVolume, includedMinutes, avgCallDuration, onInputChange]);
   
   return (
     <>

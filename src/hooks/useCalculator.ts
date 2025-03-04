@@ -71,19 +71,22 @@ export const useCalculator = (inputs: CalculatorInputs): CalculationResults => {
     console.log("Calculating with inputs:", inputs);
     console.log("Using AI rates:", aiRates);
     
+    // Standard time calculations
     const HOURS_PER_SHIFT = 8;
     const DAYS_PER_WEEK = 5;
     const WEEKS_PER_YEAR = 52;
     const MONTHS_PER_YEAR = 12;
 
+    // Calculate human resource time usage
     const dailyHoursPerEmployee = HOURS_PER_SHIFT;
     const weeklyHoursPerEmployee = dailyHoursPerEmployee * DAYS_PER_WEEK;
     const weeklyTotalHours = weeklyHoursPerEmployee * inputs.numEmployees;
     const monthlyTotalHours = (weeklyTotalHours * WEEKS_PER_YEAR) / MONTHS_PER_YEAR;
     const yearlyTotalHours = weeklyTotalHours * WEEKS_PER_YEAR;
 
+    // Calculate human resource costs
     const baseHourlyRate = HUMAN_HOURLY_RATES[inputs.role];
-    const hourlyRateWithBenefits = baseHourlyRate * 1.3;
+    const hourlyRateWithBenefits = baseHourlyRate * 1.3; // Add 30% for benefits
     const monthlyHumanCost = hourlyRateWithBenefits * monthlyTotalHours;
 
     // Determine the effective tier for pricing calculations
