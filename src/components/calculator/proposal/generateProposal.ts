@@ -24,7 +24,7 @@ interface GenerateProposalParams {
   phoneNumber: string | null;
   industry?: string;
   employeeCount?: number;
-  results: CalculationResults;
+  results: CalculationResults | any;
   tierName?: string;
   aiType?: string;
   pricingDetails?: PricingDetail[];
@@ -33,17 +33,62 @@ interface GenerateProposalParams {
 export const generateProposal = (params: GenerateProposalParams) => {
   console.log('Generating proposal with params:', params);
   
+  // Ensure results has the expected structure to prevent errors
+  const defaultResults = {
+    aiCostMonthly: {
+      voice: 0,
+      chatbot: 0,
+      total: 0,
+      setupFee: 0
+    },
+    humanCostMonthly: 0,
+    monthlySavings: 0,
+    yearlySavings: 0,
+    savingsPercentage: 0,
+    breakEvenPoint: {
+      voice: 0,
+      chatbot: 0
+    },
+    humanHours: {
+      dailyPerEmployee: 8,
+      weeklyTotal: 0,
+      monthlyTotal: 0,
+      yearlyTotal: 0
+    },
+    annualPlan: 0
+  };
+  
+  // Merge provided results with default values to ensure all required properties exist
+  const safeResults = {
+    ...defaultResults,
+    ...params.results,
+    aiCostMonthly: {
+      ...defaultResults.aiCostMonthly,
+      ...(params.results?.aiCostMonthly || {})
+    },
+    breakEvenPoint: {
+      ...defaultResults.breakEvenPoint,
+      ...(params.results?.breakEvenPoint || {})
+    },
+    humanHours: {
+      ...defaultResults.humanHours,
+      ...(params.results?.humanHours || {})
+    }
+  };
+  
   const doc = new jsPDF() as JsPDFWithAutoTable;
   const reportDate = new Date().toLocaleDateString();
   let yPosition = 20;
 
-  // Add document sections
+  // Add document sections with the safe results
+  const safeParams = { ...params, results: safeResults };
+  
   yPosition = addBranding(doc, yPosition);
-  yPosition = addIntroduction(doc, yPosition, params);
-  yPosition = addIndustryChallenges(doc, yPosition, params);
-  yPosition = addRecommendedSolution(doc, yPosition, params);
+  yPosition = addIntroduction(doc, yPosition, safeParams);
+  yPosition = addIndustryChallenges(doc, yPosition, safeParams);
+  yPosition = addRecommendedSolution(doc, yPosition, safeParams);
   yPosition = addValueProposition(doc, yPosition);
-  yPosition = addFinancialImpact(doc, yPosition, params);
+  yPosition = addFinancialImpact(doc, yPosition, safeParams);
   yPosition = addImplementationProcess(doc, yPosition);
   yPosition = addNextSteps(doc, yPosition);
   
@@ -53,7 +98,7 @@ export const generateProposal = (params: GenerateProposalParams) => {
   
   yPosition = addAdditionalResources(doc, yPosition);
   yPosition = addContactInformation(doc, yPosition);
-  addFooter(doc, params, reportDate);
+  addFooter(doc, safeParams, reportDate);
 
   return doc;
 };

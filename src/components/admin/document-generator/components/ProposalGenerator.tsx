@@ -55,7 +55,7 @@ export const ProposalGenerator = ({ lead }: ProposalGeneratorProps) => {
             phoneNumber: lead.phone_number || '',
             industry: lead.industry || 'Other',
             employeeCount: lead.employee_count || 5,
-            results: lead.calculator_results,
+            results: lead.calculator_results || {},
             tierName: tierName,
             aiType: aiType,
             pricingDetails: pricingDetails
@@ -110,10 +110,10 @@ export const ProposalGenerator = ({ lead }: ProposalGeneratorProps) => {
       const aiTypeToUse = inputs.aiType || 'chatbot';
       
       // Get setup fee from rates using the correct tier
-      const setupFee = AI_RATES.chatbot[tierToUse].setupFee;
-      const annualPrice = AI_RATES.chatbot[tierToUse].annualPrice;
-      const baseMonthlyPrice = AI_RATES.chatbot[tierToUse].base;
-      const includedVoiceMinutes = AI_RATES.chatbot[tierToUse].includedVoiceMinutes || 0;
+      const setupFee = AI_RATES.chatbot[tierToUse as keyof typeof AI_RATES.chatbot]?.setupFee || 0;
+      const annualPrice = AI_RATES.chatbot[tierToUse as keyof typeof AI_RATES.chatbot]?.annualPrice || 0;
+      const baseMonthlyPrice = AI_RATES.chatbot[tierToUse as keyof typeof AI_RATES.chatbot]?.base || 0;
+      const includedVoiceMinutes = AI_RATES.chatbot[tierToUse as keyof typeof AI_RATES.chatbot]?.includedVoiceMinutes || 0;
       
       // Calculate pricing details based on the inputs
       const pricingDetails = calculatePricingDetails(inputs);
@@ -133,7 +133,7 @@ export const ProposalGenerator = ({ lead }: ProposalGeneratorProps) => {
         const chargeableMinutes = Math.max(0, totalMinutes - includedVoiceMinutes);
         
         // Get the per-minute rate for this tier
-        const voiceRate = AI_RATES.voice[tierToUse as keyof typeof AI_RATES.voice];
+        const voiceRate = AI_RATES.voice[tierToUse as keyof typeof AI_RATES.voice] || 0;
         
         // Apply conversational factor for premium/conversational voice
         const isConversational = aiTypeToUse === 'conversationalVoice' || aiTypeToUse === 'both-premium';
@@ -150,7 +150,7 @@ export const ProposalGenerator = ({ lead }: ProposalGeneratorProps) => {
       // Calculate savings
       const monthlySavings = humanCostMonthly - totalMonthlyAICost;
       const yearlySavings = monthlySavings * 12;
-      const savingsPercentage = (monthlySavings / humanCostMonthly) * 100;
+      const savingsPercentage = humanCostMonthly > 0 ? (monthlySavings / humanCostMonthly) * 100 : 0;
       
       // Create complete results object
       const results = {
