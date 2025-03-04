@@ -19,24 +19,33 @@ export const addRecommendedSolution = (doc: JsPDFWithAutoTable, yPosition: numbe
   
   // Determine the number of included minutes based on the tier
   let includedMinutes = 0;
-  if (params.results?.aiCostMonthly) {
+  let tierKey = 'starter';
+  
+  if (params.results?.tierKey) {
     // Get the tier from the results
-    const tierKey = params.results.tierKey || 'starter';
-    if (tierKey in AI_RATES.chatbot) {
-      includedMinutes = AI_RATES.chatbot[tierKey].includedVoiceMinutes || 0;
-    }
+    tierKey = params.results.tierKey;
   } else if (params.tierName) {
     // Extract tier from tier name if available
     const tierLower = params.tierName.toLowerCase();
     if (tierLower.includes('premium')) {
-      includedMinutes = AI_RATES.chatbot.premium.includedVoiceMinutes || 600;
+      tierKey = 'premium';
     } else if (tierLower.includes('growth')) {
-      includedMinutes = AI_RATES.chatbot.growth.includedVoiceMinutes || 600;
+      tierKey = 'growth';
     }
   }
   
+  // Get included minutes based on tier
+  if (tierKey !== 'starter') {
+    includedMinutes = AI_RATES.chatbot[tierKey].includedVoiceMinutes || 600;
+  }
+  
   // Plan details
-  let planText = `Based on your specific needs, we recommend our ${tierName}. This provides optimal functionality while maximizing your return on investment. The plan includes ${includedMinutes} free voice minutes per month.`;
+  let planText = `Based on your specific needs, we recommend our ${tierName}. This provides optimal functionality while maximizing your return on investment.`;
+  
+  // Add voice minutes information if applicable
+  if (tierKey !== 'starter') {
+    planText += ` The plan includes ${includedMinutes} free voice minutes per month, with additional minutes billed only if you exceed this limit.`;
+  }
   
   const splitPlanText = doc.splitTextToSize(planText, 170);
   doc.text(splitPlanText, 20, yPosition);

@@ -112,13 +112,7 @@ export const useCalculator = (inputs: CalculatorInputs): CalculationResults => {
         const includedMinutes = aiRates.chatbot[effectiveTier].includedVoiceMinutes || 0;
         
         // Only charge for minutes above the included amount
-        // Make sure to account for the actual call volume used vs. included free minutes
-        let chargeableMinutes = 0;
-        
-        // If total call minutes exceed the included minutes
-        if (totalMinutesPerMonth > includedMinutes) {
-          chargeableMinutes = totalMinutesPerMonth - includedMinutes;
-        }
+        let chargeableMinutes = Math.max(0, totalMinutesPerMonth - includedMinutes);
         
         // Get the per-minute rate for this tier
         const voiceRate = aiRates.voice[effectiveTier];

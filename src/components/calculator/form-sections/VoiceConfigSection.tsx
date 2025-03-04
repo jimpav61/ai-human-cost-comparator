@@ -25,9 +25,8 @@ export const VoiceConfigSection: React.FC<VoiceConfigSectionProps> = ({
     if (isStarterPlan && value > 0) {
       // If user tries to add minutes in starter plan, auto-upgrade to growth
       onInputChange('aiTier', 'growth');
-      // Set to the included minutes of growth plan
-      const growthIncludedMinutes = AI_RATES.chatbot['growth']?.includedVoiceMinutes || 600;
-      onInputChange('callVolume', growthIncludedMinutes);
+      // Set to a reasonable default that's above zero but doesn't force immediate overage charges
+      onInputChange('callVolume', value);
       
       toast({
         title: "Plan Upgraded",
@@ -36,32 +35,17 @@ export const VoiceConfigSection: React.FC<VoiceConfigSectionProps> = ({
       });
     } else {
       // Normal handling for non-starter plans
-      // Ensure value is at least the included minutes if it's a non-zero value
-      if (value > 0 && value < includedMinutes) {
-        onInputChange('callVolume', includedMinutes);
-        
-        toast({
-          title: "Included Minutes Applied",
-          description: `Your plan includes ${includedMinutes} free voice minutes. We've set this as the minimum.`,
-          variant: "default",
-        });
-      } else {
-        onInputChange('callVolume', value);
-      }
+      onInputChange('callVolume', value);
     }
   };
   
-  // Ensure call volume respects included minutes whenever the tier changes
+  // Ensure call volume respects plan tier whenever the tier changes
   useEffect(() => {
     // For starter plan, set to 0
     if (isStarterPlan && callVolume !== 0) {
       onInputChange('callVolume', 0);
     }
-    // For other plans, ensure call volume is at least the included minutes if it's not 0
-    else if (!isStarterPlan && callVolume > 0 && callVolume < includedMinutes) {
-      onInputChange('callVolume', includedMinutes);
-    }
-  }, [aiTier, includedMinutes, isStarterPlan, callVolume, onInputChange]);
+  }, [aiTier, isStarterPlan, callVolume, onInputChange]);
   
   return (
     <>

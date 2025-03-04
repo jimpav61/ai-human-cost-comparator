@@ -14,10 +14,6 @@ interface AIVsHumanCalculatorProps {
 }
 
 export const AIVsHumanCalculator: React.FC<AIVsHumanCalculatorProps> = ({ leadData }) => {
-  // Get the default included minutes for the selected plan
-  const defaultTier = 'growth';
-  const defaultIncludedMinutes = AI_RATES.chatbot[defaultTier]?.includedVoiceMinutes || 600;
-  
   // Initialize with defaults - ensure chatbot type has 0 call volume
   const [calculatorInputs, setCalculatorInputs] = useState<CalculatorInputs>({
     aiType: 'chatbot',
@@ -44,13 +40,6 @@ export const AIVsHumanCalculator: React.FC<AIVsHumanCalculatorProps> = ({ leadDa
       // If changing to starter plan, ensure call volume is 0
       if (field === 'aiTier' && value === 'starter') {
         updatedInputs.callVolume = 0;
-      }
-      // If changing to a plan with voice, ensure call volume is at least the included minutes
-      else if (field === 'aiTier' && value !== 'starter') {
-        const includedMinutes = AI_RATES.chatbot[value]?.includedVoiceMinutes || 0;
-        if (updatedInputs.callVolume < includedMinutes) {
-          updatedInputs.callVolume = includedMinutes;
-        }
       }
       
       return updatedInputs;
