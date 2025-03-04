@@ -1,5 +1,5 @@
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useCalculator, type CalculatorInputs } from '@/hooks/useCalculator';
 import { CalculatorForm } from './calculator/CalculatorForm';
 import { ResultsDisplay } from './calculator/ResultsDisplay';
@@ -37,16 +37,23 @@ export const AIVsHumanCalculator: React.FC<AIVsHumanCalculatorProps> = ({ leadDa
     setCalculatorInputs(prev => {
       const updatedInputs = { ...prev, [field]: value };
       
-      // If changing to starter plan, ensure call volume is 0
+      // If changing to starter plan, ensure call volume is 0 and type is chatbot
       if (field === 'aiTier' && value === 'starter') {
         updatedInputs.callVolume = 0;
+        updatedInputs.aiType = 'chatbot';
+      }
+      
+      // If changing to premium plan, update AI type for voice capabilities
+      if (field === 'aiTier' && value === 'premium' && 
+          (prev.aiType === 'voice' || prev.aiType === 'both')) {
+        updatedInputs.aiType = 'both-premium';
       }
       
       return updatedInputs;
     });
   };
   
-  // Generate report and save to database - removing proposal references
+  // Generate report and save to database
   const handleGenerateReport = async () => {
     try {
       // Create a single record object and convert it to proper JSON format
@@ -62,7 +69,7 @@ export const AIVsHumanCalculator: React.FC<AIVsHumanCalculatorProps> = ({ leadDa
       // Fix TypeScript error by using type assertion
       const { error } = await supabase
         .from('generated_reports')
-        .insert([reportData] as any); // Use type assertion to bypass TypeScript check
+        .insert([reportData] as any);
 
       if (error) throw error;
 

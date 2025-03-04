@@ -74,12 +74,14 @@ export const EditLeadDialog = ({ lead, open, onClose }: EditLeadDialogProps) => 
     
     if (tier === 'starter') {
       newAIType = 'chatbot';
-    } else if (tier === 'growth') {
-      if (newAIType === 'chatbot' || newAIType === 'conversationalVoice' || newAIType === 'both-premium') {
+    } 
+    else if (tier === 'growth') {
+      if (newAIType === 'conversationalVoice' || newAIType === 'both-premium') {
         newAIType = 'both';
       }
-    } else if (tier === 'premium') {
-      if (newAIType === 'voice' || newAIType === 'both' || newAIType === 'conversationalVoice') {
+    } 
+    else if (tier === 'premium') {
+      if (newAIType === 'voice' || newAIType === 'both') {
         newAIType = 'both-premium';
       } else if (newAIType === 'chatbot') {
         newAIType = 'both-premium';
@@ -102,10 +104,11 @@ export const EditLeadDialog = ({ lead, open, onClose }: EditLeadDialogProps) => 
     }
     
     const includedMinutes = AI_RATES.chatbot[tier as keyof typeof AI_RATES.chatbot]?.includedVoiceMinutes || 0;
-    if (tier !== 'starter' && includedMinutes > calculatorInputs.callVolume) {
-      handleCalculatorInputChange('callVolume', includedMinutes);
-    } else if (tier === 'starter' && calculatorInputs.callVolume > 0) {
+    if (tier === 'starter') {
       handleCalculatorInputChange('callVolume', 0);
+    } else if (includedMinutes > 0 && (calculatorInputs.callVolume === 0 || tier === 'premium')) {
+      const defaultCallVolume = Math.floor(includedMinutes / calculatorInputs.avgCallDuration);
+      handleCalculatorInputChange('callVolume', defaultCallVolume);
     }
   };
 
@@ -121,14 +124,15 @@ export const EditLeadDialog = ({ lead, open, onClose }: EditLeadDialogProps) => 
           updatedInputs.aiTier = 'growth';
           
           const growthIncludedMinutes = AI_RATES.chatbot['growth']?.includedVoiceMinutes || 600;
-          updatedInputs.callVolume = growthIncludedMinutes;
+          const defaultCallVolume = Math.floor(growthIncludedMinutes / prev.avgCallDuration);
+          updatedInputs.callVolume = defaultCallVolume;
           
           setUpdatedLead(prevLead => ({
             ...prevLead,
             calculator_inputs: {
               ...prevLead.calculator_inputs,
               aiTier: 'growth',
-              callVolume: growthIncludedMinutes
+              callVolume: defaultCallVolume
             }
           }));
         }
@@ -138,14 +142,15 @@ export const EditLeadDialog = ({ lead, open, onClose }: EditLeadDialogProps) => 
           updatedInputs.aiTier = 'premium';
           
           const premiumIncludedMinutes = AI_RATES.chatbot['premium']?.includedVoiceMinutes || 600;
-          updatedInputs.callVolume = premiumIncludedMinutes;
+          const defaultCallVolume = Math.floor(premiumIncludedMinutes / prev.avgCallDuration);
+          updatedInputs.callVolume = defaultCallVolume;
           
           setUpdatedLead(prevLead => ({
             ...prevLead,
             calculator_inputs: {
               ...prevLead.calculator_inputs,
               aiTier: 'premium',
-              callVolume: premiumIncludedMinutes
+              callVolume: defaultCallVolume
             }
           }));
         }

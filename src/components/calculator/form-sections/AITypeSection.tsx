@@ -21,21 +21,26 @@ export const AITypeSection: React.FC<AITypeSectionProps> = ({
         className="calculator-input"
       >
         <option value="chatbot">Text Only</option>
-        <option value="voice">Basic Voice Only</option>
-        <option value="conversationalVoice">Conversational Voice Only</option>
-        <option value="both">Text & Basic Voice</option>
-        <option value="both-premium">Text & Conversational Voice</option>
+        <option value="voice" disabled={aiTier === 'starter'}>Basic Voice Only</option>
+        <option value="conversationalVoice" disabled={aiTier !== 'premium'}>Conversational Voice Only</option>
+        <option value="both" disabled={aiTier === 'starter'}>Text & Basic Voice</option>
+        <option value="both-premium" disabled={aiTier !== 'premium'}>Text & Conversational Voice</option>
       </select>
       {aiTier === 'starter' && (
         <p className="text-sm text-amber-600 mt-1">
           Note: Starter Plan only supports text capabilities. Select Growth or Premium Plan for voice.
         </p>
       )}
-      {aiType === 'conversationalVoice' || aiType === 'both-premium' ? (
+      {(aiType === 'conversationalVoice' || aiType === 'both-premium') && aiTier !== 'premium' && (
+        <p className="text-sm text-amber-600 mt-1">
+          Conversational Voice AI requires the Premium Plan.
+        </p>
+      )}
+      {(aiType === 'conversationalVoice' || aiType === 'both-premium') && aiTier === 'premium' && (
         <p className="text-sm text-green-600 mt-1">
           Conversational Voice AI requires the Premium Plan.
         </p>
-      ) : null}
+      )}
     </div>
   );
 };
