@@ -38,3 +38,10 @@ export interface ResultsDisplayProps {
   inputs: any;
   leadData: LeadData;
 }
+
+// New utility interface for debugging lead changes
+export interface LeadChangeLog {
+  before: Record<string, any>;
+  after: Record<string, any>;
+  changedFields: string[];
+}

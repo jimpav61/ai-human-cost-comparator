@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from "react";
 import { Lead } from "@/types/leads";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
@@ -12,6 +11,7 @@ import { toast } from "@/hooks/use-toast";
 import { getTierDisplayName } from "@/components/calculator/pricingDetailsCalculator";
 import { useCalculator, type CalculatorInputs } from "@/hooks/useCalculator";
 import { AI_RATES } from "@/constants/pricing";
+import { logLeadChanges, verifyVoiceMinuteUsage } from "@/utils/debugUtils";
 
 interface EditLeadDialogProps {
   lead: Lead;
@@ -221,6 +221,45 @@ export const EditLeadDialog = ({ lead, open, onClose }: EditLeadDialogProps) => 
       const calculatorInputsForDB = { ...calculatorInputs } as Record<string, any>;
       const calculationResultsForDB = { ...calculationResults } as Record<string, any>;
       
+      const originalVoiceUsage = lead.calculator_inputs ? 
+        verifyVoiceMinuteUsage(
+          lead.calculator_inputs.aiTier || 'starter',
+          lead.calculator_inputs.callVolume || 0,
+          lead.calculator_inputs.avgCallDuration || 0
+        ) : null;
+      
+      const updatedVoiceUsage = verifyVoiceMinuteUsage(
+        calculatorInputs.aiTier, 
+        calculatorInputs.callVolume, 
+        calculatorInputs.avgCallDuration
+      );
+      
+      console.log('EDITING LEAD - BEFORE SAVE:', {
+        originalTier: lead.calculator_inputs?.aiTier || 'starter',
+        newTier: calculatorInputs.aiTier,
+        originalCallVolume: lead.calculator_inputs?.callVolume || 0,
+        newCallVolume: calculatorInputs.callVolume,
+        originalAvgDuration: lead.calculator_inputs?.avgCallDuration || 0,
+        newAvgDuration: calculatorInputs.avgCallDuration,
+        originalVoiceUsage,
+        updatedVoiceUsage
+      });
+      
+      const updatedLead = {
+        ...lead,
+        name: updatedLead.name,
+        company_name: updatedLead.company_name,
+        email: updatedLead.email,
+        phone_number: updatedLead.phone_number,
+        website: updatedLead.website,
+        industry: updatedLead.industry,
+        employee_count: updatedLead.employee_count,
+        calculator_inputs: calculatorInputsForDB,
+        calculator_results: calculationResultsForDB,
+      };
+      
+      logLeadChanges(lead, updatedLead);
+      
       const { error } = await supabase
         .from('leads')
         .update({
@@ -240,6 +279,12 @@ export const EditLeadDialog = ({ lead, open, onClose }: EditLeadDialogProps) => 
       if (error) {
         throw error;
       }
+
+      console.log('LEAD SUCCESSFULLY UPDATED:', {
+        leadId: lead.id,
+        tierChanged: lead.calculator_inputs?.aiTier !== calculatorInputs.aiTier,
+        callVolumeChanged: lead.calculator_inputs?.callVolume !== calculatorInputs.callVolume
+      });
 
       toast({
         title: "Lead updated",
