@@ -1,8 +1,10 @@
+
 import React from 'react';
 import { BarChart, Clock, DollarSign } from 'lucide-react';
 import { formatCurrency, formatNumber, formatPercent } from '@/utils/formatters';
 import type { CalculationResults } from '@/hooks/useCalculator';
 import { Button } from '@/components/ui/button';
+import { AI_RATES } from '@/constants/pricing';
 
 interface ResultsSummaryProps {
   results: CalculationResults;

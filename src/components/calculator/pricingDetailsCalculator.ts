@@ -79,9 +79,7 @@ export const calculatePricingDetails = (inputs: CalculatorInputs): PricingDetail
         finalMessageCost = messageUsageCost * 0.9;
       }
       
-      // Calculate complexity factor
-      const complexityFactor = Math.min(1.5, Math.max(1.0, inputs.avgChatResolutionTime / 10));
-      
+      // Use base rate only for actual cost calculation - no complexity factor
       pricingDetails.push({
         title: 'Text AI',
         base: baseRate,
@@ -90,7 +88,7 @@ export const calculatePricingDetails = (inputs: CalculatorInputs): PricingDetail
         monthlyCost: baseRate + finalMessageCost,
         usageCost: messageUsageCost,
         volumeDiscount: volumeDiscount,
-        complexityFactor: complexityFactor
+        complexityFactor: undefined // Remove complexity factor
       });
     }
   }
