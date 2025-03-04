@@ -28,6 +28,7 @@ export const ResultsDetailView: React.FC<ResultsDetailViewProps> = ({
   const totalMinutes = inputs.callVolume * inputs.avgCallDuration;
   const includedMinutes = AI_RATES.chatbot[inputs.aiTier].includedVoiceMinutes || 0;
   const extraMinutes = Math.max(0, totalMinutes - includedMinutes);
+  const additionalVoiceRate = AI_RATES.chatbot[inputs.aiTier].additionalVoiceRate || AI_RATES.voice[inputs.aiTier];
   
   return (
     <div>
@@ -61,7 +62,7 @@ export const ResultsDetailView: React.FC<ResultsDetailViewProps> = ({
             </div>
             <div className="flex justify-between">
               <span>Rate per additional minute:</span>
-              <span>{formatCurrency(AI_RATES.chatbot[inputs.aiTier].additionalVoiceRate || 0)}</span>
+              <span>{formatCurrency(additionalVoiceRate)}</span>
             </div>
           </div>
         </div>

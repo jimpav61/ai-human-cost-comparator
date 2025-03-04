@@ -34,7 +34,8 @@ export const PricingManager = () => {
             chatbot_per_message: 0.003,
             setup_fee: 249,
             annual_price: 990,
-            included_voice_minutes: 0
+            included_voice_minutes: 0,
+            additional_voice_rate: 0
           },
           {
             tier: 'growth',
@@ -43,7 +44,8 @@ export const PricingManager = () => {
             chatbot_per_message: 0.005,
             setup_fee: 749,
             annual_price: 2290,
-            included_voice_minutes: 600
+            included_voice_minutes: 600,
+            additional_voice_rate: 0.12
           },
           {
             tier: 'premium',
@@ -52,7 +54,8 @@ export const PricingManager = () => {
             chatbot_per_message: 0.008,
             setup_fee: 1149, 
             annual_price: 4290,
-            included_voice_minutes: 600
+            included_voice_minutes: 600,
+            additional_voice_rate: 0.12
           }
         ];
         
@@ -71,7 +74,8 @@ export const PricingManager = () => {
             chatbot_per_message: config.chatbot_per_message as number,
             setup_fee: typeof config.setup_fee === 'number' ? config.setup_fee : 0,
             annual_price: typeof config.annual_price === 'number' ? config.annual_price : 0,
-            included_voice_minutes: typeof config.included_voice_minutes === 'number' ? config.included_voice_minutes : 0
+            included_voice_minutes: typeof config.included_voice_minutes === 'number' ? config.included_voice_minutes : 0,
+            additional_voice_rate: typeof config.additional_voice_rate === 'number' ? config.additional_voice_rate : config.voice_per_minute as number
           };
           return typedConfig;
         });
@@ -120,7 +124,8 @@ export const PricingManager = () => {
           chatbot_per_message: config.chatbot_per_message,
           setup_fee: config.setup_fee,
           annual_price: config.annual_price,
-          included_voice_minutes: config.included_voice_minutes
+          included_voice_minutes: config.included_voice_minutes,
+          additional_voice_rate: config.additional_voice_rate
         };
         
         const { error } = await supabase
@@ -191,6 +196,19 @@ export const PricingManager = () => {
                   type="number"
                   value={config.voice_per_minute}
                   onChange={(e) => handleInputChange(config.tier, 'voice_per_minute', e.target.value)}
+                  step="0.001"
+                  min="0"
+                />
+              </div>
+
+              <div className="grid gap-2">
+                <label className="text-sm font-medium">
+                  Additional Voice Rate (per minute)
+                </label>
+                <Input
+                  type="number"
+                  value={config.additional_voice_rate || config.voice_per_minute}
+                  onChange={(e) => handleInputChange(config.tier, 'additional_voice_rate', e.target.value)}
                   step="0.001"
                   min="0"
                 />

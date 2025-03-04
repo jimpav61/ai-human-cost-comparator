@@ -105,7 +105,8 @@ export const useCalculator = (inputs: CalculatorInputs): CalculationResults => {
     const extraVoiceMinutes = Math.max(0, totalVoiceMinutes - includedVoiceMinutes);
     
     if (extraVoiceMinutes > 0) {
-      const additionalMinuteRate = aiRates.chatbot[inputs.aiTier].additionalVoiceRate || 0;
+      // Use additionalVoiceRate which we've now added to the pricing configuration
+      const additionalMinuteRate = aiRates.chatbot[inputs.aiTier].additionalVoiceRate || aiRates.voice[inputs.aiTier];
       additionalVoiceCost = extraVoiceMinutes * additionalMinuteRate;
       console.log(`Additional voice minutes: ${extraVoiceMinutes} at rate ${additionalMinuteRate} = $${additionalVoiceCost}`);
     }

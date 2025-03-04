@@ -12,4 +12,5 @@ export interface PricingConfiguration {
   setup_fee: number;
   annual_price: number;
   included_voice_minutes: number;
+  additional_voice_rate?: number;
 }

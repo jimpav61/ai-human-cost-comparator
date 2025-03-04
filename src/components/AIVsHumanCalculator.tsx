@@ -64,11 +64,28 @@ export const AIVsHumanCalculator: React.FC<AIVsHumanCalculatorProps> = ({ leadDa
           console.log("AIVsHumanCalculator: Upgraded to Premium tier, enhanced AI type to both-premium");
         }
         
-        // If no call volume is set, set a default for premium tier
-        if (prev.callVolume === 0) {
-          const includedMinutes = AI_RATES.chatbot.premium.includedVoiceMinutes || 600;
-          updatedInputs.callVolume = Math.floor(includedMinutes / prev.avgCallDuration);
-          console.log(`AIVsHumanCalculator: Setting default premium call volume to ${updatedInputs.callVolume}`);
+        // For premium tier, we should utilize the included minutes
+        const includedMinutes = AI_RATES.chatbot.premium.includedVoiceMinutes || 600;
+        
+        // If no call volume is set or it's low, set a default that uses most of the included minutes
+        if (prev.callVolume < 50) {
+          // Calculate a default that would use most of the included minutes
+          // For example with 4.5 minute calls, we'd set to around 133 calls to use 600 minutes
+          const callCount = Math.floor(includedMinutes / prev.avgCallDuration);
+          updatedInputs.callVolume = callCount;
+          console.log(`AIVsHumanCalculator: Setting premium call volume to ${callCount} calls to utilize included ${includedMinutes} minutes`);
+        }
+      }
+      
+      // If changing to growth tier, also set call volume to use included minutes
+      if (field === 'aiTier' && value === 'growth') {
+        const includedMinutes = AI_RATES.chatbot.growth.includedVoiceMinutes || 600;
+        
+        // If no call volume is set or it's low, set a default that uses most of the included minutes
+        if (prev.callVolume < 50) {
+          const callCount = Math.floor(includedMinutes / prev.avgCallDuration);
+          updatedInputs.callVolume = callCount;
+          console.log(`AIVsHumanCalculator: Setting growth call volume to ${callCount} calls to utilize included ${includedMinutes} minutes`);
         }
       }
       
@@ -79,8 +96,9 @@ export const AIVsHumanCalculator: React.FC<AIVsHumanCalculatorProps> = ({ leadDa
         
         // Set a default call volume for voice features
         const includedMinutes = AI_RATES.chatbot.growth.includedVoiceMinutes || 600;
-        updatedInputs.callVolume = Math.floor(includedMinutes / prev.avgCallDuration);
-        console.log(`AIVsHumanCalculator: Setting default growth call volume to ${updatedInputs.callVolume}`);
+        const callCount = Math.floor(includedMinutes / prev.avgCallDuration);
+        updatedInputs.callVolume = callCount;
+        console.log(`AIVsHumanCalculator: Setting default growth call volume to ${callCount} to utilize included ${includedMinutes} minutes`);
       }
       
       // If changing to premium voice options, upgrade to premium tier
@@ -90,8 +108,9 @@ export const AIVsHumanCalculator: React.FC<AIVsHumanCalculatorProps> = ({ leadDa
         
         // Set default call volume for premium voice
         const includedMinutes = AI_RATES.chatbot.premium.includedVoiceMinutes || 600;
-        updatedInputs.callVolume = Math.floor(includedMinutes / prev.avgCallDuration);
-        console.log(`AIVsHumanCalculator: Setting default premium call volume to ${updatedInputs.callVolume}`);
+        const callCount = Math.floor(includedMinutes / prev.avgCallDuration);
+        updatedInputs.callVolume = callCount;
+        console.log(`AIVsHumanCalculator: Setting default premium call volume to ${callCount} to utilize included ${includedMinutes} minutes`);
       }
       
       return updatedInputs;

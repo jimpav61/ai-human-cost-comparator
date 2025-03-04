@@ -50,14 +50,17 @@ export const VoiceConfigSection: React.FC<VoiceConfigSectionProps> = ({
       onInputChange('callVolume', 0);
     }
     
-    // For growth or premium, set a default if currently at 0
-    if (!isStarterPlan && callVolume === 0 && includedMinutes > 0) {
-      // Set to a value that uses included minutes but doesn't go over
-      const suggestedVolume = Math.floor(includedMinutes / avgCallDuration);
-      if (suggestedVolume > 0) {
-        console.log(`VoiceConfigSection: Setting default call volume to ${suggestedVolume} based on ${includedMinutes} included minutes`);
-        onInputChange('callVolume', suggestedVolume);
-      }
+    // For growth or premium plans with included minutes, set a default value if currently at 0
+    if (!isStarterPlan && (callVolume === 0 || callVolume < 50) && includedMinutes > 0) {
+      // Calculate how many calls can fit within the included minutes
+      // For example, if call duration is 6 minutes, 600 included minutes = 100 calls
+      const suggestedVolume = Math.floor(includedMinutes / (avgCallDuration || 1));
+      
+      // Ensure we set a reasonable default - not too small, not too large
+      const defaultVolume = Math.max(100, Math.min(suggestedVolume, 800));
+      
+      console.log(`VoiceConfigSection: Setting default call volume to ${defaultVolume} based on ${includedMinutes} included minutes`);
+      onInputChange('callVolume', defaultVolume);
     }
   }, [aiTier, isStarterPlan, callVolume, includedMinutes, avgCallDuration, onInputChange]);
   

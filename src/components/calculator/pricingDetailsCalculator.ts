@@ -17,7 +17,8 @@ export const calculatePricingDetails = (inputs: CalculatorInputs): PricingDetail
   let additionalVoiceCost = 0;
   
   if (extraVoiceMinutes > 0) {
-    const additionalMinuteRate = AI_RATES.chatbot[inputs.aiTier].additionalVoiceRate || 0;
+    // Use the additional voice rate or fall back to the regular voice rate
+    const additionalMinuteRate = AI_RATES.chatbot[inputs.aiTier].additionalVoiceRate || AI_RATES.voice[inputs.aiTier];
     additionalVoiceCost = extraVoiceMinutes * additionalMinuteRate;
   }
   
@@ -41,10 +42,11 @@ export const calculatePricingDetails = (inputs: CalculatorInputs): PricingDetail
   
   // Add additional voice minutes if applicable
   if (extraVoiceMinutes > 0) {
+    const additionalMinuteRate = AI_RATES.chatbot[inputs.aiTier].additionalVoiceRate || AI_RATES.voice[inputs.aiTier];
     pricingDetails.push({
       title: 'Additional Voice Minutes',
       base: 0,
-      rate: `${formatCurrency(AI_RATES.chatbot[inputs.aiTier].additionalVoiceRate || 0)}/minute`,
+      rate: `${formatCurrency(additionalMinuteRate)}/minute`,
       totalMessages: null,
       totalMinutes: extraVoiceMinutes,
       monthlyCost: additionalVoiceCost
