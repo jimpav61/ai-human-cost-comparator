@@ -21,10 +21,9 @@ export const ResultsDetailView: React.FC<ResultsDetailViewProps> = ({
   tierDisplayName,
   aiTypeDisplay,
 }) => {
-  // Get the base price directly from AI_RATES
-  const basePrice = AI_RATES.chatbot[inputs.aiTier].base;
+  // Get the base price directly from the results to ensure consistency
+  const basePrice = results.basePriceMonthly || AI_RATES.chatbot[inputs.aiTier].base;
   const setupFee = results.aiCostMonthly.setupFee;
-  const totalMonthly = basePrice; // Use base price from pricing constants to display
   const usageCost = results.aiCostMonthly.total - basePrice;
   
   return (

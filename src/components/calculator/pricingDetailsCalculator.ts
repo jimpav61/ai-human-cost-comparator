@@ -86,7 +86,7 @@ export const calculatePricingDetails = (inputs: CalculatorInputs): PricingDetail
         rate: `${formatCurrency(perMessageRate)}/message`,
         totalMessages: totalMessages,
         monthlyCost: baseRate + finalMessageCost,
-        usageCost: messageUsageCost,
+        usageCost: finalMessageCost,
         volumeDiscount: volumeDiscount,
         complexityFactor: undefined // Remove complexity factor
       });

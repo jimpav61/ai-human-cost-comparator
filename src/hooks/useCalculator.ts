@@ -21,6 +21,7 @@ export interface CalculationResults {
     total: number;
     setupFee: number;
   };
+  basePriceMonthly: number; // Added base price field
   humanCostMonthly: number;
   monthlySavings: number;
   yearlySavings: number;
@@ -41,6 +42,7 @@ export interface CalculationResults {
 export const useCalculator = (inputs: CalculatorInputs): CalculationResults => {
   const [results, setResults] = useState<CalculationResults>({
     aiCostMonthly: { voice: 0, chatbot: 0, total: 0, setupFee: 0 },
+    basePriceMonthly: 0, // Initialize base price
     humanCostMonthly: 0,
     monthlySavings: 0,
     yearlySavings: 0,
@@ -207,6 +209,7 @@ export const useCalculator = (inputs: CalculatorInputs): CalculationResults => {
         total: monthlyAiCost,
         setupFee: setupFee
       },
+      basePriceMonthly: basePrice, // Add base price to results
       humanCostMonthly: monthlyHumanCost,
       monthlySavings: monthlySavings,
       yearlySavings: yearlySavings,

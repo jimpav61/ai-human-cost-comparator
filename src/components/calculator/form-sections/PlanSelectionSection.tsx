@@ -21,9 +21,11 @@ export const PlanSelectionSection: React.FC<PlanSelectionSectionProps> = ({
     
     // Display pricing info in a toast notification
     const basePrice = AI_RATES.chatbot[tier as keyof typeof AI_RATES.chatbot].base;
+    const setupFee = AI_RATES.chatbot[tier as keyof typeof AI_RATES.chatbot].setupFee;
+    
     toast({
       title: `${tier.charAt(0).toUpperCase() + tier.slice(1)} Plan Selected`,
-      description: `Base price: $${basePrice}/month. ${tier === 'starter' ? 'No voice capabilities.' : 
+      description: `Base price: $${basePrice}/month. Setup fee: $${setupFee}. ${tier === 'starter' ? 'No voice capabilities.' : 
         `Includes ${AI_RATES.chatbot[tier as keyof typeof AI_RATES.chatbot].includedVoiceMinutes} voice minutes.`}`,
     });
     
