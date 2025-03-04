@@ -38,7 +38,7 @@ export const CalculatorForm: React.FC<CalculatorFormProps> = ({ inputs, onInputC
         description: "Voice features require at least the Growth Plan. We've automatically upgraded your selection.",
         variant: "default",
       });
-    } else if (inputs.aiType === 'conversationalVoice' || inputs.aiType === 'both-premium') {
+    } else if ((inputs.aiType === 'conversationalVoice' || inputs.aiType === 'both-premium') && inputs.aiTier !== 'premium') {
       // If conversational voice is needed, upgrade to premium plan
       onInputChange('aiTier', 'premium');
       // Set call volume to the included minutes
@@ -52,8 +52,30 @@ export const CalculatorForm: React.FC<CalculatorFormProps> = ({ inputs, onInputC
     }
   }, [inputs.aiType]);
 
-  // Adjust call volume based on tier selection
+  // Adjust AI type when the plan tier changes
   useEffect(() => {
+    // If changing to premium, and using any voice features, upgrade to premium voice
+    if (inputs.aiTier === 'premium') {
+      if (inputs.aiType === 'both' || inputs.aiType === 'voice') {
+        onInputChange('aiType', 'both-premium');
+        toast({
+          title: "Voice Capabilities Upgraded",
+          description: "Your voice capabilities have been upgraded to conversational with the Premium Plan.",
+          variant: "default",
+        });
+      }
+    }
+    // If changing to growth from premium, downgrade voice features
+    else if (inputs.aiTier === 'growth' && (inputs.aiType === 'both-premium' || inputs.aiType === 'conversationalVoice')) {
+      onInputChange('aiType', 'both');
+      toast({
+        title: "Voice Capabilities Adjusted",
+        description: "Voice capabilities have been adjusted to basic for the Growth Plan.",
+        variant: "default",
+      });
+    }
+    
+    // Adjust call volume based on tier selection
     const includedMinutes = AI_RATES.chatbot[inputs.aiTier]?.includedVoiceMinutes || 0;
     
     // If we switch to a plan with voice minutes, initialize with those minutes
@@ -82,7 +104,17 @@ export const CalculatorForm: React.FC<CalculatorFormProps> = ({ inputs, onInputC
         description: "Conversational Voice AI requires the Premium Plan. Switching to basic voice capabilities.",
         variant: "warning",
       });
-      onInputChange('aiType', 'voice');
+      onInputChange('aiType', 'both');
+    }
+    
+    // If upgrading to premium and using voice features, upgrade to premium voice
+    if (tier === 'premium' && (inputs.aiType === 'both' || inputs.aiType === 'voice')) {
+      onInputChange('aiType', 'both-premium');
+      toast({
+        title: "Voice Capabilities Upgraded",
+        description: "Your voice capabilities have been upgraded to conversational with the Premium Plan.",
+        variant: "default",
+      });
     }
     
     onInputChange('aiTier', tier as any);

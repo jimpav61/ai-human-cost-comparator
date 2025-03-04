@@ -11,7 +11,10 @@ export const calculatePricingDetails = (inputs: CalculatorInputs): PricingDetail
     const totalMinutes = inputs.callVolume * inputs.avgCallDuration;
     // Calculate the chargeable minutes (total minus included minutes)
     const includedMinutes = AI_RATES.chatbot[inputs.aiTier].includedVoiceMinutes || 0;
+    
+    // Calculate chargeable minutes (if any)
     const chargeableMinutes = Math.max(0, totalMinutes - includedMinutes);
+    
     const minuteRate = AI_RATES.voice[inputs.aiTier];
     
     // Apply conversational factor for premium tier or conversational voice

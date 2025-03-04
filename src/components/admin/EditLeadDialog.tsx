@@ -22,7 +22,6 @@ export const EditLeadDialog = ({ lead, open, onClose }: EditLeadDialogProps) => 
   const [updatedLead, setUpdatedLead] = useState<Lead>({...lead});
   const [isLoading, setIsLoading] = useState(false);
   
-  // Create default calculator inputs if none exist
   const defaultInputs: CalculatorInputs = {
     aiType: 'chatbot',
     aiTier: 'starter',
@@ -35,7 +34,6 @@ export const EditLeadDialog = ({ lead, open, onClose }: EditLeadDialogProps) => 
     avgChatResolutionTime: 10,
   };
   
-  // Initialize calculator inputs with data from lead or defaults
   const [calculatorInputs, setCalculatorInputs] = useState<CalculatorInputs>(
     lead.calculator_inputs ? 
     {
@@ -51,10 +49,8 @@ export const EditLeadDialog = ({ lead, open, onClose }: EditLeadDialogProps) => 
     } : defaultInputs
   );
   
-  // Use the calculator hook to get updated calculations
   const calculationResults = useCalculator(calculatorInputs);
   
-  // Update the lead's calculator_results whenever calculationResults changes
   useEffect(() => {
     setUpdatedLead(prev => ({
       ...prev,
@@ -62,12 +58,10 @@ export const EditLeadDialog = ({ lead, open, onClose }: EditLeadDialogProps) => 
     }));
   }, [calculationResults]);
 
-  // Sync AI type with plan tier on initialization
   useEffect(() => {
     updateAITypeBasedOnTier(calculatorInputs.aiTier);
   }, []);
 
-  // Handle basic lead info changes
   const handleBasicInfoChange = (field: keyof Lead, value: string | number) => {
     setUpdatedLead(prev => ({
       ...prev,
@@ -75,36 +69,29 @@ export const EditLeadDialog = ({ lead, open, onClose }: EditLeadDialogProps) => 
     }));
   };
 
-  // Automatically update the AI type when the tier changes
   const updateAITypeBasedOnTier = (tier: string) => {
     let newAIType = calculatorInputs.aiType;
     
-    // Set appropriate AI type based on tier
     if (tier === 'starter') {
-      newAIType = 'chatbot'; // Text Only
+      newAIType = 'chatbot';
     } else if (tier === 'growth') {
-      // If current type is chatbot or conversational, update appropriately
       if (newAIType === 'chatbot' || newAIType === 'conversationalVoice' || newAIType === 'both-premium') {
-        newAIType = 'both'; // Text & Basic Voice
+        newAIType = 'both';
       }
     } else if (tier === 'premium') {
-      // If current type involves voice, upgrade to conversational
-      if (newAIType === 'voice' || newAIType === 'both') {
-        newAIType = 'both-premium'; // Text & Conversational Voice
+      if (newAIType === 'voice' || newAIType === 'both' || newAIType === 'conversationalVoice') {
+        newAIType = 'both-premium';
       } else if (newAIType === 'chatbot') {
-        // Keep as chatbot if no voice was requested
-        newAIType = 'chatbot';
+        newAIType = 'both-premium';
       }
     }
     
-    // Update AI type if it changed
     if (newAIType !== calculatorInputs.aiType) {
       setCalculatorInputs(prev => ({
         ...prev,
         aiType: newAIType as any
       }));
       
-      // Also update in lead data
       setUpdatedLead(prev => ({
         ...prev,
         calculator_inputs: {
@@ -114,7 +101,6 @@ export const EditLeadDialog = ({ lead, open, onClose }: EditLeadDialogProps) => 
       }));
     }
     
-    // Update call volume based on tier's included minutes
     const includedMinutes = AI_RATES.chatbot[tier as keyof typeof AI_RATES.chatbot]?.includedVoiceMinutes || 0;
     if (tier !== 'starter' && includedMinutes > calculatorInputs.callVolume) {
       handleCalculatorInputChange('callVolume', includedMinutes);
@@ -123,27 +109,20 @@ export const EditLeadDialog = ({ lead, open, onClose }: EditLeadDialogProps) => 
     }
   };
 
-  // Handle calculator input changes
   const handleCalculatorInputChange = (field: string, value: any) => {
     setCalculatorInputs(prev => {
       const updatedInputs = { ...prev, [field]: value } as CalculatorInputs;
       
-      // Special handling for tier changes to update AI type and call volume
       if (field === 'aiTier') {
         updateAITypeBasedOnTier(value);
-      }
-      // If changing AI type, ensure it's compatible with the tier
-      else if (field === 'aiType') {
-        // If selecting a voice option but on starter plan, upgrade to growth
+      } else if (field === 'aiType') {
         if ((value === 'voice' || value === 'conversationalVoice' || value === 'both' || value === 'both-premium') 
             && prev.aiTier === 'starter') {
           updatedInputs.aiTier = 'growth';
           
-          // Update call volume to match included minutes for growth
           const growthIncludedMinutes = AI_RATES.chatbot['growth']?.includedVoiceMinutes || 600;
           updatedInputs.callVolume = growthIncludedMinutes;
           
-          // Also update in lead data
           setUpdatedLead(prevLead => ({
             ...prevLead,
             calculator_inputs: {
@@ -154,16 +133,13 @@ export const EditLeadDialog = ({ lead, open, onClose }: EditLeadDialogProps) => 
           }));
         }
         
-        // If selecting conversational voice but not on premium, upgrade to premium
         if ((value === 'conversationalVoice' || value === 'both-premium') 
             && prev.aiTier !== 'premium') {
           updatedInputs.aiTier = 'premium';
           
-          // Update call volume to match included minutes for premium
           const premiumIncludedMinutes = AI_RATES.chatbot['premium']?.includedVoiceMinutes || 600;
           updatedInputs.callVolume = premiumIncludedMinutes;
           
-          // Also update in lead data
           setUpdatedLead(prevLead => ({
             ...prevLead,
             calculator_inputs: {
@@ -178,7 +154,6 @@ export const EditLeadDialog = ({ lead, open, onClose }: EditLeadDialogProps) => 
       return updatedInputs;
     });
     
-    // Also update the calculator_inputs in the updatedLead
     setUpdatedLead(prev => ({
       ...prev,
       calculator_inputs: {
@@ -192,11 +167,9 @@ export const EditLeadDialog = ({ lead, open, onClose }: EditLeadDialogProps) => 
     try {
       setIsLoading(true);
       
-      // Convert CalculatorInputs and CalculationResults to plain objects for Supabase
       const calculatorInputsForDB = { ...calculatorInputs } as Record<string, any>;
       const calculationResultsForDB = { ...calculationResults } as Record<string, any>;
       
-      // Update lead in the database
       const { error } = await supabase
         .from('leads')
         .update({
@@ -235,7 +208,6 @@ export const EditLeadDialog = ({ lead, open, onClose }: EditLeadDialogProps) => 
     }
   };
 
-  // Helper function to safely format numbers
   const safeFormatNumber = (value: number | undefined): string => {
     if (value === undefined || isNaN(value)) {
       return '0.00';
@@ -436,7 +408,7 @@ export const EditLeadDialog = ({ lead, open, onClose }: EditLeadDialogProps) => 
                   type="number"
                   value={calculatorInputs.callVolume || ''}
                   onChange={(e) => handleCalculatorInputChange('callVolume', Number(e.target.value))}
-                  disabled={calculatorInputs.aiTier === 'starter'} // Disable for starter plan
+                  disabled={calculatorInputs.aiTier === 'starter'}
                 />
                 {calculatorInputs.aiTier !== 'starter' && (
                   <p className="text-xs text-green-600 mt-1">
@@ -452,7 +424,7 @@ export const EditLeadDialog = ({ lead, open, onClose }: EditLeadDialogProps) => 
                   type="number"
                   value={calculatorInputs.avgCallDuration || ''}
                   onChange={(e) => handleCalculatorInputChange('avgCallDuration', Number(e.target.value))}
-                  disabled={calculatorInputs.aiTier === 'starter'} // Disable for starter plan
+                  disabled={calculatorInputs.aiTier === 'starter'}
                 />
               </div>
               
@@ -467,7 +439,6 @@ export const EditLeadDialog = ({ lead, open, onClose }: EditLeadDialogProps) => 
               </div>
             </div>
             
-            {/* Summary of recalculated values */}
             <div className="mt-6 p-4 bg-gray-50 rounded-lg border border-gray-200">
               <h3 className="text-sm font-medium text-gray-900 mb-3">Recalculated Values Preview:</h3>
               <div className="text-sm grid grid-cols-2 gap-2">
