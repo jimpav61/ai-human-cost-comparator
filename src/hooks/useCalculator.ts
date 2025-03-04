@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from 'react';
 import { DEFAULT_AI_RATES, HUMAN_HOURLY_RATES, fetchPricingConfigurations, type AIRates } from '@/constants/pricing';
 
@@ -21,7 +20,7 @@ export interface CalculationResults {
     total: number;
     setupFee: number;
   };
-  basePriceMonthly: number; // Added base price field
+  basePriceMonthly: number; // Base price field
   humanCostMonthly: number;
   monthlySavings: number;
   yearlySavings: number;
@@ -209,14 +208,16 @@ export const useCalculator = (inputs: CalculatorInputs): CalculationResults => {
         total: monthlyAiCost,
         setupFee: setupFee
       },
-      basePriceMonthly: basePrice, // Add base price to results
-      humanCostMonthly: monthlyHumanCost,
-      monthlySavings: monthlySavings,
-      yearlySavings: yearlySavings,
-      savingsPercentage: savingsPercentage,
+      basePriceMonthly: basePrice, // Add correct base price to results
+      humanCostMonthly: (HUMAN_HOURLY_RATES[inputs.role] * 1.3) * (((8 * 5 * 52) / 12) * inputs.numEmployees),
+      monthlySavings: (HUMAN_HOURLY_RATES[inputs.role] * 1.3) * (((8 * 5 * 52) / 12) * inputs.numEmployees) - monthlyAiCost,
+      yearlySavings: ((HUMAN_HOURLY_RATES[inputs.role] * 1.3) * (((8 * 5 * 52) / 12) * inputs.numEmployees) - monthlyAiCost) * 12,
+      savingsPercentage: ((HUMAN_HOURLY_RATES[inputs.role] * 1.3) * (((8 * 5 * 52) / 12) * inputs.numEmployees)) > 0 ? 
+        (((HUMAN_HOURLY_RATES[inputs.role] * 1.3) * (((8 * 5 * 52) / 12) * inputs.numEmployees) - monthlyAiCost) / 
+        ((HUMAN_HOURLY_RATES[inputs.role] * 1.3) * (((8 * 5 * 52) / 12) * inputs.numEmployees))) * 100 : 0,
       breakEvenPoint: { 
-        voice: Math.ceil(monthlyVoiceCost / (hourlyRateWithBenefits / 60)), 
-        chatbot: Math.ceil(monthlyChatbotCost / (hourlyRateWithBenefits / 60))
+        voice: Math.ceil(monthlyVoiceCost / ((HUMAN_HOURLY_RATES[inputs.role] * 1.3) / 60)), 
+        chatbot: Math.ceil(monthlyChatbotCost / ((HUMAN_HOURLY_RATES[inputs.role] * 1.3) / 60))
       },
       humanHours: {
         dailyPerEmployee: dailyHoursPerEmployee,

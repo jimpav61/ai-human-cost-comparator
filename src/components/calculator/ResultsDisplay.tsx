@@ -7,6 +7,7 @@ import type { CalculationResults, CalculatorInputs } from '@/hooks/useCalculator
 import type { LeadData } from './types';
 import { ReportGenerator } from '@/components/admin/document-generator/components/ReportGenerator';
 import { Lead } from '@/types/leads';
+import { AI_RATES } from '@/constants/pricing';
 
 interface ResultsDisplayProps {
   results: CalculationResults;
@@ -27,6 +28,14 @@ export const ResultsDisplay: React.FC<ResultsDisplayProps> = ({
   const pricingDetails = calculatePricingDetails(inputs);
   const tierDisplayName = getTierDisplayName(inputs.aiTier);
   const aiTypeDisplay = getAITypeDisplay(inputs.aiType);
+  
+  // Ensure we're using the correct base price from the constants
+  const basePrice = AI_RATES.chatbot[inputs.aiTier].base;
+  
+  // If the results don't have the correct basePriceMonthly, patch it
+  if (results.basePriceMonthly !== basePrice) {
+    results.basePriceMonthly = basePrice;
+  }
 
   // Create a Lead object from the leadData and calculator results
   // Convert typed objects to plain objects for database compatibility

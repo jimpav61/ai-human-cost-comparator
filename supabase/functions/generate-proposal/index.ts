@@ -31,6 +31,22 @@ serve(async (req) => {
     const aiTier = lead.calculatorResults.tierKey || 'growth';
     const aiType = lead.calculatorResults.aiType || 'chatbot';
     
+    // Get the correct base price based on tier
+    let basePrice = 0;
+    switch(aiTier) {
+      case 'starter':
+        basePrice = 99;
+        break;
+      case 'growth':
+        basePrice = 229;
+        break;
+      case 'premium':
+        basePrice = 429;
+        break;
+      default:
+        basePrice = 229;
+    }
+    
     // Create a professional HTML proposal
     const proposalHtml = `
       <!DOCTYPE html>
@@ -69,6 +85,7 @@ serve(async (req) => {
 
             <div class="section">
               <h3>Recommended Solution: ${getTierDisplayName(aiTier)} with ${getAITypeDisplay(aiType)}</h3>
+              <p>Base Price: ${new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD' }).format(basePrice)}/month</p>
               <p>We've analyzed your needs and recommend our ${getTierDisplayName(aiTier)} with ${getAITypeDisplay(aiType)} capabilities for optimal results.</p>
             </div>
 
