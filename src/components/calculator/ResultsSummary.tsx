@@ -25,10 +25,6 @@ export const ResultsSummary: React.FC<ResultsSummaryProps> = ({
     ? tierDisplayName
     : `${tierDisplayName} (${aiTypeDisplay})`;
 
-  // Calculate the base price and usage separately
-  const basePrice = results.basePriceMonthly || 0;
-  const usageCost = results.aiCostMonthly.total - basePrice;
-
   return (
     <div>
       <div className="bg-brand-50 p-3 rounded-lg mb-4 border border-brand-100">
@@ -55,7 +51,6 @@ export const ResultsSummary: React.FC<ResultsSummaryProps> = ({
           <div className="text-2xl font-semibold text-brand-700">{formatCurrency(results.aiCostMonthly.total)}</div>
           <div className="mt-2 flex items-center text-xs">
             <div className="flex flex-col w-full">
-              <span className="text-gray-600">Base: {formatCurrency(basePrice)}/mo + Usage: {formatCurrency(usageCost)}/mo</span>
               <span className="text-gray-600">One-time setup: {formatCurrency(results.aiCostMonthly.setupFee)}</span>
             </div>
           </div>

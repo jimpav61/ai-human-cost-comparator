@@ -85,7 +85,7 @@ serve(async (req) => {
 
             <div class="section">
               <h3>Recommended Solution: ${getTierDisplayName(aiTier)} with ${getAITypeDisplay(aiType)}</h3>
-              <p>Base Price: ${new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD' }).format(basePrice)}/month</p>
+              <p>Monthly Price: ${new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD' }).format(basePrice)}</p>
               <p>We've analyzed your needs and recommend our ${getTierDisplayName(aiTier)} with ${getAITypeDisplay(aiType)} capabilities for optimal results.</p>
             </div>
 
