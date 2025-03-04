@@ -29,9 +29,8 @@ serve(async (req) => {
 
     // Get the plan details
     const aiTier = lead.calculatorResults.tierKey || 'growth';
-    const aiType = lead.calculatorResults.aiType || 'chatbot';
     
-    // Get the correct base price based on tier - these are the exact fixed prices
+    // Use the exact fixed prices for each tier
     let basePrice = 0;
     switch(aiTier) {
       case 'starter':
@@ -77,16 +76,17 @@ serve(async (req) => {
               <h3>Your Potential ROI</h3>
               <p>Based on our calculations, implementing our AI solution could result in:</p>
               <ul>
-                <li>Monthly cost reduction of ${new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD' }).format(lead.calculatorResults.monthlySavings)}</li>
+                <li>Monthly cost: ${new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD' }).format(basePrice)}</li>
+                <li>Monthly savings of ${new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD' }).format(lead.calculatorResults.monthlySavings)}</li>
                 <li>Annual savings of ${new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD' }).format(lead.calculatorResults.yearlySavings)}</li>
                 <li>${lead.calculatorResults.savingsPercentage.toFixed(1)}% improvement in operational efficiency</li>
               </ul>
             </div>
 
             <div class="section">
-              <h3>Recommended Solution: ${getTierDisplayName(aiTier)} with ${getAITypeDisplay(aiType)}</h3>
+              <h3>Recommended Solution: ${getTierDisplayName(aiTier)} with ${getAITypeDisplay(lead.calculatorResults.aiType)}</h3>
               <p>Monthly Price: ${new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD' }).format(basePrice)}</p>
-              <p>We've analyzed your needs and recommend our ${getTierDisplayName(aiTier)} with ${getAITypeDisplay(aiType)} capabilities for optimal results.</p>
+              <p>We've analyzed your needs and recommend our ${getTierDisplayName(aiTier)} with ${getAITypeDisplay(lead.calculatorResults.aiType)} capabilities for optimal results.</p>
             </div>
 
             <div class="section">

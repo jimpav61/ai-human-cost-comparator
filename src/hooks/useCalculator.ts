@@ -91,27 +91,22 @@ export const useCalculator = (inputs: CalculatorInputs): CalculationResults => {
     const hourlyRateWithBenefits = baseHourlyRate * 1.3; // Add 30% for benefits
     const monthlyHumanCost = hourlyRateWithBenefits * monthlyTotalHours;
 
-    // Get base costs and setup fees for the correct tier - these are the EXACT prices
-    const chatbotRates = aiRates.chatbot[inputs.aiTier];
-    const basePrice = chatbotRates.base || 0; // Just use the base price directly
-    const setupFee = chatbotRates.setupFee || 0;
-    const annualPlan = chatbotRates.annualPrice || 0;
+    // Get the exact fixed price for the selected tier - this should match what's displayed in the plan cards
+    const tierBase = aiRates.chatbot[inputs.aiTier].base;
+    const setupFee = aiRates.chatbot[inputs.aiTier].setupFee;
+    const annualPlan = aiRates.chatbot[inputs.aiTier].annualPrice;
     
-    console.log("Base price for tier:", inputs.aiTier, basePrice);
-    console.log("Setup fee:", setupFee);
-    
-    // DO NOT ADD ANY USAGE COSTS - just use the exact base price
-    const monthlyAiCost = basePrice;
+    console.log(`Using EXACT pricing for ${inputs.aiTier} tier: ${tierBase}/month`);
     
     // Calculate savings
-    const monthlySavings = monthlyHumanCost - monthlyAiCost;
+    const monthlySavings = monthlyHumanCost - tierBase;
     const yearlySavings = monthlySavings * MONTHS_PER_YEAR;
     
     // Calculate savings percentage
     const savingsPercentage = monthlyHumanCost > 0 ? (monthlySavings / monthlyHumanCost) * 100 : 0;
     
     console.log("Final calculations:", {
-      monthlyAiCost,
+      tierBase,
       monthlyHumanCost,
       monthlySavings,
       yearlySavings,
@@ -121,18 +116,18 @@ export const useCalculator = (inputs: CalculatorInputs): CalculationResults => {
     setResults({
       aiCostMonthly: {
         voice: 0, // No separate voice cost - all included in the base price
-        chatbot: basePrice, // Base price includes all features
-        total: basePrice, // Total is exactly the base price - no additions
+        chatbot: tierBase, // Base price includes all features
+        total: tierBase, // Total is exactly the base price - no additions
         setupFee: setupFee
       },
-      basePriceMonthly: basePrice,
+      basePriceMonthly: tierBase,
       humanCostMonthly: monthlyHumanCost,
       monthlySavings: monthlySavings,
       yearlySavings: yearlySavings,
       savingsPercentage: savingsPercentage,
       breakEvenPoint: { 
         voice: 0,
-        chatbot: Math.ceil(basePrice / ((HUMAN_HOURLY_RATES[inputs.role] * 1.3) / 60))
+        chatbot: Math.ceil(tierBase / ((HUMAN_HOURLY_RATES[inputs.role] * 1.3) / 60))
       },
       humanHours: {
         dailyPerEmployee: dailyHoursPerEmployee,
