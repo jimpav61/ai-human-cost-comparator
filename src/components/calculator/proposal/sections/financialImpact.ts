@@ -13,7 +13,7 @@ export const addFinancialImpact = (doc: JsPDFWithAutoTable, yPosition: number, p
   doc.setFontSize(12);
   doc.setTextColor(0, 0, 0); // Regular text in black
   
-  // Format financial values
+  // Format financial values - fallback to defaults if values are missing
   const humanCost = params.results?.humanCostMonthly || 15000;
   const aiCost = params.results?.aiCostMonthly?.total || 499;
   const setupFee = params.results?.aiCostMonthly?.setupFee || 1149;

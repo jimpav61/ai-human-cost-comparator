@@ -111,6 +111,17 @@ export const useProposalGenerator = ({ lead }: UseProposalGeneratorProps) => {
       // Add the tier key to be used in recommendedSolution
       validatedResults.tierKey = tierToUse;
       
+      // Fix the common "Cannot read properties of undefined (reading 'base')" error
+      // Make sure humanCostMonthly exists and is not 0
+      if (!validatedResults.humanCostMonthly) {
+        validatedResults.humanCostMonthly = 3800; // Fallback value
+      }
+      
+      // Ensure basePriceMonthly exists
+      if (!validatedResults.basePriceMonthly) {
+        validatedResults.basePriceMonthly = AI_RATES.chatbot[tierToUse].base;
+      }
+      
       try {
         // Generate the proposal document using the imported function with the validated results
         const doc = generateProposal({
