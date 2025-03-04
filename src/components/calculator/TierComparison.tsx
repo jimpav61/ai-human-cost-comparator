@@ -1,3 +1,4 @@
+
 import React from 'react';
 import { Check, X } from 'lucide-react';
 import { formatCurrency } from '@/utils/formatters';
@@ -33,12 +34,11 @@ export const TierComparison: React.FC<TierComparisonProps> = ({
   const handleTierClick = (tier: string) => {
     console.log(`TierComparison: User clicked on tier ${tier}`);
     const { isCompatible } = getTierCompatibility(tier);
-    if (isCompatible) {
-      console.log(`TierComparison: Selected tier ${tier} is compatible, updating`);
-      onSelectTier(tier);
-    } else {
-      console.log(`TierComparison: Selected tier ${tier} is not compatible with AI type ${currentAIType}`);
-    }
+    
+    // Always allow tier selection, even if not compatible
+    // The parent component will handle adjusting AI type if needed
+    console.log(`TierComparison: Selected tier ${tier}, compatibility: ${isCompatible}`);
+    onSelectTier(tier);
   };
 
   return (
@@ -52,9 +52,7 @@ export const TierComparison: React.FC<TierComparisonProps> = ({
             className={`p-3 rounded-lg ${
               currentTier === tier 
                 ? 'bg-brand-100 border-2 border-brand-500' 
-                : isCompatible 
-                  ? 'bg-white border border-gray-200 hover:border-brand-300 cursor-pointer'
-                  : 'bg-gray-100 border border-gray-200 opacity-70 cursor-not-allowed'
+                : 'bg-white border border-gray-200 hover:border-brand-300 cursor-pointer'
             }`}
             onClick={() => handleTierClick(tier)}
           >

@@ -1,3 +1,4 @@
+
 import React, { useEffect } from 'react';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { toast } from "@/components/ui/use-toast";
@@ -55,7 +56,7 @@ export const AITypeSection: React.FC<AITypeSectionProps> = ({
         description: "Voice capabilities have been adjusted to match your Growth Plan.",
       });
     }
-  }, [aiTier, handleAITypeChange]);
+  }, [aiTier, aiType, handleAITypeChange]);
   
   // Handle manual AI type changes and update tier if needed
   const handleAITypeSelectionChange = (value: string) => {
@@ -93,9 +94,8 @@ export const AITypeSection: React.FC<AITypeSectionProps> = ({
       <Select 
         value={aiType}
         onValueChange={handleAITypeSelectionChange}
-        disabled={aiTier === 'starter'} // Disable dropdown for starter tier
       >
-        <SelectTrigger className="calculator-input">
+        <SelectTrigger className="calculator-input bg-white">
           <SelectValue placeholder="Select AI Type" />
         </SelectTrigger>
         <SelectContent className="bg-white">

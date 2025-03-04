@@ -1,5 +1,5 @@
 
-import React, { useEffect } from 'react';
+import React from 'react';
 import { toast } from "@/components/ui/use-toast";
 import type { CalculatorInputs } from '@/hooks/useCalculator';
 import { PlanSelectionSection } from './form-sections/PlanSelectionSection';
@@ -105,10 +105,22 @@ export const CalculatorForm: React.FC<CalculatorFormProps> = ({ inputs, onInputC
       if (inputs.aiType === 'voice') {
         console.log("CalculatorForm: Upgrading to premium, enhancing voice to conversational");
         onInputChange('aiType', 'conversationalVoice' as any);
+        
+        toast({
+          title: "Voice Features Enhanced",
+          description: "Premium Plan includes conversational voice. We've upgraded your voice capabilities.",
+          variant: "default",
+        });
       } 
       else if (inputs.aiType === 'both') {
         console.log("CalculatorForm: Upgrading to premium, enhancing to premium voice features");
         onInputChange('aiType', 'both-premium' as any);
+        
+        toast({
+          title: "Voice Features Enhanced",
+          description: "Premium Plan includes conversational voice. We've upgraded your voice capabilities.",
+          variant: "default",
+        });
       } 
       else if (inputs.aiType === 'chatbot') {
         console.log("CalculatorForm: Upgrading to premium from chatbot only, enabling all premium features");
@@ -118,13 +130,13 @@ export const CalculatorForm: React.FC<CalculatorFormProps> = ({ inputs, onInputC
         const includedMinutes = AI_RATES.chatbot.premium.includedVoiceMinutes || 600;
         const suggestedVolume = Math.floor(includedMinutes / inputs.avgCallDuration);
         onInputChange('callVolume', suggestedVolume);
+        
+        toast({
+          title: "Premium Features Enabled",
+          description: "Premium Plan includes our most advanced voice capabilities. We've enabled them for you.",
+          variant: "default",
+        });
       }
-      
-      toast({
-        title: "Premium Features Enabled",
-        description: "Premium Plan includes our most advanced voice capabilities. We've enabled them for you.",
-        variant: "default",
-      });
     }
     
     // Actually update the tier
