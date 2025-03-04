@@ -142,6 +142,7 @@ export type Database = {
       }
       pricing_configurations: {
         Row: {
+          additional_voice_rate: number | null
           annual_price: number | null
           chatbot_base_price: number
           chatbot_per_message: number
@@ -154,6 +155,7 @@ export type Database = {
           voice_per_minute: number
         }
         Insert: {
+          additional_voice_rate?: number | null
           annual_price?: number | null
           chatbot_base_price: number
           chatbot_per_message: number
@@ -166,6 +168,7 @@ export type Database = {
           voice_per_minute: number
         }
         Update: {
+          additional_voice_rate?: number | null
           annual_price?: number | null
           chatbot_base_price?: number
           chatbot_per_message?: number
