@@ -1,147 +1,88 @@
 
 import { JsPDFWithAutoTable, SectionParams } from '../types';
-import { formatCurrency } from '@/utils/formatters';
-import autoTable from 'jspdf-autotable';
-import { AI_RATES } from '@/constants/pricing';
+import { formatCurrency, formatNumber, formatPercent } from '@/utils/formatters';
 
 export const addFinancialImpact = (doc: JsPDFWithAutoTable, yPosition: number, params: SectionParams): number => {
-  if (yPosition > 250) {
-    doc.addPage();
-    yPosition = 20;
-  }
-
-  // Financial Impact & ROI Analysis
+  // Financial Impact Section
   doc.setFontSize(16);
-  doc.setTextColor(246, 82, 40); // Brand color for section header (f65228)
-  doc.text("Financial Impact & ROI Analysis", 20, yPosition);
-  yPosition += 10;
-
-  // Format the percentage to ensure it's a proper number
-  const efficiencyImprovement = params.results?.savingsPercentage > 0 
-    ? `${params.results.savingsPercentage.toFixed(1)}%` 
-    : '97.4%';
-    
-  // Format currency values
-  const monthlySavings = formatCurrency(params.results?.monthlySavings || 3701);
-  const yearlySavings = formatCurrency(params.results?.yearlySavings || 44412);
+  doc.setTextColor(246, 82, 40); // Brand color for section header
+  doc.text("Financial Impact", 20, yPosition);
   
-  // Get setup fee from results or determine from tier
-  let setupFee = 0;
-  if (params.results?.aiCostMonthly?.setupFee !== undefined) {
-    setupFee = params.results.aiCostMonthly.setupFee;
-  } else if (params.results?.tierKey) {
-    // Get from tier key
-    setupFee = AI_RATES.chatbot[params.results.tierKey]?.setupFee || 249;
-  } else if (params.tierName) {
-    // Derive from tier name
-    const tierLower = params.tierName.toLowerCase();
-    if (tierLower.includes('premium')) {
-      setupFee = AI_RATES.chatbot.premium.setupFee;
-    } else if (tierLower.includes('growth')) {
-      setupFee = AI_RATES.chatbot.growth.setupFee;
-    } else {
-      setupFee = AI_RATES.chatbot.starter.setupFee;
-    }
-  }
+  yPosition += 8;
+  doc.setFontSize(12);
+  doc.setTextColor(0, 0, 0); // Regular text in black
   
+  // Format financial values
+  const humanCost = params.results?.humanCostMonthly || 15000;
+  const aiCost = params.results?.aiCostMonthly?.total || 499;
+  const setupFee = params.results?.aiCostMonthly?.setupFee || 1149;
+  const monthlySavings = params.results?.monthlySavings || 14500;
+  const yearlySavings = params.results?.yearlySavings || 174000;
+  const savingsPercent = params.results?.savingsPercentage || 96;
+  
+  const humanCostFormatted = formatCurrency(humanCost);
+  const aiCostFormatted = formatCurrency(aiCost);
   const setupFeeFormatted = formatCurrency(setupFee);
-
-  // Create ROI table with dynamically calculated values and brand headers
-  autoTable(doc, {
+  const monthlySavingsFormatted = formatCurrency(monthlySavings);
+  const yearlySavingsFormatted = formatCurrency(yearlySavings);
+  const savingsPercentFormatted = formatPercent(savingsPercent);
+  
+  // Introduction text for financial impact
+  const financialText = `Our AI solution offers significant cost reductions compared to traditional staffing. The potential monthly savings for ${params.companyName} is ${monthlySavingsFormatted}, which represents ${savingsPercentFormatted} of your current staffing costs for this function.`;
+  
+  const splitFinancialText = doc.splitTextToSize(financialText, 170);
+  doc.text(splitFinancialText, 20, yPosition);
+  
+  yPosition += splitFinancialText.length * 7 + 10;
+  
+  // Financial comparison table
+  doc.autoTable({
     startY: yPosition,
-    head: [['Metric', 'Potential Impact']],
+    head: [['', 'Monthly Cost', 'Annual Cost']],
     body: [
-      ['Monthly Cost Reduction', monthlySavings],
-      ['Annual Cost Reduction', yearlySavings],
-      ['Efficiency Improvement', efficiencyImprovement],
-      ['One-Time Setup Fee', setupFeeFormatted],
-      ['Implementation Timeline', '5 business days or less'],
-      ['ROI Timeline', '3 to 6 months'],
-      ['5-Year Projected Savings', formatCurrency(params.results?.yearlySavings * 5 || 222060)]
+      ['Current Human Staff', humanCostFormatted, formatCurrency(humanCost * 12)],
+      ['ChatSites.ai Solution', aiCostFormatted, formatCurrency(aiCost * 12)],
+      ['Your Savings', monthlySavingsFormatted, yearlySavingsFormatted],
     ],
-    theme: 'striped',
     headStyles: {
-      fillColor: [246, 82, 40], // Brand color for table header (f65228)
+      fillColor: [246, 82, 40],
       textColor: [255, 255, 255],
       fontStyle: 'bold'
     },
+    bodyStyles: {
+      textColor: [0, 0, 0]
+    },
+    alternateRowStyles: {
+      fillColor: [245, 245, 245]
+    },
     styles: {
-      cellPadding: 5,
-      fontSize: 10
+      fontSize: 11
     },
     columnStyles: {
       0: { fontStyle: 'bold' }
-    }
+    },
+    margin: { left: 20, right: 20 }
   });
   
-  yPosition = (doc.lastAutoTable?.finalY || yPosition) + 15;
+  // Get the final Y position
+  yPosition = (doc as any).lastAutoTable.finalY + 10;
   
-  // Cost Comparison
-  doc.setFontSize(14);
-  doc.setTextColor(246, 82, 40); // Brand color for sub-section header (f65228)
-  doc.text("Cost Comparison", 20, yPosition);
-  yPosition += 10;
+  // Setup fee and ROI notes
+  doc.setFontSize(11);
+  doc.text(`One-time setup fee: ${setupFeeFormatted}`, 20, yPosition);
   
-  // Format human staff costs
-  const humanMonthly = formatCurrency(params.results?.humanCostMonthly || 3800);
-  const humanAnnual = formatCurrency((params.results?.humanCostMonthly || 3800) * 12);
+  yPosition += 7;
   
-  // Get AI monthly cost based on the selected tier
-  let aiMonthly = 0;
-  if (params.results?.aiCostMonthly?.total !== undefined) {
-    aiMonthly = params.results.aiCostMonthly.total;
-  } else if (params.results?.tierKey) {
-    // Get base price from tier
-    aiMonthly = AI_RATES.chatbot[params.results.tierKey]?.base || 99;
-  } else if (params.tierName) {
-    // Derive from tier name
-    const tierLower = params.tierName.toLowerCase();
-    if (tierLower.includes('premium')) {
-      aiMonthly = AI_RATES.chatbot.premium.base;
-    } else if (tierLower.includes('growth')) {
-      aiMonthly = AI_RATES.chatbot.growth.base;
-    } else {
-      aiMonthly = AI_RATES.chatbot.starter.base;
-    }
-  }
+  // Calculate ROI
+  const yearlyAiCost = aiCost * 12 + setupFee;
+  const roi = (yearlySavings / yearlyAiCost) * 100;
+  const paybackPeriod = Math.ceil((setupFee / monthlySavings) * 10) / 10; // Round to 1 decimal place
   
-  // Ensure we never show $0 for the AI solution
-  if (aiMonthly <= 0) {
-    if (params.tierName && params.tierName.toLowerCase().includes('premium')) {
-      aiMonthly = 429; // Default premium price
-    } else if (params.tierName && params.tierName.toLowerCase().includes('growth')) {
-      aiMonthly = 229; // Default growth price
-    } else {
-      aiMonthly = 99; // Default starter price
-    }
-    console.warn("Fallback to default price:", aiMonthly);
-  }
+  doc.text(`Return on Investment (ROI): ${formatPercent(roi)} in the first year`, 20, yPosition);
   
-  const aiMonthlyFormatted = formatCurrency(aiMonthly);
-  const aiAnnual = formatCurrency(aiMonthly * 12);
+  yPosition += 7;
   
-  // Create cost comparison table with brand headers
-  autoTable(doc, {
-    startY: yPosition,
-    head: [['Solution', 'Monthly Cost', 'Annual Cost', 'One-Time Setup Fee']],
-    body: [
-      ['Current Human Staff', humanMonthly, humanAnnual, 'N/A'],
-      ['ChatSites.ai Solution (Your Cost)', aiMonthlyFormatted, aiAnnual, setupFeeFormatted]
-    ],
-    theme: 'striped',
-    headStyles: {
-      fillColor: [246, 82, 40], // Brand color for table header (f65228)
-      textColor: [255, 255, 255],
-      fontStyle: 'bold'
-    },
-    styles: {
-      cellPadding: 5,
-      fontSize: 10
-    },
-    columnStyles: {
-      0: { fontStyle: 'bold' }
-    }
-  });
+  doc.text(`Setup fee payback period: ${paybackPeriod} months`, 20, yPosition);
   
-  return (doc.lastAutoTable?.finalY || yPosition) + 20;
+  return yPosition + 15;
 };

@@ -18,9 +18,14 @@ export const AITypeSection: React.FC<AITypeSectionProps> = ({
     if (aiTier === 'starter' && aiType !== 'chatbot') {
       handleAITypeChange('chatbot');
     }
-    // If on premium plan and using non-premium voice, upgrade to premium voice
-    else if (aiTier === 'premium' && (aiType === 'voice' || aiType === 'both')) {
-      handleAITypeChange(aiType === 'voice' ? 'conversationalVoice' : 'both-premium');
+    // If on premium plan and using basic voice features, upgrade to premium voice
+    else if (aiTier === 'premium') {
+      if (aiType === 'voice') {
+        handleAITypeChange('conversationalVoice');
+      } 
+      else if (aiType === 'both') {
+        handleAITypeChange('both-premium');
+      }
     }
     // If downgraded from premium and using premium features, downgrade features
     else if (aiTier === 'growth' && (aiType === 'conversationalVoice' || aiType === 'both-premium')) {

@@ -1,3 +1,4 @@
+
 import { formatCurrency } from '@/utils/formatters';
 import type { CalculatorInputs } from '@/hooks/useCalculator';
 import type { PricingDetail } from './types';
@@ -6,26 +7,32 @@ import { AI_RATES } from '@/constants/pricing';
 export const calculatePricingDetails = (inputs: CalculatorInputs): PricingDetail[] => {
   const pricingDetails: PricingDetail[] = [];
 
+  // Determine effective tier based on AI type
+  let effectiveTier = inputs.aiTier;
+  if (inputs.aiType === 'conversationalVoice' || inputs.aiType === 'both-premium') {
+    effectiveTier = 'premium';
+  }
+
   if (inputs.aiType === 'voice' || inputs.aiType === 'conversationalVoice' || inputs.aiType === 'both' || inputs.aiType === 'both-premium') {
     const totalMinutes = inputs.callVolume * inputs.avgCallDuration;
     // Calculate the chargeable minutes (total minus included minutes)
-    const includedMinutes = AI_RATES.chatbot[inputs.aiTier].includedVoiceMinutes || 0;
+    const includedMinutes = AI_RATES.chatbot[effectiveTier].includedVoiceMinutes || 0;
     
     // Calculate chargeable minutes (if any)
     const chargeableMinutes = Math.max(0, totalMinutes - includedMinutes);
     
-    const minuteRate = AI_RATES.voice[inputs.aiTier];
+    const minuteRate = AI_RATES.voice[effectiveTier];
     
     // Apply conversational factor for premium tier or conversational voice
     const isConversational = inputs.aiType === 'conversationalVoice' || inputs.aiType === 'both-premium';
-    const conversationalFactor = (inputs.aiTier === 'premium' || isConversational) ? 1.15 : 1.0;
+    const conversationalFactor = (effectiveTier === 'premium' || isConversational) ? 1.15 : 1.0;
     const usageCost = chargeableMinutes * minuteRate * conversationalFactor;
     
     // Determine voice type based on tier and AI type
     let voiceType = 'Voice AI';
-    if (inputs.aiType === 'conversationalVoice' || inputs.aiType === 'both-premium' || inputs.aiTier === 'premium') {
+    if (inputs.aiType === 'conversationalVoice' || inputs.aiType === 'both-premium' || effectiveTier === 'premium') {
       voiceType = 'Conversational Voice AI';
-    } else if (inputs.aiTier === 'growth' || inputs.aiType === 'both') {
+    } else if (effectiveTier === 'growth' || inputs.aiType === 'both') {
       voiceType = 'Basic Voice AI';
     }
     
@@ -34,7 +41,7 @@ export const calculatePricingDetails = (inputs: CalculatorInputs): PricingDetail
       pricingDetails.push({
         title: voiceType,
         base: null,
-        rate: `${formatCurrency(minuteRate)}${(inputs.aiTier === 'premium' || isConversational) ? ' + 15% premium' : ''}/minute after ${includedMinutes} included minutes`,
+        rate: `${formatCurrency(minuteRate)}${(effectiveTier === 'premium' || isConversational) ? ' + 15% premium' : ''}/minute after ${includedMinutes} included minutes`,
         totalMinutes: totalMinutes,
         monthlyCost: usageCost,
         usageCost: usageCost
@@ -43,10 +50,10 @@ export const calculatePricingDetails = (inputs: CalculatorInputs): PricingDetail
   }
 
   if (inputs.aiType === 'chatbot' || inputs.aiType === 'both' || inputs.aiType === 'both-premium') {
-    const baseRate = AI_RATES.chatbot[inputs.aiTier].base;
+    const baseRate = AI_RATES.chatbot[effectiveTier].base;
     
     // For starter plan, there are no per-message costs
-    if (inputs.aiTier === 'starter') {
+    if (effectiveTier === 'starter') {
       pricingDetails.push({
         title: 'Text AI',
         base: baseRate,
@@ -58,7 +65,7 @@ export const calculatePricingDetails = (inputs: CalculatorInputs): PricingDetail
     } else {
       // For other plans, calculate per-message costs
       const totalMessages = inputs.chatVolume * inputs.avgChatLength;
-      const perMessageRate = AI_RATES.chatbot[inputs.aiTier].perMessage;
+      const perMessageRate = AI_RATES.chatbot[effectiveTier].perMessage;
       const messageUsageCost = totalMessages * perMessageRate;
       
       // Calculate volume discount

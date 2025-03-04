@@ -51,6 +51,9 @@ export const AIVsHumanCalculator: React.FC<AIVsHumanCalculatorProps> = ({ leadDa
           updatedInputs.aiType = 'conversationalVoice';
         } else if (prev.aiType === 'both') {
           updatedInputs.aiType = 'both-premium';
+        } else if (prev.aiType === 'chatbot') {
+          // For premium tier, default to full capabilities
+          updatedInputs.aiType = 'both-premium';
         }
         console.log("Updated to premium tier, new AI type:", updatedInputs.aiType);
       }

@@ -44,24 +44,39 @@ export const CalculatorForm: React.FC<CalculatorFormProps> = ({ inputs, onInputC
         variant: "default",
       });
     }
-  }, [inputs.aiType]);
+  }, [inputs.aiType, inputs.aiTier, onInputChange]);
 
   // Adjust AI type when the plan tier changes
   useEffect(() => {
     // If changing to premium from other tiers, upgrade to premium voice
     if (inputs.aiTier === 'premium') {
-      if (inputs.aiType === 'both' || inputs.aiType === 'voice') {
+      if (inputs.aiType === 'both') {
         onInputChange('aiType', 'both-premium');
         toast({
           title: "Voice Capabilities Upgraded",
           description: "Your voice capabilities have been upgraded to conversational with the Premium Plan.",
           variant: "default",
         });
+      } else if (inputs.aiType === 'voice') {
+        onInputChange('aiType', 'conversationalVoice');
+        toast({
+          title: "Voice Capabilities Upgraded", 
+          description: "Your voice capabilities have been upgraded to conversational with the Premium Plan.",
+          variant: "default",
+        });
+      } else if (inputs.aiType === 'chatbot') {
+        // For premium tier, default to the most comprehensive option
+        onInputChange('aiType', 'both-premium');
+        toast({
+          title: "Full Capabilities Enabled",
+          description: "Premium Plan includes our most comprehensive capabilities. We've enabled all features.",
+          variant: "default",
+        });
       }
     }
     // If changing to growth from premium, downgrade voice features
     else if (inputs.aiTier === 'growth' && (inputs.aiType === 'both-premium' || inputs.aiType === 'conversationalVoice')) {
-      onInputChange('aiType', 'both');
+      onInputChange('aiType', inputs.aiType === 'conversationalVoice' ? 'voice' : 'both');
       toast({
         title: "Voice Capabilities Adjusted",
         description: "Voice capabilities have been adjusted to basic for the Growth Plan.",
@@ -78,7 +93,7 @@ export const CalculatorForm: React.FC<CalculatorFormProps> = ({ inputs, onInputC
         variant: "default",
       });
     }
-  }, [inputs.aiTier]);
+  }, [inputs.aiTier, inputs.aiType, onInputChange]);
 
   const handleTierSelect = (tier: string) => {
     if (tier === 'starter' && (inputs.aiType === 'voice' || inputs.aiType === 'conversationalVoice' || inputs.aiType === 'both' || inputs.aiType === 'both-premium')) {
@@ -93,18 +108,25 @@ export const CalculatorForm: React.FC<CalculatorFormProps> = ({ inputs, onInputC
     }
     
     // If upgrading to premium and using voice features, upgrade to premium voice
-    if (tier === 'premium' && (inputs.aiType === 'both' || inputs.aiType === 'voice')) {
-      onInputChange('aiType', 'both-premium');
+    if (tier === 'premium') {
+      if (inputs.aiType === 'both') {
+        onInputChange('aiType', 'both-premium');
+      } else if (inputs.aiType === 'voice') {
+        onInputChange('aiType', 'conversationalVoice');
+      } else if (inputs.aiType === 'chatbot') {
+        onInputChange('aiType', 'both-premium');
+      }
+      
       toast({
         title: "Voice Capabilities Upgraded",
-        description: "Your voice capabilities have been upgraded to conversational with the Premium Plan.",
+        description: "Your AI capabilities have been upgraded to our premium features.",
         variant: "default",
       });
     }
     
     // If downgrading to growth from premium and using premium voice, downgrade to basic voice
     if (tier === 'growth' && (inputs.aiType === 'both-premium' || inputs.aiType === 'conversationalVoice')) {
-      onInputChange('aiType', 'both');
+      onInputChange('aiType', inputs.aiType === 'conversationalVoice' ? 'voice' : 'both');
       toast({
         title: "Voice Capabilities Adjusted",
         description: "Voice capabilities have been adjusted to basic for the Growth Plan.",
@@ -121,7 +143,7 @@ export const CalculatorForm: React.FC<CalculatorFormProps> = ({ inputs, onInputC
       // For non-starter tiers, set a default call volume if it's currently 0
       const tierInfo = AI_RATES.chatbot[tier as keyof typeof AI_RATES.chatbot];
       if (inputs.callVolume === 0 && tierInfo.includedVoiceMinutes) {
-        onInputChange('callVolume', tierInfo.includedVoiceMinutes / inputs.avgCallDuration);
+        onInputChange('callVolume', Math.floor(tierInfo.includedVoiceMinutes / inputs.avgCallDuration));
       }
     }
   };

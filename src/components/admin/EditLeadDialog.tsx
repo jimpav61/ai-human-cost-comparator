@@ -76,12 +76,16 @@ export const EditLeadDialog = ({ lead, open, onClose }: EditLeadDialogProps) => 
       newAIType = 'chatbot';
     } 
     else if (tier === 'growth') {
-      if (newAIType === 'conversationalVoice' || newAIType === 'both-premium') {
+      if (newAIType === 'conversationalVoice') {
+        newAIType = 'voice';
+      } else if (newAIType === 'both-premium') {
         newAIType = 'both';
       }
     } 
     else if (tier === 'premium') {
-      if (newAIType === 'voice' || newAIType === 'both') {
+      if (newAIType === 'voice') {
+        newAIType = 'conversationalVoice';
+      } else if (newAIType === 'both') {
         newAIType = 'both-premium';
       } else if (newAIType === 'chatbot') {
         newAIType = 'both-premium';
