@@ -1,6 +1,7 @@
 
 import { JsPDFWithAutoTable, SectionParams } from '../types';
 import { formatCurrency, formatNumber, formatPercent } from '@/utils/formatters';
+import autoTable from 'jspdf-autotable';
 
 export const addFinancialImpact = (doc: JsPDFWithAutoTable, yPosition: number, params: SectionParams): number => {
   // Financial Impact Section
@@ -35,8 +36,8 @@ export const addFinancialImpact = (doc: JsPDFWithAutoTable, yPosition: number, p
   
   yPosition += splitFinancialText.length * 7 + 10;
   
-  // Financial comparison table
-  doc.autoTable({
+  // Financial comparison table - using autoTable as a function instead of a method
+  autoTable(doc, {
     startY: yPosition,
     head: [['', 'Monthly Cost', 'Annual Cost']],
     body: [
