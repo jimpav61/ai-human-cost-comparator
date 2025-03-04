@@ -17,8 +17,9 @@ export const addRecommendedSolution = (doc: JsPDFWithAutoTable, yPosition: numbe
   const tierName = params.tierName || getTierDisplayName(params.results?.tierKey || 'starter');
   const aiType = params.aiType || getAITypeDisplay(params.results?.aiType || 'chatbot');
   
-  // Determine the tier key for pricing
+  // Determine the tier key for pricing - fixed hardcoded values
   let tierKey = 'starter';
+  let basePrice = 99;  // Default to starter price
   
   if (params.results?.tierKey) {
     // Get the tier from the results
@@ -28,18 +29,24 @@ export const addRecommendedSolution = (doc: JsPDFWithAutoTable, yPosition: numbe
     const tierLower = params.tierName.toLowerCase();
     if (tierLower.includes('premium')) {
       tierKey = 'premium';
+      basePrice = 429;
     } else if (tierLower.includes('growth')) {
       tierKey = 'growth';
+      basePrice = 229;
     }
   }
   
-  // Get the exact base price for this tier
-  const basePrice = AI_RATES.chatbot[tierKey].base || 0;
+  // Set the exact hardcoded price for each tier
+  if (tierKey === 'premium') {
+    basePrice = 429;
+  } else if (tierKey === 'growth') {
+    basePrice = 229;
+  } else {
+    basePrice = 99;
+  }
   
-  // Get included minutes based on tier
-  const includedMinutes = tierKey !== 'starter' 
-    ? AI_RATES.chatbot[tierKey].includedVoiceMinutes || 0 
-    : 0;
+  // Get included minutes based on tier - always 600 for growth and premium
+  const includedMinutes = tierKey !== 'starter' ? 600 : 0;
   
   // Plan details with AI type info
   let planText = `Based on your specific needs, we recommend our ${tierName} with ${aiType} capabilities for $${basePrice}/month. This provides optimal functionality while maximizing your return on investment.`;
