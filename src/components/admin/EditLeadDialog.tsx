@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from "react";
 import { Lead } from "@/types/leads";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
@@ -20,7 +21,7 @@ interface EditLeadDialogProps {
 }
 
 export const EditLeadDialog = ({ lead, open, onClose }: EditLeadDialogProps) => {
-  const [updatedLead, setUpdatedLead] = useState<Lead>({...lead});
+  const [formData, setFormData] = useState<Lead>({...lead});
   const [isLoading, setIsLoading] = useState(false);
   
   const defaultInputs: CalculatorInputs = {
@@ -53,7 +54,7 @@ export const EditLeadDialog = ({ lead, open, onClose }: EditLeadDialogProps) => 
   const calculationResults = useCalculator(calculatorInputs);
   
   useEffect(() => {
-    setUpdatedLead(prev => ({
+    setFormData(prev => ({
       ...prev,
       calculator_results: calculationResults
     }));
@@ -64,7 +65,7 @@ export const EditLeadDialog = ({ lead, open, onClose }: EditLeadDialogProps) => 
   }, []);
 
   const handleBasicInfoChange = (field: keyof Lead, value: string | number) => {
-    setUpdatedLead(prev => ({
+    setFormData(prev => ({
       ...prev,
       [field]: value
     }));
@@ -128,7 +129,7 @@ export const EditLeadDialog = ({ lead, open, onClose }: EditLeadDialogProps) => 
         callVolume: callVolumeToSet
       }));
       
-      setUpdatedLead(prev => ({
+      setFormData(prev => ({
         ...prev,
         calculator_inputs: {
           ...prev.calculator_inputs,
@@ -164,7 +165,7 @@ export const EditLeadDialog = ({ lead, open, onClose }: EditLeadDialogProps) => 
           const defaultCallVolume = Math.floor(growthIncludedMinutes / prev.avgCallDuration);
           updatedInputs.callVolume = defaultCallVolume;
           
-          setUpdatedLead(prevLead => ({
+          setFormData(prevLead => ({
             ...prevLead,
             calculator_inputs: {
               ...prevLead.calculator_inputs,
@@ -186,7 +187,7 @@ export const EditLeadDialog = ({ lead, open, onClose }: EditLeadDialogProps) => 
           const defaultCallVolume = Math.floor(premiumIncludedMinutes / prev.avgCallDuration);
           updatedInputs.callVolume = defaultCallVolume;
           
-          setUpdatedLead(prevLead => ({
+          setFormData(prevLead => ({
             ...prevLead,
             calculator_inputs: {
               ...prevLead.calculator_inputs,
@@ -205,7 +206,7 @@ export const EditLeadDialog = ({ lead, open, onClose }: EditLeadDialogProps) => 
       return updatedInputs;
     });
     
-    setUpdatedLead(prev => ({
+    setFormData(prev => ({
       ...prev,
       calculator_inputs: {
         ...prev.calculator_inputs,
@@ -245,31 +246,31 @@ export const EditLeadDialog = ({ lead, open, onClose }: EditLeadDialogProps) => 
         updatedVoiceUsage
       });
       
-      const updatedLead = {
+      const finalLeadData = {
         ...lead,
-        name: updatedLead.name,
-        company_name: updatedLead.company_name,
-        email: updatedLead.email,
-        phone_number: updatedLead.phone_number,
-        website: updatedLead.website,
-        industry: updatedLead.industry,
-        employee_count: updatedLead.employee_count,
+        name: formData.name,
+        company_name: formData.company_name,
+        email: formData.email,
+        phone_number: formData.phone_number,
+        website: formData.website,
+        industry: formData.industry,
+        employee_count: formData.employee_count,
         calculator_inputs: calculatorInputsForDB,
         calculator_results: calculationResultsForDB,
       };
       
-      logLeadChanges(lead, updatedLead);
+      logLeadChanges(lead, finalLeadData);
       
       const { error } = await supabase
         .from('leads')
         .update({
-          name: updatedLead.name,
-          company_name: updatedLead.company_name,
-          email: updatedLead.email,
-          phone_number: updatedLead.phone_number,
-          website: updatedLead.website,
-          industry: updatedLead.industry,
-          employee_count: updatedLead.employee_count,
+          name: formData.name,
+          company_name: formData.company_name,
+          email: formData.email,
+          phone_number: formData.phone_number,
+          website: formData.website,
+          industry: formData.industry,
+          employee_count: formData.employee_count,
           calculator_inputs: calculatorInputsForDB,
           calculator_results: calculationResultsForDB,
           updated_at: new Date().toISOString(),
@@ -330,7 +331,7 @@ export const EditLeadDialog = ({ lead, open, onClose }: EditLeadDialogProps) => 
                 <Label htmlFor="name">Contact Name</Label>
                 <Input
                   id="name"
-                  value={updatedLead.name}
+                  value={formData.name}
                   onChange={(e) => handleBasicInfoChange('name', e.target.value)}
                 />
               </div>
@@ -339,7 +340,7 @@ export const EditLeadDialog = ({ lead, open, onClose }: EditLeadDialogProps) => 
                 <Label htmlFor="company_name">Company Name</Label>
                 <Input
                   id="company_name"
-                  value={updatedLead.company_name}
+                  value={formData.company_name}
                   onChange={(e) => handleBasicInfoChange('company_name', e.target.value)}
                 />
               </div>
@@ -349,7 +350,7 @@ export const EditLeadDialog = ({ lead, open, onClose }: EditLeadDialogProps) => 
                 <Input
                   id="email"
                   type="email"
-                  value={updatedLead.email}
+                  value={formData.email}
                   onChange={(e) => handleBasicInfoChange('email', e.target.value)}
                 />
               </div>
@@ -358,7 +359,7 @@ export const EditLeadDialog = ({ lead, open, onClose }: EditLeadDialogProps) => 
                 <Label htmlFor="phone_number">Phone Number</Label>
                 <Input
                   id="phone_number"
-                  value={updatedLead.phone_number || ''}
+                  value={formData.phone_number || ''}
                   onChange={(e) => handleBasicInfoChange('phone_number', e.target.value)}
                 />
               </div>
@@ -367,7 +368,7 @@ export const EditLeadDialog = ({ lead, open, onClose }: EditLeadDialogProps) => 
                 <Label htmlFor="website">Website</Label>
                 <Input
                   id="website"
-                  value={updatedLead.website || ''}
+                  value={formData.website || ''}
                   onChange={(e) => handleBasicInfoChange('website', e.target.value)}
                 />
               </div>
@@ -376,7 +377,7 @@ export const EditLeadDialog = ({ lead, open, onClose }: EditLeadDialogProps) => 
                 <Label htmlFor="industry">Industry</Label>
                 <Input
                   id="industry"
-                  value={updatedLead.industry || ''}
+                  value={formData.industry || ''}
                   onChange={(e) => handleBasicInfoChange('industry', e.target.value)}
                 />
               </div>
@@ -386,7 +387,7 @@ export const EditLeadDialog = ({ lead, open, onClose }: EditLeadDialogProps) => 
                 <Input
                   id="employee_count"
                   type="number"
-                  value={updatedLead.employee_count || ''}
+                  value={formData.employee_count || ''}
                   onChange={(e) => handleBasicInfoChange('employee_count', Number(e.target.value))}
                 />
               </div>
