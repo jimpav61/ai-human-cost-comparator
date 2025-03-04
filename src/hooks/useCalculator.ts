@@ -91,8 +91,15 @@ export const useCalculator = (inputs: CalculatorInputs): CalculationResults => {
     const hourlyRateWithBenefits = baseHourlyRate * 1.3; // Add 30% for benefits
     const monthlyHumanCost = hourlyRateWithBenefits * monthlyTotalHours;
 
-    // Get the exact fixed price for the selected tier - Use growth tier if not specified
-    const tierBase = aiRates.chatbot[inputs.aiTier].base; // Always use exact base price from rates
+    // FIXED PRICES: Use hardcoded values to ensure consistency
+    const hardcodedBasePrices = {
+      starter: 99,
+      growth: 229,
+      premium: 429
+    };
+    
+    // Get the exact fixed price for the selected tier
+    const tierBase = hardcodedBasePrices[inputs.aiTier];
     const setupFee = aiRates.chatbot[inputs.aiTier].setupFee;
     const annualPlan = aiRates.chatbot[inputs.aiTier].annualPrice;
     

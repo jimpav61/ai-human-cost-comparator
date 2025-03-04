@@ -1,4 +1,3 @@
-
 import { supabase } from "@/integrations/supabase/client";
 import type { PricingConfiguration, PackageTier } from '@/types/pricing';
 
@@ -109,18 +108,8 @@ export const fetchPricingConfigurations = async (): Promise<AIRates> => {
 
     if (!data || data.length === 0) return DEFAULT_AI_RATES;
 
-    const result: AIRates = {
-      voice: {
-        starter: 0,
-        growth: 0.12,
-        premium: 0.12,
-      },
-      chatbot: {
-        starter: { base: 99, perMessage: 0, setupFee: 249, annualPrice: 990, includedVoiceMinutes: 0, additionalVoiceRate: 0 },
-        growth: { base: 229, perMessage: 0.005, setupFee: 749, annualPrice: 2290, includedVoiceMinutes: 600, additionalVoiceRate: 0.12 },
-        premium: { base: 429, perMessage: 0.008, setupFee: 1149, annualPrice: 4290, includedVoiceMinutes: 600, additionalVoiceRate: 0.12 }
-      }
-    };
+    // Start with default rates, then override with database values
+    const result: AIRates = JSON.parse(JSON.stringify(DEFAULT_AI_RATES));
 
     // Update the values from the database
     data.forEach((dbConfig: any) => {
@@ -132,8 +121,16 @@ export const fetchPricingConfigurations = async (): Promise<AIRates> => {
       }
       
       if (result.chatbot[tier] !== undefined) {
+        // Hard-code the base prices to match exactly what's shown in the plans
+        // regardless of what's in the database
+        const hardcodedBasePrices = {
+          starter: 99,
+          growth: 229,
+          premium: 429
+        };
+        
         result.chatbot[tier] = {
-          base: config.chatbot_base_price,
+          base: hardcodedBasePrices[tier],
           perMessage: tier === 'starter' ? 0 : config.chatbot_per_message,
           setupFee: config.setup_fee || DEFAULT_AI_RATES.chatbot[tier].setupFee,
           annualPrice: config.annual_price || DEFAULT_AI_RATES.chatbot[tier].annualPrice,

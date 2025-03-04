@@ -1,7 +1,6 @@
 
 import React, { useEffect } from 'react';
 import type { CalculatorInputs } from '@/hooks/useCalculator';
-import { AI_RATES } from '@/constants/pricing';
 import { toast } from "@/components/ui/use-toast";
 import { Input } from "@/components/ui/input";
 
@@ -21,9 +20,8 @@ export const VoiceConfigSection: React.FC<VoiceConfigSectionProps> = ({
   const includedMinutes = aiTier === 'starter' ? 0 : 600;
   const isStarterPlan = aiTier === 'starter';
   
-  // Reset call volume to 0 when tier changes
+  // Reset call volume to 0 when tier changes to starter
   useEffect(() => {
-    // When changing to starter, always set call volume to 0
     if (isStarterPlan && callVolume > 0) {
       console.log("VoiceConfigSection: Resetting call volume to 0 for starter plan");
       onInputChange('callVolume', 0);
@@ -51,6 +49,11 @@ export const VoiceConfigSection: React.FC<VoiceConfigSectionProps> = ({
     }
   };
   
+  // Calculate total and additional voice minutes for display
+  const totalVoiceMinutes = callVolume * avgCallDuration;
+  const additionalVoiceMinutes = Math.max(0, totalVoiceMinutes - includedMinutes);
+  const additionalCost = additionalVoiceMinutes * 0.12; // Always 12¢ per minute
+  
   return (
     <>
       <div className="mb-4">
@@ -69,6 +72,11 @@ export const VoiceConfigSection: React.FC<VoiceConfigSectionProps> = ({
         {!isStarterPlan && includedMinutes > 0 && (
           <p className="text-xs text-green-600 mt-1">
             Your plan includes {includedMinutes} free voice minutes per month
+          </p>
+        )}
+        {!isStarterPlan && additionalVoiceMinutes > 0 && (
+          <p className="text-xs text-amber-600 mt-1">
+            {additionalVoiceMinutes.toFixed(0)} additional minutes at 12¢/min = ${additionalCost.toFixed(2)}
           </p>
         )}
         {isStarterPlan && (
@@ -91,6 +99,11 @@ export const VoiceConfigSection: React.FC<VoiceConfigSectionProps> = ({
           className="calculator-input"
           disabled={isStarterPlan} // Disable for starter plan
         />
+        {!isStarterPlan && totalVoiceMinutes > 0 && (
+          <p className="text-xs text-gray-600 mt-1">
+            Total: {callVolume} calls × {avgCallDuration} min = {totalVoiceMinutes.toFixed(0)} minutes
+          </p>
+        )}
       </div>
     </>
   );

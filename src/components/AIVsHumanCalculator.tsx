@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { useCalculator, type CalculatorInputs } from '@/hooks/useCalculator';
 import { CalculatorForm } from './calculator/CalculatorForm';
@@ -7,7 +6,6 @@ import { toast } from "@/components/ui/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 import { BusinessSuggestionsAndPlacements } from './calculator/BusinessSuggestionsAndPlacements';
 import type { LeadData } from './calculator/types';
-import { AI_RATES } from '@/constants/pricing';
 
 interface AIVsHumanCalculatorProps {
   leadData: LeadData;
@@ -36,10 +34,9 @@ export const AIVsHumanCalculator: React.FC<AIVsHumanCalculatorProps> = ({ leadDa
   const handleInputChange = (field: keyof CalculatorInputs, value: any) => {
     console.log(`AIVsHumanCalculator: Changing ${field} to:`, value);
     
+    // First update the inputs with the new value
     setCalculatorInputs(prev => {
       const updatedInputs = { ...prev, [field]: value };
-      
-      // Handle tier changes or AI type changes that have interdependencies
       
       // If changing to starter plan, ensure call volume is 0 and type is chatbot
       if (field === 'aiTier' && value === 'starter' && prev.aiType !== 'chatbot') {

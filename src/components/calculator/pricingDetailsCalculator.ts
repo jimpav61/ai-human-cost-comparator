@@ -2,13 +2,19 @@
 import { formatCurrency } from '@/utils/formatters';
 import type { CalculatorInputs } from '@/hooks/useCalculator';
 import type { PricingDetail } from './types';
-import { AI_RATES } from '@/constants/pricing';
 
 export const calculatePricingDetails = (inputs: CalculatorInputs): PricingDetail[] => {
   const pricingDetails: PricingDetail[] = [];
 
+  // Hardcoded base prices to ensure consistency
+  const hardcodedBasePrices = {
+    starter: 99,
+    growth: 229,
+    premium: 429
+  };
+  
   // Get the exact base price for the selected tier
-  const baseRate = AI_RATES.chatbot[inputs.aiTier].base;
+  const baseRate = hardcodedBasePrices[inputs.aiTier];
   
   // Calculate any additional voice costs
   // Always use 600 minutes for included voice in growth and premium plans
