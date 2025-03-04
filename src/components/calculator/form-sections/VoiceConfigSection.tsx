@@ -18,7 +18,7 @@ export const VoiceConfigSection: React.FC<VoiceConfigSectionProps> = ({
   aiTier,
   onInputChange
 }) => {
-  const includedMinutes = AI_RATES.chatbot[aiTier as keyof typeof AI_RATES.chatbot]?.includedVoiceMinutes || 0;
+  const includedMinutes = aiTier === 'starter' ? 0 : 600;
   const isStarterPlan = aiTier === 'starter';
   
   // Handle call volume changes
@@ -41,28 +41,6 @@ export const VoiceConfigSection: React.FC<VoiceConfigSectionProps> = ({
       onInputChange('callVolume', value);
     }
   };
-  
-  // Ensure call volume respects plan tier whenever the tier changes
-  useEffect(() => {
-    // For starter plan, set to 0
-    if (isStarterPlan && callVolume !== 0) {
-      console.log("VoiceConfigSection: On starter plan but call volume not 0, resetting to 0");
-      onInputChange('callVolume', 0);
-    }
-    
-    // For growth or premium plans with included minutes, set a default value if currently at 0
-    if (!isStarterPlan && (callVolume === 0 || callVolume < 50) && includedMinutes > 0) {
-      // Calculate how many calls can fit within the included minutes
-      // For example, if call duration is 6 minutes, 600 included minutes = 100 calls
-      const suggestedVolume = Math.floor(includedMinutes / (avgCallDuration || 1));
-      
-      // Ensure we set a reasonable default - not too small, not too large
-      const defaultVolume = Math.max(100, Math.min(suggestedVolume, 800));
-      
-      console.log(`VoiceConfigSection: Setting default call volume to ${defaultVolume} based on ${includedMinutes} included minutes`);
-      onInputChange('callVolume', defaultVolume);
-    }
-  }, [aiTier, isStarterPlan, callVolume, includedMinutes, avgCallDuration, onInputChange]);
   
   return (
     <>

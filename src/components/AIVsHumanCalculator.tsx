@@ -63,54 +63,18 @@ export const AIVsHumanCalculator: React.FC<AIVsHumanCalculatorProps> = ({ leadDa
           updatedInputs.aiType = 'both-premium';
           console.log("AIVsHumanCalculator: Upgraded to Premium tier, enhanced AI type to both-premium");
         }
-        
-        // For premium tier, we should utilize the included minutes
-        const includedMinutes = 600; // Always 600 minutes for premium
-        
-        // If no call volume is set or it's low, set a default that uses most of the included minutes
-        if (prev.callVolume < 50) {
-          // Calculate a default that would use most of the included minutes
-          // For example with 4.5 minute calls, we'd set to around 133 calls to use 600 minutes
-          const callCount = Math.floor(includedMinutes / prev.avgCallDuration);
-          updatedInputs.callVolume = callCount;
-          console.log(`AIVsHumanCalculator: Setting premium call volume to ${callCount} calls to utilize included ${includedMinutes} minutes`);
-        }
-      }
-      
-      // If changing to growth tier, also set call volume to use included minutes
-      if (field === 'aiTier' && value === 'growth') {
-        const includedMinutes = 600; // Always 600 minutes for growth
-        
-        // If no call volume is set or it's low, set a default that uses most of the included minutes
-        if (prev.callVolume < 50) {
-          const callCount = Math.floor(includedMinutes / prev.avgCallDuration);
-          updatedInputs.callVolume = callCount;
-          console.log(`AIVsHumanCalculator: Setting growth call volume to ${callCount} calls to utilize included ${includedMinutes} minutes`);
-        }
       }
       
       // If changing AI type to voice or both on starter plan, upgrade to growth
       if (field === 'aiType' && (value === 'voice' || value === 'both') && prev.aiTier === 'starter') {
         updatedInputs.aiTier = 'growth';
         console.log("AIVsHumanCalculator: Voice option selected on Starter plan, upgrading to Growth tier");
-        
-        // Set a default call volume for voice features
-        const includedMinutes = 600; // Always 600 minutes for growth
-        const callCount = Math.floor(includedMinutes / prev.avgCallDuration);
-        updatedInputs.callVolume = callCount;
-        console.log(`AIVsHumanCalculator: Setting default growth call volume to ${callCount} to utilize included ${includedMinutes} minutes`);
       }
       
       // If changing to premium voice options, upgrade to premium tier
       if (field === 'aiType' && (value === 'conversationalVoice' || value === 'both-premium') && prev.aiTier !== 'premium') {
         updatedInputs.aiTier = 'premium';
         console.log("AIVsHumanCalculator: Premium voice option selected, upgrading to Premium tier");
-        
-        // Set default call volume for premium voice
-        const includedMinutes = 600; // Always 600 minutes for premium
-        const callCount = Math.floor(includedMinutes / prev.avgCallDuration);
-        updatedInputs.callVolume = callCount;
-        console.log(`AIVsHumanCalculator: Setting default premium call volume to ${callCount} to utilize included ${includedMinutes} minutes`);
       }
       
       return updatedInputs;
