@@ -24,6 +24,10 @@ export const ResultsDetailView: React.FC<ResultsDetailViewProps> = ({
   // Get the base price directly from the results to ensure consistency
   const basePrice = results.basePriceMonthly;
   const setupFee = results.aiCostMonthly.setupFee;
+  const additionalVoiceCost = results.aiCostMonthly.voice;
+  const totalMinutes = inputs.callVolume * inputs.avgCallDuration;
+  const includedMinutes = AI_RATES.chatbot[inputs.aiTier].includedVoiceMinutes || 0;
+  const extraMinutes = Math.max(0, totalMinutes - includedMinutes);
   
   return (
     <div>
@@ -41,8 +45,27 @@ export const ResultsDetailView: React.FC<ResultsDetailViewProps> = ({
         details={pricingDetails}
         setupFee={setupFee}
         annualPlan={results.annualPlan}
-        includedVoiceMinutes={AI_RATES.chatbot[inputs.aiTier].includedVoiceMinutes}
+        includedVoiceMinutes={includedMinutes}
       />
+      
+      {extraMinutes > 0 && (
+        <div className="border border-gray-200 rounded-lg p-4 mt-3">
+          <div className="flex justify-between items-center mb-2">
+            <span className="font-medium text-amber-600">Additional Voice Minutes</span>
+            <span className="text-gray-900 font-semibold">{formatCurrency(additionalVoiceCost)}</span>
+          </div>
+          <div className="text-sm text-gray-600">
+            <div className="flex justify-between">
+              <span>Extra minutes beyond included {includedMinutes}:</span>
+              <span>{formatNumber(extraMinutes)} minutes</span>
+            </div>
+            <div className="flex justify-between">
+              <span>Rate per additional minute:</span>
+              <span>{formatCurrency(AI_RATES.chatbot[inputs.aiTier].additionalVoiceRate || 0)}</span>
+            </div>
+          </div>
+        </div>
+      )}
       
       <h4 className="font-medium text-gray-900 mt-6 mb-3">Human Resource Costs</h4>
       <div className="border border-gray-200 rounded-lg p-4">

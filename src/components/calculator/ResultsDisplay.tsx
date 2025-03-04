@@ -29,10 +29,6 @@ export const ResultsDisplay: React.FC<ResultsDisplayProps> = ({
   const tierDisplayName = getTierDisplayName(inputs.aiTier);
   const aiTypeDisplay = getAITypeDisplay(inputs.aiType);
   
-  // Get the correct base price directly from AI_RATES, not from results
-  // This ensures we show the exact price defined in the constants
-  const basePrice = AI_RATES.chatbot[inputs.aiTier].base;
-  
   // Create a Lead object from the leadData and calculator results
   // Convert typed objects to plain objects for database compatibility
   const leadForReport: Lead = {
@@ -46,16 +42,7 @@ export const ResultsDisplay: React.FC<ResultsDisplayProps> = ({
     employee_count: leadData.employeeCount || 0,
     calculator_inputs: { ...inputs } as any,
     calculator_results: { 
-      ...results,
-      // Ensure the calculator results use the correct pricing
-      aiCostMonthly: {
-        ...results.aiCostMonthly,
-        total: basePrice
-      },
-      basePriceMonthly: basePrice,
-      monthlySavings: results.humanCostMonthly - basePrice,
-      yearlySavings: (results.humanCostMonthly - basePrice) * 12,
-      savingsPercentage: ((results.humanCostMonthly - basePrice) / results.humanCostMonthly) * 100
+      ...results
     } as any,
     created_at: new Date().toISOString(),
     updated_at: new Date().toISOString(),
@@ -66,18 +53,7 @@ export const ResultsDisplay: React.FC<ResultsDisplayProps> = ({
   return (
     <div className="animate-fadeIn">
       <ResultsSummary
-        results={{
-          ...results,
-          // Ensure the summary also shows the correct pricing
-          aiCostMonthly: {
-            ...results.aiCostMonthly,
-            total: basePrice
-          },
-          basePriceMonthly: basePrice,
-          monthlySavings: results.humanCostMonthly - basePrice,
-          yearlySavings: (results.humanCostMonthly - basePrice) * 12,
-          savingsPercentage: ((results.humanCostMonthly - basePrice) / results.humanCostMonthly) * 100
-        }}
+        results={results}
         reportGenerated={reportGenerated}
         handleGenerateReport={onGenerateReport}
         tierDisplayName={tierDisplayName}
@@ -102,18 +78,7 @@ export const ResultsDisplay: React.FC<ResultsDisplayProps> = ({
       {showDetails && (
         <div className="mt-4">
           <ResultsDetailView
-            results={{
-              ...results,
-              // Ensure the detail view also shows the correct pricing
-              aiCostMonthly: {
-                ...results.aiCostMonthly,
-                total: basePrice
-              },
-              basePriceMonthly: basePrice,
-              monthlySavings: results.humanCostMonthly - basePrice,
-              yearlySavings: (results.humanCostMonthly - basePrice) * 12,
-              savingsPercentage: ((results.humanCostMonthly - basePrice) / results.humanCostMonthly) * 100
-            }}
+            results={results}
             inputs={inputs}
             pricingDetails={pricingDetails}
             tierDisplayName={tierDisplayName}

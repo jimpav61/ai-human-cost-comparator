@@ -10,6 +10,20 @@ export const calculatePricingDetails = (inputs: CalculatorInputs): PricingDetail
   // Get the exact base price for the selected tier
   const baseRate = AI_RATES.chatbot[inputs.aiTier].base;
   
+  // Calculate any additional voice costs
+  const includedVoiceMinutes = AI_RATES.chatbot[inputs.aiTier].includedVoiceMinutes || 0;
+  const totalVoiceMinutes = inputs.callVolume * inputs.avgCallDuration;
+  const extraVoiceMinutes = Math.max(0, totalVoiceMinutes - includedVoiceMinutes);
+  let additionalVoiceCost = 0;
+  
+  if (extraVoiceMinutes > 0) {
+    const additionalMinuteRate = AI_RATES.chatbot[inputs.aiTier].additionalVoiceRate || 0;
+    additionalVoiceCost = extraVoiceMinutes * additionalMinuteRate;
+  }
+  
+  // Total monthly cost
+  const totalMonthlyCost = baseRate + additionalVoiceCost;
+  
   // Create a pricing detail entry with the fixed base price
   pricingDetails.push({
     title: inputs.aiType === 'chatbot' ? 'Text AI' : 
@@ -21,9 +35,21 @@ export const calculatePricingDetails = (inputs: CalculatorInputs): PricingDetail
     totalMessages: inputs.aiType === 'chatbot' || inputs.aiType === 'both' || inputs.aiType === 'both-premium' 
       ? inputs.chatVolume : null,
     totalMinutes: inputs.aiType === 'voice' || inputs.aiType === 'conversationalVoice' || inputs.aiType === 'both' || inputs.aiType === 'both-premium' 
-      ? inputs.callVolume * inputs.avgCallDuration : null,
+      ? totalVoiceMinutes : null,
     monthlyCost: baseRate
   });
+  
+  // Add additional voice minutes if applicable
+  if (extraVoiceMinutes > 0) {
+    pricingDetails.push({
+      title: 'Additional Voice Minutes',
+      base: 0,
+      rate: `${formatCurrency(AI_RATES.chatbot[inputs.aiTier].additionalVoiceRate || 0)}/minute`,
+      totalMessages: null,
+      totalMinutes: extraVoiceMinutes,
+      monthlyCost: additionalVoiceCost
+    });
+  }
 
   return pricingDetails;
 };

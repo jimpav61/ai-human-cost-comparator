@@ -98,8 +98,23 @@ export const useCalculator = (inputs: CalculatorInputs): CalculationResults => {
     
     console.log(`Using EXACT pricing for ${inputs.aiTier} tier: ${tierBase}/month`);
     
+    // Calculate additional voice costs for minutes exceeding the included amount
+    let additionalVoiceCost = 0;
+    const includedVoiceMinutes = aiRates.chatbot[inputs.aiTier].includedVoiceMinutes || 0;
+    const totalVoiceMinutes = inputs.callVolume * inputs.avgCallDuration;
+    const extraVoiceMinutes = Math.max(0, totalVoiceMinutes - includedVoiceMinutes);
+    
+    if (extraVoiceMinutes > 0) {
+      const additionalMinuteRate = aiRates.chatbot[inputs.aiTier].additionalVoiceRate || 0;
+      additionalVoiceCost = extraVoiceMinutes * additionalMinuteRate;
+      console.log(`Additional voice minutes: ${extraVoiceMinutes} at rate ${additionalMinuteRate} = $${additionalVoiceCost}`);
+    }
+    
+    // Total cost is base price plus any additional voice costs
+    const totalMonthlyCost = tierBase + additionalVoiceCost;
+    
     // Calculate savings
-    const monthlySavings = monthlyHumanCost - tierBase;
+    const monthlySavings = monthlyHumanCost - totalMonthlyCost;
     const yearlySavings = monthlySavings * MONTHS_PER_YEAR;
     
     // Calculate savings percentage
@@ -107,6 +122,8 @@ export const useCalculator = (inputs: CalculatorInputs): CalculationResults => {
     
     console.log("Final calculations:", {
       tierBase,
+      additionalVoiceCost,
+      totalMonthlyCost,
       monthlyHumanCost,
       monthlySavings,
       yearlySavings,
@@ -115,9 +132,9 @@ export const useCalculator = (inputs: CalculatorInputs): CalculationResults => {
     
     setResults({
       aiCostMonthly: {
-        voice: 0, // No separate voice cost - all included in the base price
-        chatbot: tierBase, // Base price includes all features
-        total: tierBase, // Total is exactly the base price - no additions
+        voice: additionalVoiceCost, // Set the additional voice cost here
+        chatbot: tierBase, // Base cost for the chatbot
+        total: totalMonthlyCost, // Total is base price plus additional voice cost
         setupFee: setupFee
       },
       basePriceMonthly: tierBase,
@@ -127,7 +144,7 @@ export const useCalculator = (inputs: CalculatorInputs): CalculationResults => {
       savingsPercentage: savingsPercentage,
       breakEvenPoint: { 
         voice: 0,
-        chatbot: Math.ceil(tierBase / ((HUMAN_HOURLY_RATES[inputs.role] * 1.3) / 60))
+        chatbot: Math.ceil(totalMonthlyCost / ((HUMAN_HOURLY_RATES[inputs.role] * 1.3) / 60))
       },
       humanHours: {
         dailyPerEmployee: dailyHoursPerEmployee,
