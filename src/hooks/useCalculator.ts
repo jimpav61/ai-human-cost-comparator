@@ -91,8 +91,8 @@ export const useCalculator = (inputs: CalculatorInputs): CalculationResults => {
     const hourlyRateWithBenefits = baseHourlyRate * 1.3; // Add 30% for benefits
     const monthlyHumanCost = hourlyRateWithBenefits * monthlyTotalHours;
 
-    // Get the exact fixed price for the selected tier - this should match what's displayed in the plan cards
-    const tierBase = aiRates.chatbot[inputs.aiTier].base;
+    // Get the exact fixed price for the selected tier - Use growth tier if not specified
+    const tierBase = aiRates.chatbot[inputs.aiTier].base; // Always use exact base price from rates
     const setupFee = aiRates.chatbot[inputs.aiTier].setupFee;
     const annualPlan = aiRates.chatbot[inputs.aiTier].annualPrice;
     

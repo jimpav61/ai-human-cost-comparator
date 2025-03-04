@@ -46,8 +46,8 @@ export const TierComparison: React.FC<TierComparisonProps> = ({
       {['starter', 'growth', 'premium'].map((tier) => {
         const { isCompatible, reason } = getTierCompatibility(tier);
         
-        // Get the exact fixed price for this tier
-        const exactPrice = tier === 'starter' ? 99 : tier === 'growth' ? 229 : 429;
+        // Get the exact fixed price for this tier from AI_RATES
+        const exactPrice = AI_RATES.chatbot[tier as keyof typeof AI_RATES.chatbot].base;
         
         return (
           <div 
@@ -92,30 +92,22 @@ export const TierComparison: React.FC<TierComparisonProps> = ({
               </div>
             </div>
 
-            {tier === 'growth' && (
+            {tier !== 'starter' && (
               <div className="text-sm mb-2">
-                <div className="font-medium">Basic Voice AI:</div>
+                <div className="font-medium">
+                  {tier === 'growth' ? 'Basic Voice AI:' : 'Conversational Voice AI:'}
+                </div>
                 <div className="text-gray-600">
                   Includes 600 voice minutes
                 </div>
                 <div className="text-gray-600">
                   12¢ per minute after 600 minutes
                 </div>
-              </div>
-            )}
-
-            {tier === 'premium' && (
-              <div className="text-sm mb-2">
-                <div className="font-medium">Conversational Voice AI:</div>
-                <div className="text-gray-600">
-                  Includes 600 voice minutes
-                </div>
-                <div className="text-gray-600">
-                  12¢ per minute after 600 minutes
-                </div>
-                <div className="text-green-600 font-medium text-xs mt-1">
-                  Advanced conversational capabilities included!
-                </div>
+                {tier === 'premium' && (
+                  <div className="text-green-600 font-medium text-xs mt-1">
+                    Advanced conversational capabilities included!
+                  </div>
+                )}
               </div>
             )}
 
