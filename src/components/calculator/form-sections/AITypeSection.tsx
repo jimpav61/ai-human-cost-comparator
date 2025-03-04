@@ -1,4 +1,6 @@
+
 import React, { useEffect } from 'react';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 
 interface AITypeSectionProps {
   aiType: string;
@@ -62,18 +64,22 @@ export const AITypeSection: React.FC<AITypeSectionProps> = ({
   return (
     <div className="mb-4">
       <label className="block text-sm font-medium text-gray-700 mb-1">AI Type</label>
-      <select 
+      <Select 
         value={aiType}
-        onChange={(e) => handleAITypeSelectionChange(e.target.value)}
-        className="calculator-input"
+        onValueChange={handleAITypeSelectionChange}
         disabled={aiTier === 'starter'} // Disable dropdown for starter tier
       >
-        <option value="chatbot">Text Only</option>
-        <option value="voice" disabled={aiTier === 'starter'}>Basic Voice Only</option>
-        <option value="conversationalVoice" disabled={aiTier !== 'premium'}>Conversational Voice Only</option>
-        <option value="both" disabled={aiTier === 'starter'}>Text & Basic Voice</option>
-        <option value="both-premium" disabled={aiTier !== 'premium'}>Text & Conversational Voice</option>
-      </select>
+        <SelectTrigger className="calculator-input">
+          <SelectValue placeholder="Select AI Type" />
+        </SelectTrigger>
+        <SelectContent>
+          <SelectItem value="chatbot">Text Only</SelectItem>
+          <SelectItem value="voice" disabled={aiTier === 'starter'}>Basic Voice Only</SelectItem>
+          <SelectItem value="conversationalVoice" disabled={aiTier !== 'premium'}>Conversational Voice Only</SelectItem>
+          <SelectItem value="both" disabled={aiTier === 'starter'}>Text & Basic Voice</SelectItem>
+          <SelectItem value="both-premium" disabled={aiTier !== 'premium'}>Text & Conversational Voice</SelectItem>
+        </SelectContent>
+      </Select>
       
       {aiTier === 'starter' && (
         <p className="text-sm text-amber-600 mt-1">

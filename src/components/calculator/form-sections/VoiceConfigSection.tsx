@@ -3,6 +3,7 @@ import React, { useEffect } from 'react';
 import type { CalculatorInputs } from '@/hooks/useCalculator';
 import { AI_RATES } from '@/constants/pricing';
 import { toast } from "@/components/ui/use-toast";
+import { Input } from "@/components/ui/input";
 
 interface VoiceConfigSectionProps {
   callVolume: number;
@@ -63,7 +64,7 @@ export const VoiceConfigSection: React.FC<VoiceConfigSectionProps> = ({
         <label className="block text-sm font-medium text-gray-700 mb-1">
           Monthly Call Volume
         </label>
-        <input 
+        <Input 
           type="number" 
           min={0}
           step="50"
@@ -88,7 +89,7 @@ export const VoiceConfigSection: React.FC<VoiceConfigSectionProps> = ({
         <label className="block text-sm font-medium text-gray-700 mb-1">
           Average Call Duration (minutes)
         </label>
-        <input 
+        <Input 
           type="number" 
           min="0.5" 
           step="0.5"
