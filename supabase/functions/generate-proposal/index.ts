@@ -31,7 +31,7 @@ serve(async (req) => {
     const aiTier = lead.calculatorResults.tierKey || 'growth';
     const aiType = lead.calculatorResults.aiType || 'chatbot';
     
-    // Get the correct base price based on tier - these are the exact prices
+    // Get the correct base price based on tier - these are the exact fixed prices
     let basePrice = 0;
     switch(aiTier) {
       case 'starter':
@@ -79,7 +79,7 @@ serve(async (req) => {
               <ul>
                 <li>Monthly cost reduction of ${new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD' }).format(lead.calculatorResults.monthlySavings)}</li>
                 <li>Annual savings of ${new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD' }).format(lead.calculatorResults.yearlySavings)}</li>
-                <li>${(lead.calculatorResults.savingsPercentage * 100).toFixed(1)}% improvement in operational efficiency</li>
+                <li>${lead.calculatorResults.savingsPercentage.toFixed(1)}% improvement in operational efficiency</li>
               </ul>
             </div>
 

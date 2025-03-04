@@ -26,12 +26,9 @@ export interface PricingDetail {
   title: string;
   base: number | null;
   rate: string;
-  totalMessages?: number;
-  totalMinutes?: number;
+  totalMessages?: number | null;
+  totalMinutes?: number | null;
   monthlyCost: number;
-  usageCost?: number;
-  volumeDiscount?: number;
-  complexityFactor?: number;
 }
 
 export interface ResultsDisplayProps {

@@ -70,37 +70,19 @@ export const PricingDetails: React.FC<PricingDetailsProps> = ({
             {detail.base !== null && (
               <div className="flex items-center">
                 <DollarSign className="h-4 w-4 mr-1" />
-                Base fee: {formatCurrency(detail.base)}/month
+                Flat monthly subscription: {formatCurrency(detail.base)}
               </div>
             )}
-            <div className="flex items-center">
-              <Clock className="h-4 w-4 mr-1" />
-              Usage rate: {detail.rate}
-            </div>
-            <div className="flex items-center">
-              <span className="font-medium">Monthly volume:</span>
-              <span className="ml-2">
-                {detail.totalMessages 
-                  ? `${formatNumber(detail.totalMessages)} messages`
-                  : `${formatNumber(detail.totalMinutes!)} minutes`}
-              </span>
-            </div>
-            {detail.usageCost !== undefined && (
-              <div className="flex items-center">
-                <DollarSign className="h-4 w-4 mr-1" />
-                Usage cost: {formatCurrency(detail.usageCost)}/month
-              </div>
-            )}
-            {detail.volumeDiscount !== undefined && detail.volumeDiscount > 0 && (
-              <div className="flex items-center">
-                <DollarSign className="h-4 w-4 mr-1" />
-                Volume discount: {formatCurrency(-detail.volumeDiscount)}/month
-              </div>
-            )}
-            {detail.complexityFactor !== undefined && detail.complexityFactor !== 1 && (
+            {detail.totalMessages && (
               <div className="flex items-center">
                 <Clock className="h-4 w-4 mr-1" />
-                Complexity factor: {detail.complexityFactor.toFixed(2)}x
+                Monthly message capacity: {formatNumber(detail.totalMessages)} messages
+              </div>
+            )}
+            {detail.totalMinutes && (
+              <div className="flex items-center">
+                <Clock className="h-4 w-4 mr-1" />
+                Monthly voice minutes: {formatNumber(detail.totalMinutes)} minutes
               </div>
             )}
           </div>

@@ -10,20 +10,19 @@ export const calculatePricingDetails = (inputs: CalculatorInputs): PricingDetail
   // Get the exact base price for the selected tier
   const baseRate = AI_RATES.chatbot[inputs.aiTier].base;
   
-  // Create a single pricing detail with the exact base price
+  // Create a pricing detail entry with the fixed base price
   pricingDetails.push({
     title: inputs.aiType === 'chatbot' ? 'Text AI' : 
            inputs.aiType === 'voice' ? 'Voice AI' :
            inputs.aiType === 'conversationalVoice' ? 'Conversational Voice AI' :
            inputs.aiType === 'both' ? 'Text & Voice AI' : 'Text & Conversational Voice AI',
     base: baseRate,
-    rate: null,
+    rate: "Flat monthly rate",
     totalMessages: inputs.aiType === 'chatbot' || inputs.aiType === 'both' || inputs.aiType === 'both-premium' 
-      ? inputs.chatVolume * inputs.avgChatLength : null,
+      ? inputs.chatVolume : null,
     totalMinutes: inputs.aiType === 'voice' || inputs.aiType === 'conversationalVoice' || inputs.aiType === 'both' || inputs.aiType === 'both-premium' 
       ? inputs.callVolume * inputs.avgCallDuration : null,
-    monthlyCost: baseRate,
-    usageCost: 0
+    monthlyCost: baseRate
   });
 
   return pricingDetails;

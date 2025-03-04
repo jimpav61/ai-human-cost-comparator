@@ -17,8 +17,7 @@ export const addRecommendedSolution = (doc: JsPDFWithAutoTable, yPosition: numbe
   const tierName = params.tierName || getTierDisplayName(params.results?.tierKey || 'starter');
   const aiType = params.aiType || getAITypeDisplay(params.results?.aiType || 'chatbot');
   
-  // Determine the number of included minutes based on the tier
-  let includedMinutes = 0;
+  // Determine the tier key for pricing
   let tierKey = 'starter';
   
   if (params.results?.tierKey) {
@@ -34,13 +33,16 @@ export const addRecommendedSolution = (doc: JsPDFWithAutoTable, yPosition: numbe
     }
   }
   
+  // Get the exact base price for this tier
+  const basePrice = AI_RATES.chatbot[tierKey].base || 0;
+  
   // Get included minutes based on tier
-  if (tierKey !== 'starter') {
-    includedMinutes = AI_RATES.chatbot[tierKey].includedVoiceMinutes || 600;
-  }
+  const includedMinutes = tierKey !== 'starter' 
+    ? AI_RATES.chatbot[tierKey].includedVoiceMinutes || 0 
+    : 0;
   
   // Plan details with AI type info
-  let planText = `Based on your specific needs, we recommend our ${tierName} with ${aiType} capabilities. This provides optimal functionality while maximizing your return on investment.`;
+  let planText = `Based on your specific needs, we recommend our ${tierName} with ${aiType} capabilities for $${basePrice}/month. This provides optimal functionality while maximizing your return on investment.`;
   
   // Add voice minutes information if applicable
   if (tierKey !== 'starter' && (aiType.includes('Voice') || aiType.includes('voice'))) {

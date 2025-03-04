@@ -19,8 +19,8 @@ export const PlanSelectionSection: React.FC<PlanSelectionSectionProps> = ({
   const handleTierSelection = (tier: string) => {
     console.log(`User selected tier: ${tier} from the plan selection section, current AI type: ${currentAIType}`);
     
-    // Get exact prices based on tier
-    const exactPrice = tier === 'starter' ? 99 : tier === 'growth' ? 229 : 429;
+    // Get exact fixed prices based on tier - no additional calculations
+    const exactPrice = AI_RATES.chatbot[tier as keyof typeof AI_RATES.chatbot].base;
     const setupFee = AI_RATES.chatbot[tier as keyof typeof AI_RATES.chatbot].setupFee;
     
     toast({
