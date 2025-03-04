@@ -3,6 +3,37 @@ import { Lead } from "@/types/leads";
 import { LeadChangeLog } from "@/components/calculator/types";
 
 /**
+ * Utility to log application initialization for debugging purposes
+ */
+export const logAppInitialization = () => {
+  console.log('APP INITIALIZATION: Application starting to load');
+  
+  // Log environment information
+  console.log('APP INITIALIZATION: Environment:', {
+    isDevelopment: import.meta.env.DEV,
+    isProduction: import.meta.env.PROD,
+    mode: import.meta.env.MODE,
+    baseUrl: import.meta.env.BASE_URL
+  });
+  
+  // Log browser information
+  console.log('APP INITIALIZATION: Browser:', {
+    userAgent: navigator.userAgent,
+    language: navigator.language,
+    viewport: {
+      width: window.innerWidth,
+      height: window.innerHeight
+    }
+  });
+  
+  // Return initialization success
+  return {
+    timestamp: new Date().toISOString(),
+    status: 'initialized'
+  };
+};
+
+/**
  * Utility to log changes made to a lead for debugging purposes
  * @param originalLead The lead before changes
  * @param updatedLead The lead after changes
