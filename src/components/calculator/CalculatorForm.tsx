@@ -15,141 +15,120 @@ interface CalculatorFormProps {
 }
 
 export const CalculatorForm: React.FC<CalculatorFormProps> = ({ inputs, onInputChange }) => {
-  // Select appropriate tier when AI type changes
-  useEffect(() => {
-    if (inputs.aiType === 'chatbot' && inputs.aiTier !== 'starter') {
-      // If only text is needed, default to starter plan
-      onInputChange('aiTier', 'starter');
-      // Ensure call volume is set to 0 for starter plan
-      onInputChange('callVolume', 0);
-      toast({
-        title: "Plan Updated",
-        description: "Switched to Starter Plan since only text capabilities are needed.",
-        variant: "default",
-      });
-    } else if ((inputs.aiType === 'voice' || inputs.aiType === 'both') && inputs.aiTier === 'starter') {
-      // If basic voice is needed, upgrade to growth plan
+  // Handle direct AI type changes
+  const handleAITypeChange = (value: string) => {
+    console.log("CalculatorForm: Changing AI type to:", value);
+    
+    // Logic to update tier based on AI type selection
+    if ((value === 'voice' || value === 'both') && inputs.aiTier === 'starter') {
+      console.log("CalculatorForm: Voice AI selected, upgrading to Growth tier");
       onInputChange('aiTier', 'growth');
+      
+      // Set default call volume for voice
+      const includedMinutes = AI_RATES.chatbot.growth.includedVoiceMinutes || 600;
+      const suggestedVolume = Math.floor(includedMinutes / inputs.avgCallDuration);
+      onInputChange('callVolume', suggestedVolume);
+      
       toast({
         title: "Plan Upgraded",
-        description: "Voice features require at least the Growth Plan. We've automatically upgraded your selection.",
-        variant: "default",
+        description: "Voice capabilities require Growth Plan or higher. We've automatically upgraded your selection.",
       });
-    } else if ((inputs.aiType === 'conversationalVoice' || inputs.aiType === 'both-premium') && inputs.aiTier !== 'premium') {
-      // If conversational voice is needed, upgrade to premium plan
+    } 
+    else if ((value === 'conversationalVoice' || value === 'both-premium') && inputs.aiTier !== 'premium') {
+      console.log("CalculatorForm: Conversational Voice AI selected, upgrading to Premium tier");
       onInputChange('aiTier', 'premium');
+      
+      // Set default call volume for premium voice
+      const includedMinutes = AI_RATES.chatbot.premium.includedVoiceMinutes || 600;
+      const suggestedVolume = Math.floor(includedMinutes / inputs.avgCallDuration);
+      onInputChange('callVolume', suggestedVolume);
+      
       toast({
-        title: "Premium Plan Selected",
-        description: "Conversational Voice AI requires the Premium Plan. We've automatically selected it for you.",
-        variant: "default",
-      });
-    }
-  }, [inputs.aiType, inputs.aiTier, onInputChange]);
-
-  // Adjust AI type when the plan tier changes
-  useEffect(() => {
-    // If changing to premium from other tiers, upgrade to premium voice
-    if (inputs.aiTier === 'premium') {
-      if (inputs.aiType === 'both') {
-        onInputChange('aiType', 'both-premium');
-        toast({
-          title: "Voice Capabilities Upgraded",
-          description: "Your voice capabilities have been upgraded to conversational with the Premium Plan.",
-          variant: "default",
-        });
-      } else if (inputs.aiType === 'voice') {
-        onInputChange('aiType', 'conversationalVoice');
-        toast({
-          title: "Voice Capabilities Upgraded", 
-          description: "Your voice capabilities have been upgraded to conversational with the Premium Plan.",
-          variant: "default",
-        });
-      } else if (inputs.aiType === 'chatbot') {
-        // For premium tier, default to the most comprehensive option
-        onInputChange('aiType', 'both-premium');
-        toast({
-          title: "Full Capabilities Enabled",
-          description: "Premium Plan includes our most comprehensive capabilities. We've enabled all features.",
-          variant: "default",
-        });
-      }
-    }
-    // If changing to growth from premium, downgrade voice features
-    else if (inputs.aiTier === 'growth' && (inputs.aiType === 'both-premium' || inputs.aiType === 'conversationalVoice')) {
-      onInputChange('aiType', inputs.aiType === 'conversationalVoice' ? 'voice' : 'both');
-      toast({
-        title: "Voice Capabilities Adjusted",
-        description: "Voice capabilities have been adjusted to basic for the Growth Plan.",
-        variant: "default",
-      });
-    }
-    // If changing to starter, only allow chatbot
-    else if (inputs.aiTier === 'starter' && inputs.aiType !== 'chatbot') {
-      onInputChange('aiType', 'chatbot');
-      onInputChange('callVolume', 0);
-      toast({
-        title: "Voice Features Not Available",
-        description: "Starter Plan only supports text capabilities. Voice features have been disabled.",
-        variant: "default",
-      });
-    }
-  }, [inputs.aiTier, inputs.aiType, onInputChange]);
-
-  const handleTierSelect = (tier: string) => {
-    if (tier === 'starter' && (inputs.aiType === 'voice' || inputs.aiType === 'conversationalVoice' || inputs.aiType === 'both' || inputs.aiType === 'both-premium')) {
-      // If selecting starter but using voice, switch to text only
-      onInputChange('aiType', 'chatbot');
-      onInputChange('callVolume', 0);
-      toast({
-        title: "Voice Features Disabled",
-        description: "Starter Plan doesn't support voice features. Switched to text-only capabilities.",
-        variant: "default",
+        title: "Plan Upgraded",
+        description: "Conversational Voice AI requires Premium Plan. We've automatically upgraded your selection.",
       });
     }
     
-    // If upgrading to premium and using voice features, upgrade to premium voice
-    if (tier === 'premium') {
-      if (inputs.aiType === 'both') {
-        onInputChange('aiType', 'both-premium');
-      } else if (inputs.aiType === 'voice') {
-        onInputChange('aiType', 'conversationalVoice');
-      } else if (inputs.aiType === 'chatbot') {
-        onInputChange('aiType', 'both-premium');
+    // Finally update the AI type
+    onInputChange('aiType', value as any);
+  };
+
+  // Handle tier selections from the plan selection section
+  const handleTierSelect = (tier: string) => {
+    console.log("CalculatorForm: Tier selected:", tier);
+    
+    // Update AI type based on tier selection
+    if (tier === 'starter') {
+      if (inputs.aiType !== 'chatbot') {
+        console.log("CalculatorForm: Downgrading to starter, switching to chatbot only");
+        onInputChange('aiType', 'chatbot');
+        onInputChange('callVolume', 0);
+        
+        toast({
+          title: "Voice Features Disabled",
+          description: "Starter Plan only supports text capabilities. Voice features have been disabled.",
+          variant: "default",
+        });
+      }
+    } 
+    else if (tier === 'growth') {
+      if (inputs.aiType === 'conversationalVoice' || inputs.aiType === 'both-premium') {
+        // Downgrade from premium voice to basic voice
+        const newType = inputs.aiType === 'conversationalVoice' ? 'voice' : 'both';
+        console.log(`CalculatorForm: Downgrading to growth, changing AI type from ${inputs.aiType} to ${newType}`);
+        onInputChange('aiType', newType as any);
+        
+        toast({
+          title: "Voice Capabilities Adjusted",
+          description: "Voice capabilities have been adjusted to basic for the Growth Plan.",
+          variant: "default",
+        });
+      } 
+      else if (inputs.aiType === 'chatbot') {
+        // When upgrading from starter to growth, suggest enabling voice
+        console.log("CalculatorForm: Upgrading to growth from chatbot only, suggesting voice features");
+        onInputChange('aiType', 'both' as any);
+        
+        // Set a default call volume for growth
+        const includedMinutes = AI_RATES.chatbot.growth.includedVoiceMinutes || 600;
+        const suggestedVolume = Math.floor(includedMinutes / inputs.avgCallDuration);
+        onInputChange('callVolume', suggestedVolume);
+        
+        toast({
+          title: "Voice Features Enabled",
+          description: "Growth Plan includes voice capabilities. We've enabled them for you.",
+          variant: "default",
+        });
+      }
+    } 
+    else if (tier === 'premium') {
+      if (inputs.aiType === 'voice') {
+        console.log("CalculatorForm: Upgrading to premium, enhancing voice to conversational");
+        onInputChange('aiType', 'conversationalVoice' as any);
+      } 
+      else if (inputs.aiType === 'both') {
+        console.log("CalculatorForm: Upgrading to premium, enhancing to premium voice features");
+        onInputChange('aiType', 'both-premium' as any);
+      } 
+      else if (inputs.aiType === 'chatbot') {
+        console.log("CalculatorForm: Upgrading to premium from chatbot only, enabling all premium features");
+        onInputChange('aiType', 'both-premium' as any);
+        
+        // Set a default call volume for premium
+        const includedMinutes = AI_RATES.chatbot.premium.includedVoiceMinutes || 600;
+        const suggestedVolume = Math.floor(includedMinutes / inputs.avgCallDuration);
+        onInputChange('callVolume', suggestedVolume);
       }
       
       toast({
-        title: "Voice Capabilities Upgraded",
-        description: "Your AI capabilities have been upgraded to our premium features.",
+        title: "Premium Features Enabled",
+        description: "Premium Plan includes our most advanced voice capabilities. We've enabled them for you.",
         variant: "default",
       });
     }
     
-    // If downgrading to growth from premium and using premium voice, downgrade to basic voice
-    if (tier === 'growth' && (inputs.aiType === 'both-premium' || inputs.aiType === 'conversationalVoice')) {
-      onInputChange('aiType', inputs.aiType === 'conversationalVoice' ? 'voice' : 'both');
-      toast({
-        title: "Voice Capabilities Adjusted",
-        description: "Voice capabilities have been adjusted to basic for the Growth Plan.",
-        variant: "default",
-      });
-    }
-    
+    // Actually update the tier
     onInputChange('aiTier', tier as any);
-    
-    // Update call volume based on the tier
-    if (tier === 'starter') {
-      onInputChange('callVolume', 0);
-    } else {
-      // For non-starter tiers, set a default call volume if it's currently 0
-      const tierInfo = AI_RATES.chatbot[tier as keyof typeof AI_RATES.chatbot];
-      if (inputs.callVolume === 0 && tierInfo.includedVoiceMinutes) {
-        onInputChange('callVolume', Math.floor(tierInfo.includedVoiceMinutes / inputs.avgCallDuration));
-      }
-    }
-  };
-
-  const handleAITypeChange = (value: string) => {
-    onInputChange('aiType', value as any);
   };
 
   return (

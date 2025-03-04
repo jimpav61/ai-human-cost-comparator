@@ -23,10 +23,12 @@ export const VoiceConfigSection: React.FC<VoiceConfigSectionProps> = ({
   
   // Handle call volume changes
   const handleCallVolumeChange = (value: number) => {
+    console.log(`VoiceConfigSection: Call volume changed to ${value}`);
+    
     if (isStarterPlan && value > 0) {
       // If user tries to add minutes in starter plan, auto-upgrade to growth
+      console.log("VoiceConfigSection: Call volume > 0 on starter plan, upgrading to Growth tier");
       onInputChange('aiTier', 'growth');
-      // Set to a reasonable default that's above zero but doesn't force immediate overage charges
       onInputChange('callVolume', value);
       
       toast({
@@ -44,6 +46,7 @@ export const VoiceConfigSection: React.FC<VoiceConfigSectionProps> = ({
   useEffect(() => {
     // For starter plan, set to 0
     if (isStarterPlan && callVolume !== 0) {
+      console.log("VoiceConfigSection: On starter plan but call volume not 0, resetting to 0");
       onInputChange('callVolume', 0);
     }
     
@@ -52,7 +55,7 @@ export const VoiceConfigSection: React.FC<VoiceConfigSectionProps> = ({
       // Set to a value that uses included minutes but doesn't go over
       const suggestedVolume = Math.floor(includedMinutes / avgCallDuration);
       if (suggestedVolume > 0) {
-        console.log(`Setting default call volume to ${suggestedVolume} based on ${includedMinutes} included minutes`);
+        console.log(`VoiceConfigSection: Setting default call volume to ${suggestedVolume} based on ${includedMinutes} included minutes`);
         onInputChange('callVolume', suggestedVolume);
       }
     }

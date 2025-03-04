@@ -72,7 +72,7 @@ export const AITypeSection: React.FC<AITypeSectionProps> = ({
         <SelectTrigger className="calculator-input">
           <SelectValue placeholder="Select AI Type" />
         </SelectTrigger>
-        <SelectContent>
+        <SelectContent className="bg-white">
           <SelectItem value="chatbot">Text Only</SelectItem>
           <SelectItem value="voice" disabled={aiTier === 'starter'}>Basic Voice Only</SelectItem>
           <SelectItem value="conversationalVoice" disabled={aiTier !== 'premium'}>Conversational Voice Only</SelectItem>

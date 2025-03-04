@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { useCalculator, type CalculatorInputs } from '@/hooks/useCalculator';
 import { CalculatorForm } from './calculator/CalculatorForm';
@@ -33,77 +34,64 @@ export const AIVsHumanCalculator: React.FC<AIVsHumanCalculatorProps> = ({ leadDa
   
   // Handle input changes from the calculator form
   const handleInputChange = (field: keyof CalculatorInputs, value: any) => {
-    console.log(`Changing ${field} to:`, value);
+    console.log(`AIVsHumanCalculator: Changing ${field} to:`, value);
     
     setCalculatorInputs(prev => {
       const updatedInputs = { ...prev, [field]: value };
       
+      // Handle tier changes or AI type changes that have interdependencies
+      
       // If changing to starter plan, ensure call volume is 0 and type is chatbot
-      if (field === 'aiTier' && value === 'starter') {
+      if (field === 'aiTier' && value === 'starter' && prev.aiType !== 'chatbot') {
         updatedInputs.callVolume = 0;
         updatedInputs.aiType = 'chatbot';
+        console.log("AIVsHumanCalculator: Changed to Starter tier, forcing AI type to chatbot and zeroing call volume");
       }
       
-      // If changing to premium plan, update AI type for voice capabilities
+      // If changing to growth/premium plan, update AI type if it's not compatible
+      if (field === 'aiTier' && value === 'growth' && (prev.aiType === 'conversationalVoice' || prev.aiType === 'both-premium')) {
+        updatedInputs.aiType = prev.aiType === 'conversationalVoice' ? 'voice' : 'both';
+        console.log(`AIVsHumanCalculator: Downgraded to Growth tier, adjusted AI type from ${prev.aiType} to ${updatedInputs.aiType}`);
+      }
+      
+      // If changing to premium, potentially upgrade voice capabilities
       if (field === 'aiTier' && value === 'premium') {
         if (prev.aiType === 'voice') {
           updatedInputs.aiType = 'conversationalVoice';
+          console.log("AIVsHumanCalculator: Upgraded to Premium tier, enhanced AI type to conversationalVoice");
         } else if (prev.aiType === 'both') {
           updatedInputs.aiType = 'both-premium';
+          console.log("AIVsHumanCalculator: Upgraded to Premium tier, enhanced AI type to both-premium");
         }
-        console.log("Updated to premium tier, new AI type:", updatedInputs.aiType);
         
-        // Set a default call volume for premium if it was 0
+        // If no call volume is set, set a default for premium tier
         if (prev.callVolume === 0) {
           const includedMinutes = AI_RATES.chatbot.premium.includedVoiceMinutes || 600;
           updatedInputs.callVolume = Math.floor(includedMinutes / prev.avgCallDuration);
-          console.log(`Setting default call volume to ${updatedInputs.callVolume} based on ${includedMinutes} included minutes`);
+          console.log(`AIVsHumanCalculator: Setting default premium call volume to ${updatedInputs.callVolume}`);
         }
       }
       
-      // If changing from premium to growth and using premium voice features
-      if (field === 'aiTier' && value === 'growth') {
-        if (prev.aiType === 'conversationalVoice') {
-          updatedInputs.aiType = 'voice';
-          console.log("Downgraded from premium to growth tier, changed AI type from conversationalVoice to voice");
-        } else if (prev.aiType === 'both-premium') {
-          updatedInputs.aiType = 'both';
-          console.log("Downgraded from premium to growth tier, changed AI type from both-premium to both");
-        }
-        
-        // Keep the call volume but ensure it uses the 600 included minutes for Growth tier
-        if (prev.callVolume > 0) {
-          const includedMinutes = AI_RATES.chatbot.growth.includedVoiceMinutes || 600;
-          if (prev.callVolume * prev.avgCallDuration > includedMinutes * 1.5) {
-            // If current usage is significantly over the included minutes, adjust to use most of the included
-            updatedInputs.callVolume = Math.floor(includedMinutes * 0.9 / prev.avgCallDuration);
-            console.log(`Adjusted call volume to ${updatedInputs.callVolume} to better utilize the ${includedMinutes} included minutes in Growth tier`);
-          }
-        }
-      }
-      
-      // If changing AI type to voice-based option from text, ensure tier is at least growth
-      if (field === 'aiType' && 
-         (value === 'voice' || value === 'both') && 
-         prev.aiTier === 'starter') {
+      // If changing AI type to voice or both on starter plan, upgrade to growth
+      if (field === 'aiType' && (value === 'voice' || value === 'both') && prev.aiTier === 'starter') {
         updatedInputs.aiTier = 'growth';
+        console.log("AIVsHumanCalculator: Voice option selected on Starter plan, upgrading to Growth tier");
         
-        // Set a default call volume if upgrading to voice
+        // Set a default call volume for voice features
         const includedMinutes = AI_RATES.chatbot.growth.includedVoiceMinutes || 600;
         updatedInputs.callVolume = Math.floor(includedMinutes / prev.avgCallDuration);
-        console.log(`Setting default call volume to ${updatedInputs.callVolume} based on ${includedMinutes} included minutes in Growth tier`);
+        console.log(`AIVsHumanCalculator: Setting default growth call volume to ${updatedInputs.callVolume}`);
       }
       
-      // If changing AI type to premium voice options, ensure tier is premium
-      if (field === 'aiType' && 
-         (value === 'conversationalVoice' || value === 'both-premium') && 
-         prev.aiTier !== 'premium') {
+      // If changing to premium voice options, upgrade to premium tier
+      if (field === 'aiType' && (value === 'conversationalVoice' || value === 'both-premium') && prev.aiTier !== 'premium') {
         updatedInputs.aiTier = 'premium';
+        console.log("AIVsHumanCalculator: Premium voice option selected, upgrading to Premium tier");
         
-        // Set a default call volume if upgrading to premium voice
+        // Set default call volume for premium voice
         const includedMinutes = AI_RATES.chatbot.premium.includedVoiceMinutes || 600;
         updatedInputs.callVolume = Math.floor(includedMinutes / prev.avgCallDuration);
-        console.log(`Setting default call volume to ${updatedInputs.callVolume} based on ${includedMinutes} included minutes in Premium tier`);
+        console.log(`AIVsHumanCalculator: Setting default premium call volume to ${updatedInputs.callVolume}`);
       }
       
       return updatedInputs;

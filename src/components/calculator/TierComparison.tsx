@@ -1,4 +1,3 @@
-
 import React from 'react';
 import { Check, X } from 'lucide-react';
 import { formatCurrency } from '@/utils/formatters';
@@ -30,6 +29,18 @@ export const TierComparison: React.FC<TierComparisonProps> = ({
     return { isCompatible: true };
   };
 
+  // Handle tier selection with appropriate logging
+  const handleTierClick = (tier: string) => {
+    console.log(`TierComparison: User clicked on tier ${tier}`);
+    const { isCompatible } = getTierCompatibility(tier);
+    if (isCompatible) {
+      console.log(`TierComparison: Selected tier ${tier} is compatible, updating`);
+      onSelectTier(tier);
+    } else {
+      console.log(`TierComparison: Selected tier ${tier} is not compatible with AI type ${currentAIType}`);
+    }
+  };
+
   return (
     <div className="grid grid-cols-3 gap-4">
       {['starter', 'growth', 'premium'].map((tier) => {
@@ -45,7 +56,7 @@ export const TierComparison: React.FC<TierComparisonProps> = ({
                   ? 'bg-white border border-gray-200 hover:border-brand-300 cursor-pointer'
                   : 'bg-gray-100 border border-gray-200 opacity-70 cursor-not-allowed'
             }`}
-            onClick={() => isCompatible && onSelectTier(tier)}
+            onClick={() => handleTierClick(tier)}
           >
             <div className="text-center mb-3">
               <h5 className={`font-semibold text-lg capitalize ${!isCompatible ? 'text-gray-500' : ''}`}>

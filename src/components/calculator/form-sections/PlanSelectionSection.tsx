@@ -13,7 +13,7 @@ export const PlanSelectionSection: React.FC<PlanSelectionSectionProps> = ({
   currentAIType, 
   onSelectTier 
 }) => {
-  // When a tier is selected, we need to ensure it syncs with the AI type
+  // When a tier is selected, we need to properly update it
   const handleTierSelection = (tier: string) => {
     console.log(`User selected tier: ${tier} from the plan selection section`);
     onSelectTier(tier);
