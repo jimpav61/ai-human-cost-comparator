@@ -14,8 +14,8 @@ export const addRecommendedSolution = (doc: JsPDFWithAutoTable, yPosition: numbe
   doc.setTextColor(0, 0, 0); // Regular text in black
   
   // Get tier name and AI type from params or determine based on input values
-  const tierName = params.tierName || 'Starter Plan';
-  const aiType = params.aiType || 'Text Only';
+  const tierName = params.tierName || getTierDisplayName(params.results?.tierKey || 'starter');
+  const aiType = params.aiType || getAITypeDisplay(params.results?.aiType || 'chatbot');
   
   // Determine the number of included minutes based on the tier
   let includedMinutes = 0;
@@ -39,11 +39,11 @@ export const addRecommendedSolution = (doc: JsPDFWithAutoTable, yPosition: numbe
     includedMinutes = AI_RATES.chatbot[tierKey].includedVoiceMinutes || 600;
   }
   
-  // Plan details
-  let planText = `Based on your specific needs, we recommend our ${tierName}. This provides optimal functionality while maximizing your return on investment.`;
+  // Plan details with AI type info
+  let planText = `Based on your specific needs, we recommend our ${tierName} with ${aiType} capabilities. This provides optimal functionality while maximizing your return on investment.`;
   
   // Add voice minutes information if applicable
-  if (tierKey !== 'starter') {
+  if (tierKey !== 'starter' && (aiType.includes('Voice') || aiType.includes('voice'))) {
     planText += ` The plan includes ${includedMinutes} free voice minutes per month, with additional minutes billed only if you exceed this limit.`;
   }
   

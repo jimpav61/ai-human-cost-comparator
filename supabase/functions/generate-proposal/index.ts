@@ -27,6 +27,10 @@ serve(async (req) => {
   try {
     const { lead } = await req.json() as { lead: Lead };
 
+    // Get the plan details
+    const aiTier = lead.calculatorResults.tierKey || 'growth';
+    const aiType = lead.calculatorResults.aiType || 'chatbot';
+    
     // Create a professional HTML proposal
     const proposalHtml = `
       <!DOCTYPE html>
