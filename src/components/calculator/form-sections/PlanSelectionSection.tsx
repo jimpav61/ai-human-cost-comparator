@@ -13,9 +13,11 @@ export const PlanSelectionSection: React.FC<PlanSelectionSectionProps> = ({
   currentAIType, 
   onSelectTier 
 }) => {
-  // When a tier is selected, we need to properly update it
+  // When a tier is selected, properly update it and log the change
   const handleTierSelection = (tier: string) => {
-    console.log(`User selected tier: ${tier} from the plan selection section`);
+    console.log(`User selected tier: ${tier} from the plan selection section, current AI type: ${currentAIType}`);
+    
+    // Pass the tier selection up to the parent component
     onSelectTier(tier);
   };
 

@@ -68,6 +68,11 @@ serve(async (req) => {
             </div>
 
             <div class="section">
+              <h3>Recommended Solution: ${getTierDisplayName(aiTier)} with ${getAITypeDisplay(aiType)}</h3>
+              <p>We've analyzed your needs and recommend our ${getTierDisplayName(aiTier)} with ${getAITypeDisplay(aiType)} capabilities for optimal results.</p>
+            </div>
+
+            <div class="section">
               <h3>Next Steps</h3>
               <p>We'd love to schedule a detailed walkthrough of our solution and discuss how we can best implement it for ${lead.companyName}. Here's what we propose:</p>
               <ol>
@@ -116,3 +121,24 @@ serve(async (req) => {
     );
   }
 });
+
+// Helper functions to get display names for tier and AI type
+function getTierDisplayName(tier) {
+  switch(tier) {
+    case 'starter': return 'Starter Plan';
+    case 'growth': return 'Growth Plan';
+    case 'premium': return 'Premium Plan';
+    default: return 'Custom Plan';
+  }
+}
+
+function getAITypeDisplay(aiType) {
+  switch(aiType) {
+    case 'chatbot': return 'Text Only';
+    case 'voice': return 'Basic Voice';
+    case 'conversationalVoice': return 'Conversational Voice';
+    case 'both': return 'Text & Basic Voice';
+    case 'both-premium': return 'Text & Conversational Voice';
+    default: return aiType || 'Custom AI';
+  }
+}
