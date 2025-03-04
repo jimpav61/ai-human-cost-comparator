@@ -62,8 +62,39 @@ export const useProposalGenerator = ({ lead }: UseProposalGeneratorProps) => {
       
       console.log("Using lead's existing calculator results:", lead.calculator_results);
       
+      // Ensure we have valid values in the results
+      const validatedResults = { ...lead.calculator_results };
+      
+      // Make sure aiCostMonthly structure exists
+      if (!validatedResults.aiCostMonthly) {
+        validatedResults.aiCostMonthly = {
+          voice: 0,
+          chatbot: AI_RATES.chatbot[tierToUse].base,
+          total: AI_RATES.chatbot[tierToUse].base,
+          setupFee: AI_RATES.chatbot[tierToUse].setupFee
+        };
+      } else {
+        // Ensure total is not 0
+        if (!validatedResults.aiCostMonthly.total || validatedResults.aiCostMonthly.total === 0) {
+          validatedResults.aiCostMonthly.total = AI_RATES.chatbot[tierToUse].base;
+        }
+        
+        // Ensure chatbot cost is not 0
+        if (!validatedResults.aiCostMonthly.chatbot || validatedResults.aiCostMonthly.chatbot === 0) {
+          validatedResults.aiCostMonthly.chatbot = AI_RATES.chatbot[tierToUse].base;
+        }
+        
+        // Ensure setup fee is not 0
+        if (!validatedResults.aiCostMonthly.setupFee || validatedResults.aiCostMonthly.setupFee === 0) {
+          validatedResults.aiCostMonthly.setupFee = AI_RATES.chatbot[tierToUse].setupFee;
+        }
+      }
+      
+      // Add the tier key to be used in recommendedSolution
+      validatedResults.tierKey = tierToUse;
+      
       try {
-        // Generate the proposal document using the imported function with the existing results
+        // Generate the proposal document using the imported function with the validated results
         const doc = generateProposal({
           contactInfo: lead.name || 'Valued Client',
           companyName: lead.company_name || 'Your Company',
@@ -71,10 +102,7 @@ export const useProposalGenerator = ({ lead }: UseProposalGeneratorProps) => {
           phoneNumber: lead.phone_number || '',
           industry: lead.industry || 'Other',
           employeeCount: lead.employee_count || 5,
-          results: {
-            ...lead.calculator_results,
-            tierKey: tierToUse // Add the tier key to be used in recommendedSolution
-          },
+          results: validatedResults,
           tierName: tierName,
           aiType: aiType,
           pricingDetails: pricingDetails
@@ -131,7 +159,7 @@ export const useProposalGenerator = ({ lead }: UseProposalGeneratorProps) => {
       const tierToUse = inputs.aiTier || 'starter';
       const aiTypeToUse = inputs.aiType || 'chatbot';
       
-      // Get setup fee from rates using the correct tier
+      // Get pricing details from AI_RATES
       const setupFee = AI_RATES.chatbot[tierToUse as keyof typeof AI_RATES.chatbot]?.setupFee || 0;
       const annualPrice = AI_RATES.chatbot[tierToUse as keyof typeof AI_RATES.chatbot]?.annualPrice || 0;
       const baseMonthlyPrice = AI_RATES.chatbot[tierToUse as keyof typeof AI_RATES.chatbot]?.base || 0;
@@ -179,7 +207,7 @@ export const useProposalGenerator = ({ lead }: UseProposalGeneratorProps) => {
         aiCostMonthly: { 
           voice: voiceCost, 
           chatbot: baseMonthlyPrice, 
-          total: totalMonthlyAICost,
+          total: Math.max(totalMonthlyAICost, baseMonthlyPrice), // Ensure we never have 0 cost
           setupFee: setupFee
         },
         humanCostMonthly: humanCostMonthly,

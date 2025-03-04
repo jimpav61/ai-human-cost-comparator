@@ -21,8 +21,10 @@ export const ResultsDetailView: React.FC<ResultsDetailViewProps> = ({
   tierDisplayName,
   aiTypeDisplay,
 }) => {
-  // Get the exact base price from AI_RATES instead of the calculated total
+  // Get the base price directly from AI_RATES
   const basePrice = AI_RATES.chatbot[inputs.aiTier].base;
+  const setupFee = results.aiCostMonthly.setupFee;
+  const totalMonthly = results.aiCostMonthly.total;
   
   return (
     <div>
@@ -38,7 +40,7 @@ export const ResultsDetailView: React.FC<ResultsDetailViewProps> = ({
       <h4 className="font-medium text-gray-900 mb-3">AI Cost Breakdown</h4>
       <PricingDetails 
         details={pricingDetails}
-        setupFee={results.aiCostMonthly.setupFee}
+        setupFee={setupFee}
         annualPlan={results.annualPlan}
         includedVoiceMinutes={AI_RATES.chatbot[inputs.aiTier].includedVoiceMinutes}
       />
@@ -74,11 +76,14 @@ export const ResultsDetailView: React.FC<ResultsDetailViewProps> = ({
           </div>
           <div className="bg-green-50 p-4 border-t border-b border-green-100">
             <div className="text-brand-700 mb-1">Your ChatSites.ai Cost</div>
-            <div className="text-xl font-semibold text-brand-600">{formatCurrency(basePrice)}/month</div>
+            <div className="text-xl font-semibold text-brand-600">{formatCurrency(totalMonthly)}/month</div>
+            <div className="text-sm text-gray-600">
+              <span>Base: {formatCurrency(basePrice)}/month + Usage: {formatCurrency(totalMonthly - basePrice)}/month</span>
+            </div>
           </div>
           <div className="bg-gray-50 p-4">
             <div className="text-green-700 mb-1">Monthly Savings</div>
-            <div className="text-xl font-semibold text-green-600">{formatCurrency(results.humanCostMonthly - basePrice)}</div>
+            <div className="text-xl font-semibold text-green-600">{formatCurrency(results.monthlySavings)}</div>
           </div>
         </div>
       </div>

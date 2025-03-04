@@ -61,12 +61,16 @@ export const useCalculator = (inputs: CalculatorInputs): CalculationResults => {
     const loadPricing = async () => {
       const rates = await fetchPricingConfigurations();
       setAiRates(rates);
+      console.log("Loaded pricing configurations:", rates);
     };
     
     loadPricing();
   }, []);
 
   useEffect(() => {
+    console.log("Calculating with inputs:", inputs);
+    console.log("Using AI rates:", aiRates);
+    
     const HOURS_PER_SHIFT = 8;
     const DAYS_PER_WEEK = 5;
     const WEEKS_PER_YEAR = 52;
@@ -83,21 +87,25 @@ export const useCalculator = (inputs: CalculatorInputs): CalculationResults => {
     const monthlyHumanCost = hourlyRateWithBenefits * monthlyTotalHours;
 
     // Determine the effective tier for pricing calculations
-    // If using conversational voice, we must be on premium tier
+    // If using conversational voice, ensure we're on premium tier
     let effectiveTier = inputs.aiTier;
     if (inputs.aiType === 'conversationalVoice' || inputs.aiType === 'both-premium') {
       effectiveTier = 'premium';
     }
     
-    let monthlyVoiceCost = 0;
-    let monthlyChatbotCost = 0;
-    
-    // Get base costs and setup fees from the correct tier
+    // Get base costs and setup fees for the correct tier
     const chatbotRates = aiRates.chatbot[effectiveTier];
+    const basePrice = chatbotRates.base || 0;
     const setupFee = chatbotRates.setupFee || 0;
     const annualPlan = chatbotRates.annualPrice || 0;
     
-    // Calculate voice costs (if applicable)
+    console.log("Base price for tier:", effectiveTier, basePrice);
+    console.log("Setup fee:", setupFee);
+    
+    let monthlyVoiceCost = 0;
+    let monthlyChatbotCost = 0;
+    
+    // Calculate voice costs if applicable
     if (inputs.aiType === 'voice' || inputs.aiType === 'conversationalVoice' || 
         inputs.aiType === 'both' || inputs.aiType === 'both-premium') {
       
@@ -123,17 +131,26 @@ export const useCalculator = (inputs: CalculatorInputs): CalculationResults => {
         
         // Calculate the voice cost
         monthlyVoiceCost = chargeableMinutes * voiceRate * conversationalFactor;
+        
+        console.log("Voice calculation:", {
+          totalMinutesPerMonth,
+          includedMinutes,
+          chargeableMinutes,
+          voiceRate,
+          isConversational,
+          conversationalFactor,
+          monthlyVoiceCost
+        });
       }
     }
     
-    // Calculate chatbot costs (if applicable)
+    // Calculate chatbot costs if applicable
     if (inputs.aiType === 'chatbot' || inputs.aiType === 'both' || inputs.aiType === 'both-premium') {
-      const baseCost = chatbotRates.base;
+      // Start with base monthly cost
+      monthlyChatbotCost = basePrice;
       
-      // For starter plan, there are no per-message costs
-      if (effectiveTier === 'starter') {
-        monthlyChatbotCost = baseCost;
-      } else {
+      // For non-starter plans, add per-message costs
+      if (effectiveTier !== 'starter') {
         // Calculate the total number of messages
         const totalMessages = inputs.chatVolume * inputs.avgChatLength;
         
@@ -148,8 +165,17 @@ export const useCalculator = (inputs: CalculatorInputs): CalculationResults => {
           finalMessageCost = messageUsageCost * 0.9; // 10% discount
         }
         
-        // Add base cost and message costs
-        monthlyChatbotCost = baseCost + finalMessageCost;
+        // Add message costs to base cost
+        monthlyChatbotCost += finalMessageCost;
+        
+        console.log("Chatbot calculation:", {
+          basePrice,
+          totalMessages,
+          messageRate: chatbotRates.perMessage,
+          messageUsageCost,
+          finalMessageCost,
+          monthlyChatbotCost
+        });
       }
     }
     
@@ -162,6 +188,14 @@ export const useCalculator = (inputs: CalculatorInputs): CalculationResults => {
     
     // Calculate savings percentage
     const savingsPercentage = monthlyHumanCost > 0 ? (monthlySavings / monthlyHumanCost) * 100 : 0;
+    
+    console.log("Final calculations:", {
+      monthlyAiCost,
+      monthlyHumanCost,
+      monthlySavings,
+      yearlySavings,
+      savingsPercentage
+    });
     
     setResults({
       aiCostMonthly: {

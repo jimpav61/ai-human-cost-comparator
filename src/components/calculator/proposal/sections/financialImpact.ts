@@ -105,6 +105,18 @@ export const addFinancialImpact = (doc: JsPDFWithAutoTable, yPosition: number, p
     }
   }
   
+  // Ensure we never show $0 for the AI solution
+  if (aiMonthly <= 0) {
+    if (params.tierName && params.tierName.toLowerCase().includes('premium')) {
+      aiMonthly = 429; // Default premium price
+    } else if (params.tierName && params.tierName.toLowerCase().includes('growth')) {
+      aiMonthly = 229; // Default growth price
+    } else {
+      aiMonthly = 99; // Default starter price
+    }
+    console.warn("Fallback to default price:", aiMonthly);
+  }
+  
   const aiMonthlyFormatted = formatCurrency(aiMonthly);
   const aiAnnual = formatCurrency(aiMonthly * 12);
   

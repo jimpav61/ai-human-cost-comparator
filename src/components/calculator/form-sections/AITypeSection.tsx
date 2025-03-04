@@ -1,5 +1,5 @@
 
-import React from 'react';
+import React, { useEffect } from 'react';
 
 interface AITypeSectionProps {
   aiType: string;
@@ -12,6 +12,22 @@ export const AITypeSection: React.FC<AITypeSectionProps> = ({
   aiTier,
   handleAITypeChange
 }) => {
+  // Force AI type update when tier changes
+  useEffect(() => {
+    // If on starter plan but not using chatbot, switch to chatbot
+    if (aiTier === 'starter' && aiType !== 'chatbot') {
+      handleAITypeChange('chatbot');
+    }
+    // If on premium plan and using non-premium voice, upgrade to premium voice
+    else if (aiTier === 'premium' && (aiType === 'voice' || aiType === 'both')) {
+      handleAITypeChange(aiType === 'voice' ? 'conversationalVoice' : 'both-premium');
+    }
+    // If downgraded from premium and using premium features, downgrade features
+    else if (aiTier === 'growth' && (aiType === 'conversationalVoice' || aiType === 'both-premium')) {
+      handleAITypeChange(aiType === 'conversationalVoice' ? 'voice' : 'both');
+    }
+  }, [aiTier, aiType, handleAITypeChange]);
+
   return (
     <div className="mb-4">
       <label className="block text-sm font-medium text-gray-700 mb-1">AI Type</label>
@@ -26,19 +42,22 @@ export const AITypeSection: React.FC<AITypeSectionProps> = ({
         <option value="both" disabled={aiTier === 'starter'}>Text & Basic Voice</option>
         <option value="both-premium" disabled={aiTier !== 'premium'}>Text & Conversational Voice</option>
       </select>
+      
       {aiTier === 'starter' && (
         <p className="text-sm text-amber-600 mt-1">
           Note: Starter Plan only supports text capabilities. Select Growth or Premium Plan for voice.
         </p>
       )}
+      
       {(aiType === 'conversationalVoice' || aiType === 'both-premium') && aiTier !== 'premium' && (
         <p className="text-sm text-amber-600 mt-1">
           Conversational Voice AI requires the Premium Plan.
         </p>
       )}
+      
       {(aiType === 'conversationalVoice' || aiType === 'both-premium') && aiTier === 'premium' && (
         <p className="text-sm text-green-600 mt-1">
-          Conversational Voice AI requires the Premium Plan.
+          Conversational Voice AI enabled with your Premium Plan.
         </p>
       )}
     </div>

@@ -34,6 +34,8 @@ export const AIVsHumanCalculator: React.FC<AIVsHumanCalculatorProps> = ({ leadDa
   
   // Handle input changes from the calculator form
   const handleInputChange = (field: keyof CalculatorInputs, value: any) => {
+    console.log(`Changing ${field} to:`, value);
+    
     setCalculatorInputs(prev => {
       const updatedInputs = { ...prev, [field]: value };
       
@@ -44,9 +46,23 @@ export const AIVsHumanCalculator: React.FC<AIVsHumanCalculatorProps> = ({ leadDa
       }
       
       // If changing to premium plan, update AI type for voice capabilities
-      if (field === 'aiTier' && value === 'premium' && 
-          (prev.aiType === 'voice' || prev.aiType === 'both')) {
-        updatedInputs.aiType = 'both-premium';
+      if (field === 'aiTier' && value === 'premium') {
+        if (prev.aiType === 'voice') {
+          updatedInputs.aiType = 'conversationalVoice';
+        } else if (prev.aiType === 'both') {
+          updatedInputs.aiType = 'both-premium';
+        }
+        console.log("Updated to premium tier, new AI type:", updatedInputs.aiType);
+      }
+      
+      // If changing from premium to growth and using premium voice features
+      if (field === 'aiTier' && value === 'growth') {
+        if (prev.aiType === 'conversationalVoice') {
+          updatedInputs.aiType = 'voice';
+        } else if (prev.aiType === 'both-premium') {
+          updatedInputs.aiType = 'both';
+        }
+        console.log("Downgraded from premium tier, new AI type:", updatedInputs.aiType);
       }
       
       return updatedInputs;
@@ -65,6 +81,8 @@ export const AIVsHumanCalculator: React.FC<AIVsHumanCalculatorProps> = ({ leadDa
         calculator_inputs: calculatorInputs,
         calculator_results: calculationResults,
       };
+      
+      console.log("Saving report data to database:", reportData);
       
       // Fix TypeScript error by using type assertion
       const { error } = await supabase
