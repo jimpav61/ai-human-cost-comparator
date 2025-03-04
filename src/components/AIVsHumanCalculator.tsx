@@ -65,7 +65,7 @@ export const AIVsHumanCalculator: React.FC<AIVsHumanCalculatorProps> = ({ leadDa
         }
         
         // For premium tier, we should utilize the included minutes
-        const includedMinutes = AI_RATES.chatbot.premium.includedVoiceMinutes || 600;
+        const includedMinutes = 600; // Always 600 minutes for premium
         
         // If no call volume is set or it's low, set a default that uses most of the included minutes
         if (prev.callVolume < 50) {
@@ -79,7 +79,7 @@ export const AIVsHumanCalculator: React.FC<AIVsHumanCalculatorProps> = ({ leadDa
       
       // If changing to growth tier, also set call volume to use included minutes
       if (field === 'aiTier' && value === 'growth') {
-        const includedMinutes = AI_RATES.chatbot.growth.includedVoiceMinutes || 600;
+        const includedMinutes = 600; // Always 600 minutes for growth
         
         // If no call volume is set or it's low, set a default that uses most of the included minutes
         if (prev.callVolume < 50) {
@@ -95,7 +95,7 @@ export const AIVsHumanCalculator: React.FC<AIVsHumanCalculatorProps> = ({ leadDa
         console.log("AIVsHumanCalculator: Voice option selected on Starter plan, upgrading to Growth tier");
         
         // Set a default call volume for voice features
-        const includedMinutes = AI_RATES.chatbot.growth.includedVoiceMinutes || 600;
+        const includedMinutes = 600; // Always 600 minutes for growth
         const callCount = Math.floor(includedMinutes / prev.avgCallDuration);
         updatedInputs.callVolume = callCount;
         console.log(`AIVsHumanCalculator: Setting default growth call volume to ${callCount} to utilize included ${includedMinutes} minutes`);
@@ -107,7 +107,7 @@ export const AIVsHumanCalculator: React.FC<AIVsHumanCalculatorProps> = ({ leadDa
         console.log("AIVsHumanCalculator: Premium voice option selected, upgrading to Premium tier");
         
         // Set default call volume for premium voice
-        const includedMinutes = AI_RATES.chatbot.premium.includedVoiceMinutes || 600;
+        const includedMinutes = 600; // Always 600 minutes for premium
         const callCount = Math.floor(includedMinutes / prev.avgCallDuration);
         updatedInputs.callVolume = callCount;
         console.log(`AIVsHumanCalculator: Setting default premium call volume to ${callCount} to utilize included ${includedMinutes} minutes`);

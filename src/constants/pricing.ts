@@ -1,3 +1,4 @@
+
 import { supabase } from "@/integrations/supabase/client";
 import type { PricingConfiguration, PackageTier } from '@/types/pricing';
 
@@ -136,8 +137,10 @@ export const fetchPricingConfigurations = async (): Promise<AIRates> => {
           perMessage: tier === 'starter' ? 0 : config.chatbot_per_message,
           setupFee: config.setup_fee || DEFAULT_AI_RATES.chatbot[tier].setupFee,
           annualPrice: config.annual_price || DEFAULT_AI_RATES.chatbot[tier].annualPrice,
-          includedVoiceMinutes: config.included_voice_minutes || DEFAULT_AI_RATES.chatbot[tier].includedVoiceMinutes,
-          additionalVoiceRate: tier === 'starter' ? 0 : config.voice_per_minute || DEFAULT_AI_RATES.chatbot[tier].additionalVoiceRate
+          includedVoiceMinutes: 
+            tier === 'starter' ? 0 : 600, // Always use 600 for both growth and premium
+          additionalVoiceRate: 
+            tier === 'starter' ? 0 : 0.12 // Always use 0.12 for additional minutes
         };
       }
     });

@@ -11,14 +11,15 @@ export const calculatePricingDetails = (inputs: CalculatorInputs): PricingDetail
   const baseRate = AI_RATES.chatbot[inputs.aiTier].base;
   
   // Calculate any additional voice costs
-  const includedVoiceMinutes = AI_RATES.chatbot[inputs.aiTier].includedVoiceMinutes || 0;
+  // Always use 600 minutes for included voice in growth and premium plans
+  const includedVoiceMinutes = inputs.aiTier === 'starter' ? 0 : 600;
   const totalVoiceMinutes = inputs.callVolume * inputs.avgCallDuration;
   const extraVoiceMinutes = Math.max(0, totalVoiceMinutes - includedVoiceMinutes);
   let additionalVoiceCost = 0;
   
-  if (extraVoiceMinutes > 0) {
-    // Use the additional voice rate or fall back to the regular voice rate
-    const additionalMinuteRate = AI_RATES.chatbot[inputs.aiTier].additionalVoiceRate || AI_RATES.voice[inputs.aiTier];
+  if (extraVoiceMinutes > 0 && inputs.aiTier !== 'starter') {
+    // Always use 12¢ per minute for additional voice minutes
+    const additionalMinuteRate = 0.12;
     additionalVoiceCost = extraVoiceMinutes * additionalMinuteRate;
   }
   
@@ -41,8 +42,9 @@ export const calculatePricingDetails = (inputs: CalculatorInputs): PricingDetail
   });
   
   // Add additional voice minutes if applicable
-  if (extraVoiceMinutes > 0) {
-    const additionalMinuteRate = AI_RATES.chatbot[inputs.aiTier].additionalVoiceRate || AI_RATES.voice[inputs.aiTier];
+  if (extraVoiceMinutes > 0 && inputs.aiTier !== 'starter') {
+    // Always use 12¢ per minute for additional voice minutes
+    const additionalMinuteRate = 0.12;
     pricingDetails.push({
       title: 'Additional Voice Minutes',
       base: 0,

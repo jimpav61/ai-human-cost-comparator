@@ -96,10 +96,10 @@ export const TierComparison: React.FC<TierComparisonProps> = ({
               <div className="text-sm mb-2">
                 <div className="font-medium">Basic Voice AI:</div>
                 <div className="text-gray-600">
-                  Includes {AI_RATES.chatbot[tier as keyof typeof AI_RATES.chatbot].includedVoiceMinutes} voice minutes
+                  Includes 600 voice minutes
                 </div>
                 <div className="text-gray-600">
-                  12¢ per minute after {AI_RATES.chatbot[tier as keyof typeof AI_RATES.chatbot].includedVoiceMinutes} minutes
+                  12¢ per minute after 600 minutes
                 </div>
               </div>
             )}
@@ -108,10 +108,10 @@ export const TierComparison: React.FC<TierComparisonProps> = ({
               <div className="text-sm mb-2">
                 <div className="font-medium">Conversational Voice AI:</div>
                 <div className="text-gray-600">
-                  Includes {AI_RATES.chatbot[tier as keyof typeof AI_RATES.chatbot].includedVoiceMinutes} voice minutes
+                  Includes 600 voice minutes
                 </div>
                 <div className="text-gray-600">
-                  12¢ per minute after {AI_RATES.chatbot[tier as keyof typeof AI_RATES.chatbot].includedVoiceMinutes} minutes
+                  12¢ per minute after 600 minutes
                 </div>
                 <div className="text-green-600 font-medium text-xs mt-1">
                   Advanced conversational capabilities included!

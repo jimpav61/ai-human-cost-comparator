@@ -104,11 +104,15 @@ export const useCalculator = (inputs: CalculatorInputs): CalculationResults => {
     const totalVoiceMinutes = inputs.callVolume * inputs.avgCallDuration;
     const extraVoiceMinutes = Math.max(0, totalVoiceMinutes - includedVoiceMinutes);
     
-    if (extraVoiceMinutes > 0) {
+    if (extraVoiceMinutes > 0 && ['growth', 'premium'].includes(inputs.aiTier)) {
       // Use additionalVoiceRate which we've now added to the pricing configuration
       const additionalMinuteRate = aiRates.chatbot[inputs.aiTier].additionalVoiceRate || aiRates.voice[inputs.aiTier];
       additionalVoiceCost = extraVoiceMinutes * additionalMinuteRate;
       console.log(`Additional voice minutes: ${extraVoiceMinutes} at rate ${additionalMinuteRate} = $${additionalVoiceCost}`);
+    } else if (inputs.aiTier === 'starter' && totalVoiceMinutes > 0) {
+      // Starter plan doesn't include voice, so charge for all minutes if somehow there are any
+      additionalVoiceCost = totalVoiceMinutes * aiRates.voice[inputs.aiTier];
+      console.log(`Starter plan voice minutes (should be 0): ${totalVoiceMinutes} at rate ${aiRates.voice[inputs.aiTier]} = $${additionalVoiceCost}`);
     }
     
     // Total cost is base price plus any additional voice costs
