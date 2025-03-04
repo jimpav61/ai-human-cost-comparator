@@ -14,8 +14,8 @@ export const AITypeSection: React.FC<AITypeSectionProps> = ({
 }) => {
   // Force AI type update when tier changes
   useEffect(() => {
-    // If on starter plan but not using chatbot, switch to chatbot
     if (aiTier === 'starter' && aiType !== 'chatbot') {
+      // If on starter plan but not using chatbot, switch to chatbot
       handleAITypeChange('chatbot');
     }
     // If on premium plan and using basic voice features, upgrade to premium voice
@@ -40,6 +40,7 @@ export const AITypeSection: React.FC<AITypeSectionProps> = ({
         value={aiType}
         onChange={(e) => handleAITypeChange(e.target.value)}
         className="calculator-input"
+        disabled={aiTier === 'starter'} // Disable dropdown for starter tier
       >
         <option value="chatbot">Text Only</option>
         <option value="voice" disabled={aiTier === 'starter'}>Basic Voice Only</option>

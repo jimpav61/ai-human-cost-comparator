@@ -103,7 +103,7 @@ export const getTierDisplayName = (aiTier: string): string => {
     case 'starter': return 'Starter Plan (Text Only)';
     case 'growth': return 'Growth Plan (Text & Basic Voice)';
     case 'premium': return 'Premium Plan (Text & Conversational Voice)';
-    default: return 'Growth Plan (Text & Basic Voice)'; // Never return "Custom Plan", default to Growth
+    default: return aiTier ? `${aiTier.charAt(0).toUpperCase() + aiTier.slice(1)} Plan` : 'Custom Plan';
   }
 };
 
@@ -114,6 +114,6 @@ export const getAITypeDisplay = (aiType: string): string => {
     case 'conversationalVoice': return 'Conversational Voice Only';
     case 'both': return 'Text & Basic Voice';
     case 'both-premium': return 'Text & Conversational Voice';
-    default: return '';
+    default: return aiType || '';
   }
 };

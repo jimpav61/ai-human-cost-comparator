@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from "react";
 import { Lead } from "@/types/leads";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
@@ -71,48 +72,75 @@ export const EditLeadDialog = ({ lead, open, onClose }: EditLeadDialogProps) => 
 
   const updateAITypeBasedOnTier = (tier: string) => {
     let newAIType = calculatorInputs.aiType;
+    let callVolumeToSet = calculatorInputs.callVolume;
+    let tierChanged = false;
     
     if (tier === 'starter') {
-      newAIType = 'chatbot';
+      // Downgrade to chatbot and zero out call volume for starter tier
+      if (newAIType !== 'chatbot') {
+        newAIType = 'chatbot';
+        callVolumeToSet = 0;
+      }
     } 
     else if (tier === 'growth') {
+      // Downgrade from premium voice features if on growth plan
       if (newAIType === 'conversationalVoice') {
         newAIType = 'voice';
+        tierChanged = true;
       } else if (newAIType === 'both-premium') {
         newAIType = 'both';
+        tierChanged = true;
+      }
+      
+      // Set default call volume if it was 0
+      if (callVolumeToSet === 0) {
+        const includedMinutes = AI_RATES.chatbot.growth.includedVoiceMinutes || 600;
+        callVolumeToSet = Math.floor(includedMinutes / calculatorInputs.avgCallDuration);
       }
     } 
     else if (tier === 'premium') {
+      // Upgrade to premium voice features
       if (newAIType === 'voice') {
         newAIType = 'conversationalVoice';
+        tierChanged = true;
       } else if (newAIType === 'both') {
         newAIType = 'both-premium';
+        tierChanged = true;
       } else if (newAIType === 'chatbot') {
+        // Default to most comprehensive for premium
         newAIType = 'both-premium';
+        tierChanged = true;
+      }
+      
+      // Set default call volume for premium tier
+      if (callVolumeToSet === 0) {
+        const includedMinutes = AI_RATES.chatbot.premium.includedVoiceMinutes || 600;
+        callVolumeToSet = Math.floor(includedMinutes / calculatorInputs.avgCallDuration);
       }
     }
     
-    if (newAIType !== calculatorInputs.aiType) {
+    if (newAIType !== calculatorInputs.aiType || callVolumeToSet !== calculatorInputs.callVolume) {
       setCalculatorInputs(prev => ({
         ...prev,
-        aiType: newAIType as any
+        aiType: newAIType as any,
+        callVolume: callVolumeToSet
       }));
       
       setUpdatedLead(prev => ({
         ...prev,
         calculator_inputs: {
           ...prev.calculator_inputs,
-          aiType: newAIType
+          aiType: newAIType,
+          callVolume: callVolumeToSet
         }
       }));
-    }
-    
-    const includedMinutes = AI_RATES.chatbot[tier as keyof typeof AI_RATES.chatbot]?.includedVoiceMinutes || 0;
-    if (tier === 'starter') {
-      handleCalculatorInputChange('callVolume', 0);
-    } else if (includedMinutes > 0 && (calculatorInputs.callVolume === 0 || tier === 'premium')) {
-      const defaultCallVolume = Math.floor(includedMinutes / calculatorInputs.avgCallDuration);
-      handleCalculatorInputChange('callVolume', defaultCallVolume);
+      
+      if (tierChanged) {
+        toast({
+          title: "AI Type Updated",
+          description: `AI capabilities have been ${tier === 'premium' ? 'upgraded' : 'adjusted'} to match the ${getTierDisplayName(tier)} tier.`,
+        });
+      }
     }
   };
 
@@ -121,12 +149,15 @@ export const EditLeadDialog = ({ lead, open, onClose }: EditLeadDialogProps) => 
       const updatedInputs = { ...prev, [field]: value } as CalculatorInputs;
       
       if (field === 'aiTier') {
+        // Handle tier changes - will update AI type if needed
         updateAITypeBasedOnTier(value);
       } else if (field === 'aiType') {
-        if ((value === 'voice' || value === 'conversationalVoice' || value === 'both' || value === 'both-premium') 
-            && prev.aiTier === 'starter') {
+        // Handle AI type changes - might need to update tier
+        if ((value === 'voice' || value === 'both') && prev.aiTier === 'starter') {
+          // Upgrade to growth for voice features
           updatedInputs.aiTier = 'growth';
           
+          // Set default call volume
           const growthIncludedMinutes = AI_RATES.chatbot['growth']?.includedVoiceMinutes || 600;
           const defaultCallVolume = Math.floor(growthIncludedMinutes / prev.avgCallDuration);
           updatedInputs.callVolume = defaultCallVolume;
@@ -139,12 +170,16 @@ export const EditLeadDialog = ({ lead, open, onClose }: EditLeadDialogProps) => 
               callVolume: defaultCallVolume
             }
           }));
-        }
-        
-        if ((value === 'conversationalVoice' || value === 'both-premium') 
-            && prev.aiTier !== 'premium') {
+          
+          toast({
+            title: "Plan Upgraded",
+            description: "Voice features require at least Growth Plan. Your selection has been updated.",
+          });
+        } else if ((value === 'conversationalVoice' || value === 'both-premium') && prev.aiTier !== 'premium') {
+          // Upgrade to premium for conversational voice
           updatedInputs.aiTier = 'premium';
           
+          // Set default call volume
           const premiumIncludedMinutes = AI_RATES.chatbot['premium']?.includedVoiceMinutes || 600;
           const defaultCallVolume = Math.floor(premiumIncludedMinutes / prev.avgCallDuration);
           updatedInputs.callVolume = defaultCallVolume;
@@ -157,6 +192,11 @@ export const EditLeadDialog = ({ lead, open, onClose }: EditLeadDialogProps) => 
               callVolume: defaultCallVolume
             }
           }));
+          
+          toast({
+            title: "Plan Upgraded",
+            description: "Conversational Voice requires Premium Plan. Your selection has been updated.",
+          });
         }
       }
       
