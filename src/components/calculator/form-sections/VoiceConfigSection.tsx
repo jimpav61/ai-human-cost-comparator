@@ -21,6 +21,15 @@ export const VoiceConfigSection: React.FC<VoiceConfigSectionProps> = ({
   const includedMinutes = aiTier === 'starter' ? 0 : 600;
   const isStarterPlan = aiTier === 'starter';
   
+  // Reset call volume to 0 when tier changes
+  useEffect(() => {
+    // When changing to starter, always set call volume to 0
+    if (isStarterPlan && callVolume > 0) {
+      console.log("VoiceConfigSection: Resetting call volume to 0 for starter plan");
+      onInputChange('callVolume', 0);
+    }
+  }, [aiTier, isStarterPlan, callVolume, onInputChange]);
+  
   // Handle call volume changes
   const handleCallVolumeChange = (value: number) => {
     console.log(`VoiceConfigSection: Call volume changed to ${value}`);

@@ -1,4 +1,3 @@
-
 import React from 'react';
 import { toast } from "@/components/ui/use-toast";
 import type { CalculatorInputs } from '@/hooks/useCalculator';
@@ -24,10 +23,8 @@ export const CalculatorForm: React.FC<CalculatorFormProps> = ({ inputs, onInputC
       console.log("CalculatorForm: Voice AI selected, upgrading to Growth tier");
       onInputChange('aiTier', 'growth');
       
-      // Set default call volume for voice
-      const includedMinutes = AI_RATES.chatbot.growth.includedVoiceMinutes || 600;
-      const suggestedVolume = Math.floor(includedMinutes / inputs.avgCallDuration);
-      onInputChange('callVolume', suggestedVolume);
+      // Don't auto-calculate a default call volume
+      // Let the user set it themselves
       
       toast({
         title: "Plan Upgraded",
@@ -38,10 +35,8 @@ export const CalculatorForm: React.FC<CalculatorFormProps> = ({ inputs, onInputC
       console.log("CalculatorForm: Conversational Voice AI selected, upgrading to Premium tier");
       onInputChange('aiTier', 'premium');
       
-      // Set default call volume for premium voice
-      const includedMinutes = AI_RATES.chatbot.premium.includedVoiceMinutes || 600;
-      const suggestedVolume = Math.floor(includedMinutes / inputs.avgCallDuration);
-      onInputChange('callVolume', suggestedVolume);
+      // Don't auto-calculate a default call volume
+      // Let the user set it themselves
       
       toast({
         title: "Plan Upgraded",
@@ -89,10 +84,8 @@ export const CalculatorForm: React.FC<CalculatorFormProps> = ({ inputs, onInputC
         console.log("CalculatorForm: Upgrading to growth from chatbot only, suggesting voice features");
         onInputChange('aiType', 'both' as any);
         
-        // Set a default call volume for growth
-        const includedMinutes = AI_RATES.chatbot.growth.includedVoiceMinutes || 600;
-        const suggestedVolume = Math.floor(includedMinutes / inputs.avgCallDuration);
-        onInputChange('callVolume', suggestedVolume);
+        // Keep call volume at 0, don't auto-calculate it
+        // Let the user set it themselves
         
         toast({
           title: "Voice Features Enabled",
@@ -126,10 +119,8 @@ export const CalculatorForm: React.FC<CalculatorFormProps> = ({ inputs, onInputC
         console.log("CalculatorForm: Upgrading to premium from chatbot only, enabling all premium features");
         onInputChange('aiType', 'both-premium' as any);
         
-        // Set a default call volume for premium
-        const includedMinutes = AI_RATES.chatbot.premium.includedVoiceMinutes || 600;
-        const suggestedVolume = Math.floor(includedMinutes / inputs.avgCallDuration);
-        onInputChange('callVolume', suggestedVolume);
+        // Keep call volume at 0, don't auto-calculate it
+        // Let the user set it themselves
         
         toast({
           title: "Premium Features Enabled",

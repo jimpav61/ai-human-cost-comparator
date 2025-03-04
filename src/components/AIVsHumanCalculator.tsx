@@ -20,7 +20,7 @@ export const AIVsHumanCalculator: React.FC<AIVsHumanCalculatorProps> = ({ leadDa
     aiTier: 'starter',
     role: 'customerService',
     numEmployees: leadData.employeeCount || 10,
-    callVolume: 0, // Start with 0 for starter plan
+    callVolume: 0, // Always start with 0 call volume
     avgCallDuration: 4.5,
     chatVolume: 5000,
     avgChatLength: 8,
