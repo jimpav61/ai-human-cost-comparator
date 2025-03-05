@@ -15,7 +15,7 @@ import { addNextSteps } from './sections/nextSteps';
 import { addAdditionalResources } from './sections/additionalResources';
 import { addContactInformation } from './sections/contactInformation';
 import { addFooter } from './sections/footer';
-import { JsPDFWithAutoTable } from './types';
+import { JsPDFWithAutoTable } from '../shared/types';
 import { GenerateProposalParams } from './types';
 
 export const generateProposal = (params: GenerateProposalParams) => {
@@ -39,9 +39,9 @@ export const generateProposal = (params: GenerateProposalParams) => {
     },
     humanHours: {
       dailyPerEmployee: 8,
-      weeklyTotal: 0,
-      monthlyTotal: 0,
-      yearlyTotal: 0
+      weeklyTotal: 40,
+      monthlyTotal: 160,
+      yearlyTotal: 2080
     },
     annualPlan: 0,
     basePriceMonthly: 0

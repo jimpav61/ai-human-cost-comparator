@@ -26,13 +26,13 @@ export interface SharedResults {
     voice: number;
     chatbot: number;
   };
-  humanHours?: {
-    dailyPerEmployee?: number;
-    weeklyTotal?: number;
-    monthlyTotal?: number;
-    yearlyTotal?: number;
+  humanHours: {
+    dailyPerEmployee: number;
+    weeklyTotal: number;
+    monthlyTotal: number;
+    yearlyTotal: number;
   };
-  annualPlan?: number;
+  annualPlan: number;
   tierKey?: string;
   aiType?: string;
   basePriceMonthly: number;
