@@ -34,6 +34,9 @@ export const useReportGenerator = ({ lead }: UseReportGeneratorProps) => {
       
       console.log("Using calculator results directly:", calculatorResults);
       
+      // Get the additional voice minutes from inputs if available
+      const additionalVoiceMinutes = calculatorInputs?.callVolume || 0;
+      
       // Generate PDF using the same function the frontend uses
       const doc = generatePDF({
         contactInfo: lead.name || 'Valued Client',
@@ -44,6 +47,9 @@ export const useReportGenerator = ({ lead }: UseReportGeneratorProps) => {
         employeeCount: lead.employee_count || 5,
         // Use the exact results from the frontend
         results: calculatorResults,
+        // Include additional voice minutes explicitly
+        additionalVoiceMinutes: additionalVoiceMinutes,
+        includedVoiceMinutes: calculatorInputs?.aiTier === 'starter' ? 0 : 600,
         // Use standard business suggestions and AI placements
         businessSuggestions: [
           {

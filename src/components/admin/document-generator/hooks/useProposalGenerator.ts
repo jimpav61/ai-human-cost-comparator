@@ -35,6 +35,9 @@ export const useProposalGenerator = ({ lead }: UseProposalGeneratorProps) => {
         aiType
       });
       
+      // Calculate additional voice minutes if any
+      const additionalVoiceMinutes = lead.calculator_inputs?.callVolume || 0;
+      
       // Generate the proposal using the same frontend function
       const doc = generateProposal({
         contactInfo: lead.name || 'Valued Client',
@@ -46,7 +49,9 @@ export const useProposalGenerator = ({ lead }: UseProposalGeneratorProps) => {
         // Use exact results from the frontend
         results: lead.calculator_results,
         tierName,
-        aiType
+        aiType,
+        // Pass additional voice minutes explicitly
+        additionalVoiceMinutes: additionalVoiceMinutes
       });
       
       // Save the PDF
