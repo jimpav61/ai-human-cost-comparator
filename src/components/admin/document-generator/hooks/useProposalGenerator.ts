@@ -38,6 +38,21 @@ export const useProposalGenerator = ({ lead }: UseProposalGeneratorProps) => {
       // Calculate additional voice minutes if any
       const additionalVoiceMinutes = lead.calculator_inputs?.callVolume || 0;
       
+      // Ensure we have valid calculator results with all required properties
+      const safeResults = {
+        ...lead.calculator_results,
+        aiCostMonthly: {
+          voice: lead.calculator_results.aiCostMonthly?.voice || 0,
+          chatbot: lead.calculator_results.aiCostMonthly?.chatbot || 0,
+          total: lead.calculator_results.aiCostMonthly?.total || 0,
+          setupFee: lead.calculator_results.aiCostMonthly?.setupFee || 0
+        },
+        humanCostMonthly: lead.calculator_results.humanCostMonthly || 0,
+        monthlySavings: lead.calculator_results.monthlySavings || 0,
+        yearlySavings: lead.calculator_results.yearlySavings || 0,
+        savingsPercentage: lead.calculator_results.savingsPercentage || 0
+      };
+      
       // Generate the proposal using the same frontend function
       const doc = generateProposal({
         contactInfo: lead.name || 'Valued Client',
@@ -46,8 +61,8 @@ export const useProposalGenerator = ({ lead }: UseProposalGeneratorProps) => {
         phoneNumber: lead.phone_number || '',
         industry: lead.industry || 'Other',
         employeeCount: lead.employee_count || 5,
-        // Use exact results from the frontend
-        results: lead.calculator_results,
+        // Use validated results
+        results: safeResults,
         tierName,
         aiType,
         // Pass additional voice minutes explicitly

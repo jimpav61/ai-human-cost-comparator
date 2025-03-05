@@ -31,8 +31,14 @@ export const useReportGenerator = ({ lead }: UseReportGeneratorProps) => {
       if (!calculatorResults) {
         throw new Error("Calculator results missing from lead data");
       }
-      
+
       console.log("Using calculator results directly:", calculatorResults);
+      
+      // Ensure we have all required nested objects
+      if (!calculatorResults.aiCostMonthly || typeof calculatorResults.aiCostMonthly !== 'object') {
+        console.error("Missing or invalid aiCostMonthly in calculator results", calculatorResults);
+        throw new Error("Invalid calculator results structure: aiCostMonthly is missing or not an object");
+      }
       
       // Get the additional voice minutes from inputs if available
       const additionalVoiceMinutes = calculatorInputs?.callVolume || 0;
@@ -45,8 +51,21 @@ export const useReportGenerator = ({ lead }: UseReportGeneratorProps) => {
         phoneNumber: lead.phone_number || '',
         industry: lead.industry || 'Other',
         employeeCount: lead.employee_count || 5,
-        // Use the exact results from the frontend
-        results: calculatorResults,
+        // Ensure we have a valid results object with all required properties
+        results: {
+          ...calculatorResults,
+          aiCostMonthly: {
+            voice: calculatorResults.aiCostMonthly?.voice || 0,
+            chatbot: calculatorResults.aiCostMonthly?.chatbot || 0,
+            total: calculatorResults.aiCostMonthly?.total || 0,
+            setupFee: calculatorResults.aiCostMonthly?.setupFee || 0
+          },
+          basePriceMonthly: calculatorResults.basePriceMonthly || 0,
+          humanCostMonthly: calculatorResults.humanCostMonthly || 0,
+          monthlySavings: calculatorResults.monthlySavings || 0,
+          yearlySavings: calculatorResults.yearlySavings || 0,
+          savingsPercentage: calculatorResults.savingsPercentage || 0
+        },
         // Include additional voice minutes explicitly
         additionalVoiceMinutes: additionalVoiceMinutes,
         includedVoiceMinutes: calculatorInputs?.aiTier === 'starter' ? 0 : 600,
