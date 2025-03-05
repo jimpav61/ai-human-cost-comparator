@@ -1,4 +1,3 @@
-
 import React from 'react';
 import { DollarSign, Clock, CreditCard } from 'lucide-react';
 import { formatCurrency, formatNumber } from '@/utils/formatters';
@@ -105,7 +104,7 @@ export const PricingDetails: React.FC<PricingDetailsProps> = ({
             {detail.totalMinutes && (
               <div className="flex items-center">
                 <Clock className="h-4 w-4 mr-1" />
-                Monthly voice minutes: {formatNumber(detail.totalMinutes)} minutes
+                Additional voice minutes: {formatNumber(detail.totalMinutes)} minutes
               </div>
             )}
           </div>
