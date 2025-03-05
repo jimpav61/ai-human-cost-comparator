@@ -6,14 +6,12 @@ import { Input } from "@/components/ui/input";
 
 interface VoiceConfigSectionProps {
   callVolume: number;
-  avgCallDuration: number;
   aiTier: string;
   onInputChange: (field: keyof CalculatorInputs, value: any) => void;
 }
 
 export const VoiceConfigSection: React.FC<VoiceConfigSectionProps> = ({
   callVolume,
-  avgCallDuration,
   aiTier,
   onInputChange
 }) => {
@@ -49,16 +47,15 @@ export const VoiceConfigSection: React.FC<VoiceConfigSectionProps> = ({
     }
   };
   
-  // Calculate total and additional voice minutes for display
-  const totalVoiceMinutes = callVolume * avgCallDuration;
-  const additionalVoiceMinutes = Math.max(0, totalVoiceMinutes - includedMinutes);
+  // Calculate additional voice minutes for display
+  const additionalVoiceMinutes = Math.max(0, callVolume - includedMinutes);
   const additionalCost = additionalVoiceMinutes * 0.12; // Always 12¢ per minute
   
   return (
     <>
       <div className="mb-4">
         <label className="block text-sm font-medium text-gray-700 mb-1">
-          Monthly Call Volume
+          Monthly Call Volume (minutes)
         </label>
         <Input 
           type="number" 
@@ -82,26 +79,6 @@ export const VoiceConfigSection: React.FC<VoiceConfigSectionProps> = ({
         {isStarterPlan && (
           <p className="text-xs text-amber-600 mt-1">
             The Starter Plan does not include voice capabilities
-          </p>
-        )}
-      </div>
-      
-      <div className="mb-4">
-        <label className="block text-sm font-medium text-gray-700 mb-1">
-          Average Call Duration (minutes)
-        </label>
-        <Input 
-          type="number" 
-          min="0.5" 
-          step="0.5"
-          value={avgCallDuration}
-          onChange={(e) => onInputChange('avgCallDuration', parseFloat(e.target.value) || 0)}
-          className="calculator-input"
-          disabled={isStarterPlan} // Disable for starter plan
-        />
-        {!isStarterPlan && totalVoiceMinutes > 0 && (
-          <p className="text-xs text-gray-600 mt-1">
-            Total: {callVolume} calls × {avgCallDuration} min = {totalVoiceMinutes.toFixed(0)} minutes
           </p>
         )}
       </div>

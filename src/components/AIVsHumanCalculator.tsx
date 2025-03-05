@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { useCalculator, type CalculatorInputs } from '@/hooks/useCalculator';
 import { CalculatorForm } from './calculator/CalculatorForm';
@@ -18,8 +19,8 @@ export const AIVsHumanCalculator: React.FC<AIVsHumanCalculatorProps> = ({ leadDa
     aiTier: 'starter',
     role: 'customerService',
     numEmployees: leadData.employeeCount || 10,
-    callVolume: 0, // Always start with 0 call volume
-    avgCallDuration: 4.5,
+    callVolume: 0, // Always start with 0 call volume (minutes)
+    avgCallDuration: 4.5, // Keep for backward compatibility but won't be used
     chatVolume: 5000,
     avgChatLength: 8,
     avgChatResolutionTime: 10,

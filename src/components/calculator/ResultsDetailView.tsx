@@ -25,9 +25,8 @@ export const ResultsDetailView: React.FC<ResultsDetailViewProps> = ({
   const basePrice = results.basePriceMonthly;
   const setupFee = results.aiCostMonthly.setupFee;
   const additionalVoiceCost = results.aiCostMonthly.voice;
-  const totalMinutes = inputs.callVolume * inputs.avgCallDuration;
   const includedMinutes = AI_RATES.chatbot[inputs.aiTier].includedVoiceMinutes || 0;
-  const extraMinutes = Math.max(0, totalMinutes - includedMinutes);
+  const extraMinutes = Math.max(0, inputs.callVolume - includedMinutes);
   const additionalVoiceRate = AI_RATES.chatbot[inputs.aiTier].additionalVoiceRate || AI_RATES.voice[inputs.aiTier];
   
   return (

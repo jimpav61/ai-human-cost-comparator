@@ -8,7 +8,7 @@ export interface CalculatorInputs {
   role: keyof typeof HUMAN_HOURLY_RATES;
   numEmployees: number;
   callVolume: number;
-  avgCallDuration: number;
+  avgCallDuration: number; // Keep for backward compatibility, but we won't use it
   chatVolume: number;
   avgChatLength: number;
   avgChatResolutionTime: number;
@@ -109,8 +109,8 @@ export const useCalculator = (inputs: CalculatorInputs): CalculationResults => {
     let additionalVoiceCost = 0;
     const includedVoiceMinutes = inputs.aiTier === 'starter' ? 0 : 600;
     
-    // Calculate total voice minutes
-    const totalVoiceMinutes = inputs.callVolume * inputs.avgCallDuration;
+    // In the new model, callVolume directly represents minutes (not number of calls)
+    const totalVoiceMinutes = inputs.callVolume;
     
     // Calculate additional minutes - only if not on starter plan
     const extraVoiceMinutes = Math.max(0, totalVoiceMinutes - includedVoiceMinutes);
