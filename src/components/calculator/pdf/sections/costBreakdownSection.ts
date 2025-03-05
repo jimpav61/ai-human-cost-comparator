@@ -18,15 +18,10 @@ export const addCostBreakdownSection = (
   
   // Ensure we have valid values
   const basePrice = typeof basePriceMonthly === 'number' ? basePriceMonthly : 229;
-  const voiceMinutes = typeof additionalVoiceMinutes === 'number' ? additionalVoiceMinutes : 0;
   
-  // Calculate additional voice cost (12 cents per minute)
-  const additionalVoiceCost = voiceMinutes > 0 ? voiceMinutes * 0.12 : 0;
-  
-  // Calculate the total including additional voice costs
+  // Use total cost if provided, otherwise just use base price
   const totalCost = typeof totalMonthlyCost === 'number' ? 
-    totalMonthlyCost : 
-    basePrice + additionalVoiceCost;
+    totalMonthlyCost : basePrice;
   
   // Cost Breakdown Section
   doc.setFontSize(16);
@@ -35,21 +30,11 @@ export const addCostBreakdownSection = (
   
   yPosition += 8;
   
-  // Cost breakdown table - one row for base price and another for voice if applicable
+  // Cost breakdown table - simpler version without the additional voice minutes section
   const tableRows = [];
   
   // Always add the base AI service
   tableRows.push(['AI Service Base', formatCurrency(basePrice)]);
-  
-  // Add additional voice minutes if applicable
-  if (voiceMinutes > 0) {
-    // Calculate cost of additional minutes (12 cents per minute)
-    const additionalMinutesRate = 0.12;
-    tableRows.push([
-      `Additional Voice Minutes (${voiceMinutes} @ ${formatCurrency(additionalMinutesRate)}/min)`, 
-      formatCurrency(additionalVoiceCost)
-    ]);
-  }
   
   // Add total
   tableRows.push(['Monthly Total', formatCurrency(totalCost)]);
