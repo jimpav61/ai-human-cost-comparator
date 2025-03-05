@@ -67,13 +67,13 @@ export const PricingDetails: React.FC<PricingDetailsProps> = ({
       {extraVoiceMinutes > 0 && (
         <div className="border-b border-gray-200 pb-3">
           <div className="flex justify-between items-center mb-2">
-            <span className="font-medium text-gray-900">Additional Voice Minutes</span>
+            <span className="font-medium text-gray-900">Additional Voice Minutes (Extra)</span>
             <span className="text-brand-600 font-semibold">{formatCurrency(additionalVoiceCost)}</span>
           </div>
           <div className="text-sm text-gray-600">
             <div className="flex items-center">
               <Clock className="h-4 w-4 mr-1" />
-              Monthly voice minutes: {formatNumber(includedVoiceMinutes || 0)} + {formatNumber(extraVoiceMinutes)} minutes
+              Extra voice minutes: {formatNumber(extraVoiceMinutes)} minutes
             </div>
             <div className="flex items-center mt-1">
               <DollarSign className="h-4 w-4 mr-1" />
