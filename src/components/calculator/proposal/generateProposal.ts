@@ -48,23 +48,34 @@ export const generateProposal = (params: GenerateProposalParams) => {
   };
   
   // Merge provided results with default values to ensure all required properties exist
+  // Also, ensure all values are numbers, not strings or undefined
   const safeResults = {
     ...defaultResults,
-    ...params.results,
+    humanCostMonthly: Number(params.results?.humanCostMonthly) || defaultResults.humanCostMonthly,
+    monthlySavings: Number(params.results?.monthlySavings) || defaultResults.monthlySavings,
+    yearlySavings: Number(params.results?.yearlySavings) || defaultResults.yearlySavings,
+    savingsPercentage: Number(params.results?.savingsPercentage) || defaultResults.savingsPercentage,
+    annualPlan: Number(params.results?.annualPlan) || defaultResults.annualPlan,
+    basePriceMonthly: Number(params.results?.basePriceMonthly) || defaultResults.basePriceMonthly,
     aiCostMonthly: {
-      ...defaultResults.aiCostMonthly,
-      ...(params.results?.aiCostMonthly || {})
+      voice: Number(params.results?.aiCostMonthly?.voice) || defaultResults.aiCostMonthly.voice,
+      chatbot: Number(params.results?.aiCostMonthly?.chatbot) || defaultResults.aiCostMonthly.chatbot,
+      total: Number(params.results?.aiCostMonthly?.total) || defaultResults.aiCostMonthly.total,
+      setupFee: Number(params.results?.aiCostMonthly?.setupFee) || defaultResults.aiCostMonthly.setupFee
     },
     breakEvenPoint: {
-      ...defaultResults.breakEvenPoint,
-      ...(params.results?.breakEvenPoint || {})
+      voice: Number(params.results?.breakEvenPoint?.voice) || defaultResults.breakEvenPoint.voice,
+      chatbot: Number(params.results?.breakEvenPoint?.chatbot) || defaultResults.breakEvenPoint.chatbot
     },
     humanHours: {
-      ...defaultResults.humanHours,
-      ...(params.results?.humanHours || {})
+      dailyPerEmployee: Number(params.results?.humanHours?.dailyPerEmployee) || defaultResults.humanHours.dailyPerEmployee,
+      weeklyTotal: Number(params.results?.humanHours?.weeklyTotal) || defaultResults.humanHours.weeklyTotal,
+      monthlyTotal: Number(params.results?.humanHours?.monthlyTotal) || defaultResults.humanHours.monthlyTotal,
+      yearlyTotal: Number(params.results?.humanHours?.yearlyTotal) || defaultResults.humanHours.yearlyTotal
     }
   };
   
+  console.log("Proposal generation - sanitized results:", safeResults);
   console.log("Proposal generation - additionalVoiceMinutes:", params.additionalVoiceMinutes);
   
   const doc = new jsPDF() as JsPDFWithAutoTable;

@@ -10,8 +10,13 @@ export const addCostBreakdownSection = (
   additionalVoiceMinutes?: number,
   totalMonthlyCost?: number
 ): number => {
+  // Ensure values are numbers
+  const safeBasePrice = Number(basePriceMonthly) || 0;
+  const safeAdditionalMinutes = Number(additionalVoiceMinutes) || 0;
+  const safeTotalCost = Number(totalMonthlyCost) || 0;
+  
   // Only proceed if we have a base price to show
-  if (!basePriceMonthly) {
+  if (safeBasePrice <= 0) {
     return yPosition;
   }
   
@@ -26,22 +31,22 @@ export const addCostBreakdownSection = (
   const tableRows = [];
   
   // Always add the base AI service
-  tableRows.push(['AI Service Base', formatCurrency(basePriceMonthly || 0)]);
+  tableRows.push(['AI Service Base', formatCurrency(safeBasePrice)]);
   
   // Add additional voice minutes if applicable
-  if (additionalVoiceMinutes && additionalVoiceMinutes > 0) {
+  if (safeAdditionalMinutes > 0) {
     // Calculate cost of additional minutes (12 cents per minute)
     const additionalMinutesRate = 0.12;
-    const additionalVoiceCost = additionalVoiceMinutes * additionalMinutesRate;
+    const additionalVoiceCost = safeAdditionalMinutes * additionalMinutesRate;
     tableRows.push([
-      `Additional Voice Minutes (${additionalVoiceMinutes} @ ${formatCurrency(additionalMinutesRate)}/min)`, 
+      `Additional Voice Minutes (${safeAdditionalMinutes} @ ${formatCurrency(additionalMinutesRate)}/min)`, 
       formatCurrency(additionalVoiceCost)
     ]);
   }
   
   // Add total if we have it
-  if (totalMonthlyCost) {
-    tableRows.push(['Monthly Total', formatCurrency(totalMonthlyCost)]);
+  if (safeTotalCost > 0) {
+    tableRows.push(['Monthly Total', formatCurrency(safeTotalCost)]);
   }
   
   // Create the breakdown table

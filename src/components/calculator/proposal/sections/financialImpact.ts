@@ -17,13 +17,13 @@ export const addFinancialImpact = (doc: JsPDFWithAutoTable, yPosition: number, p
   // Ensure we have valid results with fallbacks for missing properties
   const resultsData: ProposalResults = params.results || {} as ProposalResults;
   
-  // Safely extract values with fallbacks
-  const humanCost = typeof resultsData.humanCostMonthly === 'number' ? resultsData.humanCostMonthly : 15000;
-  const aiCost = typeof resultsData.aiCostMonthly?.total === 'number' ? resultsData.aiCostMonthly.total : 499;
-  const setupFee = typeof resultsData.aiCostMonthly?.setupFee === 'number' ? resultsData.aiCostMonthly.setupFee : 1149;
-  const monthlySavings = typeof resultsData.monthlySavings === 'number' ? resultsData.monthlySavings : 14500;
-  const yearlySavings = typeof resultsData.yearlySavings === 'number' ? resultsData.yearlySavings : 174000;
-  const savingsPercent = typeof resultsData.savingsPercentage === 'number' ? resultsData.savingsPercentage : 96;
+  // Safely extract values and ensure they are numbers
+  const humanCost = Number(resultsData.humanCostMonthly) || 15000;
+  const aiCost = Number(resultsData.aiCostMonthly?.total) || 499;
+  const setupFee = Number(resultsData.aiCostMonthly?.setupFee) || 1149;
+  const monthlySavings = Number(resultsData.monthlySavings) || 14500;
+  const yearlySavings = Number(resultsData.yearlySavings) || 174000;
+  const savingsPercent = Number(resultsData.savingsPercentage) || 96;
   
   const humanCostFormatted = formatCurrency(humanCost);
   const aiCostFormatted = formatCurrency(aiCost);

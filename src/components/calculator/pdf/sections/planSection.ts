@@ -13,8 +13,9 @@ export const addPlanSection = (
 ): number => {
   let currentY = yPosition;
 
-  // Use original setupFee value without unnecessary fallbacks
-  console.log("Plan section setup fee:", setupFee);
+  // Ensure setup fee is a number
+  const safeSetupFee = Number(setupFee) || 0;
+  console.log("Plan section setup fee:", safeSetupFee);
   
   doc.setFontSize(14);
   doc.setTextColor(0, 0, 0);
@@ -44,7 +45,7 @@ export const addPlanSection = (
   if (additionalVoiceMinutes && additionalVoiceMinutes > 0) {
     doc.setFontSize(10);
     doc.setTextColor(100, 100, 100);
-    const additionalVoiceCost = additionalVoiceMinutes * 0.12;
+    const additionalVoiceCost = Number(additionalVoiceMinutes) * 0.12;
     doc.text(`Additional ${additionalVoiceMinutes} voice minutes: ${formatCurrency(additionalVoiceCost)}`, 20, currentY);
     currentY += 7;
   }
@@ -52,7 +53,7 @@ export const addPlanSection = (
   // Add the one-time setup fee information
   doc.setFontSize(10);
   doc.setTextColor(100, 100, 100);
-  doc.text(`One-time setup fee: ${formatCurrency(setupFee)}`, 20, currentY);
+  doc.text(`One-time setup fee: ${formatCurrency(safeSetupFee)}`, 20, currentY);
   
   return currentY + 12; // Extra spacing
 };

@@ -14,13 +14,14 @@ export const addCostSummarySection = (
   doc.text("Cost Summary", 20, yPosition);
   
   // Use original values directly, preserving the information exactly as in the front-end
-  const humanCostMonthly = results.humanCostMonthly;
-  const aiCostMonthlyTotal = results.aiCostMonthly.total;
-  const setupFee = results.aiCostMonthly.setupFee;
-  const monthlySavings = results.monthlySavings;
-  const yearlySavings = results.yearlySavings;
+  // Ensure these are numbers and not strings or undefined
+  const humanCostMonthly = Number(results.humanCostMonthly) || 0;
+  const aiCostMonthlyTotal = Number(results.aiCostMonthly.total) || 0;
+  const setupFee = Number(results.aiCostMonthly.setupFee) || 0;
+  const monthlySavings = Number(results.monthlySavings) || 0;
+  const yearlySavings = Number(results.yearlySavings) || 0;
   
-  console.log("Cost Summary values (preserving originals):", {
+  console.log("Cost Summary values (sanitized):", {
     humanCostMonthly,
     aiCostMonthlyTotal,
     setupFee,
