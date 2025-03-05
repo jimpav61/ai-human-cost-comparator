@@ -24,50 +24,10 @@ export const useReportGenerator = ({ lead }: UseReportGeneratorProps) => {
         throw new Error("Lead data is missing");
       }
 
-      // Extract calculator inputs and results with proper typing
-      const calculatorInputs = lead.calculator_inputs || {};
-      const calculatorResults = lead.calculator_results || {};
+      console.log('[ADMIN] Starting PDF generation with shared utility');
       
-      console.log('[ADMIN] Extracted calculator data:', {
-        inputs: calculatorInputs,
-        results: calculatorResults
-      });
-      
-      // Calculate additional voice minutes for proper reporting
-      const aiTier = calculatorInputs.aiTier || 'growth';
-      const includedVoiceMinutes = aiTier === 'starter' ? 0 : 600;
-      const callVolume = Number(calculatorInputs.callVolume) || 0;
-      const additionalVoiceMinutes = Math.max(0, callVolume - includedVoiceMinutes);
-      
-      console.log('[ADMIN] Voice calculation:', {
-        aiTier,
-        includedVoiceMinutes,
-        callVolume,
-        additionalVoiceMinutes
-      });
-      
-      // Determine correct AI type display
-      const aiTypeKey = calculatorInputs.aiType || 'chatbot';
-      const aiTypeDisplay = 
-        aiTypeKey === 'chatbot' ? 'Text Only' : 
-        aiTypeKey === 'voice' ? 'Basic Voice' : 
-        aiTypeKey === 'conversationalVoice' ? 'Conversational Voice' : 
-        aiTypeKey === 'both' ? 'Text & Basic Voice' : 
-        aiTypeKey === 'both-premium' ? 'Text & Conversational Voice' : 'Text Only';
-      
-      // Determine tier name
-      const tierName = 
-        aiTier === 'starter' ? 'Starter Plan' : 
-        aiTier === 'growth' ? 'Growth Plan' : 
-        aiTier === 'premium' ? 'Premium Plan' : 'Growth Plan';
-      
-      console.log('[ADMIN] Starting PDF generation with shared utility using:', {
-        tierName,
-        aiTypeDisplay,
-        additionalVoiceMinutes
-      });
-      
-      // Generate PDF directly using the shared utility with properly transformed data
+      // Generate PDF directly using the shared utility without any parameter transformations
+      // This is exactly the same code path used by the frontend calculator
       const doc = generatePDF({
         contactInfo: lead.name || 'Valued Client',
         companyName: lead.company_name || 'Your Company',
@@ -75,9 +35,9 @@ export const useReportGenerator = ({ lead }: UseReportGeneratorProps) => {
         phoneNumber: lead.phone_number || '',
         industry: lead.industry || 'Other',
         employeeCount: Number(lead.employee_count) || 5,
-        results: calculatorResults,
-        additionalVoiceMinutes: additionalVoiceMinutes,
-        includedVoiceMinutes: includedVoiceMinutes,
+        results: lead.calculator_results,
+        additionalVoiceMinutes: Number(lead.calculator_inputs?.callVolume) || 0,
+        includedVoiceMinutes: lead.calculator_inputs?.aiTier === 'starter' ? 0 : 600,
         businessSuggestions: [
           {
             title: "Automate Common Customer Inquiries",
@@ -106,13 +66,19 @@ export const useReportGenerator = ({ lead }: UseReportGeneratorProps) => {
             capabilities: ["Answer product questions", "Provide pricing information", "Schedule demonstrations with sales team"]
           }
         ],
-        tierName: tierName,
-        aiType: aiTypeDisplay
+        tierName: lead.calculator_inputs?.aiTier === 'starter' ? 'Starter Plan' : 
+                 lead.calculator_inputs?.aiTier === 'growth' ? 'Growth Plan' : 
+                 lead.calculator_inputs?.aiTier === 'premium' ? 'Premium Plan' : 'Growth Plan',
+        aiType: lead.calculator_inputs?.aiType === 'chatbot' ? 'Text Only' : 
+                lead.calculator_inputs?.aiType === 'voice' ? 'Basic Voice' : 
+                lead.calculator_inputs?.aiType === 'conversationalVoice' ? 'Conversational Voice' : 
+                lead.calculator_inputs?.aiType === 'both' ? 'Text & Basic Voice' : 
+                lead.calculator_inputs?.aiType === 'both-premium' ? 'Text & Conversational Voice' : 'Text Only'
       });
       
       console.log('[ADMIN] PDF generated successfully, saving document');
       
-      // Save the PDF using the utility function
+      // Save the PDF using the same utility function
       saveReportPDF(doc, lead);
       
       console.log('[ADMIN] PDF saved and downloaded');
