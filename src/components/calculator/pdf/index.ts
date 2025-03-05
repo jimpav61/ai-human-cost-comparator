@@ -1,6 +1,6 @@
 
 import jsPDF from 'jspdf';
-import { GeneratePDFParams, JsPDFWithAutoTable } from './types';
+import { GeneratePDFParams, JsPDFWithAutoTable, CalculationResults } from './types';
 import { addHeaderSection } from './sections/headerSection';
 import { addPlanSection } from './sections/planSection';
 import { addCostSummarySection } from './sections/costSummarySection';
@@ -34,8 +34,19 @@ export const generatePDF = (params: GeneratePDFParams): JsPDFWithAutoTable => {
       basePriceMonthly: 229,
       monthlySavings: 14771,
       yearlySavings: 177252,
-      savingsPercentage: 98
-    },
+      savingsPercentage: 98,
+      breakEvenPoint: {
+        voice: 0,
+        chatbot: 0
+      },
+      humanHours: {
+        dailyPerEmployee: 8,
+        weeklyTotal: 160,
+        monthlyTotal: 693,
+        yearlyTotal: 8320
+      },
+      annualPlan: 2149
+    } as CalculationResults,
     additionalVoiceMinutes: typeof params.additionalVoiceMinutes === 'number' ? params.additionalVoiceMinutes : 0,
     includedVoiceMinutes: typeof params.includedVoiceMinutes === 'number' ? params.includedVoiceMinutes : 600,
     tierName: params.tierName || "Growth Plan",

@@ -71,7 +71,7 @@ export const useReportGenerator = ({ lead }: UseReportGeneratorProps) => {
       // Create employee count fallback
       const employeeCount = Number(lead.employee_count) || 5;
       
-      // Create call volume fallback
+      // Get voice minutes for PDF generation
       const callVolume = Number(calculatorInputs.callVolume) || 0;
       
       // Create tier-specific included minutes
@@ -79,6 +79,7 @@ export const useReportGenerator = ({ lead }: UseReportGeneratorProps) => {
       const includedVoiceMinutes = tierKey === 'starter' ? 0 : 600;
       
       console.log("Generated results for PDF:", generatedResults);
+      console.log("Additional voice minutes:", callVolume);
       
       // Use the generatePDF function
       const doc = generatePDF({
