@@ -17,13 +17,15 @@ export const useReportGenerator = ({ lead }: UseReportGeneratorProps) => {
 
   const generateReportDocument = async () => {
     try {
-      console.log('Generating report for lead:', lead);
+      console.log('[ADMIN] Generating report for lead:', lead);
       
       // Check if lead exists
       if (!lead) {
         throw new Error("Lead data is missing");
       }
 
+      console.log('[ADMIN] Starting PDF generation with shared utility');
+      
       // Generate PDF directly using the shared utility without any parameter transformations
       // This is exactly the same code path used by the frontend calculator
       const doc = generatePDF({
@@ -74,18 +76,23 @@ export const useReportGenerator = ({ lead }: UseReportGeneratorProps) => {
                 lead.calculator_inputs?.aiType === 'both-premium' ? 'Text & Conversational Voice' : 'Text Only'
       });
       
+      console.log('[ADMIN] PDF generated successfully, saving document');
+      
       // Save the PDF using the same utility function
       saveReportPDF(doc, lead);
+      
+      console.log('[ADMIN] PDF saved and downloaded');
       
       // Mark as downloaded
       markAsDownloaded();
       
       toast({
         title: "Success",
-        description: "Report generated and downloaded successfully",
+        description: `Report for ${lead.company_name || 'Client'} generated and downloaded successfully`,
+        variant: "default",
       });
     } catch (error) {
-      console.error('Report generation error:', error);
+      console.error('[ADMIN] Report generation error:', error);
       toast({
         title: "Error",
         description: `Failed to generate report: ${error instanceof Error ? error.message : 'Unknown error'}`,
