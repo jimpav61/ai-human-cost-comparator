@@ -1,11 +1,10 @@
 
-import { useState } from "react";
 import { Lead } from "@/types/leads";
 import { toast } from "@/hooks/use-toast";
 import { useDownloadState } from "./useDownloadState";
-import { generateFromExistingResults } from "./proposal-generator/generateFromExistingResults";
-import { generateFromInputs } from "./proposal-generator/generateFromInputs";
-import { logProposalGeneration } from "./proposal-generator/logUtils";
+import { generateProposal } from "@/components/calculator/proposal/generateProposal";
+import { saveProposalPDF } from "./proposal-generator/saveProposal";
+import { getTierDisplayName, getAITypeDisplay } from "@/components/calculator/pricingDetailsCalculator";
 
 interface UseProposalGeneratorProps {
   lead: Lead;
@@ -19,20 +18,47 @@ export const useProposalGenerator = ({ lead }: UseProposalGeneratorProps) => {
 
   const generateProposalDocument = async () => {
     try {
-      // Log basic lead information and details
-      logProposalGeneration(lead);
+      console.log("Generating proposal for lead:", lead);
       
-      // If we have calculator_results directly from the lead, use those
-      if (lead.calculator_results && typeof lead.calculator_results === 'object') {
-        await generateFromExistingResults(lead);
-      } else {
-        // Fallback logic if we don't have calculator_results
-        await generateFromInputs(lead);
+      // Make sure we have calculator results
+      if (!lead.calculator_results) {
+        throw new Error("Calculator results missing from lead data");
       }
+      
+      // Get display names using the same frontend functions
+      const tierName = getTierDisplayName(lead.calculator_inputs?.aiTier || 'starter');
+      const aiType = getAITypeDisplay(lead.calculator_inputs?.aiType || 'chatbot');
+      
+      console.log("Using existing calculator results:", {
+        results: lead.calculator_results,
+        tierName,
+        aiType
+      });
+      
+      // Generate the proposal using the same frontend function
+      const doc = generateProposal({
+        contactInfo: lead.name || 'Valued Client',
+        companyName: lead.company_name || 'Your Company',
+        email: lead.email || 'client@example.com',
+        phoneNumber: lead.phone_number || '',
+        industry: lead.industry || 'Other',
+        employeeCount: lead.employee_count || 5,
+        // Use exact results from the frontend
+        results: lead.calculator_results,
+        tierName,
+        aiType
+      });
+      
+      // Save the PDF
+      saveProposalPDF(doc, lead);
       
       // Mark as downloaded after successful generation
       markAsDownloaded();
       
+      toast({
+        title: "Success",
+        description: "Proposal generated and downloaded successfully",
+      });
     } catch (error) {
       console.error('Proposal generation error:', error);
       toast({
