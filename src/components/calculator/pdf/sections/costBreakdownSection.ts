@@ -30,11 +30,18 @@ export const addCostBreakdownSection = (
   
   yPosition += 8;
   
-  // Cost breakdown table - simpler version without the additional voice minutes section
+  // Cost breakdown table
   const tableRows = [];
   
   // Always add the base AI service
   tableRows.push(['AI Service Base', formatCurrency(basePrice)]);
+  
+  // Add additional voice minutes if applicable
+  if (additionalVoiceMinutes && additionalVoiceMinutes > 0) {
+    // Calculate additional voice cost (12 cents per minute)
+    const additionalVoiceCost = additionalVoiceMinutes * 0.12;
+    tableRows.push(['Additional Voice Minutes', formatCurrency(additionalVoiceCost)]);
+  }
   
   // Add total
   tableRows.push(['Monthly Total', formatCurrency(totalCost)]);
