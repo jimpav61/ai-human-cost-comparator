@@ -1,9 +1,10 @@
 
-import { JsPDFWithAutoTable, SectionParams } from '../types';
+import { JsPDFWithAutoTable } from '../types';
 import { formatCurrency, formatNumber, formatPercent } from '@/utils/formatters';
 import autoTable from 'jspdf-autotable';
+import { GeneratePDFParams } from '../types';
 
-export const addFinancialImpact = (doc: JsPDFWithAutoTable, yPosition: number, params: SectionParams): number => {
+export const addFinancialImpact = (doc: JsPDFWithAutoTable, yPosition: number, params: GeneratePDFParams): number => {
   // Financial Impact Section
   doc.setFontSize(16);
   doc.setTextColor(246, 82, 40); // Brand color for section header
@@ -13,43 +14,17 @@ export const addFinancialImpact = (doc: JsPDFWithAutoTable, yPosition: number, p
   doc.setFontSize(12);
   doc.setTextColor(0, 0, 0); // Regular text in black
   
-  // Format financial values - use values from results or fall back to defaults
-  // Ensure we have valid results with fallbacks for missing properties
+  // Format financial values - use exact values from results
+  // Ensure we have valid results with minimal fallbacks only when truly needed
   const resultsData = params.results || {};
   
-  // Safely extract values with fallbacks
-  const humanCost = (typeof resultsData.humanCostMonthly === 'number' && !isNaN(resultsData.humanCostMonthly)) 
-    ? resultsData.humanCostMonthly 
-    : 15000;
-    
-  const aiCost = (typeof resultsData.aiCostMonthly?.total === 'number' && !isNaN(resultsData.aiCostMonthly?.total)) 
-    ? resultsData.aiCostMonthly.total 
-    : 499;
-    
-  const setupFee = (typeof resultsData.aiCostMonthly?.setupFee === 'number' && !isNaN(resultsData.aiCostMonthly?.setupFee)) 
-    ? resultsData.aiCostMonthly.setupFee 
-    : 1149;
-    
-  const monthlySavings = (typeof resultsData.monthlySavings === 'number' && !isNaN(resultsData.monthlySavings)) 
-    ? resultsData.monthlySavings 
-    : 14500;
-    
-  const yearlySavings = (typeof resultsData.yearlySavings === 'number' && !isNaN(resultsData.yearlySavings)) 
-    ? resultsData.yearlySavings 
-    : 174000;
-    
-  const savingsPercent = (typeof resultsData.savingsPercentage === 'number' && !isNaN(resultsData.savingsPercentage)) 
-    ? resultsData.savingsPercentage 
-    : 96;
-  
-  console.log("Financial impact values:", {
-    humanCost,
-    aiCost,
-    setupFee,
-    monthlySavings,
-    yearlySavings,
-    savingsPercent
-  });
+  // Extract values directly without modification when possible
+  const humanCost = resultsData.humanCostMonthly;
+  const aiCost = resultsData.aiCostMonthly?.total;
+  const setupFee = resultsData.aiCostMonthly?.setupFee;
+  const monthlySavings = resultsData.monthlySavings;
+  const yearlySavings = resultsData.yearlySavings;
+  const savingsPercent = resultsData.savingsPercentage;
   
   const humanCostFormatted = formatCurrency(humanCost);
   const aiCostFormatted = formatCurrency(aiCost);

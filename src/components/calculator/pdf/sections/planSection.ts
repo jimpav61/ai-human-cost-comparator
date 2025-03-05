@@ -13,10 +13,8 @@ export const addPlanSection = (
 ): number => {
   let currentY = yPosition;
 
-  // Ensure setupFee has a value and is a valid number
-  const safeSetupFee = (typeof setupFee === 'number' && !isNaN(setupFee)) ? setupFee : 1149;
-  
-  console.log("Plan section setup fee:", safeSetupFee);
+  // Use original setupFee value without unnecessary fallbacks
+  console.log("Plan section setup fee:", setupFee);
   
   doc.setFontSize(14);
   doc.setTextColor(0, 0, 0);
@@ -54,7 +52,7 @@ export const addPlanSection = (
   // Add the one-time setup fee information
   doc.setFontSize(10);
   doc.setTextColor(100, 100, 100);
-  doc.text(`One-time setup fee: ${formatCurrency(safeSetupFee)}`, 20, currentY);
+  doc.text(`One-time setup fee: ${formatCurrency(setupFee)}`, 20, currentY);
   
   return currentY + 12; // Extra spacing
 };

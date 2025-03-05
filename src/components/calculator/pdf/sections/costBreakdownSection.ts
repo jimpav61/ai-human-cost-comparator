@@ -14,17 +14,19 @@ export const addCostBreakdownSection = (
   const hasAdditionalVoice = additionalVoiceMinutes && additionalVoiceMinutes > 0;
   
   console.log("Cost breakdown section - addVoiceMin:", additionalVoiceMinutes, "hasVoice:", hasAdditionalVoice);
+  console.log("Cost breakdown inputs - basePrice:", basePriceMonthly, "totalCost:", totalMonthlyAICost);
   
   doc.setFontSize(14);
   doc.setTextColor(0, 0, 0);
   doc.text("Cost Breakdown", 20, yPosition);
   
-  // Ensure we have valid numbers to prevent NaN in the report
-  const basePriceSafe = isNaN(basePriceMonthly) ? 99 : basePriceMonthly;
+  // Use original values without unnecessary fallbacks
+  // Only provide fallbacks if the values are explicitly undefined or NaN
+  const basePriceSafe = basePriceMonthly;
   const additionalVoiceCost = hasAdditionalVoice ? (additionalVoiceMinutes || 0) * 0.12 : 0;
-  const totalCostSafe = isNaN(totalMonthlyAICost) ? (basePriceSafe + additionalVoiceCost) : totalMonthlyAICost;
+  const totalCostSafe = totalMonthlyAICost !== undefined ? totalMonthlyAICost : (basePriceSafe + additionalVoiceCost);
   
-  console.log("Cost breakdown values:", {
+  console.log("Cost breakdown values (preserving originals):", {
     basePriceSafe,
     additionalVoiceCost,
     totalCostSafe

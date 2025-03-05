@@ -13,14 +13,14 @@ export const addCostSummarySection = (
   doc.setTextColor(0, 0, 0);
   doc.text("Cost Summary", 20, yPosition);
   
-  // Ensure we have valid numbers to prevent NaN in the report
-  const humanCostMonthly = isNaN(results.humanCostMonthly) ? 5000 : results.humanCostMonthly;
-  const aiCostMonthlyTotal = isNaN(results.aiCostMonthly.total) ? 99 : results.aiCostMonthly.total;
-  const setupFee = isNaN(results.aiCostMonthly.setupFee) ? 1149 : results.aiCostMonthly.setupFee;
-  const monthlySavings = isNaN(results.monthlySavings) ? 4000 : results.monthlySavings;
-  const yearlySavings = isNaN(results.yearlySavings) ? 48000 : results.yearlySavings;
+  // Use original values directly, preserving the information exactly as in the front-end
+  const humanCostMonthly = results.humanCostMonthly;
+  const aiCostMonthlyTotal = results.aiCostMonthly.total;
+  const setupFee = results.aiCostMonthly.setupFee;
+  const monthlySavings = results.monthlySavings;
+  const yearlySavings = results.yearlySavings;
   
-  console.log("Cost Summary values:", {
+  console.log("Cost Summary values (preserving originals):", {
     humanCostMonthly,
     aiCostMonthlyTotal,
     setupFee,
