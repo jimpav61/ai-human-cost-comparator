@@ -1,3 +1,4 @@
+
 import { formatCurrency } from '@/utils/formatters';
 import type { CalculatorInputs } from '@/hooks/useCalculator';
 import type { PricingDetail } from './types';
