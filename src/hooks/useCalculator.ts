@@ -109,11 +109,11 @@ export const useCalculator = (inputs: CalculatorInputs): CalculationResults => {
     let additionalVoiceCost = 0;
     const includedVoiceMinutes = inputs.aiTier === 'starter' ? 0 : 600;
     
-    // Calculate total voice minutes - this was the issue
+    // Calculate total voice minutes
     const totalVoiceMinutes = inputs.callVolume * inputs.avgCallDuration;
     
     // Calculate additional minutes - only if not on starter plan
-    const extraVoiceMinutes = Math.max(0, totalVoiceMinutes - includedMinutes);
+    const extraVoiceMinutes = Math.max(0, totalVoiceMinutes - includedVoiceMinutes);
     
     if (extraVoiceMinutes > 0 && inputs.aiTier !== 'starter') {
       // Always use 12¢ per minute for additional voice minutes
