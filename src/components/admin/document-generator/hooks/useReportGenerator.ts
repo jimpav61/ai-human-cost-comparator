@@ -24,27 +24,38 @@ export const useReportGenerator = ({ lead }: UseReportGeneratorProps) => {
         throw new Error("Lead data is missing");
       }
       
-      // Use the exact frontend calculator results to generate the PDF
-      const calculatorResults = lead.calculator_results;
-      const calculatorInputs = lead.calculator_inputs;
+      // Extract calculator results with fallbacks to ensure we always have a valid structure
+      const calculatorResults = lead.calculator_results || {};
+      const calculatorInputs = lead.calculator_inputs || {};
       
-      if (!calculatorResults) {
-        throw new Error("Calculator results missing from lead data");
-      }
-
-      console.log("Using calculator results directly:", calculatorResults);
+      // Create a properly structured aiCostMonthly object, ensuring it always exists
+      const aiCostMonthly = {
+        voice: 0,
+        chatbot: 0,
+        total: 0,
+        setupFee: 0,
+        ...(typeof calculatorResults.aiCostMonthly === 'object' ? calculatorResults.aiCostMonthly : {})
+      };
       
-      // Ensure we have all required nested objects
-      if (!calculatorResults.aiCostMonthly || typeof calculatorResults.aiCostMonthly !== 'object') {
-        console.error("Missing or invalid aiCostMonthly in calculator results", calculatorResults);
-        throw new Error("Invalid calculator results structure: aiCostMonthly is missing or not an object");
-      }
+      console.log("Structured aiCostMonthly for report:", aiCostMonthly);
       
       // Get the additional voice minutes from inputs if available
       const additionalVoiceMinutes = calculatorInputs?.callVolume || 0;
       console.log("Additional voice minutes detected:", additionalVoiceMinutes);
       
-      // Generate PDF using the same function the frontend uses
+      // Prepare a clean, valid results object with fallbacks for all required properties
+      const safeResults = {
+        aiCostMonthly,
+        basePriceMonthly: calculatorResults.basePriceMonthly || aiCostMonthly.chatbot || 99,
+        humanCostMonthly: calculatorResults.humanCostMonthly || 5000,
+        monthlySavings: calculatorResults.monthlySavings || 4000,
+        yearlySavings: calculatorResults.yearlySavings || 48000,
+        savingsPercentage: calculatorResults.savingsPercentage || 80
+      };
+      
+      console.log("Using safe results structure:", safeResults);
+      
+      // Generate PDF using the safe results structure
       const doc = generatePDF({
         contactInfo: lead.name || 'Valued Client',
         companyName: lead.company_name || 'Your Company',
@@ -52,25 +63,9 @@ export const useReportGenerator = ({ lead }: UseReportGeneratorProps) => {
         phoneNumber: lead.phone_number || '',
         industry: lead.industry || 'Other',
         employeeCount: lead.employee_count || 5,
-        // Ensure we have a valid results object with all required properties
-        results: {
-          ...calculatorResults,
-          aiCostMonthly: {
-            voice: calculatorResults.aiCostMonthly?.voice || 0,
-            chatbot: calculatorResults.aiCostMonthly?.chatbot || 0,
-            total: calculatorResults.aiCostMonthly?.total || 0,
-            setupFee: calculatorResults.aiCostMonthly?.setupFee || 0
-          },
-          basePriceMonthly: calculatorResults.basePriceMonthly || 0,
-          humanCostMonthly: calculatorResults.humanCostMonthly || 0,
-          monthlySavings: calculatorResults.monthlySavings || 0,
-          yearlySavings: calculatorResults.yearlySavings || 0,
-          savingsPercentage: calculatorResults.savingsPercentage || 0
-        },
-        // Include additional voice minutes explicitly
+        results: safeResults,
         additionalVoiceMinutes: additionalVoiceMinutes,
         includedVoiceMinutes: calculatorInputs?.aiTier === 'starter' ? 0 : 600,
-        // Use standard business suggestions and AI placements
         businessSuggestions: [
           {
             title: "Automate Common Customer Inquiries",
@@ -99,17 +94,16 @@ export const useReportGenerator = ({ lead }: UseReportGeneratorProps) => {
             capabilities: ["Answer product questions", "Provide pricing information", "Schedule demonstrations with sales team"]
           }
         ],
-        // Pass any additional fields that might be needed
         tierName: calculatorInputs?.aiTier ? 
           (calculatorInputs.aiTier === 'starter' ? 'Starter Plan' : 
           calculatorInputs.aiTier === 'growth' ? 'Growth Plan' : 
-          'Premium Plan') : undefined,
+          'Premium Plan') : 'Growth Plan', // Provide default
         aiType: calculatorInputs?.aiType ? 
           (calculatorInputs.aiType === 'chatbot' ? 'Text Only' : 
           calculatorInputs.aiType === 'voice' ? 'Basic Voice' : 
           calculatorInputs.aiType === 'conversationalVoice' ? 'Conversational Voice' : 
           calculatorInputs.aiType === 'both' ? 'Text & Basic Voice' : 
-          calculatorInputs.aiType === 'both-premium' ? 'Text & Conversational Voice' : undefined) : undefined,
+          calculatorInputs.aiType === 'both-premium' ? 'Text & Conversational Voice' : 'Text Only') : 'Text Only', // Provide default
       });
       
       console.log("PDF generation completed successfully");

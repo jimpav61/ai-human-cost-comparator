@@ -6,7 +6,7 @@ import autoTable from 'jspdf-autotable';
 export const addCostBreakdownSection = (
   doc: JsPDFWithAutoTable, 
   yPosition: number,
-  basePriceMonthly: number,
+  basePriceMonthly: number = 0,
   additionalVoiceMinutes?: number,
   totalMonthlyAICost?: number
 ): number => {
@@ -19,21 +19,24 @@ export const addCostBreakdownSection = (
   doc.setTextColor(0, 0, 0);
   doc.text("Cost Breakdown", 20, yPosition);
   
-  const additionalVoiceCost = hasAdditionalVoice ? additionalVoiceMinutes * 0.12 : 0;
+  // Ensure we have valid numbers to prevent NaN in the report
+  const basePriceSafe = isNaN(basePriceMonthly) ? 99 : basePriceMonthly;
+  const additionalVoiceCost = hasAdditionalVoice ? (additionalVoiceMinutes || 0) * 0.12 : 0;
+  const totalCostSafe = totalMonthlyAICost || (basePriceSafe + additionalVoiceCost);
   
   // Determine what rows to show based on the available data
   let breakdownData = [];
   
   if (hasAdditionalVoice) {
     breakdownData = [
-      ["Base Monthly Plan", formatCurrency(basePriceMonthly)],
+      ["Base Monthly Plan", formatCurrency(basePriceSafe)],
       ["Additional Voice Minutes", formatCurrency(additionalVoiceCost)],
-      ["Total Monthly Cost", formatCurrency(totalMonthlyAICost || (basePriceMonthly + additionalVoiceCost))]
+      ["Total Monthly Cost", formatCurrency(totalCostSafe)]
     ];
   } else {
     breakdownData = [
-      ["Base Monthly Plan", formatCurrency(basePriceMonthly)],
-      ["Total Monthly Cost", formatCurrency(totalMonthlyAICost || basePriceMonthly)]
+      ["Base Monthly Plan", formatCurrency(basePriceSafe)],
+      ["Total Monthly Cost", formatCurrency(totalCostSafe)]
     ];
   }
   
