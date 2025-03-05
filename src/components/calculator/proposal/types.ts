@@ -23,6 +23,20 @@ export interface SectionParams {
     monthlySavings?: number;
     yearlySavings?: number;
     savingsPercentage?: number;
+    basePriceMonthly?: number;
+    breakEvenPoint?: {
+      voice?: number;
+      chatbot?: number;
+    };
+    humanHours?: {
+      dailyPerEmployee?: number;
+      weeklyTotal?: number;
+      monthlyTotal?: number;
+      yearlyTotal?: number;
+    };
+    annualPlan?: number;
+    tierKey?: string;
+    aiType?: string;
     [key: string]: any;
   };
   tierName?: string;

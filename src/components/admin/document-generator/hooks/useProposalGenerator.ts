@@ -4,7 +4,6 @@ import { toast } from "@/hooks/use-toast";
 import { useDownloadState } from "./useDownloadState";
 import { generateProposal } from "@/components/calculator/proposal/generateProposal";
 import { saveProposalPDF } from "./proposal-generator/saveProposal";
-import { getTierDisplayName, getAITypeDisplay } from "@/components/calculator/pricingDetailsCalculator";
 
 interface UseProposalGeneratorProps {
   lead: Lead;
@@ -18,45 +17,22 @@ export const useProposalGenerator = ({ lead }: UseProposalGeneratorProps) => {
 
   const generateProposalDocument = async () => {
     try {
-      console.log("Generating proposal for lead:", lead);
+      console.log('Generating proposal for lead:', lead);
       
-      // Make sure we have calculator results
-      if (!lead.calculator_results) {
-        throw new Error("Calculator results missing from lead data");
+      // Check if lead exists
+      if (!lead) {
+        throw new Error("Lead data is missing");
       }
       
-      // Get display names using the same frontend functions
-      const tierName = getTierDisplayName(lead.calculator_inputs?.aiTier || 'starter');
-      const aiType = getAITypeDisplay(lead.calculator_inputs?.aiType || 'chatbot');
+      // Extract calculator results and inputs directly from lead data
+      // with minimal transformations to preserve original values
+      const calculatorResults = lead.calculator_results || {};
+      const calculatorInputs = lead.calculator_inputs || {};
       
-      console.log("Using existing calculator results:", {
-        results: lead.calculator_results,
-        tierName,
-        aiType
-      });
+      console.log("Calculator results for proposal:", calculatorResults);
+      console.log("Calculator inputs for proposal:", calculatorInputs);
       
-      // Calculate additional voice minutes if any
-      const additionalVoiceMinutes = lead.calculator_inputs?.callVolume || 0;
-      console.log("Additional voice minutes detected:", additionalVoiceMinutes);
-      
-      // Ensure we have valid calculator results with all required properties
-      const safeResults = {
-        ...lead.calculator_results,
-        aiCostMonthly: {
-          voice: lead.calculator_results.aiCostMonthly?.voice || 0,
-          chatbot: lead.calculator_results.aiCostMonthly?.chatbot || 0,
-          total: lead.calculator_results.aiCostMonthly?.total || 0,
-          setupFee: lead.calculator_results.aiCostMonthly?.setupFee || 0
-        },
-        humanCostMonthly: lead.calculator_results.humanCostMonthly || 0,
-        monthlySavings: lead.calculator_results.monthlySavings || 0,
-        yearlySavings: lead.calculator_results.yearlySavings || 0,
-        savingsPercentage: lead.calculator_results.savingsPercentage || 0
-      };
-      
-      console.log("Safe results prepared:", safeResults);
-      
-      // Generate the proposal using the same frontend function
+      // Generate proposal using the same function as frontend
       const doc = generateProposal({
         contactInfo: lead.name || 'Valued Client',
         companyName: lead.company_name || 'Your Company',
@@ -64,26 +40,28 @@ export const useProposalGenerator = ({ lead }: UseProposalGeneratorProps) => {
         phoneNumber: lead.phone_number || '',
         industry: lead.industry || 'Other',
         employeeCount: lead.employee_count || 5,
-        // Use validated results
-        results: safeResults,
-        tierName,
-        aiType,
-        // Pass additional voice minutes explicitly
-        additionalVoiceMinutes
+        results: calculatorResults,
+        tierName: calculatorInputs?.aiTier ? 
+          (calculatorInputs.aiTier === 'starter' ? 'Starter Plan' : 
+          calculatorInputs.aiTier === 'growth' ? 'Growth Plan' : 
+          'Premium Plan') : 'Growth Plan',
+        aiType: calculatorInputs?.aiType ? 
+          (calculatorInputs.aiType === 'chatbot' ? 'Text Only' : 
+          calculatorInputs.aiType === 'voice' ? 'Basic Voice' : 
+          calculatorInputs.aiType === 'conversationalVoice' ? 'Conversational Voice' : 
+          calculatorInputs.aiType === 'both' ? 'Text & Basic Voice' : 
+          calculatorInputs.aiType === 'both-premium' ? 'Text & Conversational Voice' : 'Text Only') : 'Text Only',
+        additionalVoiceMinutes: calculatorInputs?.callVolume || 0
       });
       
-      console.log("Proposal document generated successfully");
+      console.log("Proposal generation completed successfully");
       
       // Save the PDF
       saveProposalPDF(doc, lead);
       
-      // Mark as downloaded after successful generation
+      // Mark as downloaded
       markAsDownloaded();
       
-      toast({
-        title: "Success",
-        description: "Proposal generated and downloaded successfully",
-      });
     } catch (error) {
       console.error('Proposal generation error:', error);
       toast({
@@ -95,7 +73,7 @@ export const useProposalGenerator = ({ lead }: UseProposalGeneratorProps) => {
   };
 
   return {
-    generateProposalDocument,
-    hasDownloaded
+    hasDownloaded,
+    generateProposalDocument
   };
 };
