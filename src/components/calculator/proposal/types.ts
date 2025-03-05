@@ -8,10 +8,10 @@ export type JsPDFWithAutoTable = PDFWithAutoTable;
 export interface ProposalResults {
   humanCostMonthly: number;
   aiCostMonthly: {
-    voice?: number;
-    chatbot?: number;
+    voice: number; // Changed from optional to required
+    chatbot: number; // Changed from optional to required
     total: number;
-    setupFee?: number;
+    setupFee: number; // Changed from optional to required
   };
   monthlySavings: number;
   yearlySavings: number;
@@ -29,7 +29,7 @@ export interface ProposalResults {
   annualPlan?: number;
   tierKey?: string;
   aiType?: string;
-  basePriceMonthly: number; // Add the missing property
+  basePriceMonthly: number;
   [key: string]: any;
 }
 

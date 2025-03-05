@@ -88,7 +88,8 @@ export const generateFromInputs = async (lead: Lead): Promise<void> => {
       yearlyTotal: 10200
     },
     annualPlan: annualPrice,
-    tierKey: tierToUse // Add the tier key to be used in recommendedSolution
+    tierKey: tierToUse, // Add the tier key to be used in recommendedSolution
+    basePriceMonthly: baseMonthlyPrice // Add the missing required property
   };
   
   // Get display names based on tier and aiType
