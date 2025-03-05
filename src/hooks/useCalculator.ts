@@ -143,7 +143,7 @@ export const useCalculator = (inputs: CalculatorInputs): CalculationResults => {
       aiCostMonthly: {
         voice: additionalVoiceCost,
         chatbot: tierBase,
-        total: totalMonthlyCost, // Fixed: removed reference to baseMonthlyPrice 
+        total: totalMonthlyCost, // Fixed: replaced reference to baseMonthlyPrice with totalMonthlyCost
         setupFee: setupFee
       },
       basePriceMonthly: tierBase,
