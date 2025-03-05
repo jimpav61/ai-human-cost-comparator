@@ -164,7 +164,6 @@ export const CalculatorForm: React.FC<CalculatorFormProps> = ({ inputs, onInputC
         {(inputs.aiType === 'voice' || inputs.aiType === 'conversationalVoice' || inputs.aiType === 'both' || inputs.aiType === 'both-premium') && (
           <VoiceConfigSection 
             callVolume={inputs.callVolume}
-            avgCallDuration={inputs.avgCallDuration}
             aiTier={inputs.aiTier}
             onInputChange={onInputChange}
           />
