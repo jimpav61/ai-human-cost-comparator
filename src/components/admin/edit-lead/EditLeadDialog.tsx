@@ -7,6 +7,7 @@ import { Lead } from "@/types/leads";
 import { Button } from "@/components/ui/button";
 import { useAITypeUpdater } from "./hooks/useAITypeUpdater";
 import { AI_RATES } from "@/constants/pricing";
+import { toast } from "@/hooks/use-toast";
 
 interface EditLeadDialogProps {
   lead: Lead;
@@ -117,13 +118,33 @@ export const EditLeadDialog = ({ lead, isOpen, onClose, onSave }: EditLeadDialog
 
   // Handle save button click
   const handleSave = () => {
-    const updatedLead: Lead = {
-      ...formData,
-      calculator_inputs: calculatorInputs,
-      calculator_results: calculationResults
-    };
-    onSave(updatedLead);
-    onClose();
+    try {
+      console.log("Saving lead with calculator inputs:", calculatorInputs);
+      console.log("Current calculation results:", calculationResults);
+
+      const updatedLead: Lead = {
+        ...formData,
+        calculator_inputs: calculatorInputs,
+        calculator_results: calculationResults
+      };
+
+      console.log("Saving updated lead:", updatedLead);
+      onSave(updatedLead);
+      
+      toast({
+        title: "Success",
+        description: "Lead information updated successfully",
+      });
+      
+      onClose();
+    } catch (error) {
+      console.error("Error saving lead:", error);
+      toast({
+        title: "Error",
+        description: `Failed to save lead: ${error instanceof Error ? error.message : 'Unknown error'}`,
+        variant: "destructive",
+      });
+    }
   };
 
   return (
