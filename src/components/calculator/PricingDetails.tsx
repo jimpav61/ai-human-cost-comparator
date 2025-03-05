@@ -1,4 +1,3 @@
-
 import React from 'react';
 import { DollarSign, Clock, CreditCard } from 'lucide-react';
 import { formatCurrency, formatNumber } from '@/utils/formatters';
@@ -75,9 +74,12 @@ export const PricingDetails: React.FC<PricingDetailsProps> = ({
               <Clock className="h-4 w-4 mr-1" />
               Extra voice minutes: {formatNumber(extraVoiceMinutes)} minutes
             </div>
-            <div className="flex items-center mt-1">
-              <DollarSign className="h-4 w-4 mr-1" />
-              {formatNumber(extraVoiceMinutes)} minutes × 12¢ = {formatCurrency(additionalVoiceCost)}
+            <div className="flex justify-between items-center mt-1">
+              <div className="flex items-center">
+                <DollarSign className="h-4 w-4 mr-1" />
+                {formatNumber(extraVoiceMinutes)} minutes × 12¢
+              </div>
+              <span className="text-brand-600 font-medium">{formatCurrency(additionalVoiceCost)}</span>
             </div>
           </div>
         </div>
