@@ -1,56 +1,16 @@
 
-import jsPDF from 'jspdf';
-import type { CalculationResults } from '@/hooks/useCalculator';
+import { SharedResults, SharedGenerationParams, JsPDFWithAutoTable } from '../shared/types';
 import type { BusinessSuggestion, AIPlacement } from '../types';
 
-// Add custom interface to handle the jsPDF extension from autotable
-export interface JsPDFWithAutoTable extends jsPDF {
-  lastAutoTable?: {
-    finalY?: number;
-  };
-}
+// Re-export the shared types
+export type { JsPDFWithAutoTable };
 
-// Define a results type that includes all the properties used in the financialImpact section
-export interface PDFResults {
-  humanCostMonthly: number;
-  aiCostMonthly: {
-    voice: number; // Changed from optional to required
-    chatbot: number; // Changed from optional to required
-    total: number;
-    setupFee: number; // Changed from optional to required
-  };
-  monthlySavings: number;
-  yearlySavings: number;
-  savingsPercentage: number;
-  breakEvenPoint?: {
-    voice?: number;
-    chatbot?: number;
-  };
-  humanHours?: {
-    dailyPerEmployee?: number;
-    weeklyTotal?: number;
-    monthlyTotal?: number;
-    yearlyTotal?: number;
-  };
-  annualPlan?: number;
-  tierKey?: string;
-  aiType?: string;
-  basePriceMonthly: number;
-  [key: string]: any;
-}
+// Use the shared results type
+export type PDFResults = SharedResults;
 
-export interface GeneratePDFParams {
-  contactInfo: string;
-  companyName: string;
-  email: string;
-  phoneNumber: string | null;
-  industry?: string;
-  employeeCount?: number;
-  results: PDFResults;
+// Extend the shared params with PDF-specific properties
+export interface GeneratePDFParams extends SharedGenerationParams {
   businessSuggestions: BusinessSuggestion[];
   aiPlacements: AIPlacement[];
-  tierName?: string;
-  aiType?: string;
-  additionalVoiceMinutes?: number;
   includedVoiceMinutes?: number;
 }

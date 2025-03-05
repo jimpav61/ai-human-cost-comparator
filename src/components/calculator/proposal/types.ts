@@ -1,66 +1,21 @@
 
-import { JsPDFWithAutoTable as PDFWithAutoTable } from '../pdf/types';
+import { SharedResults, SharedGenerationParams, JsPDFWithAutoTable } from '../shared/types';
 
-// Re-export the JsPDFWithAutoTable type
-export type JsPDFWithAutoTable = PDFWithAutoTable;
+// Re-export the shared types
+export type { JsPDFWithAutoTable };
 
-// Define the results interface that both proposal and PDF generation will use
-export interface ProposalResults {
-  humanCostMonthly: number;
-  aiCostMonthly: {
-    voice: number; // Changed from optional to required
-    chatbot: number; // Changed from optional to required
-    total: number;
-    setupFee: number; // Changed from optional to required
-  };
-  monthlySavings: number;
-  yearlySavings: number;
-  savingsPercentage: number;
-  breakEvenPoint?: {
-    voice?: number;
-    chatbot?: number;
-  };
-  humanHours?: {
-    dailyPerEmployee?: number;
-    weeklyTotal?: number;
-    monthlyTotal?: number;
-    yearlyTotal?: number;
-  };
-  annualPlan?: number;
-  tierKey?: string;
-  aiType?: string;
-  basePriceMonthly: number;
-  [key: string]: any;
-}
+// Use the shared results type
+export type ProposalResults = SharedResults;
 
 // Define the SectionParams interface and export it
-export interface SectionParams {
-  contactInfo: string;
-  companyName: string;
-  email: string;
-  phoneNumber: string | null;
-  industry?: string;
-  employeeCount?: number;
-  results: ProposalResults;
-  tierName?: string;
-  aiType?: string;
-}
+export interface SectionParams extends SharedGenerationParams {}
 
 export interface PricingTableRow {
   item: string;
   cost: string;
 }
 
-export interface GenerateProposalParams {
-  contactInfo: string;
-  companyName: string;
-  email: string;
-  phoneNumber: string | null;
-  industry?: string;
-  employeeCount?: number;
-  results: ProposalResults;
-  tierName?: string;
-  aiType?: string;
+// Extend the shared params with proposal-specific properties
+export interface GenerateProposalParams extends SharedGenerationParams {
   pricingDetails?: any[];
-  additionalVoiceMinutes?: number;
 }
