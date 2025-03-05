@@ -42,6 +42,7 @@ export const useReportGenerator = ({ lead }: UseReportGeneratorProps) => {
       
       // Get the additional voice minutes from inputs if available
       const additionalVoiceMinutes = calculatorInputs?.callVolume || 0;
+      console.log("Additional voice minutes detected:", additionalVoiceMinutes);
       
       // Generate PDF using the same function the frontend uses
       const doc = generatePDF({
@@ -110,6 +111,8 @@ export const useReportGenerator = ({ lead }: UseReportGeneratorProps) => {
           calculatorInputs.aiType === 'both' ? 'Text & Basic Voice' : 
           calculatorInputs.aiType === 'both-premium' ? 'Text & Conversational Voice' : undefined) : undefined,
       });
+      
+      console.log("PDF generation completed successfully");
       
       // Save the PDF
       saveReportPDF(doc, lead);

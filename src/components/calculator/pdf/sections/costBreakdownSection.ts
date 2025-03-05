@@ -10,9 +10,10 @@ export const addCostBreakdownSection = (
   additionalVoiceMinutes?: number,
   totalMonthlyAICost?: number
 ): number => {
-  // Always show the section if totalMonthlyAICost is provided
-  // But still check for voice minutes for content presentation
+  // Always add the section to ensure consistent reporting
   const hasAdditionalVoice = additionalVoiceMinutes && additionalVoiceMinutes > 0;
+  
+  console.log("Cost breakdown section - addVoiceMin:", additionalVoiceMinutes, "hasVoice:", hasAdditionalVoice);
   
   doc.setFontSize(14);
   doc.setTextColor(0, 0, 0);

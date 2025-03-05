@@ -12,6 +12,13 @@ import { addContactSection } from './sections/contactSection';
 export const generatePDF = (params: GeneratePDFParams): JsPDFWithAutoTable => {
   const doc = new jsPDF() as JsPDFWithAutoTable;
   
+  console.log("PDF generation starting with params:", {
+    additionalVoiceMinutes: params.additionalVoiceMinutes,
+    includedVoiceMinutes: params.includedVoiceMinutes,
+    tierName: params.tierName,
+    aiType: params.aiType
+  });
+  
   // Add header section with contact info
   let currentY = addHeaderSection(
     doc, 
@@ -39,16 +46,14 @@ export const generatePDF = (params: GeneratePDFParams): JsPDFWithAutoTable => {
   // Add cost summary table
   currentY = addCostSummarySection(doc, currentY, params.results);
 
-  // Add cost breakdown section (only if there are additional voice minutes)
-  if (params.additionalVoiceMinutes && params.additionalVoiceMinutes > 0) {
-    currentY = addCostBreakdownSection(
-      doc, 
-      currentY, 
-      params.results.basePriceMonthly,
-      params.additionalVoiceMinutes,
-      params.results.aiCostMonthly.total
-    );
-  }
+  // Add cost breakdown section - always include it now, the section will handle display logic
+  currentY = addCostBreakdownSection(
+    doc, 
+    currentY, 
+    params.results.basePriceMonthly,
+    params.additionalVoiceMinutes,
+    params.results.aiCostMonthly.total
+  );
 
   // Add implementation recommendations
   currentY = addRecommendationsSection(doc, currentY, params.businessSuggestions);

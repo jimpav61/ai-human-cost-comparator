@@ -1,21 +1,19 @@
 
-import jsPDF from 'jspdf';
+import { JsPDFWithAutoTable } from '../pdf/types';
 
-// Add custom interface to handle the jsPDF extension from autotable
-export interface JsPDFWithAutoTable extends jsPDF {
-  lastAutoTable?: {
-    finalY?: number;
-  };
+export interface PricingTableRow {
+  item: string;
+  cost: string;
 }
 
-export interface SectionParams {
-  contactInfo?: string;
-  companyName?: string;
-  email?: string;
-  phoneNumber?: string | null;
+export interface GenerateProposalParams {
+  contactInfo: string;
+  companyName: string;
+  email: string;
+  phoneNumber: string | null;
   industry?: string;
   employeeCount?: number;
-  results?: any;
+  results: any;
   tierName?: string;
   aiType?: string;
   pricingDetails?: any[];

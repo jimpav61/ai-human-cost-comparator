@@ -37,6 +37,7 @@ export const useProposalGenerator = ({ lead }: UseProposalGeneratorProps) => {
       
       // Calculate additional voice minutes if any
       const additionalVoiceMinutes = lead.calculator_inputs?.callVolume || 0;
+      console.log("Additional voice minutes detected:", additionalVoiceMinutes);
       
       // Ensure we have valid calculator results with all required properties
       const safeResults = {
@@ -53,6 +54,8 @@ export const useProposalGenerator = ({ lead }: UseProposalGeneratorProps) => {
         savingsPercentage: lead.calculator_results.savingsPercentage || 0
       };
       
+      console.log("Safe results prepared:", safeResults);
+      
       // Generate the proposal using the same frontend function
       const doc = generateProposal({
         contactInfo: lead.name || 'Valued Client',
@@ -68,6 +71,8 @@ export const useProposalGenerator = ({ lead }: UseProposalGeneratorProps) => {
         // Pass additional voice minutes explicitly
         additionalVoiceMinutes
       });
+      
+      console.log("Proposal document generated successfully");
       
       // Save the PDF
       saveProposalPDF(doc, lead);
