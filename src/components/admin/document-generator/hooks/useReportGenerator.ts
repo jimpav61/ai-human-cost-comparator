@@ -26,8 +26,20 @@ export const useReportGenerator = ({ lead }: UseReportGeneratorProps) => {
 
       console.log('[ADMIN] Starting PDF generation with shared utility');
       
-      // Generate PDF directly using the shared utility without any parameter transformations
-      // This is exactly the same code path used by the frontend calculator
+      // Calculate included and additional voice minutes
+      const aiTier = lead.calculator_inputs?.aiTier || 'growth';
+      const includedVoiceMinutes = aiTier === 'starter' ? 0 : 600;
+      const callVolume = Number(lead.calculator_inputs?.callVolume) || 0;
+      const additionalVoiceMinutes = Math.max(0, callVolume - includedVoiceMinutes);
+      
+      console.log('[ADMIN] Voice calculation:', {
+        aiTier,
+        includedVoiceMinutes,
+        callVolume,
+        additionalVoiceMinutes
+      });
+      
+      // Generate PDF using the shared utility
       const doc = generatePDF({
         contactInfo: lead.name || 'Valued Client',
         companyName: lead.company_name || 'Your Company',
@@ -36,8 +48,8 @@ export const useReportGenerator = ({ lead }: UseReportGeneratorProps) => {
         industry: lead.industry || 'Other',
         employeeCount: Number(lead.employee_count) || 5,
         results: lead.calculator_results,
-        additionalVoiceMinutes: Number(lead.calculator_inputs?.callVolume) || 0,
-        includedVoiceMinutes: lead.calculator_inputs?.aiTier === 'starter' ? 0 : 600,
+        additionalVoiceMinutes: additionalVoiceMinutes, // Only the additional minutes
+        includedVoiceMinutes: includedVoiceMinutes,
         businessSuggestions: [
           {
             title: "Automate Common Customer Inquiries",
