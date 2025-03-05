@@ -52,7 +52,7 @@ export const processLeadData = (lead: Lead): ProcessedLeadData => {
   const includedVoiceMinutes = tierToUse === 'starter' ? 0 : 
                               (tierToUse === 'growth' ? 600 : 1200);
   
-  // Extract call volume from inputs for additional minutes
+  // Extract call volume from inputs for additional minutes calculation
   const extraVoiceMinutes = inputs.callVolume || 0;
   let additionalVoiceCost = 0;
   
@@ -66,7 +66,7 @@ export const processLeadData = (lead: Lead): ProcessedLeadData => {
   const baseMonthlyPrice = AI_RATES.chatbot[tierToUse].base;
   
   // Use the calculator results directly from lead if available
-  // This ensures we use the exact same data that was edited
+  // This ensures we use the exact same data that was presented in the frontend
   if (lead.calculator_results) {
     console.log("Using lead's existing calculator results:", lead.calculator_results);
     
