@@ -23,27 +23,29 @@ export const useReportGenerator = ({ lead }: UseReportGeneratorProps) => {
       if (!lead) {
         throw new Error("Lead data is missing");
       }
+
+      // IMPORTANT: Use the EXACT calculator results from the lead without any transformation
+      const calculatorResults = lead.calculator_results;
+      const calculatorInputs = lead.calculator_inputs;
       
-      // Extract calculator results and inputs directly from lead data without modification
-      const calculatorResults = lead.calculator_results || {};
-      const calculatorInputs = lead.calculator_inputs || {};
+      if (!calculatorResults || !calculatorInputs) {
+        throw new Error("Calculator data is missing from lead");
+      }
       
-      console.log("Raw calculator results for report:", calculatorResults);
+      console.log("Using EXACT calculator results from lead:", calculatorResults);
       
-      // Extract tier info from calculator inputs
-      const tierName = calculatorInputs?.aiTier === 'starter' ? 'Starter Plan' : 
-                     calculatorInputs?.aiTier === 'growth' ? 'Growth Plan' : 
-                     calculatorInputs?.aiTier === 'premium' ? 'Premium Plan' : 'Growth Plan';
+      // Use the exact tier name and AI type from the inputs
+      const tierName = calculatorInputs.aiTier === 'starter' ? 'Starter Plan' : 
+                     calculatorInputs.aiTier === 'growth' ? 'Growth Plan' : 
+                     calculatorInputs.aiTier === 'premium' ? 'Premium Plan' : 'Growth Plan';
                      
-      const aiType = calculatorInputs?.aiType === 'chatbot' ? 'Text Only' : 
-                    calculatorInputs?.aiType === 'voice' ? 'Basic Voice' : 
-                    calculatorInputs?.aiType === 'conversationalVoice' ? 'Conversational Voice' : 
-                    calculatorInputs?.aiType === 'both' ? 'Text & Basic Voice' : 
-                    calculatorInputs?.aiType === 'both-premium' ? 'Text & Conversational Voice' : 'Text Only';
+      const aiType = calculatorInputs.aiType === 'chatbot' ? 'Text Only' : 
+                    calculatorInputs.aiType === 'voice' ? 'Basic Voice' : 
+                    calculatorInputs.aiType === 'conversationalVoice' ? 'Conversational Voice' : 
+                    calculatorInputs.aiType === 'both' ? 'Text & Basic Voice' : 
+                    calculatorInputs.aiType === 'both-premium' ? 'Text & Conversational Voice' : 'Text Only';
       
-      console.log("Using exact calculator results for PDF:", calculatorResults);
-      
-      // Generate PDF using the EXACT same results as shown in the frontend
+      // Generate the PDF using EXACTLY the same code path as the frontend
       const doc = generatePDF({
         contactInfo: lead.name || 'Valued Client',
         companyName: lead.company_name || 'Your Company',
@@ -51,9 +53,10 @@ export const useReportGenerator = ({ lead }: UseReportGeneratorProps) => {
         phoneNumber: lead.phone_number || '',
         industry: lead.industry || 'Other',
         employeeCount: Number(lead.employee_count) || 5,
-        results: calculatorResults, // Pass the exact results without any modification
-        additionalVoiceMinutes: Number(calculatorInputs?.callVolume) || 0,
-        includedVoiceMinutes: calculatorInputs?.aiTier === 'starter' ? 0 : 600,
+        // Pass the exact calculator results without any modification
+        results: calculatorResults,
+        additionalVoiceMinutes: Number(calculatorInputs.callVolume) || 0,
+        includedVoiceMinutes: calculatorInputs.aiTier === 'starter' ? 0 : 600,
         businessSuggestions: [
           {
             title: "Automate Common Customer Inquiries",
@@ -86,7 +89,7 @@ export const useReportGenerator = ({ lead }: UseReportGeneratorProps) => {
         aiType: aiType,
       });
       
-      console.log("PDF generation completed successfully");
+      console.log("PDF generation completed successfully using EXACT same path as frontend");
       
       // Save the PDF
       saveReportPDF(doc, lead);
