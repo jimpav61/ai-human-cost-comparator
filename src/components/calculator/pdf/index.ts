@@ -12,7 +12,7 @@ import { addContactSection } from './sections/contactSection';
 export const generatePDF = (params: GeneratePDFParams): JsPDFWithAutoTable => {
   const doc = new jsPDF() as JsPDFWithAutoTable;
   
-  console.log("PDF generation starting with EXACT same params as frontend:", params);
+  console.log("FRONTEND PDF generation starting with parameters:", params);
   
   // Add header section with contact info
   let currentY = addHeaderSection(
@@ -38,10 +38,10 @@ export const generatePDF = (params: GeneratePDFParams): JsPDFWithAutoTable => {
     );
   }
 
-  // Add cost summary table with exact same values as frontend
+  // Add cost summary table with frontend values
   currentY = addCostSummarySection(doc, currentY, params.results);
 
-  // Add cost breakdown - with exact same values as frontend
+  // Add cost breakdown - with frontend values
   currentY = addCostBreakdownSection(
     doc, 
     currentY, 

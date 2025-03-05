@@ -13,14 +13,14 @@ export const addCostSummarySection = (
   doc.setTextColor(0, 0, 0);
   doc.text("Cost Summary", 20, yPosition);
   
-  // Use the exact values from frontend calculator, no transformations
+  // CRITICAL: Use the exact values from frontend calculator, no transformations
   const humanCostMonthly = results.humanCostMonthly;
   const aiCostMonthlyTotal = results.aiCostMonthly?.total;
   const setupFee = results.aiCostMonthly?.setupFee;
   const monthlySavings = results.monthlySavings;
   const yearlySavings = results.yearlySavings;
   
-  console.log("Using EXACT frontend cost summary values for PDF:", {
+  console.log("Using EXACT frontend values for cost summary section:", {
     humanCostMonthly,
     aiCostMonthlyTotal,
     setupFee,
@@ -41,7 +41,6 @@ export const addCostSummarySection = (
     styles: { fontSize: 11 },
     bodyStyles: { textColor: [0, 0, 0] },
     alternateRowStyles: { fillColor: [240, 240, 240] },
-    // Use the same styling as the frontend table
     willDrawCell: function(data) {
       // Highlight the AI Solution row with a green background - matching frontend
       if (data.row.index === 1 && data.section === 'body') {

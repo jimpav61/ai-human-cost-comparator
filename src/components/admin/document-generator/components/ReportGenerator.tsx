@@ -11,6 +11,7 @@ interface ReportGeneratorProps {
 }
 
 export const ReportGenerator = ({ lead, buttonStyle = "default" }: ReportGeneratorProps) => {
+  // Use the same hook for both admin and frontend to ensure identical behavior
   const { hasDownloaded, generateReportDocument } = useReportGenerator({ lead });
 
   // Return different button styles based on the buttonStyle prop

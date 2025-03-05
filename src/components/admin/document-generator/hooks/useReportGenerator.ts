@@ -24,7 +24,8 @@ export const useReportGenerator = ({ lead }: UseReportGeneratorProps) => {
         throw new Error("Lead data is missing");
       }
 
-      // IMPORTANT: Use the EXACT calculator results from the lead without any transformation
+      // CRITICAL: Use the EXACTLY SAME approach as frontend ResultsDisplay.tsx
+      // We must use exactly the same code path as the frontend to ensure identical PDFs
       const calculatorResults = lead.calculator_results;
       const calculatorInputs = lead.calculator_inputs;
       
@@ -32,12 +33,12 @@ export const useReportGenerator = ({ lead }: UseReportGeneratorProps) => {
         throw new Error("Calculator data is missing from lead");
       }
       
-      console.log("Using EXACT calculator results from lead:", calculatorResults);
+      console.log("Using EXACT frontend calculator results for PDF generation:", calculatorResults);
       
-      // Use the exact tier name and AI type from the inputs
+      // Get the exact display names as used in the frontend
       const tierName = calculatorInputs.aiTier === 'starter' ? 'Starter Plan' : 
-                     calculatorInputs.aiTier === 'growth' ? 'Growth Plan' : 
-                     calculatorInputs.aiTier === 'premium' ? 'Premium Plan' : 'Growth Plan';
+                      calculatorInputs.aiTier === 'growth' ? 'Growth Plan' : 
+                      calculatorInputs.aiTier === 'premium' ? 'Premium Plan' : 'Growth Plan';
                      
       const aiType = calculatorInputs.aiType === 'chatbot' ? 'Text Only' : 
                     calculatorInputs.aiType === 'voice' ? 'Basic Voice' : 
@@ -45,7 +46,8 @@ export const useReportGenerator = ({ lead }: UseReportGeneratorProps) => {
                     calculatorInputs.aiType === 'both' ? 'Text & Basic Voice' : 
                     calculatorInputs.aiType === 'both-premium' ? 'Text & Conversational Voice' : 'Text Only';
       
-      // Generate the PDF using EXACTLY the same code path as the frontend
+      // EXACT SAME CODE PATH: Use the generatePDF function with exactly the same parameters
+      // as used in the frontend ResultsDisplay.tsx
       const doc = generatePDF({
         contactInfo: lead.name || 'Valued Client',
         companyName: lead.company_name || 'Your Company',
@@ -53,7 +55,7 @@ export const useReportGenerator = ({ lead }: UseReportGeneratorProps) => {
         phoneNumber: lead.phone_number || '',
         industry: lead.industry || 'Other',
         employeeCount: Number(lead.employee_count) || 5,
-        // Pass the exact calculator results without any modification
+        // Pass EXACTLY the same calculator results without ANY modification
         results: calculatorResults,
         additionalVoiceMinutes: Number(calculatorInputs.callVolume) || 0,
         includedVoiceMinutes: calculatorInputs.aiTier === 'starter' ? 0 : 600,
@@ -89,9 +91,9 @@ export const useReportGenerator = ({ lead }: UseReportGeneratorProps) => {
         aiType: aiType,
       });
       
-      console.log("PDF generation completed successfully using EXACT same path as frontend");
+      console.log("PDF generation completed using IDENTICAL code path as frontend");
       
-      // Save the PDF
+      // Save the PDF using the exact same method
       saveReportPDF(doc, lead);
       
       // Mark as downloaded
