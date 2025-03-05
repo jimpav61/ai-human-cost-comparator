@@ -33,14 +33,11 @@ export const ResultsDetailView: React.FC<ResultsDetailViewProps> = ({
   return (
     <div>
       <div className="bg-brand-50 p-3 rounded-lg mb-4 border border-brand-100">
-        <div className="flex items-center justify-between">
-          <div className="flex items-center">
-            <div className="text-brand-600 font-medium">Selected Plan:</div>
-            <div className="ml-2 text-gray-800">
-              {tierDisplayName} ({aiTypeDisplay})
-            </div>
+        <div className="flex items-center">
+          <div className="text-brand-600 font-medium">Selected Plan:</div>
+          <div className="ml-2 text-gray-800">
+            {tierDisplayName} ({aiTypeDisplay})
           </div>
-          <div className="text-brand-600 font-semibold">{formatCurrency(basePrice)}/month</div>
         </div>
       </div>
       
