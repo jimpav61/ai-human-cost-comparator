@@ -103,9 +103,12 @@ export const PricingDetails: React.FC<PricingDetailsProps> = ({
               </div>
             )}
             {detail.totalMinutes && (
-              <div className="flex items-center">
-                <Clock className="h-4 w-4 mr-1" />
-                Additional voice minutes: {formatNumber(detail.totalMinutes)} minutes
+              <div className="flex justify-between items-center">
+                <div className="flex items-center">
+                  <Clock className="h-4 w-4 mr-1" />
+                  Additional voice minutes: {formatNumber(detail.totalMinutes)} minutes
+                </div>
+                <span className="text-brand-600 font-medium">{formatCurrency(detail.totalMinutes * 0.12)}</span>
               </div>
             )}
           </div>
