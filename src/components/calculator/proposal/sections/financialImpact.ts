@@ -18,12 +18,12 @@ export const addFinancialImpact = (doc: JsPDFWithAutoTable, yPosition: number, p
   const resultsData = params.results || {};
   
   // Safely extract values with fallbacks
-  const humanCost = resultsData.humanCostMonthly || 15000;
-  const aiCost = resultsData.aiCostMonthly?.total || 499;
-  const setupFee = resultsData.aiCostMonthly?.setupFee || 1149;
-  const monthlySavings = resultsData.monthlySavings || 14500;
-  const yearlySavings = resultsData.yearlySavings || 174000;
-  const savingsPercent = resultsData.savingsPercentage || 96;
+  const humanCost = typeof resultsData.humanCostMonthly === 'number' ? resultsData.humanCostMonthly : 15000;
+  const aiCost = typeof resultsData.aiCostMonthly?.total === 'number' ? resultsData.aiCostMonthly.total : 499;
+  const setupFee = typeof resultsData.aiCostMonthly?.setupFee === 'number' ? resultsData.aiCostMonthly.setupFee : 1149;
+  const monthlySavings = typeof resultsData.monthlySavings === 'number' ? resultsData.monthlySavings : 14500;
+  const yearlySavings = typeof resultsData.yearlySavings === 'number' ? resultsData.yearlySavings : 174000;
+  const savingsPercent = typeof resultsData.savingsPercentage === 'number' ? resultsData.savingsPercentage : 96;
   
   const humanCostFormatted = formatCurrency(humanCost);
   const aiCostFormatted = formatCurrency(aiCost);
@@ -91,3 +91,4 @@ export const addFinancialImpact = (doc: JsPDFWithAutoTable, yPosition: number, p
   
   return yPosition + 15;
 };
+
