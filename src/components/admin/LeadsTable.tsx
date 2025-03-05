@@ -1,4 +1,3 @@
-
 import {
   Table,
   TableBody,
@@ -17,7 +16,7 @@ import { DocumentGenerator } from "./DocumentGenerator";
 import { exportLeadsToCSV } from "@/utils/exportUtils";
 import { useState } from "react";
 import { Card, CardContent } from "@/components/ui/card";
-import { EditLeadDialog } from "./EditLeadDialog";
+import { EditLeadDialog } from "./edit-lead/EditLeadDialog";
 
 interface LeadsTableProps {
   leads: Lead[];
@@ -43,6 +42,12 @@ export const LeadsTable = ({ leads }: LeadsTableProps) => {
   const handleCloseEditDialog = () => {
     setIsEditDialogOpen(false);
     setEditingLead(null);
+  };
+
+  const handleSaveLead = (updatedLead: Lead) => {
+    console.log("Saving updated lead:", updatedLead);
+    // Here you would add logic to update the lead in your database
+    // For now, we'll just log it to the console
   };
 
   return (
@@ -199,8 +204,9 @@ export const LeadsTable = ({ leads }: LeadsTableProps) => {
       {editingLead && (
         <EditLeadDialog
           lead={editingLead}
-          open={isEditDialogOpen}
+          isOpen={isEditDialogOpen}
           onClose={handleCloseEditDialog}
+          onSave={handleSaveLead}
         />
       )}
     </div>
