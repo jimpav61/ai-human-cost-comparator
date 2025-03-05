@@ -25,6 +25,8 @@ interface GeneratePDFParams {
   aiPlacements: AIPlacement[];
   tierName?: string;
   aiType?: string;
+  additionalVoiceMinutes?: number;
+  includedVoiceMinutes?: number;
 }
 
 export const generatePDF = (params: GeneratePDFParams) => {
@@ -73,7 +75,7 @@ export const generatePDF = (params: GeneratePDFParams) => {
                    params.tierName.toLowerCase().includes('growth') ? 'growth' : 
                    params.tierName.toLowerCase().includes('premium') ? 'premium' : 'growth';
     
-    const includedMinutes = AI_RATES.chatbot[tierKey]?.includedVoiceMinutes || 0;
+    const includedMinutes = params.includedVoiceMinutes || 0;
     const voiceCapability = tierKey === 'starter' ? 'No voice capabilities' : 
                           `Includes ${includedMinutes} free voice minutes per month`;
     
@@ -85,6 +87,15 @@ export const generatePDF = (params: GeneratePDFParams) => {
       doc.setFontSize(10);
       doc.setTextColor(100, 100, 100);
       doc.text(voiceCapability, 20, currentY);
+      currentY += 7;
+    }
+    
+    // Add voice minutes details if there are any additional minutes
+    if (params.additionalVoiceMinutes && params.additionalVoiceMinutes > 0) {
+      doc.setFontSize(10);
+      doc.setTextColor(100, 100, 100);
+      const additionalVoiceCost = params.additionalVoiceMinutes * 0.12;
+      doc.text(`Additional ${params.additionalVoiceMinutes} voice minutes: ${formatCurrency(additionalVoiceCost)}`, 20, currentY);
       currentY += 7;
     }
     
@@ -124,6 +135,32 @@ export const generatePDF = (params: GeneratePDFParams) => {
   });
 
   currentY = (doc as any).lastAutoTable.finalY + 15;
+
+  // Additional cost breakdown section - only if there are additional voice minutes
+  if (params.additionalVoiceMinutes && params.additionalVoiceMinutes > 0) {
+    doc.setFontSize(14);
+    doc.setTextColor(0, 0, 0);
+    doc.text("Cost Breakdown", 20, currentY);
+    
+    const additionalVoiceCost = params.additionalVoiceMinutes * 0.12;
+    const breakdownData = [
+      ["Base Monthly Plan", formatCurrency(params.results.basePriceMonthly)],
+      ["Additional Voice Minutes", formatCurrency(additionalVoiceCost)],
+      ["Total Monthly Cost", formatCurrency(params.results.aiCostMonthly.total)]
+    ];
+    
+    autoTable(doc, {
+      startY: currentY + 5,
+      head: [["Item", "Cost"]],
+      body: breakdownData,
+      styles: { fontSize: 11 },
+      headStyles: { fillColor: [200, 230, 201] },
+      bodyStyles: { textColor: [0, 0, 0] },
+      alternateRowStyles: { fillColor: [240, 240, 240] },
+    });
+    
+    currentY = (doc as any).lastAutoTable.finalY + 15;
+  }
 
   // Business Recommendations
   doc.setFontSize(14);

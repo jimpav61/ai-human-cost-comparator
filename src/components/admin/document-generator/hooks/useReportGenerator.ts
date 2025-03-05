@@ -40,22 +40,34 @@ export const useReportGenerator = ({ lead }: UseReportGeneratorProps) => {
       // Setup fee from rates using the original tier
       const setupFee = AI_RATES.chatbot[tierToUse].setupFee;
       
+      // Calculate any additional voice costs for the PDF
+      const includedVoiceMinutes = tierToUse === 'starter' ? 0 : 600;
+      const totalVoiceMinutes = inputs.callVolume || 0;
+      const extraVoiceMinutes = Math.max(0, totalVoiceMinutes - includedVoiceMinutes);
+      let additionalVoiceCost = 0;
+      
+      if (extraVoiceMinutes > 0 && tierToUse !== 'starter') {
+        // Always use 12¢ per minute for additional voice minutes
+        const additionalMinuteRate = 0.12;
+        additionalVoiceCost = extraVoiceMinutes * additionalMinuteRate;
+      }
+      
+      // Get base cost from the tier
+      const baseMonthlyPrice = AI_RATES.chatbot[tierToUse].base;
+      
       // Use the calculator results from lead or create a complete default object based on the ORIGINAL tier
       const results = lead.calculator_results || {
         aiCostMonthly: { 
-          voice: aiTypeToUse === 'chatbot' ? 0 : 55, 
-          chatbot: AI_RATES.chatbot[tierToUse].base, 
-          total: aiTypeToUse === 'chatbot' ? AI_RATES.chatbot[tierToUse].base : 
-                (AI_RATES.chatbot[tierToUse].base + 55), 
+          voice: additionalVoiceCost, 
+          chatbot: baseMonthlyPrice, 
+          total: baseMonthlyPrice + additionalVoiceCost, 
           setupFee: setupFee
         },
+        basePriceMonthly: baseMonthlyPrice,
         humanCostMonthly: 3800,
-        monthlySavings: 3800 - (aiTypeToUse === 'chatbot' ? AI_RATES.chatbot[tierToUse].base : 
-                              (AI_RATES.chatbot[tierToUse].base + 55)),
-        yearlySavings: (3800 - (aiTypeToUse === 'chatbot' ? AI_RATES.chatbot[tierToUse].base : 
-                               (AI_RATES.chatbot[tierToUse].base + 55))) * 12,
-        savingsPercentage: ((3800 - (aiTypeToUse === 'chatbot' ? AI_RATES.chatbot[tierToUse].base : 
-                               (AI_RATES.chatbot[tierToUse].base + 55))) / 3800) * 100,
+        monthlySavings: 3800 - (baseMonthlyPrice + additionalVoiceCost),
+        yearlySavings: (3800 - (baseMonthlyPrice + additionalVoiceCost)) * 12,
+        savingsPercentage: ((3800 - (baseMonthlyPrice + additionalVoiceCost)) / 3800) * 100,
         breakEvenPoint: { voice: 240, chatbot: 520 },
         humanHours: {
           dailyPerEmployee: 8,
@@ -69,9 +81,9 @@ export const useReportGenerator = ({ lead }: UseReportGeneratorProps) => {
       // Ensure all nested objects and properties exist to prevent undefined errors
       if (!results.aiCostMonthly) {
         results.aiCostMonthly = { 
-          voice: 0, 
-          chatbot: AI_RATES.chatbot[tierToUse].base, 
-          total: AI_RATES.chatbot[tierToUse].base,
+          voice: additionalVoiceCost, 
+          chatbot: baseMonthlyPrice, 
+          total: baseMonthlyPrice + additionalVoiceCost,
           setupFee: setupFee 
         };
       }
@@ -89,6 +101,11 @@ export const useReportGenerator = ({ lead }: UseReportGeneratorProps) => {
         };
       }
       
+      // Ensure basePriceMonthly is set
+      if (!results.basePriceMonthly) {
+        results.basePriceMonthly = baseMonthlyPrice;
+      }
+      
       // Get display names based on the ORIGINAL tier and aiType
       const tierName = getTierDisplayName(tierToUse);
       const aiType = getAITypeDisplay(aiTypeToUse);
@@ -101,7 +118,11 @@ export const useReportGenerator = ({ lead }: UseReportGeneratorProps) => {
         aiType,
         tierToUse,
         aiTypeToUse,
-        results
+        results,
+        baseMonthlyPrice,
+        additionalVoiceCost,
+        extraVoiceMinutes,
+        includedVoiceMinutes
       });
       
       try {
@@ -116,6 +137,8 @@ export const useReportGenerator = ({ lead }: UseReportGeneratorProps) => {
           results: results,
           tierName: tierName,
           aiType: aiType,
+          additionalVoiceMinutes: extraVoiceMinutes,
+          includedVoiceMinutes: includedVoiceMinutes,
           businessSuggestions: [
             {
               title: "Automate Common Customer Inquiries",

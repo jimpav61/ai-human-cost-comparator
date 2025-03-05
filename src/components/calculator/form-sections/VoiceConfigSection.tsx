@@ -74,7 +74,7 @@ export const VoiceConfigSection: React.FC<VoiceConfigSectionProps> = ({
         )}
         {!isStarterPlan && additionalVoiceMinutes > 0 && (
           <p className="text-xs text-amber-600 mt-1">
-            {additionalVoiceMinutes.toFixed(0)} additional minutes at 12¢/min = ${additionalCost.toFixed(2)}
+            {additionalVoiceMinutes.toFixed(0)} additional minutes at 12¢/min = {formatCurrency(additionalCost)}
           </p>
         )}
         {isStarterPlan && (
