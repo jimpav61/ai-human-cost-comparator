@@ -24,27 +24,11 @@ export const useReportGenerator = ({ lead }: UseReportGeneratorProps) => {
         throw new Error("Lead data is missing");
       }
       
-      // Extract calculator results and inputs directly from lead data
+      // Extract calculator results and inputs directly from lead data without modification
       const calculatorResults = lead.calculator_results || {};
       const calculatorInputs = lead.calculator_inputs || {};
       
       console.log("Raw calculator results for report:", calculatorResults);
-      
-      // Ensure aiCostMonthly exists with all required properties
-      const safeResults = {
-        ...calculatorResults,
-        aiCostMonthly: {
-          voice: Number(calculatorResults.aiCostMonthly?.voice || 0),
-          chatbot: Number(calculatorResults.aiCostMonthly?.chatbot || 0),
-          total: Number(calculatorResults.aiCostMonthly?.total || 0),
-          setupFee: Number(calculatorResults.aiCostMonthly?.setupFee || 0)
-        },
-        humanCostMonthly: Number(calculatorResults.humanCostMonthly || 0),
-        monthlySavings: Number(calculatorResults.monthlySavings || 0),
-        yearlySavings: Number(calculatorResults.yearlySavings || 0),
-        savingsPercentage: Number(calculatorResults.savingsPercentage || 0),
-        basePriceMonthly: Number(calculatorResults.basePriceMonthly || 0)
-      };
       
       // Extract tier info from calculator inputs
       const tierName = calculatorInputs?.aiTier === 'starter' ? 'Starter Plan' : 
@@ -57,9 +41,9 @@ export const useReportGenerator = ({ lead }: UseReportGeneratorProps) => {
                     calculatorInputs?.aiType === 'both' ? 'Text & Basic Voice' : 
                     calculatorInputs?.aiType === 'both-premium' ? 'Text & Conversational Voice' : 'Text Only';
       
-      console.log("Using sanitized results for PDF:", safeResults);
+      console.log("Using exact calculator results for PDF:", calculatorResults);
       
-      // Generate PDF using the sanitized results
+      // Generate PDF using the EXACT same results as shown in the frontend
       const doc = generatePDF({
         contactInfo: lead.name || 'Valued Client',
         companyName: lead.company_name || 'Your Company',
@@ -67,7 +51,7 @@ export const useReportGenerator = ({ lead }: UseReportGeneratorProps) => {
         phoneNumber: lead.phone_number || '',
         industry: lead.industry || 'Other',
         employeeCount: Number(lead.employee_count) || 5,
-        results: safeResults,
+        results: calculatorResults, // Pass the exact results without any modification
         additionalVoiceMinutes: Number(calculatorInputs?.callVolume) || 0,
         includedVoiceMinutes: calculatorInputs?.aiTier === 'starter' ? 0 : 600,
         businessSuggestions: [

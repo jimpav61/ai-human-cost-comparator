@@ -13,14 +13,14 @@ export const addCostSummarySection = (
   doc.setTextColor(0, 0, 0);
   doc.text("Cost Summary", 20, yPosition);
   
-  // Ensure these are numbers with proper fallbacks
-  const humanCostMonthly = Number(results?.humanCostMonthly) || 0;
-  const aiCostMonthlyTotal = Number(results?.aiCostMonthly?.total) || 0;
-  const setupFee = Number(results?.aiCostMonthly?.setupFee) || 0;
-  const monthlySavings = Number(results?.monthlySavings) || 0;
-  const yearlySavings = Number(results?.yearlySavings) || 0;
+  // Use the exact values from frontend calculator, no transformations
+  const humanCostMonthly = results.humanCostMonthly;
+  const aiCostMonthlyTotal = results.aiCostMonthly?.total;
+  const setupFee = results.aiCostMonthly?.setupFee;
+  const monthlySavings = results.monthlySavings;
+  const yearlySavings = results.yearlySavings;
   
-  console.log("Cost Summary values for PDF:", {
+  console.log("Using EXACT frontend cost summary values for PDF:", {
     humanCostMonthly,
     aiCostMonthlyTotal,
     setupFee,
@@ -41,9 +41,9 @@ export const addCostSummarySection = (
     styles: { fontSize: 11 },
     bodyStyles: { textColor: [0, 0, 0] },
     alternateRowStyles: { fillColor: [240, 240, 240] },
-    // Use a more specific styling approach for individual rows
+    // Use the same styling as the frontend table
     willDrawCell: function(data) {
-      // Highlight the AI Solution row with a green background
+      // Highlight the AI Solution row with a green background - matching frontend
       if (data.row.index === 1 && data.section === 'body') {
         data.cell.styles.fillColor = [226, 240, 217];
         data.cell.styles.fontStyle = 'bold';

@@ -12,20 +12,13 @@ export const addPlanSection = (
   additionalVoiceMinutes?: number
 ): number => {
   let currentY = yPosition;
-
-  // Ensure setup fee is a number with fallback
-  const safeSetupFee = Number(setupFee) || 0;
   
-  // Ensure voice minutes are numbers with fallbacks
-  const safeIncludedMinutes = Number(includedVoiceMinutes) || 0;
-  const safeAdditionalMinutes = Number(additionalVoiceMinutes) || 0;
-  
-  console.log("Plan section values for PDF:", {
+  console.log("Plan section values for PDF - using EXACT frontend values:", {
     tierName,
     aiType,
-    setupFee: safeSetupFee,
-    includedVoiceMinutes: safeIncludedMinutes,
-    additionalVoiceMinutes: safeAdditionalMinutes
+    setupFee,
+    includedVoiceMinutes,
+    additionalVoiceMinutes
   });
   
   doc.setFontSize(14);
@@ -39,7 +32,7 @@ export const addPlanSection = (
                  tierName.toLowerCase().includes('premium') ? 'premium' : 'growth';
   
   const voiceCapability = tierKey === 'starter' ? 'No voice capabilities' : 
-                        `Includes ${safeIncludedMinutes} free voice minutes per month`;
+                        `Includes ${includedVoiceMinutes} free voice minutes per month`;
   
   doc.text(`${tierName} (${aiType})`, 20, currentY);
   currentY += 7;
@@ -53,18 +46,18 @@ export const addPlanSection = (
   }
   
   // Add voice minutes details if there are any additional minutes
-  if (safeAdditionalMinutes > 0) {
+  if (additionalVoiceMinutes && additionalVoiceMinutes > 0) {
     doc.setFontSize(10);
     doc.setTextColor(100, 100, 100);
-    const additionalVoiceCost = safeAdditionalMinutes * 0.12;
-    doc.text(`Additional ${safeAdditionalMinutes} voice minutes: ${formatCurrency(additionalVoiceCost)}`, 20, currentY);
+    const additionalVoiceCost = additionalVoiceMinutes * 0.12;
+    doc.text(`Additional ${additionalVoiceMinutes} voice minutes: ${formatCurrency(additionalVoiceCost)}`, 20, currentY);
     currentY += 7;
   }
   
   // Add the one-time setup fee information
   doc.setFontSize(10);
   doc.setTextColor(100, 100, 100);
-  doc.text(`One-time setup fee: ${formatCurrency(safeSetupFee)}`, 20, currentY);
+  doc.text(`One-time setup fee: ${formatCurrency(setupFee)}`, 20, currentY);
   
   return currentY + 12; // Extra spacing
 };

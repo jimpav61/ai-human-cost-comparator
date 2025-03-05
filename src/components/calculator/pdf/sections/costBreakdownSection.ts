@@ -10,19 +10,14 @@ export const addCostBreakdownSection = (
   additionalVoiceMinutes?: number,
   totalMonthlyCost?: number
 ): number => {
-  // Ensure values are numbers with fallbacks
-  const safeBasePrice = Number(basePriceMonthly) || 0;
-  const safeAdditionalMinutes = Number(additionalVoiceMinutes) || 0;
-  const safeTotalCost = Number(totalMonthlyCost) || 0;
-  
-  console.log("Cost Breakdown values for PDF:", {
-    basePriceMonthly: safeBasePrice,
-    additionalVoiceMinutes: safeAdditionalMinutes,
-    totalMonthlyCost: safeTotalCost
+  console.log("Cost Breakdown values for PDF - using EXACT frontend values:", {
+    basePriceMonthly,
+    additionalVoiceMinutes,
+    totalMonthlyCost
   });
   
-  // Only proceed if we have a base price to show
-  if (safeBasePrice <= 0) {
+  // Don't add the section if there's no base price
+  if (!basePriceMonthly) {
     return yPosition;
   }
   
@@ -37,25 +32,25 @@ export const addCostBreakdownSection = (
   const tableRows = [];
   
   // Always add the base AI service
-  tableRows.push(['AI Service Base', formatCurrency(safeBasePrice)]);
+  tableRows.push(['AI Service Base', formatCurrency(basePriceMonthly)]);
   
   // Add additional voice minutes if applicable
-  if (safeAdditionalMinutes > 0) {
-    // Calculate cost of additional minutes (12 cents per minute)
+  if (additionalVoiceMinutes && additionalVoiceMinutes > 0) {
+    // Calculate cost of additional minutes (12 cents per minute) - same as frontend
     const additionalMinutesRate = 0.12;
-    const additionalVoiceCost = safeAdditionalMinutes * additionalMinutesRate;
+    const additionalVoiceCost = additionalVoiceMinutes * additionalMinutesRate;
     tableRows.push([
-      `Additional Voice Minutes (${safeAdditionalMinutes} @ ${formatCurrency(additionalMinutesRate)}/min)`, 
+      `Additional Voice Minutes (${additionalVoiceMinutes} @ ${formatCurrency(additionalMinutesRate)}/min)`, 
       formatCurrency(additionalVoiceCost)
     ]);
   }
   
   // Add total if we have it
-  if (safeTotalCost > 0) {
-    tableRows.push(['Monthly Total', formatCurrency(safeTotalCost)]);
+  if (totalMonthlyCost) {
+    tableRows.push(['Monthly Total', formatCurrency(totalMonthlyCost)]);
   }
   
-  // Create the breakdown table
+  // Create the breakdown table with same styling as frontend
   autoTable(doc, {
     startY: yPosition,
     head: [['Item', 'Monthly Cost']],
