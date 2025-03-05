@@ -1,4 +1,3 @@
-
 import { formatCurrency } from '@/utils/formatters';
 import type { CalculatorInputs } from '@/hooks/useCalculator';
 import type { PricingDetail } from './types';
@@ -19,7 +18,7 @@ export const calculatePricingDetails = (inputs: CalculatorInputs): PricingDetail
   // Calculate any additional voice costs
   // Always use 600 minutes for included voice in growth and premium plans
   const includedVoiceMinutes = inputs.aiTier === 'starter' ? 0 : 600;
-  const totalVoiceMinutes = inputs.callVolume * inputs.avgCallDuration;
+  const totalVoiceMinutes = inputs.callVolume;
   const extraVoiceMinutes = Math.max(0, totalVoiceMinutes - includedVoiceMinutes);
   let additionalVoiceCost = 0;
   

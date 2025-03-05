@@ -3,6 +3,7 @@ import React, { useEffect } from 'react';
 import type { CalculatorInputs } from '@/hooks/useCalculator';
 import { toast } from "@/components/ui/use-toast";
 import { Input } from "@/components/ui/input";
+import { formatCurrency } from '@/utils/formatters';
 
 interface VoiceConfigSectionProps {
   callVolume: number;
