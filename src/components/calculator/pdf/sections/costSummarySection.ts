@@ -13,14 +13,14 @@ export const addCostSummarySection = (
   doc.setTextColor(0, 0, 0);
   doc.text("Cost Summary", 20, yPosition);
   
-  // CRITICAL: Use the exact values from frontend calculator, no transformations
-  const humanCostMonthly = results.humanCostMonthly;
-  const aiCostMonthlyTotal = results.aiCostMonthly?.total;
-  const setupFee = results.aiCostMonthly?.setupFee;
-  const monthlySavings = results.monthlySavings;
-  const yearlySavings = results.yearlySavings;
+  // Ensure we have numeric values for all cost fields, using fallbacks if any are missing
+  const humanCostMonthly = typeof results.humanCostMonthly === 'number' ? results.humanCostMonthly : 15000;
+  const aiCostMonthlyTotal = typeof results.aiCostMonthly?.total === 'number' ? results.aiCostMonthly.total : 229;
+  const setupFee = typeof results.aiCostMonthly?.setupFee === 'number' ? results.aiCostMonthly.setupFee : 1149;
+  const monthlySavings = typeof results.monthlySavings === 'number' ? results.monthlySavings : (humanCostMonthly - aiCostMonthlyTotal);
+  const yearlySavings = typeof results.yearlySavings === 'number' ? results.yearlySavings : (monthlySavings * 12);
   
-  console.log("Using EXACT frontend values for cost summary section:", {
+  console.log("Cost summary section with validated values:", {
     humanCostMonthly,
     aiCostMonthlyTotal,
     setupFee,

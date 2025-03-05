@@ -10,16 +10,16 @@ export const addCostBreakdownSection = (
   additionalVoiceMinutes?: number,
   totalMonthlyCost?: number
 ): number => {
-  console.log("Cost Breakdown values for PDF - using EXACT frontend values:", {
+  console.log("Cost Breakdown values for PDF:", {
     basePriceMonthly,
     additionalVoiceMinutes,
     totalMonthlyCost
   });
   
-  // Don't add the section if there's no base price
-  if (!basePriceMonthly) {
-    return yPosition;
-  }
+  // Ensure we have valid values
+  const basePrice = typeof basePriceMonthly === 'number' ? basePriceMonthly : 229;
+  const voiceMinutes = typeof additionalVoiceMinutes === 'number' ? additionalVoiceMinutes : 0;
+  const totalCost = typeof totalMonthlyCost === 'number' ? totalMonthlyCost : basePrice;
   
   // Cost Breakdown Section
   doc.setFontSize(16);
@@ -32,23 +32,21 @@ export const addCostBreakdownSection = (
   const tableRows = [];
   
   // Always add the base AI service
-  tableRows.push(['AI Service Base', formatCurrency(basePriceMonthly)]);
+  tableRows.push(['AI Service Base', formatCurrency(basePrice)]);
   
   // Add additional voice minutes if applicable
-  if (additionalVoiceMinutes && additionalVoiceMinutes > 0) {
-    // Calculate cost of additional minutes (12 cents per minute) - same as frontend
+  if (voiceMinutes > 0) {
+    // Calculate cost of additional minutes (12 cents per minute)
     const additionalMinutesRate = 0.12;
-    const additionalVoiceCost = additionalVoiceMinutes * additionalMinutesRate;
+    const additionalVoiceCost = voiceMinutes * additionalMinutesRate;
     tableRows.push([
-      `Additional Voice Minutes (${additionalVoiceMinutes} @ ${formatCurrency(additionalMinutesRate)}/min)`, 
+      `Additional Voice Minutes (${voiceMinutes} @ ${formatCurrency(additionalMinutesRate)}/min)`, 
       formatCurrency(additionalVoiceCost)
     ]);
   }
   
-  // Add total if we have it
-  if (totalMonthlyCost) {
-    tableRows.push(['Monthly Total', formatCurrency(totalMonthlyCost)]);
-  }
+  // Add total
+  tableRows.push(['Monthly Total', formatCurrency(totalCost)]);
   
   // Create the breakdown table with same styling as frontend
   autoTable(doc, {

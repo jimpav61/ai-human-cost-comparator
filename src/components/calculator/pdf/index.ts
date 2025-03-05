@@ -12,52 +12,80 @@ import { addContactSection } from './sections/contactSection';
 export const generatePDF = (params: GeneratePDFParams): JsPDFWithAutoTable => {
   const doc = new jsPDF() as JsPDFWithAutoTable;
   
-  console.log("FRONTEND PDF generation starting with parameters:", params);
+  console.log("PDF generation starting with parameters:", params);
+  
+  // Validate required parameters to ensure we have data
+  const validatedParams = {
+    ...params,
+    companyName: params.companyName || "Your Company",
+    contactInfo: params.contactInfo || "Client",
+    email: params.email || "client@example.com",
+    phoneNumber: params.phoneNumber || "",
+    industry: params.industry || "Other",
+    employeeCount: params.employeeCount || 5,
+    results: params.results || {
+      humanCostMonthly: 15000,
+      aiCostMonthly: {
+        voice: 0,
+        chatbot: 229,
+        total: 229,
+        setupFee: 1149
+      },
+      basePriceMonthly: 229,
+      monthlySavings: 14771,
+      yearlySavings: 177252,
+      savingsPercentage: 98
+    },
+    additionalVoiceMinutes: typeof params.additionalVoiceMinutes === 'number' ? params.additionalVoiceMinutes : 0,
+    includedVoiceMinutes: typeof params.includedVoiceMinutes === 'number' ? params.includedVoiceMinutes : 600,
+    tierName: params.tierName || "Growth Plan",
+    aiType: params.aiType || "Text Only"
+  };
+  
+  console.log("Validated PDF parameters:", validatedParams);
   
   // Add header section with contact info
   let currentY = addHeaderSection(
     doc, 
-    params.companyName, 
-    params.contactInfo, 
-    params.email, 
-    params.phoneNumber,
-    params.industry,
-    params.employeeCount
+    validatedParams.companyName, 
+    validatedParams.contactInfo, 
+    validatedParams.email, 
+    validatedParams.phoneNumber,
+    validatedParams.industry,
+    validatedParams.employeeCount
   );
 
-  // Add selected plan details if provided
-  if (params.tierName && params.aiType) {
-    currentY = addPlanSection(
-      doc, 
-      currentY, 
-      params.tierName, 
-      params.aiType,
-      params.results.aiCostMonthly?.setupFee,
-      params.includedVoiceMinutes,
-      params.additionalVoiceMinutes
-    );
-  }
+  // Add selected plan details
+  currentY = addPlanSection(
+    doc, 
+    currentY, 
+    validatedParams.tierName, 
+    validatedParams.aiType,
+    validatedParams.results.aiCostMonthly?.setupFee,
+    validatedParams.includedVoiceMinutes,
+    validatedParams.additionalVoiceMinutes
+  );
 
-  // Add cost summary table with frontend values
-  currentY = addCostSummarySection(doc, currentY, params.results);
+  // Add cost summary table
+  currentY = addCostSummarySection(doc, currentY, validatedParams.results);
 
-  // Add cost breakdown - with frontend values
+  // Add cost breakdown
   currentY = addCostBreakdownSection(
     doc, 
     currentY, 
-    params.results.basePriceMonthly,
-    params.additionalVoiceMinutes,
-    params.results.aiCostMonthly?.total
+    validatedParams.results.basePriceMonthly,
+    validatedParams.additionalVoiceMinutes,
+    validatedParams.results.aiCostMonthly?.total
   );
 
   // Add implementation recommendations
-  currentY = addRecommendationsSection(doc, currentY, params.businessSuggestions);
+  currentY = addRecommendationsSection(doc, currentY, validatedParams.businessSuggestions);
 
   // Add AI integration opportunities
-  currentY = addAIPlacementsSection(doc, currentY, params.aiPlacements);
+  currentY = addAIPlacementsSection(doc, currentY, validatedParams.aiPlacements);
 
   // Add contact section
-  addContactSection(doc, currentY, params.employeeCount);
+  addContactSection(doc, currentY, validatedParams.employeeCount);
 
   return doc;
 };

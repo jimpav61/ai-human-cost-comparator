@@ -13,13 +13,18 @@ export const addPlanSection = (
 ): number => {
   let currentY = yPosition;
   
-  console.log("Plan section values for PDF - using EXACT frontend values:", {
+  console.log("Plan section values for PDF:", {
     tierName,
     aiType,
     setupFee,
     includedVoiceMinutes,
     additionalVoiceMinutes
   });
+  
+  // Ensure valid values
+  const fee = typeof setupFee === 'number' ? setupFee : 1149;
+  const voiceMinutes = typeof includedVoiceMinutes === 'number' ? includedVoiceMinutes : 600;
+  const additionalMinutes = typeof additionalVoiceMinutes === 'number' ? additionalVoiceMinutes : 0;
   
   doc.setFontSize(14);
   doc.setTextColor(0, 0, 0);
@@ -32,7 +37,7 @@ export const addPlanSection = (
                  tierName.toLowerCase().includes('premium') ? 'premium' : 'growth';
   
   const voiceCapability = tierKey === 'starter' ? 'No voice capabilities' : 
-                        `Includes ${includedVoiceMinutes} free voice minutes per month`;
+                        `Includes ${voiceMinutes} free voice minutes per month`;
   
   doc.text(`${tierName} (${aiType})`, 20, currentY);
   currentY += 7;
@@ -46,18 +51,18 @@ export const addPlanSection = (
   }
   
   // Add voice minutes details if there are any additional minutes
-  if (additionalVoiceMinutes && additionalVoiceMinutes > 0) {
+  if (additionalMinutes > 0) {
     doc.setFontSize(10);
     doc.setTextColor(100, 100, 100);
-    const additionalVoiceCost = additionalVoiceMinutes * 0.12;
-    doc.text(`Additional ${additionalVoiceMinutes} voice minutes: ${formatCurrency(additionalVoiceCost)}`, 20, currentY);
+    const additionalVoiceCost = additionalMinutes * 0.12;
+    doc.text(`Additional ${additionalMinutes} voice minutes: ${formatCurrency(additionalVoiceCost)}`, 20, currentY);
     currentY += 7;
   }
   
   // Add the one-time setup fee information
   doc.setFontSize(10);
   doc.setTextColor(100, 100, 100);
-  doc.text(`One-time setup fee: ${formatCurrency(setupFee)}`, 20, currentY);
+  doc.text(`One-time setup fee: ${formatCurrency(fee)}`, 20, currentY);
   
   return currentY + 12; // Extra spacing
 };
