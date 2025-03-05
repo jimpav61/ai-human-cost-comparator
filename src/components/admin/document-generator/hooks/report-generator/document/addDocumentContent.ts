@@ -8,12 +8,16 @@ import { addCostBreakdownSection } from '@/components/calculator/pdf/sections/co
 import { addRecommendationsSection } from '@/components/calculator/pdf/sections/recommendationsSection';
 import { addAIPlacementsSection } from '@/components/calculator/pdf/sections/aiPlacementsSection';
 import { addContactSection } from '@/components/calculator/pdf/sections/contactSection';
+import { addBranding } from '@/components/calculator/proposal/sections/branding';
 
 export const addDocumentContent = (doc: JsPDFWithAutoTable, data: ProcessedLeadData): void => {
   console.log("Adding content to PDF document with data:", data);
   
-  // Add header section with contact info - no branding at the top
-  let currentY = addHeaderSection(
+  // Add branding at the top of the document
+  let currentY = addBranding(doc, 20);
+  
+  // Add header section with contact info
+  currentY = addHeaderSection(
     doc, 
     data.companyName, 
     data.contactInfo, 
