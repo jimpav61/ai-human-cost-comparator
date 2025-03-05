@@ -50,7 +50,16 @@ export const useReportGenerator = ({ lead }: UseReportGeneratorProps) => {
         humanCostMonthly: calculatorResults.humanCostMonthly || 5000,
         monthlySavings: calculatorResults.monthlySavings || 4000,
         yearlySavings: calculatorResults.yearlySavings || 48000,
-        savingsPercentage: calculatorResults.savingsPercentage || 80
+        savingsPercentage: calculatorResults.savingsPercentage || 80,
+        // Add the missing properties with fallback values
+        breakEvenPoint: calculatorResults.breakEvenPoint || { voice: 0, chatbot: 0 },
+        humanHours: calculatorResults.humanHours || {
+          dailyPerEmployee: 8,
+          weeklyTotal: 40,
+          monthlyTotal: 160,
+          yearlyTotal: 2080
+        },
+        annualPlan: calculatorResults.annualPlan || 999
       };
       
       console.log("Using safe results structure:", safeResults);
