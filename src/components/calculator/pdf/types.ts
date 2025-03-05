@@ -2,6 +2,7 @@
 import { JsPDFWithAutoTable } from '../shared/types';
 import type { BusinessSuggestion, AIPlacement } from '../types';
 import type { CalculationResults } from '@/hooks/useCalculator';
+import type { SharedGenerationParams } from '../shared/types';
 
 // Re-export the shared types
 export type { JsPDFWithAutoTable, CalculationResults };
@@ -13,4 +14,3 @@ export interface GeneratePDFParams extends SharedGenerationParams {
   includedVoiceMinutes?: number;
   additionalVoiceMinutes?: number;
 }
-

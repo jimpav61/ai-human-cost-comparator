@@ -42,6 +42,10 @@ export const useReportGenerator = ({ lead }: UseReportGeneratorProps) => {
                     calculatorInputs.aiType === 'both' ? 'Text & Basic Voice' : 
                     calculatorInputs.aiType === 'both-premium' ? 'Text & Conversational Voice' : 'Text Only';
       
+      // Get the correct setup fee based on tier
+      const tierKey = calculatorInputs.aiTier || 'growth';
+      const setupFee = tierKey === 'starter' ? 249 : tierKey === 'growth' ? 749 : 1149;
+      
       // Generate default values for missing calculator results
       const generatedResults = {
         humanCostMonthly: calculatorResults.humanCostMonthly || 15000,
@@ -49,7 +53,7 @@ export const useReportGenerator = ({ lead }: UseReportGeneratorProps) => {
           voice: calculatorResults.aiCostMonthly?.voice || 0,
           chatbot: calculatorResults.aiCostMonthly?.chatbot || 229,
           total: calculatorResults.aiCostMonthly?.total || 229,
-          setupFee: calculatorResults.aiCostMonthly?.setupFee || 1149
+          setupFee: calculatorResults.aiCostMonthly?.setupFee || setupFee
         },
         basePriceMonthly: calculatorResults.basePriceMonthly || 229,
         monthlySavings: calculatorResults.monthlySavings || 14771,
@@ -71,15 +75,15 @@ export const useReportGenerator = ({ lead }: UseReportGeneratorProps) => {
       // Create employee count fallback
       const employeeCount = Number(lead.employee_count) || 5;
       
-      // Get voice minutes for PDF generation
+      // Get voice minutes for PDF generation - ensure it's a number
       const callVolume = Number(calculatorInputs.callVolume) || 0;
       
       // Create tier-specific included minutes
-      const tierKey = calculatorInputs.aiTier || 'growth';
       const includedVoiceMinutes = tierKey === 'starter' ? 0 : 600;
       
       console.log("Generated results for PDF:", generatedResults);
       console.log("Additional voice minutes:", callVolume);
+      console.log("Using setup fee for tier", tierKey, ":", setupFee);
       
       // Use the generatePDF function
       const doc = generatePDF({

@@ -21,8 +21,11 @@ export const addPlanSection = (
     additionalVoiceMinutes
   });
   
-  // Ensure valid values
-  const fee = typeof setupFee === 'number' ? setupFee : 1149;
+  // Get the correct setup fee based on tier
+  const tierBasedSetupFee = getTierBasedSetupFee(tierName);
+  
+  // Use the proper fee (either passed value or tier-based)
+  const fee = typeof setupFee === 'number' ? setupFee : tierBasedSetupFee;
   const voiceMinutes = typeof includedVoiceMinutes === 'number' ? includedVoiceMinutes : 600;
   const additionalMinutes = typeof additionalVoiceMinutes === 'number' ? additionalVoiceMinutes : 0;
   
@@ -66,3 +69,22 @@ export const addPlanSection = (
   
   return currentY + 12; // Extra spacing
 };
+
+// Helper function to get tier-specific setup fees
+function getTierBasedSetupFee(tierName: string): number {
+  const tierKey = tierName.toLowerCase().includes('starter') ? 'starter' : 
+                 tierName.toLowerCase().includes('growth') ? 'growth' : 
+                 tierName.toLowerCase().includes('premium') ? 'premium' : 'growth';
+                 
+  // Use the exact setup fees from our pricing constants
+  switch (tierKey) {
+    case 'starter':
+      return 249;
+    case 'growth':
+      return 749;
+    case 'premium':
+      return 1149;
+    default:
+      return 749; // Default to growth plan
+  }
+}

@@ -16,7 +16,7 @@ export const addCostSummarySection = (
   // Ensure we have numeric values for all cost fields, using fallbacks if any are missing
   const humanCostMonthly = typeof results.humanCostMonthly === 'number' ? results.humanCostMonthly : 15000;
   const aiCostMonthlyTotal = typeof results.aiCostMonthly?.total === 'number' ? results.aiCostMonthly.total : 229;
-  const setupFee = typeof results.aiCostMonthly?.setupFee === 'number' ? results.aiCostMonthly.setupFee : 1149;
+  const setupFee = typeof results.aiCostMonthly?.setupFee === 'number' ? results.aiCostMonthly.setupFee : 749; // Default to Growth plan setup fee
   const monthlySavings = typeof results.monthlySavings === 'number' ? results.monthlySavings : (humanCostMonthly - aiCostMonthlyTotal);
   const yearlySavings = typeof results.yearlySavings === 'number' ? results.yearlySavings : (monthlySavings * 12);
   
