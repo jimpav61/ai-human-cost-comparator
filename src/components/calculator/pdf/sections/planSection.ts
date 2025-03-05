@@ -13,8 +13,10 @@ export const addPlanSection = (
 ): number => {
   let currentY = yPosition;
 
-  // Ensure setupFee has a value
-  const safeSetupFee = typeof setupFee === 'number' ? setupFee : 0;
+  // Ensure setupFee has a value and is a valid number
+  const safeSetupFee = (typeof setupFee === 'number' && !isNaN(setupFee)) ? setupFee : 1149;
+  
+  console.log("Plan section setup fee:", safeSetupFee);
   
   doc.setFontSize(14);
   doc.setTextColor(0, 0, 0);

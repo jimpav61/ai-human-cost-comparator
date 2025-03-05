@@ -13,10 +13,25 @@ export const addCostSummarySection = (
   doc.setTextColor(0, 0, 0);
   doc.text("Cost Summary", 20, yPosition);
   
+  // Ensure we have valid numbers to prevent NaN in the report
+  const humanCostMonthly = isNaN(results.humanCostMonthly) ? 5000 : results.humanCostMonthly;
+  const aiCostMonthlyTotal = isNaN(results.aiCostMonthly.total) ? 99 : results.aiCostMonthly.total;
+  const setupFee = isNaN(results.aiCostMonthly.setupFee) ? 1149 : results.aiCostMonthly.setupFee;
+  const monthlySavings = isNaN(results.monthlySavings) ? 4000 : results.monthlySavings;
+  const yearlySavings = isNaN(results.yearlySavings) ? 48000 : results.yearlySavings;
+  
+  console.log("Cost Summary values:", {
+    humanCostMonthly,
+    aiCostMonthlyTotal,
+    setupFee,
+    monthlySavings,
+    yearlySavings
+  });
+  
   const costData = [
-    ["Current Human Resources Cost", formatCurrency(results.humanCostMonthly), formatCurrency(results.humanCostMonthly * 12), "N/A"],
-    ["ChatSites.ai Solution (Your Cost)", formatCurrency(results.aiCostMonthly.total), formatCurrency(results.aiCostMonthly.total * 12), formatCurrency(results.aiCostMonthly.setupFee)],
-    ["Potential Savings", formatCurrency(results.monthlySavings), formatCurrency(results.yearlySavings), "N/A"]
+    ["Current Human Resources Cost", formatCurrency(humanCostMonthly), formatCurrency(humanCostMonthly * 12), "N/A"],
+    ["ChatSites.ai Solution (Your Cost)", formatCurrency(aiCostMonthlyTotal), formatCurrency(aiCostMonthlyTotal * 12), formatCurrency(setupFee)],
+    ["Potential Savings", formatCurrency(monthlySavings), formatCurrency(yearlySavings), "N/A"]
   ];
 
   autoTable(doc, {

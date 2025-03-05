@@ -22,7 +22,13 @@ export const addCostBreakdownSection = (
   // Ensure we have valid numbers to prevent NaN in the report
   const basePriceSafe = isNaN(basePriceMonthly) ? 99 : basePriceMonthly;
   const additionalVoiceCost = hasAdditionalVoice ? (additionalVoiceMinutes || 0) * 0.12 : 0;
-  const totalCostSafe = totalMonthlyAICost || (basePriceSafe + additionalVoiceCost);
+  const totalCostSafe = isNaN(totalMonthlyAICost) ? (basePriceSafe + additionalVoiceCost) : totalMonthlyAICost;
+  
+  console.log("Cost breakdown values:", {
+    basePriceSafe,
+    additionalVoiceCost,
+    totalCostSafe
+  });
   
   // Determine what rows to show based on the available data
   let breakdownData = [];

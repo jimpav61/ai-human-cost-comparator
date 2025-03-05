@@ -28,13 +28,15 @@ export const useReportGenerator = ({ lead }: UseReportGeneratorProps) => {
       const calculatorResults = lead.calculator_results || {};
       const calculatorInputs = lead.calculator_inputs || {};
       
+      console.log("Calculator results:", calculatorResults);
+      console.log("Calculator inputs:", calculatorInputs);
+      
       // Create a properly structured aiCostMonthly object, ensuring it always exists
       const aiCostMonthly = {
-        voice: 0,
-        chatbot: 0,
-        total: 0,
-        setupFee: 0,
-        ...(typeof calculatorResults.aiCostMonthly === 'object' ? calculatorResults.aiCostMonthly : {})
+        voice: calculatorResults.aiCostMonthly?.voice || 0,
+        chatbot: calculatorResults.aiCostMonthly?.chatbot || calculatorResults.basePriceMonthly || 99,
+        total: calculatorResults.aiCostMonthly?.total || calculatorResults.basePriceMonthly || 99,
+        setupFee: calculatorResults.aiCostMonthly?.setupFee || 1149
       };
       
       console.log("Structured aiCostMonthly for report:", aiCostMonthly);
@@ -43,14 +45,42 @@ export const useReportGenerator = ({ lead }: UseReportGeneratorProps) => {
       const additionalVoiceMinutes = calculatorInputs?.callVolume || 0;
       console.log("Additional voice minutes detected:", additionalVoiceMinutes);
       
+      // Get hardcoded base prices based on tier to ensure consistency
+      const tierBasePrices = {
+        starter: 99,
+        growth: 229,
+        premium: 429
+      };
+      
+      // Determine the tier and get the appropriate base price
+      const aiTier = calculatorInputs?.aiTier || 'starter';
+      const basePriceMonthly = tierBasePrices[aiTier] || 99;
+      
+      // Calculate total cost (base price plus additional voice minutes cost)
+      const additionalVoiceCost = additionalVoiceMinutes > 0 ? additionalVoiceMinutes * 0.12 : 0;
+      const totalMonthlyCost = basePriceMonthly + additionalVoiceCost;
+      
+      // Use hardcoded placeholder values for human costs if needed for demo/test purposes
+      const humanCostMonthly = calculatorResults.humanCostMonthly || 5000;
+      
+      // Calculate savings
+      const monthlySavings = humanCostMonthly - totalMonthlyCost;
+      const yearlySavings = monthlySavings * 12;
+      const savingsPercentage = (monthlySavings / humanCostMonthly) * 100;
+      
       // Prepare a clean, valid results object with fallbacks for all required properties
       const safeResults = {
-        aiCostMonthly,
-        basePriceMonthly: calculatorResults.basePriceMonthly || aiCostMonthly.chatbot || 99,
-        humanCostMonthly: calculatorResults.humanCostMonthly || 5000,
-        monthlySavings: calculatorResults.monthlySavings || 4000,
-        yearlySavings: calculatorResults.yearlySavings || 48000,
-        savingsPercentage: calculatorResults.savingsPercentage || 80,
+        aiCostMonthly: {
+          voice: additionalVoiceCost,
+          chatbot: basePriceMonthly,
+          total: totalMonthlyCost,
+          setupFee: aiCostMonthly.setupFee
+        },
+        basePriceMonthly: basePriceMonthly,
+        humanCostMonthly: humanCostMonthly,
+        monthlySavings: monthlySavings,
+        yearlySavings: yearlySavings,
+        savingsPercentage: savingsPercentage,
         // Add the missing properties with fallback values
         breakEvenPoint: calculatorResults.breakEvenPoint || { voice: 0, chatbot: 0 },
         humanHours: calculatorResults.humanHours || {
