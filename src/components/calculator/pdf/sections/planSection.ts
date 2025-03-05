@@ -1,17 +1,17 @@
 
 import { JsPDFWithAutoTable } from '../types';
-import { AI_RATES } from '@/constants/pricing';
+import { formatCurrency } from '@/utils/formatters';
 
 export const addPlanSection = (
   doc: JsPDFWithAutoTable, 
-  currentY: number,
-  tierName?: string,
-  aiType?: string,
-  setupFee?: number
+  yPosition: number, 
+  tierName: string, 
+  aiType: string,
+  setupFee: number,
+  includedVoiceMinutes?: number,
+  additionalVoiceMinutes?: number
 ): number => {
-  if (!tierName || !aiType) {
-    return currentY;
-  }
+  let currentY = yPosition;
 
   doc.setFontSize(14);
   doc.setTextColor(0, 0, 0);
@@ -23,9 +23,8 @@ export const addPlanSection = (
                  tierName.toLowerCase().includes('growth') ? 'growth' : 
                  tierName.toLowerCase().includes('premium') ? 'premium' : 'growth';
   
-  const includedMinutes = tierKey === 'starter' ? 0 : 600;
   const voiceCapability = tierKey === 'starter' ? 'No voice capabilities' : 
-                        `Includes ${includedMinutes} free voice minutes per month`;
+                        `Includes ${includedVoiceMinutes || 0} free voice minutes per month`;
   
   doc.text(`${tierName} (${aiType})`, 20, currentY);
   currentY += 7;
@@ -38,11 +37,19 @@ export const addPlanSection = (
     currentY += 7;
   }
   
+  // Add voice minutes details if there are any additional minutes
+  if (additionalVoiceMinutes && additionalVoiceMinutes > 0) {
+    doc.setFontSize(10);
+    doc.setTextColor(100, 100, 100);
+    const additionalVoiceCost = additionalVoiceMinutes * 0.12;
+    doc.text(`Additional ${additionalVoiceMinutes} voice minutes: ${formatCurrency(additionalVoiceCost)}`, 20, currentY);
+    currentY += 7;
+  }
+  
   // Add the one-time setup fee information
   doc.setFontSize(10);
   doc.setTextColor(100, 100, 100);
-  doc.text(`One-time setup fee: $${(setupFee || 0).toFixed(2)}`, 20, currentY);
-  currentY += 12; // Extra spacing
+  doc.text(`One-time setup fee: ${formatCurrency(setupFee || 0)}`, 20, currentY);
   
-  return currentY;
+  return currentY + 12; // Extra spacing
 };

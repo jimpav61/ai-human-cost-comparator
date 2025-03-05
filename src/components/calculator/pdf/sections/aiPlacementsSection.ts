@@ -1,12 +1,14 @@
 
 import { JsPDFWithAutoTable } from '../types';
-import type { AIPlacement } from '../../types';
+import { AIPlacement } from '../../types';
 
 export const addAIPlacementsSection = (
-  doc: JsPDFWithAutoTable,
-  currentY: number,
+  doc: JsPDFWithAutoTable, 
+  yPosition: number,
   aiPlacements: AIPlacement[]
 ): number => {
+  let currentY = yPosition;
+  
   if (currentY > 220) {
     doc.addPage();
     currentY = 20;
@@ -17,7 +19,6 @@ export const addAIPlacementsSection = (
   doc.text("AI Integration Opportunities", 20, currentY);
   
   currentY += 10;
-  
   aiPlacements.forEach((placement) => {
     if (currentY > 220) {
       doc.addPage();

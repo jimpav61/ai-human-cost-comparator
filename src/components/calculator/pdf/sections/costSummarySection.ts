@@ -1,17 +1,17 @@
 
 import { JsPDFWithAutoTable } from '../types';
-import autoTable from 'jspdf-autotable';
 import { formatCurrency } from '@/utils/formatters';
-import type { CalculationResults } from '@/hooks/useCalculator';
+import autoTable from 'jspdf-autotable';
+import { CalculationResults } from '@/hooks/useCalculator';
 
 export const addCostSummarySection = (
-  doc: JsPDFWithAutoTable,
-  currentY: number,
+  doc: JsPDFWithAutoTable, 
+  yPosition: number,
   results: CalculationResults
 ): number => {
   doc.setFontSize(14);
   doc.setTextColor(0, 0, 0);
-  doc.text("Cost Summary", 20, currentY);
+  doc.text("Cost Summary", 20, yPosition);
   
   const costData = [
     ["Current Human Resources Cost", formatCurrency(results.humanCostMonthly), formatCurrency(results.humanCostMonthly * 12), "N/A"],
@@ -20,7 +20,7 @@ export const addCostSummarySection = (
   ];
 
   autoTable(doc, {
-    startY: currentY + 5,
+    startY: yPosition + 5,
     head: [["Category", "Monthly Cost", "Annual Cost", "One-Time Setup Fee"]],
     body: costData,
     styles: { fontSize: 11 },
@@ -36,5 +36,6 @@ export const addCostSummarySection = (
     }
   });
 
+  // Return the position after the table
   return (doc as any).lastAutoTable.finalY + 15;
 };

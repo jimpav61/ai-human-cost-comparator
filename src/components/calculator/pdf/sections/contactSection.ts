@@ -2,11 +2,13 @@
 import { JsPDFWithAutoTable } from '../types';
 
 export const addContactSection = (
-  doc: JsPDFWithAutoTable,
-  currentY: number,
+  doc: JsPDFWithAutoTable, 
+  yPosition: number,
   employeeCount?: number
 ): void => {
-  // Check if we need a new page
+  let currentY = yPosition;
+  
+  // Add contact section without creating a new page if there's space
   if (currentY > 220) {
     doc.addPage();
     currentY = 20;

@@ -1,18 +1,20 @@
 
 import { JsPDFWithAutoTable } from '../types';
-import type { BusinessSuggestion } from '../../types';
+import { BusinessSuggestion } from '../../types';
 
 export const addRecommendationsSection = (
-  doc: JsPDFWithAutoTable,
-  currentY: number,
+  doc: JsPDFWithAutoTable, 
+  yPosition: number,
   businessSuggestions: BusinessSuggestion[]
 ): number => {
+  let currentY = yPosition;
+  
+  // Business Recommendations
   doc.setFontSize(14);
   doc.setTextColor(0, 0, 0);
   doc.text("Implementation Recommendations", 20, currentY);
   
   currentY += 10;
-  
   businessSuggestions.forEach((suggestion) => {
     if (currentY > 250) {
       doc.addPage();

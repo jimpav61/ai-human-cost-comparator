@@ -4,12 +4,14 @@ import { JsPDFWithAutoTable } from '../types';
 export const addHeaderSection = (
   doc: JsPDFWithAutoTable, 
   companyName: string, 
-  contactInfo: string,
-  email: string,
+  contactInfo: string, 
+  email: string, 
   phoneNumber: string | null,
   industry?: string,
   employeeCount?: number
 ): number => {
+  const reportDate = new Date().toLocaleDateString();
+  
   // Title
   doc.setFontSize(20);
   doc.text("AI Integration Cost Analysis Report", 20, 20);
@@ -37,8 +39,7 @@ export const addHeaderSection = (
     currentY += 7;
   }
   
-  doc.text(`Date: ${new Date().toLocaleDateString()}`, 20, currentY);
-  currentY += 14;
+  doc.text(`Date: ${reportDate}`, 20, currentY);
   
-  return currentY;
+  return currentY + 14;
 };

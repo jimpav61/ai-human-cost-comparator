@@ -1,7 +1,7 @@
 
+import jsPDF from 'jspdf';
 import type { CalculationResults } from '@/hooks/useCalculator';
 import type { BusinessSuggestion, AIPlacement } from '../types';
-import jsPDF from 'jspdf';
 
 // Add custom interface to handle the jsPDF extension from autotable
 export interface JsPDFWithAutoTable extends jsPDF {
@@ -22,4 +22,6 @@ export interface GeneratePDFParams {
   aiPlacements: AIPlacement[];
   tierName?: string;
   aiType?: string;
+  additionalVoiceMinutes?: number;
+  includedVoiceMinutes?: number;
 }
