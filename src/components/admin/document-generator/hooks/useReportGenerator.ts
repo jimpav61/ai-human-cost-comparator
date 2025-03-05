@@ -24,7 +24,8 @@ export const useReportGenerator = ({ lead }: UseReportGeneratorProps) => {
         throw new Error("Lead data is missing");
       }
 
-      // Generate the PDF using the shared utility - exactly the same as frontend
+      // Generate PDF directly using the shared utility without any parameter transformations
+      // This is exactly the same code path used by the frontend calculator
       const doc = generatePDF({
         contactInfo: lead.name || 'Valued Client',
         companyName: lead.company_name || 'Your Company',
@@ -73,7 +74,7 @@ export const useReportGenerator = ({ lead }: UseReportGeneratorProps) => {
                 lead.calculator_inputs?.aiType === 'both-premium' ? 'Text & Conversational Voice' : 'Text Only'
       });
       
-      // Save the PDF
+      // Save the PDF using the same utility function
       saveReportPDF(doc, lead);
       
       // Mark as downloaded
