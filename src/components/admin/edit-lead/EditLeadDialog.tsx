@@ -39,8 +39,12 @@ export const EditLeadDialog = ({ lead, isOpen, onClose, onSave }: EditLeadDialog
   // Use the calculator hook to get calculation results
   const calculationResults = useCalculator(calculatorInputs);
 
-  // Use the AI type updater hook
-  const { updateAITypeBasedOnTier } = useAITypeUpdater();
+  // Use the AI type updater hook with the correct parameters
+  const { updateAITypeBasedOnTier } = useAITypeUpdater(
+    calculatorInputs,
+    setCalculatorInputs,
+    setFormData
+  );
 
   // Reset form when lead changes
   useEffect(() => {
