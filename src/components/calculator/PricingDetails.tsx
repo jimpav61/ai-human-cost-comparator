@@ -9,13 +9,17 @@ interface PricingDetailsProps {
   setupFee: number;
   annualPlan: number;
   includedVoiceMinutes?: number;
+  extraVoiceMinutes?: number;
+  additionalVoiceCost?: number;
 }
 
 export const PricingDetails: React.FC<PricingDetailsProps> = ({ 
   details, 
   setupFee, 
   annualPlan,
-  includedVoiceMinutes
+  includedVoiceMinutes,
+  extraVoiceMinutes = 0,
+  additionalVoiceCost = 0
 }) => {
   return (
     <div className="space-y-4">
@@ -55,6 +59,25 @@ export const PricingDetails: React.FC<PricingDetailsProps> = ({
             <div className="flex items-center">
               <Clock className="h-4 w-4 mr-1" />
               12¢ per minute after {formatNumber(includedVoiceMinutes)} minutes
+            </div>
+          </div>
+        </div>
+      )}
+      
+      {extraVoiceMinutes > 0 && (
+        <div className="border-b border-gray-200 pb-3">
+          <div className="flex justify-between items-center mb-2">
+            <span className="font-medium text-gray-900">Additional Voice Minutes</span>
+            <span className="text-brand-600 font-semibold">{formatCurrency(additionalVoiceCost)}</span>
+          </div>
+          <div className="text-sm text-gray-600">
+            <div className="flex items-center">
+              <Clock className="h-4 w-4 mr-1" />
+              Monthly voice minutes: {formatNumber(includedVoiceMinutes || 0)} + {formatNumber(extraVoiceMinutes)} minutes
+            </div>
+            <div className="flex items-center mt-1">
+              <DollarSign className="h-4 w-4 mr-1" />
+              {formatNumber(extraVoiceMinutes)} minutes × 12¢ = {formatCurrency(additionalVoiceCost)}
             </div>
           </div>
         </div>

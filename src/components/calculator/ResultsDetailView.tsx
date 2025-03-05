@@ -25,6 +25,11 @@ export const ResultsDetailView: React.FC<ResultsDetailViewProps> = ({
   const basePrice = results.basePriceMonthly;
   const setupFee = results.aiCostMonthly.setupFee;
   
+  // Calculate additional voice minutes and costs
+  const includedVoiceMinutes = AI_RATES.chatbot[inputs.aiTier].includedVoiceMinutes || 0;
+  const extraVoiceMinutes = Math.max(0, inputs.callVolume - includedVoiceMinutes);
+  const additionalVoiceCost = extraVoiceMinutes > 0 ? extraVoiceMinutes * 0.12 : 0;
+  
   return (
     <div>
       <div className="bg-brand-50 p-3 rounded-lg mb-4 border border-brand-100">
@@ -41,7 +46,9 @@ export const ResultsDetailView: React.FC<ResultsDetailViewProps> = ({
         details={pricingDetails}
         setupFee={setupFee}
         annualPlan={results.annualPlan}
-        includedVoiceMinutes={AI_RATES.chatbot[inputs.aiTier].includedVoiceMinutes || 0}
+        includedVoiceMinutes={includedVoiceMinutes}
+        extraVoiceMinutes={extraVoiceMinutes}
+        additionalVoiceCost={additionalVoiceCost}
       />
       
       <h4 className="font-medium text-gray-900 mt-6 mb-3">Human Resource Costs</h4>
