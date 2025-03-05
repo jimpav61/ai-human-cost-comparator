@@ -4,7 +4,6 @@ import { toast } from "@/hooks/use-toast";
 import { useDownloadState } from "./useDownloadState";
 import { generatePDF } from "@/components/calculator/pdf";
 import { getSafeFileName, saveReportPDF } from "./report-generator/saveReport";
-import { HUMAN_HOURLY_RATES } from "@/constants/pricing";
 
 interface UseReportGeneratorProps {
   lead: Lead;
@@ -25,7 +24,7 @@ export const useReportGenerator = ({ lead }: UseReportGeneratorProps) => {
         throw new Error("Lead data is missing");
       }
 
-      // CRITICAL: Need to provide default values if calculator data is missing
+      // Get calculator data from the lead
       const calculatorResults = lead.calculator_results || {};
       const calculatorInputs = lead.calculator_inputs || {};
       
@@ -46,55 +45,22 @@ export const useReportGenerator = ({ lead }: UseReportGeneratorProps) => {
       const tierKey = calculatorInputs.aiTier || 'growth';
       const setupFee = tierKey === 'starter' ? 249 : tierKey === 'growth' ? 749 : 1149;
       
-      // Generate default values for missing calculator results
-      const generatedResults = {
-        humanCostMonthly: calculatorResults.humanCostMonthly || 15000,
-        aiCostMonthly: {
-          voice: calculatorResults.aiCostMonthly?.voice || 0,
-          chatbot: calculatorResults.aiCostMonthly?.chatbot || 229,
-          total: calculatorResults.aiCostMonthly?.total || 229,
-          setupFee: calculatorResults.aiCostMonthly?.setupFee || setupFee
-        },
-        basePriceMonthly: calculatorResults.basePriceMonthly || 229,
-        monthlySavings: calculatorResults.monthlySavings || 14771,
-        yearlySavings: calculatorResults.yearlySavings || 177252,
-        savingsPercentage: calculatorResults.savingsPercentage || 98,
-        humanHours: calculatorResults.humanHours || {
-          dailyPerEmployee: 8,
-          weeklyTotal: 160,
-          monthlyTotal: 693,
-          yearlyTotal: 8320
-        },
-        breakEvenPoint: calculatorResults.breakEvenPoint || {
-          voice: 0,
-          chatbot: 0
-        },
-        annualPlan: calculatorResults.annualPlan || 2149
-      };
-      
-      // Create employee count fallback
-      const employeeCount = Number(lead.employee_count) || 5;
-      
-      // Get voice minutes for PDF generation - ensure it's a number
-      const callVolume = Number(calculatorInputs.callVolume) || 0;
+      // Get voice minutes value directly from calculator inputs 
+      const additionalVoiceMinutes = Number(calculatorInputs.callVolume) || 0;
       
       // Create tier-specific included minutes
       const includedVoiceMinutes = tierKey === 'starter' ? 0 : 600;
       
-      console.log("Generated results for PDF:", generatedResults);
-      console.log("Additional voice minutes:", callVolume);
-      console.log("Using setup fee for tier", tierKey, ":", setupFee);
-      
-      // Use the generatePDF function
+      // Generate the PDF using the shared utility
       const doc = generatePDF({
         contactInfo: lead.name || 'Valued Client',
         companyName: lead.company_name || 'Your Company',
         email: lead.email || 'client@example.com',
         phoneNumber: lead.phone_number || '',
         industry: lead.industry || 'Other',
-        employeeCount: employeeCount,
-        results: generatedResults,
-        additionalVoiceMinutes: callVolume,
+        employeeCount: Number(lead.employee_count) || 5,
+        results: calculatorResults,
+        additionalVoiceMinutes: additionalVoiceMinutes,
         includedVoiceMinutes: includedVoiceMinutes,
         businessSuggestions: [
           {
@@ -125,10 +91,8 @@ export const useReportGenerator = ({ lead }: UseReportGeneratorProps) => {
           }
         ],
         tierName: tierName,
-        aiType: aiType,
+        aiType: aiType
       });
-      
-      console.log("PDF generation completed using frontend-compatible data");
       
       // Save the PDF
       saveReportPDF(doc, lead);
