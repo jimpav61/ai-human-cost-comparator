@@ -2,9 +2,9 @@
 import { Lead } from "@/types/leads";
 import { toast } from "@/hooks/use-toast";
 import { useDownloadState } from "./useDownloadState";
-import { calculatePricingDetails, getTierDisplayName, getAITypeDisplay } from "@/components/calculator/pricingDetailsCalculator";
-import { AI_RATES } from "@/constants/pricing";
-import { generatePDF } from "@/components/calculator/pdfGenerator";
+import { processLeadData } from "./report-generator/processLeadData";
+import { generateReportPDF } from "./report-generator/generateReportPDF";
+import { saveReportPDF } from "./report-generator/saveReport";
 
 interface UseReportGeneratorProps {
   lead: Lead;
@@ -20,162 +20,15 @@ export const useReportGenerator = ({ lead }: UseReportGeneratorProps) => {
     try {
       console.log('Generating report for lead:', lead);
       
-      // Use the calculator inputs from lead or fallback to defaults - preserving original aiTier and aiType
-      const inputs = lead.calculator_inputs || {
-        aiType: 'chatbot',
-        aiTier: 'starter',
-        role: 'customerService',
-        numEmployees: lead.employee_count || 5,
-        callVolume: 0, 
-        avgCallDuration: 0,
-        chatVolume: 2000,
-        avgChatLength: 8,
-        avgChatResolutionTime: 10
-      };
-      
-      // Get the tier from the lead's original inputs - not defaulting to growth
-      const tierToUse = inputs.aiTier || 'starter';
-      const aiTypeToUse = inputs.aiType || 'chatbot';
-      
-      // Setup fee from rates using the original tier
-      const setupFee = AI_RATES.chatbot[tierToUse].setupFee;
-      
-      // Calculate any additional voice costs for the PDF
-      const includedVoiceMinutes = tierToUse === 'starter' ? 0 : 600;
-      const totalVoiceMinutes = inputs.callVolume || 0;
-      const extraVoiceMinutes = Math.max(0, totalVoiceMinutes - includedVoiceMinutes);
-      let additionalVoiceCost = 0;
-      
-      if (extraVoiceMinutes > 0 && tierToUse !== 'starter') {
-        // Always use 12¢ per minute for additional voice minutes
-        const additionalMinuteRate = 0.12;
-        additionalVoiceCost = extraVoiceMinutes * additionalMinuteRate;
-      }
-      
-      // Get base cost from the tier
-      const baseMonthlyPrice = AI_RATES.chatbot[tierToUse].base;
-      
-      // Use the calculator results from lead or create a complete default object based on the ORIGINAL tier
-      const results = lead.calculator_results || {
-        aiCostMonthly: { 
-          voice: additionalVoiceCost, 
-          chatbot: baseMonthlyPrice, 
-          total: baseMonthlyPrice + additionalVoiceCost, 
-          setupFee: setupFee
-        },
-        basePriceMonthly: baseMonthlyPrice,
-        humanCostMonthly: 3800,
-        monthlySavings: 3800 - (baseMonthlyPrice + additionalVoiceCost),
-        yearlySavings: (3800 - (baseMonthlyPrice + additionalVoiceCost)) * 12,
-        savingsPercentage: ((3800 - (baseMonthlyPrice + additionalVoiceCost)) / 3800) * 100,
-        breakEvenPoint: { voice: 240, chatbot: 520 },
-        humanHours: {
-          dailyPerEmployee: 8,
-          weeklyTotal: 200,
-          monthlyTotal: 850,
-          yearlyTotal: 10200
-        },
-        annualPlan: AI_RATES.chatbot[tierToUse].annualPrice
-      };
-      
-      // Ensure all nested objects and properties exist to prevent undefined errors
-      if (!results.aiCostMonthly) {
-        results.aiCostMonthly = { 
-          voice: additionalVoiceCost, 
-          chatbot: baseMonthlyPrice, 
-          total: baseMonthlyPrice + additionalVoiceCost,
-          setupFee: setupFee 
-        };
-      }
-      
-      if (!results.breakEvenPoint) {
-        results.breakEvenPoint = { voice: 240, chatbot: 520 };
-      }
-      
-      if (!results.humanHours) {
-        results.humanHours = {
-          dailyPerEmployee: 8,
-          weeklyTotal: 200,
-          monthlyTotal: 850,
-          yearlyTotal: 10200
-        };
-      }
-      
-      // Ensure basePriceMonthly is set
-      if (!results.basePriceMonthly) {
-        results.basePriceMonthly = baseMonthlyPrice;
-      }
-      
-      // Get display names based on the ORIGINAL tier and aiType
-      const tierName = getTierDisplayName(tierToUse);
-      const aiType = getAITypeDisplay(aiTypeToUse);
-      
-      console.log("Before generating PDF report with:", {
-        contactInfo: lead.name,
-        companyName: lead.company_name,
-        email: lead.email,
-        tierName,
-        aiType,
-        tierToUse,
-        aiTypeToUse,
-        results,
-        baseMonthlyPrice,
-        additionalVoiceCost,
-        extraVoiceMinutes,
-        includedVoiceMinutes
-      });
+      // Process the lead data
+      const processedData = processLeadData(lead);
       
       try {
-        // Generate and download the PDF using the imported function
-        const doc = generatePDF({
-          contactInfo: lead.name || 'Valued Client',
-          companyName: lead.company_name || 'Your Company',
-          email: lead.email || 'client@example.com',
-          phoneNumber: lead.phone_number || '',
-          industry: lead.industry || 'Other',
-          employeeCount: lead.employee_count || 5,
-          results: results,
-          tierName: tierName,
-          aiType: aiType,
-          additionalVoiceMinutes: extraVoiceMinutes,
-          includedVoiceMinutes: includedVoiceMinutes,
-          businessSuggestions: [
-            {
-              title: "Automate Common Customer Inquiries",
-              description: "Implement an AI chatbot to handle frequently asked questions, reducing wait times and freeing up human agents."
-            },
-            {
-              title: "Enhance After-Hours Support",
-              description: "Deploy voice AI to provide 24/7 customer service without increasing staffing costs."
-            },
-            {
-              title: "Streamline Onboarding Process",
-              description: "Use AI assistants to guide new customers through product setup and initial questions."
-            }
-          ],
-          aiPlacements: [
-            {
-              role: "Front-line Customer Support",
-              capabilities: ["Handle basic inquiries", "Process simple requests", "Collect customer information"]
-            },
-            {
-              role: "Technical Troubleshooting",
-              capabilities: ["Guide users through common issues", "Recommend solutions based on symptoms", "Escalate complex problems to human agents"]
-            },
-            {
-              role: "Sales Assistant",
-              capabilities: ["Answer product questions", "Provide pricing information", "Schedule demonstrations with sales team"]
-            }
-          ]
-        });
+        // Generate the PDF
+        const doc = generateReportPDF(processedData);
         
-        // Make sure we have a valid company name for the file
-        const safeCompanyName = lead.company_name ? lead.company_name.replace(/[^\w\s-]/gi, '') : 'Client';
-        
-        console.log("Document generated, saving as:", `${safeCompanyName}-Report.pdf`);
-        
-        // Save the document with proper company name
-        doc.save(`${safeCompanyName}-Report.pdf`);
+        // Save the PDF
+        saveReportPDF(doc, lead);
         
         // Mark as downloaded
         markAsDownloaded();
