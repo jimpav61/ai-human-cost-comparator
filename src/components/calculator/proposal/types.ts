@@ -4,6 +4,34 @@ import { JsPDFWithAutoTable as PDFWithAutoTable } from '../pdf/types';
 // Re-export the JsPDFWithAutoTable type
 export type JsPDFWithAutoTable = PDFWithAutoTable;
 
+// Define the results interface that both proposal and PDF generation will use
+export interface ProposalResults {
+  humanCostMonthly: number;
+  aiCostMonthly: {
+    voice?: number;
+    chatbot?: number;
+    total: number;
+    setupFee?: number;
+  };
+  monthlySavings: number;
+  yearlySavings: number;
+  savingsPercentage: number;
+  breakEvenPoint?: {
+    voice?: number;
+    chatbot?: number;
+  };
+  humanHours?: {
+    dailyPerEmployee?: number;
+    weeklyTotal?: number;
+    monthlyTotal?: number;
+    yearlyTotal?: number;
+  };
+  annualPlan?: number;
+  tierKey?: string;
+  aiType?: string;
+  [key: string]: any;
+}
+
 // Define the SectionParams interface and export it
 export interface SectionParams {
   contactInfo: string;
@@ -12,33 +40,7 @@ export interface SectionParams {
   phoneNumber: string | null;
   industry?: string;
   employeeCount?: number;
-  results: {
-    humanCostMonthly?: number;
-    aiCostMonthly?: {
-      voice?: number;
-      chatbot?: number;
-      total?: number;
-      setupFee?: number;
-    };
-    monthlySavings?: number;
-    yearlySavings?: number;
-    savingsPercentage?: number;
-    basePriceMonthly?: number;
-    breakEvenPoint?: {
-      voice?: number;
-      chatbot?: number;
-    };
-    humanHours?: {
-      dailyPerEmployee?: number;
-      weeklyTotal?: number;
-      monthlyTotal?: number;
-      yearlyTotal?: number;
-    };
-    annualPlan?: number;
-    tierKey?: string;
-    aiType?: string;
-    [key: string]: any;
-  };
+  results: ProposalResults;
   tierName?: string;
   aiType?: string;
 }
@@ -55,7 +57,7 @@ export interface GenerateProposalParams {
   phoneNumber: string | null;
   industry?: string;
   employeeCount?: number;
-  results: any;
+  results: ProposalResults;
   tierName?: string;
   aiType?: string;
   pricingDetails?: any[];

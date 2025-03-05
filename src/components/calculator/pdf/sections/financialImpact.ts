@@ -1,8 +1,7 @@
 
-import { JsPDFWithAutoTable } from '../types';
+import { JsPDFWithAutoTable, GeneratePDFParams, PDFResults } from '../types';
 import { formatCurrency, formatNumber, formatPercent } from '@/utils/formatters';
 import autoTable from 'jspdf-autotable';
-import { GeneratePDFParams } from '../types';
 
 export const addFinancialImpact = (doc: JsPDFWithAutoTable, yPosition: number, params: GeneratePDFParams): number => {
   // Financial Impact Section
@@ -15,7 +14,7 @@ export const addFinancialImpact = (doc: JsPDFWithAutoTable, yPosition: number, p
   doc.setTextColor(0, 0, 0); // Regular text in black
   
   // Ensure we have valid results with fallbacks for missing properties
-  const resultsData = params.results || {};
+  const resultsData: PDFResults = params.results || {} as PDFResults;
   
   // Safely extract values with fallbacks
   const humanCost = typeof resultsData.humanCostMonthly === 'number' ? resultsData.humanCostMonthly : 15000;
