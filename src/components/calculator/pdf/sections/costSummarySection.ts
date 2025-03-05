@@ -13,21 +13,19 @@ export const addCostSummarySection = (
   doc.setTextColor(0, 0, 0);
   doc.text("Cost Summary", 20, yPosition);
   
-  // Use original values directly, preserving the information exactly as in the front-end
-  // Ensure these are numbers and not strings or undefined
-  const humanCostMonthly = Number(results.humanCostMonthly) || 0;
-  const aiCostMonthlyTotal = Number(results.aiCostMonthly.total) || 0;
-  const setupFee = Number(results.aiCostMonthly.setupFee) || 0;
-  const monthlySavings = Number(results.monthlySavings) || 0;
-  const yearlySavings = Number(results.yearlySavings) || 0;
+  // Ensure these are numbers with proper fallbacks
+  const humanCostMonthly = Number(results?.humanCostMonthly) || 0;
+  const aiCostMonthlyTotal = Number(results?.aiCostMonthly?.total) || 0;
+  const setupFee = Number(results?.aiCostMonthly?.setupFee) || 0;
+  const monthlySavings = Number(results?.monthlySavings) || 0;
+  const yearlySavings = Number(results?.yearlySavings) || 0;
   
-  console.log("Cost Summary values:", {
+  console.log("Cost Summary values for PDF:", {
     humanCostMonthly,
     aiCostMonthlyTotal,
     setupFee,
     monthlySavings,
-    yearlySavings,
-    original: results
+    yearlySavings
   });
   
   const costData = [

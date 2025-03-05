@@ -10,12 +10,12 @@ export const addCostBreakdownSection = (
   additionalVoiceMinutes?: number,
   totalMonthlyCost?: number
 ): number => {
-  // Ensure values are numbers
+  // Ensure values are numbers with fallbacks
   const safeBasePrice = Number(basePriceMonthly) || 0;
   const safeAdditionalMinutes = Number(additionalVoiceMinutes) || 0;
   const safeTotalCost = Number(totalMonthlyCost) || 0;
   
-  console.log("Cost Breakdown values:", {
+  console.log("Cost Breakdown values for PDF:", {
     basePriceMonthly: safeBasePrice,
     additionalVoiceMinutes: safeAdditionalMinutes,
     totalMonthlyCost: safeTotalCost

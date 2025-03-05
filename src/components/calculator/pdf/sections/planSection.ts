@@ -7,15 +7,26 @@ export const addPlanSection = (
   yPosition: number, 
   tierName: string, 
   aiType: string,
-  setupFee: number,
+  setupFee?: number,
   includedVoiceMinutes?: number,
   additionalVoiceMinutes?: number
 ): number => {
   let currentY = yPosition;
 
-  // Ensure setup fee is a number
+  // Ensure setup fee is a number with fallback
   const safeSetupFee = Number(setupFee) || 0;
-  console.log("Plan section setup fee:", safeSetupFee);
+  
+  // Ensure voice minutes are numbers with fallbacks
+  const safeIncludedMinutes = Number(includedVoiceMinutes) || 0;
+  const safeAdditionalMinutes = Number(additionalVoiceMinutes) || 0;
+  
+  console.log("Plan section values for PDF:", {
+    tierName,
+    aiType,
+    setupFee: safeSetupFee,
+    includedVoiceMinutes: safeIncludedMinutes,
+    additionalVoiceMinutes: safeAdditionalMinutes
+  });
   
   doc.setFontSize(14);
   doc.setTextColor(0, 0, 0);
@@ -28,7 +39,7 @@ export const addPlanSection = (
                  tierName.toLowerCase().includes('premium') ? 'premium' : 'growth';
   
   const voiceCapability = tierKey === 'starter' ? 'No voice capabilities' : 
-                        `Includes ${includedVoiceMinutes || 0} free voice minutes per month`;
+                        `Includes ${safeIncludedMinutes} free voice minutes per month`;
   
   doc.text(`${tierName} (${aiType})`, 20, currentY);
   currentY += 7;
@@ -42,11 +53,11 @@ export const addPlanSection = (
   }
   
   // Add voice minutes details if there are any additional minutes
-  if (additionalVoiceMinutes && additionalVoiceMinutes > 0) {
+  if (safeAdditionalMinutes > 0) {
     doc.setFontSize(10);
     doc.setTextColor(100, 100, 100);
-    const additionalVoiceCost = Number(additionalVoiceMinutes) * 0.12;
-    doc.text(`Additional ${additionalVoiceMinutes} voice minutes: ${formatCurrency(additionalVoiceCost)}`, 20, currentY);
+    const additionalVoiceCost = safeAdditionalMinutes * 0.12;
+    doc.text(`Additional ${safeAdditionalMinutes} voice minutes: ${formatCurrency(additionalVoiceCost)}`, 20, currentY);
     currentY += 7;
   }
   

@@ -12,11 +12,19 @@ import { addContactSection } from './sections/contactSection';
 export const generatePDF = (params: GeneratePDFParams): JsPDFWithAutoTable => {
   const doc = new jsPDF() as JsPDFWithAutoTable;
   
+  // Ensure aiCostMonthly has a valid setupFee
+  if (!params.results.aiCostMonthly) {
+    params.results.aiCostMonthly = { total: 0, voice: 0, chatbot: 0, setupFee: 0 };
+  } else if (params.results.aiCostMonthly.setupFee === undefined) {
+    params.results.aiCostMonthly.setupFee = 0;
+  }
+  
   console.log("PDF generation starting with params:", {
     additionalVoiceMinutes: params.additionalVoiceMinutes,
     includedVoiceMinutes: params.includedVoiceMinutes,
     tierName: params.tierName,
-    aiType: params.aiType
+    aiType: params.aiType,
+    setupFee: params.results.aiCostMonthly.setupFee
   });
   
   // Add header section with contact info
