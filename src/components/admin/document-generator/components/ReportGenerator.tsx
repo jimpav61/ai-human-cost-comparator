@@ -30,6 +30,12 @@ export const ReportGenerator = ({ lead, buttonStyle = "default" }: ReportGenerat
 
       console.log('[REPORT] Starting PDF generation with calculator data');
       
+      // Calculate additional voice minutes
+      const aiTier = lead.calculator_inputs?.aiTier || 'growth';
+      const includedVoiceMinutes = aiTier === 'starter' ? 0 : 600;
+      const callVolume = lead.calculator_inputs?.callVolume ? Number(lead.calculator_inputs.callVolume) : 0;
+      const additionalVoiceMinutes = Math.max(0, callVolume);
+      
       // Prepare report parameters from lead data - ensuring all required fields are present
       const doc = generatePDF({
         contactInfo: lead.name || 'Valued Client',
@@ -39,10 +45,8 @@ export const ReportGenerator = ({ lead, buttonStyle = "default" }: ReportGenerat
         industry: lead.industry || 'Other',
         employeeCount: Number(lead.employee_count) || 5,
         results: lead.calculator_results,
-        additionalVoiceMinutes: lead.calculator_inputs?.callVolume 
-          ? Math.max(0, Number(lead.calculator_inputs.callVolume) - (lead.calculator_inputs.aiTier === 'starter' ? 0 : 600)) 
-          : 0,
-        includedVoiceMinutes: lead.calculator_inputs?.aiTier === 'starter' ? 0 : 600,
+        additionalVoiceMinutes: additionalVoiceMinutes,
+        includedVoiceMinutes: includedVoiceMinutes,
         businessSuggestions: [
           {
             title: "Automate Common Customer Inquiries",

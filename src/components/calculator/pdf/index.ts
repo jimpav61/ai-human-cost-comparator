@@ -61,10 +61,21 @@ export const generatePDF = (params: GeneratePDFParams): JsPDFWithAutoTable => {
     validatedParams.additionalVoiceMinutes * 0.12 : 0;
   
   // Update total cost to include additional voice minutes
+  const basePriceMonthly = 
+    validatedParams.results.basePriceMonthly || 
+    (validatedParams.tierName.toLowerCase().includes('starter') ? 99 : 
+     validatedParams.tierName.toLowerCase().includes('growth') ? 229 : 
+     validatedParams.tierName.toLowerCase().includes('premium') ? 429 : 229);
+  
+  validatedParams.results.basePriceMonthly = basePriceMonthly;
+  
   if (additionalVoiceCost > 0) {
     validatedParams.results.aiCostMonthly.voice = additionalVoiceCost;
+    validatedParams.results.aiCostMonthly.total = basePriceMonthly + additionalVoiceCost;
+  } else {
+    // Ensure total is at least the base price if we don't have additional voice costs
     validatedParams.results.aiCostMonthly.total = 
-      validatedParams.results.basePriceMonthly + additionalVoiceCost;
+      Math.max(validatedParams.results.aiCostMonthly.total || 0, basePriceMonthly);
   }
   
   // Add header section with contact info

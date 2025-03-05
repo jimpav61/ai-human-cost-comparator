@@ -19,9 +19,13 @@ export const addCostBreakdownSection = (
   // Ensure we have valid values
   const basePrice = typeof basePriceMonthly === 'number' ? basePriceMonthly : 229;
   
-  // Use total cost if provided, otherwise just use base price
+  // Calculate additional voice cost
+  const additionalVoiceCost = (typeof additionalVoiceMinutes === 'number' && additionalVoiceMinutes > 0) 
+    ? additionalVoiceMinutes * 0.12 : 0;
+  
+  // Use total cost if provided, otherwise calculate it
   const totalCost = typeof totalMonthlyCost === 'number' ? 
-    totalMonthlyCost : basePrice;
+    totalMonthlyCost : (basePrice + additionalVoiceCost);
   
   // Cost Breakdown Section
   doc.setFontSize(16);
@@ -39,7 +43,6 @@ export const addCostBreakdownSection = (
   // Add additional voice minutes if applicable
   if (additionalVoiceMinutes && additionalVoiceMinutes > 0) {
     // Calculate additional voice cost (12 cents per minute)
-    const additionalVoiceCost = additionalVoiceMinutes * 0.12;
     tableRows.push(['Additional Voice Minutes', formatCurrency(additionalVoiceCost)]);
   }
   
