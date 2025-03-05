@@ -91,4 +91,3 @@ export const addFinancialImpact = (doc: JsPDFWithAutoTable, yPosition: number, p
   
   return yPosition + 15;
 };
-
