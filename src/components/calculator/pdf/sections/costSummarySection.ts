@@ -21,12 +21,13 @@ export const addCostSummarySection = (
   const monthlySavings = Number(results.monthlySavings) || 0;
   const yearlySavings = Number(results.yearlySavings) || 0;
   
-  console.log("Cost Summary values (sanitized):", {
+  console.log("Cost Summary values:", {
     humanCostMonthly,
     aiCostMonthlyTotal,
     setupFee,
     monthlySavings,
-    yearlySavings
+    yearlySavings,
+    original: results
   });
   
   const costData = [

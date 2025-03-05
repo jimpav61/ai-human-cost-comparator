@@ -15,6 +15,12 @@ export const addCostBreakdownSection = (
   const safeAdditionalMinutes = Number(additionalVoiceMinutes) || 0;
   const safeTotalCost = Number(totalMonthlyCost) || 0;
   
+  console.log("Cost Breakdown values:", {
+    basePriceMonthly: safeBasePrice,
+    additionalVoiceMinutes: safeAdditionalMinutes,
+    totalMonthlyCost: safeTotalCost
+  });
+  
   // Only proceed if we have a base price to show
   if (safeBasePrice <= 0) {
     return yPosition;

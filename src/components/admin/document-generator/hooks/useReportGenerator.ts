@@ -28,41 +28,20 @@ export const useReportGenerator = ({ lead }: UseReportGeneratorProps) => {
       const calculatorResults = lead.calculator_results || {};
       const calculatorInputs = lead.calculator_inputs || {};
       
-      console.log("Calculator results for report:", calculatorResults);
-      console.log("Calculator inputs for report:", calculatorInputs);
+      console.log("Raw calculator results for report:", calculatorResults);
       
-      // Ensure all required properties have values (not just defined with undefined values)
-      const safeResults = {
-        humanCostMonthly: Number(calculatorResults.humanCostMonthly) || 0,
-        monthlySavings: Number(calculatorResults.monthlySavings) || 0,
-        yearlySavings: Number(calculatorResults.yearlySavings) || 0,
-        savingsPercentage: Number(calculatorResults.savingsPercentage) || 0,
-        aiCostMonthly: {
-          voice: Number(calculatorResults.aiCostMonthly?.voice) || 0,
-          chatbot: Number(calculatorResults.aiCostMonthly?.chatbot) || 0,
-          total: Number(calculatorResults.aiCostMonthly?.total) || 0,
-          setupFee: Number(calculatorResults.aiCostMonthly?.setupFee) || 0
-        },
-        breakEvenPoint: {
-          voice: Number(calculatorResults.breakEvenPoint?.voice) || 0,
-          chatbot: Number(calculatorResults.breakEvenPoint?.chatbot) || 0
-        },
-        humanHours: {
-          dailyPerEmployee: Number(calculatorResults.humanHours?.dailyPerEmployee) || 8,
-          weeklyTotal: Number(calculatorResults.humanHours?.weeklyTotal) || 40,
-          monthlyTotal: Number(calculatorResults.humanHours?.monthlyTotal) || 160,
-          yearlyTotal: Number(calculatorResults.humanHours?.yearlyTotal) || 2080
-        },
-        annualPlan: Number(calculatorResults.annualPlan) || 0,
-        basePriceMonthly: Number(calculatorResults.basePriceMonthly) || 0
-      };
+      // Extract tier info from calculator inputs
+      const tierName = calculatorInputs?.aiTier === 'starter' ? 'Starter Plan' : 
+                     calculatorInputs?.aiTier === 'growth' ? 'Growth Plan' : 
+                     calculatorInputs?.aiTier === 'premium' ? 'Premium Plan' : 'Growth Plan';
+                     
+      const aiType = calculatorInputs?.aiType === 'chatbot' ? 'Text Only' : 
+                    calculatorInputs?.aiType === 'voice' ? 'Basic Voice' : 
+                    calculatorInputs?.aiType === 'conversationalVoice' ? 'Conversational Voice' : 
+                    calculatorInputs?.aiType === 'both' ? 'Text & Basic Voice' : 
+                    calculatorInputs?.aiType === 'both-premium' ? 'Text & Conversational Voice' : 'Text Only';
       
-      console.log("Using sanitized calculator results structure:", safeResults);
-      
-      // Get additional voice minutes directly from inputs
-      const additionalVoiceMinutes = Number(calculatorInputs?.callVolume) || 0;
-      
-      // Generate PDF using the sanitized results structure
+      // Generate PDF using the exact original results without sanitization to maintain the exact displayed values
       const doc = generatePDF({
         contactInfo: lead.name || 'Valued Client',
         companyName: lead.company_name || 'Your Company',
@@ -70,8 +49,8 @@ export const useReportGenerator = ({ lead }: UseReportGeneratorProps) => {
         phoneNumber: lead.phone_number || '',
         industry: lead.industry || 'Other',
         employeeCount: Number(lead.employee_count) || 5,
-        results: safeResults,
-        additionalVoiceMinutes: additionalVoiceMinutes,
+        results: calculatorResults, // Use original results directly
+        additionalVoiceMinutes: Number(calculatorInputs?.callVolume) || 0,
         includedVoiceMinutes: calculatorInputs?.aiTier === 'starter' ? 0 : 600,
         businessSuggestions: [
           {
@@ -101,16 +80,8 @@ export const useReportGenerator = ({ lead }: UseReportGeneratorProps) => {
             capabilities: ["Answer product questions", "Provide pricing information", "Schedule demonstrations with sales team"]
           }
         ],
-        tierName: calculatorInputs?.aiTier ? 
-          (calculatorInputs.aiTier === 'starter' ? 'Starter Plan' : 
-          calculatorInputs.aiTier === 'growth' ? 'Growth Plan' : 
-          'Premium Plan') : 'Growth Plan',
-        aiType: calculatorInputs?.aiType ? 
-          (calculatorInputs.aiType === 'chatbot' ? 'Text Only' : 
-          calculatorInputs.aiType === 'voice' ? 'Basic Voice' : 
-          calculatorInputs.aiType === 'conversationalVoice' ? 'Conversational Voice' : 
-          calculatorInputs.aiType === 'both' ? 'Text & Basic Voice' : 
-          calculatorInputs.aiType === 'both-premium' ? 'Text & Conversational Voice' : 'Text Only') : 'Text Only',
+        tierName: tierName,
+        aiType: aiType,
       });
       
       console.log("PDF generation completed successfully");
