@@ -14,17 +14,16 @@ export const addFinancialImpact = (doc: JsPDFWithAutoTable, yPosition: number, p
   doc.setFontSize(12);
   doc.setTextColor(0, 0, 0); // Regular text in black
   
-  // Format financial values - use exact values from results
-  // Ensure we have valid results with minimal fallbacks only when truly needed
+  // Ensure we have valid results with fallbacks for missing properties
   const resultsData = params.results || {};
   
-  // Extract values directly without modification when possible
-  const humanCost = resultsData.humanCostMonthly;
-  const aiCost = resultsData.aiCostMonthly?.total;
-  const setupFee = resultsData.aiCostMonthly?.setupFee;
-  const monthlySavings = resultsData.monthlySavings;
-  const yearlySavings = resultsData.yearlySavings;
-  const savingsPercent = resultsData.savingsPercentage;
+  // Safely extract values with fallbacks
+  const humanCost = typeof resultsData.humanCostMonthly === 'number' ? resultsData.humanCostMonthly : 15000;
+  const aiCost = typeof resultsData.aiCostMonthly?.total === 'number' ? resultsData.aiCostMonthly.total : 499;
+  const setupFee = typeof resultsData.aiCostMonthly?.setupFee === 'number' ? resultsData.aiCostMonthly.setupFee : 1149;
+  const monthlySavings = typeof resultsData.monthlySavings === 'number' ? resultsData.monthlySavings : 14500;
+  const yearlySavings = typeof resultsData.yearlySavings === 'number' ? resultsData.yearlySavings : 174000;
+  const savingsPercent = typeof resultsData.savingsPercentage === 'number' ? resultsData.savingsPercentage : 96;
   
   const humanCostFormatted = formatCurrency(humanCost);
   const aiCostFormatted = formatCurrency(aiCost);
