@@ -28,6 +28,7 @@ interface GenerateProposalParams {
   tierName?: string;
   aiType?: string;
   pricingDetails?: PricingDetail[];
+  additionalVoiceMinutes?: number;
 }
 
 export const generateProposal = (params: GenerateProposalParams) => {

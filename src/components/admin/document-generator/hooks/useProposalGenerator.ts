@@ -51,7 +51,7 @@ export const useProposalGenerator = ({ lead }: UseProposalGeneratorProps) => {
         tierName,
         aiType,
         // Pass additional voice minutes explicitly
-        additionalVoiceMinutes: additionalVoiceMinutes
+        additionalVoiceMinutes
       });
       
       // Save the PDF

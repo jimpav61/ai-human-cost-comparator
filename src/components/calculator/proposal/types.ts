@@ -19,4 +19,5 @@ export interface SectionParams {
   tierName?: string;
   aiType?: string;
   pricingDetails?: any[];
+  additionalVoiceMinutes?: number;
 }
