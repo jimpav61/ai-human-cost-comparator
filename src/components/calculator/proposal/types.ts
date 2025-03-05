@@ -12,7 +12,19 @@ export interface SectionParams {
   phoneNumber: string | null;
   industry?: string;
   employeeCount?: number;
-  results: any;
+  results: {
+    humanCostMonthly?: number;
+    aiCostMonthly?: {
+      voice?: number;
+      chatbot?: number;
+      total?: number;
+      setupFee?: number;
+    };
+    monthlySavings?: number;
+    yearlySavings?: number;
+    savingsPercentage?: number;
+    [key: string]: any;
+  };
   tierName?: string;
   aiType?: string;
 }
