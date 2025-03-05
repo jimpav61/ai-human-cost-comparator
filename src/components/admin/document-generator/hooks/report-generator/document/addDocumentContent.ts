@@ -39,16 +39,14 @@ export const addDocumentContent = (doc: JsPDFWithAutoTable, data: ProcessedLeadD
   // Add cost summary table
   currentY = addCostSummarySection(doc, currentY, data.results);
 
-  // Add cost breakdown section (only if there are additional voice minutes)
-  if (data.additionalVoiceMinutes && data.additionalVoiceMinutes > 0) {
-    currentY = addCostBreakdownSection(
-      doc, 
-      currentY, 
-      data.results.basePriceMonthly,
-      data.additionalVoiceMinutes,
-      data.results.aiCostMonthly.total
-    );
-  }
+  // Always add the cost breakdown section to match frontend
+  currentY = addCostBreakdownSection(
+    doc, 
+    currentY, 
+    data.results.basePriceMonthly,
+    data.additionalVoiceMinutes,
+    data.results.aiCostMonthly.total
+  );
 
   // Add implementation recommendations
   currentY = addRecommendationsSection(doc, currentY, data.businessSuggestions);

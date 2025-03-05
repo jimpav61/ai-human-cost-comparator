@@ -10,21 +10,31 @@ export const addCostBreakdownSection = (
   additionalVoiceMinutes?: number,
   totalMonthlyAICost?: number
 ): number => {
-  // Only add this section if there are additional voice minutes
-  if (!additionalVoiceMinutes || additionalVoiceMinutes <= 0) {
-    return yPosition;
-  }
-
+  // Always show the section if totalMonthlyAICost is provided
+  // But still check for voice minutes for content presentation
+  const hasAdditionalVoice = additionalVoiceMinutes && additionalVoiceMinutes > 0;
+  
   doc.setFontSize(14);
   doc.setTextColor(0, 0, 0);
   doc.text("Cost Breakdown", 20, yPosition);
   
-  const additionalVoiceCost = additionalVoiceMinutes * 0.12;
-  const breakdownData = [
-    ["Base Monthly Plan", formatCurrency(basePriceMonthly)],
-    ["Additional Voice Minutes", formatCurrency(additionalVoiceCost)],
-    ["Total Monthly Cost", formatCurrency(totalMonthlyAICost || (basePriceMonthly + additionalVoiceCost))]
-  ];
+  const additionalVoiceCost = hasAdditionalVoice ? additionalVoiceMinutes * 0.12 : 0;
+  
+  // Determine what rows to show based on the available data
+  let breakdownData = [];
+  
+  if (hasAdditionalVoice) {
+    breakdownData = [
+      ["Base Monthly Plan", formatCurrency(basePriceMonthly)],
+      ["Additional Voice Minutes", formatCurrency(additionalVoiceCost)],
+      ["Total Monthly Cost", formatCurrency(totalMonthlyAICost || (basePriceMonthly + additionalVoiceCost))]
+    ];
+  } else {
+    breakdownData = [
+      ["Base Monthly Plan", formatCurrency(basePriceMonthly)],
+      ["Total Monthly Cost", formatCurrency(totalMonthlyAICost || basePriceMonthly)]
+    ];
+  }
   
   autoTable(doc, {
     startY: yPosition + 5,

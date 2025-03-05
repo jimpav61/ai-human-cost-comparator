@@ -28,6 +28,12 @@ export interface ProcessedLeadData {
 export const processLeadData = (lead: Lead): ProcessedLeadData => {
   console.log("Processing lead data for report:", lead);
 
+  // IMPORTANT: Always use the calculator results directly from the lead
+  // This ensures the report matches exactly what the user saw in the frontend
+  if (!lead.calculator_results) {
+    console.error("No calculator results found in lead data");
+  }
+  
   // Use the calculator inputs from lead or fallback to defaults
   const inputs = lead.calculator_inputs || {
     aiType: 'chatbot',
@@ -41,67 +47,22 @@ export const processLeadData = (lead: Lead): ProcessedLeadData => {
     avgChatResolutionTime: 10
   };
   
-  // Get the tier from the lead's original inputs
+  // Get the tier and AI type directly from inputs
   const tierToUse = inputs.aiTier || 'starter';
   const aiTypeToUse = inputs.aiType || 'chatbot';
   
-  // Setup fee from rates using the original tier
-  const setupFee = AI_RATES.chatbot[tierToUse].setupFee;
-  
-  // Get included voice minutes based on tier
+  // Calculate included voice minutes based on tier
   const includedVoiceMinutes = tierToUse === 'starter' ? 0 : 
                               (tierToUse === 'growth' ? 600 : 1200);
   
-  // Extract call volume from inputs for additional minutes calculation
+  // Get voice minutes data
   const extraVoiceMinutes = inputs.callVolume || 0;
-  let additionalVoiceCost = 0;
   
-  if (extraVoiceMinutes > 0 && tierToUse !== 'starter') {
-    // Always use 12¢ per minute for additional voice minutes
-    const additionalMinuteRate = 0.12;
-    additionalVoiceCost = extraVoiceMinutes * additionalMinuteRate;
-  }
-  
-  // Get base cost from the tier
-  const baseMonthlyPrice = AI_RATES.chatbot[tierToUse].base;
-  
-  // Use the calculator results directly from lead if available
-  // This ensures we use the exact same data that was presented in the frontend
+  // Use the calculator results directly from lead
   if (lead.calculator_results) {
     console.log("Using lead's existing calculator results:", lead.calculator_results);
     
-    // Create a deep copy to avoid modifying the original
-    const results = JSON.parse(JSON.stringify(lead.calculator_results));
-    
-    // Ensure all nested objects and properties exist to prevent undefined errors
-    if (!results.aiCostMonthly) {
-      results.aiCostMonthly = { 
-        voice: additionalVoiceCost, 
-        chatbot: baseMonthlyPrice, 
-        total: baseMonthlyPrice + additionalVoiceCost,
-        setupFee: setupFee 
-      };
-    }
-    
-    if (!results.breakEvenPoint) {
-      results.breakEvenPoint = { voice: extraVoiceMinutes, chatbot: 520 };
-    }
-    
-    if (!results.humanHours) {
-      results.humanHours = {
-        dailyPerEmployee: 8,
-        weeklyTotal: 200,
-        monthlyTotal: 850,
-        yearlyTotal: 10200
-      };
-    }
-    
-    // Ensure basePriceMonthly is set
-    if (!results.basePriceMonthly) {
-      results.basePriceMonthly = baseMonthlyPrice;
-    }
-    
-    // Get display names based on the original tier and aiType
+    // Get display names for tier and AI type
     const tierName = getTierDisplayName(tierToUse);
     const aiType = getAITypeDisplay(aiTypeToUse);
 
@@ -112,7 +73,7 @@ export const processLeadData = (lead: Lead): ProcessedLeadData => {
       phoneNumber: lead.phone_number || '',
       industry: lead.industry || 'Other',
       employeeCount: lead.employee_count || 5,
-      results,
+      results: lead.calculator_results,  // Use exact results from frontend
       tierName,
       aiType,
       additionalVoiceMinutes: extraVoiceMinutes,
@@ -148,7 +109,19 @@ export const processLeadData = (lead: Lead): ProcessedLeadData => {
     };
   }
   
-  // If no calculator results exist, create a complete default object based on the ORIGINAL tier
+  // If no calculator results exist, create default values
+  // This is a fallback but should rarely be used since we want to use frontend data
+  console.warn("No calculator results found, using fallback values");
+  
+  // Default values used only if no calculator results exist
+  const setupFee = AI_RATES.chatbot[tierToUse].setupFee;
+  const baseMonthlyPrice = AI_RATES.chatbot[tierToUse].base;
+  let additionalVoiceCost = 0;
+  
+  if (extraVoiceMinutes > 0 && tierToUse !== 'starter') {
+    additionalVoiceCost = extraVoiceMinutes * 0.12;
+  }
+  
   const results = {
     aiCostMonthly: { 
       voice: additionalVoiceCost, 
@@ -171,7 +144,7 @@ export const processLeadData = (lead: Lead): ProcessedLeadData => {
     annualPlan: AI_RATES.chatbot[tierToUse].annualPrice
   };
 
-  // Get display names based on the ORIGINAL tier and aiType
+  // Get display names based on tier and AI type
   const tierName = getTierDisplayName(tierToUse);
   const aiType = getAITypeDisplay(aiTypeToUse);
 
