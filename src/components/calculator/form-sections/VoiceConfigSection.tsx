@@ -49,14 +49,14 @@ export const VoiceConfigSection: React.FC<VoiceConfigSectionProps> = ({
   };
   
   // Calculate additional voice minutes for display
-  const additionalVoiceMinutes = Math.max(0, callVolume - includedMinutes);
-  const additionalCost = additionalVoiceMinutes * 0.12; // Always 12¢ per minute
+  // No change to this calculation - callVolume now directly represents additional minutes
+  const additionalVoiceCost = callVolume * 0.12; // Always 12¢ per minute
   
   return (
     <>
       <div className="mb-4">
         <label className="block text-sm font-medium text-gray-700 mb-1">
-          Monthly Call Volume (minutes)
+          Additional Voice Minutes
         </label>
         <Input 
           type="number" 
@@ -72,9 +72,9 @@ export const VoiceConfigSection: React.FC<VoiceConfigSectionProps> = ({
             Your plan includes {includedMinutes} free voice minutes per month
           </p>
         )}
-        {!isStarterPlan && additionalVoiceMinutes > 0 && (
+        {!isStarterPlan && callVolume > 0 && (
           <p className="text-xs text-amber-600 mt-1">
-            {additionalVoiceMinutes.toFixed(0)} additional minutes at 12¢/min = {formatCurrency(additionalCost)}
+            {callVolume.toFixed(0)} additional minutes at 12¢/min = {formatCurrency(additionalVoiceCost)}
           </p>
         )}
         {isStarterPlan && (

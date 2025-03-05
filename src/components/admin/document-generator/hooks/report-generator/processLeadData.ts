@@ -46,10 +46,11 @@ export const processLeadData = (lead: Lead): ProcessedLeadData => {
   // Setup fee from rates using the original tier
   const setupFee = AI_RATES.chatbot[tierToUse].setupFee;
   
-  // Calculate any additional voice costs for the PDF
+  // Get included voice minutes based on tier
   const includedVoiceMinutes = tierToUse === 'starter' ? 0 : 600;
-  const totalVoiceMinutes = inputs.callVolume || 0;
-  const extraVoiceMinutes = Math.max(0, totalVoiceMinutes - includedVoiceMinutes);
+  
+  // inputs.callVolume now directly represents the additional minutes
+  const extraVoiceMinutes = inputs.callVolume || 0;
   let additionalVoiceCost = 0;
   
   if (extraVoiceMinutes > 0 && tierToUse !== 'starter') {

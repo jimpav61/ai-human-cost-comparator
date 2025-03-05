@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from 'react';
 import { DEFAULT_AI_RATES, HUMAN_HOURLY_RATES, fetchPricingConfigurations, type AIRates } from '@/constants/pricing';
 
@@ -105,12 +104,12 @@ export const useCalculator = (inputs: CalculatorInputs): CalculationResults => {
     
     console.log(`Using EXACT pricing for ${inputs.aiTier} tier: ${tierBase}/month`);
     
-    // Calculate additional voice costs for minutes exceeding the included amount
+    // Calculate additional voice costs - input field is now the ADDITIONAL minutes
     let additionalVoiceCost = 0;
     const includedVoiceMinutes = inputs.aiTier === 'starter' ? 0 : 600;
     
-    // Calculate additional minutes - only if not on starter plan
-    const extraVoiceMinutes = Math.max(0, inputs.callVolume - includedVoiceMinutes);
+    // inputs.callVolume now directly represents the additional minutes
+    const extraVoiceMinutes = inputs.callVolume;
     
     if (extraVoiceMinutes > 0 && inputs.aiTier !== 'starter') {
       // Always use 12¢ per minute for additional voice minutes
@@ -143,7 +142,7 @@ export const useCalculator = (inputs: CalculatorInputs): CalculationResults => {
       aiCostMonthly: {
         voice: additionalVoiceCost,
         chatbot: tierBase,
-        total: totalMonthlyCost,
+        total: Math.max(totalMonthlyCost, baseMonthlyPrice), // Ensure we never have 0 cost
         setupFee: setupFee
       },
       basePriceMonthly: tierBase,
