@@ -29,6 +29,7 @@ export interface ProposalResults {
   annualPlan?: number;
   tierKey?: string;
   aiType?: string;
+  basePriceMonthly: number; // Add the missing property
   [key: string]: any;
 }
 

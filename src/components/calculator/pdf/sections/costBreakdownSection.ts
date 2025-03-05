@@ -6,57 +6,70 @@ import autoTable from 'jspdf-autotable';
 export const addCostBreakdownSection = (
   doc: JsPDFWithAutoTable, 
   yPosition: number,
-  basePriceMonthly: number = 0,
+  basePriceMonthly?: number,
   additionalVoiceMinutes?: number,
-  totalMonthlyAICost?: number
+  totalMonthlyCost?: number
 ): number => {
-  // Always add the section to ensure consistent reporting
-  const hasAdditionalVoice = additionalVoiceMinutes && additionalVoiceMinutes > 0;
-  
-  console.log("Cost breakdown section - addVoiceMin:", additionalVoiceMinutes, "hasVoice:", hasAdditionalVoice);
-  console.log("Cost breakdown inputs - basePrice:", basePriceMonthly, "totalCost:", totalMonthlyAICost);
-  
-  doc.setFontSize(14);
-  doc.setTextColor(0, 0, 0);
-  doc.text("Cost Breakdown", 20, yPosition);
-  
-  // Use original values without unnecessary fallbacks
-  // Only provide fallbacks if the values are explicitly undefined or NaN
-  const basePriceSafe = basePriceMonthly;
-  const additionalVoiceCost = hasAdditionalVoice ? (additionalVoiceMinutes || 0) * 0.12 : 0;
-  const totalCostSafe = totalMonthlyAICost !== undefined ? totalMonthlyAICost : (basePriceSafe + additionalVoiceCost);
-  
-  console.log("Cost breakdown values (preserving originals):", {
-    basePriceSafe,
-    additionalVoiceCost,
-    totalCostSafe
-  });
-  
-  // Determine what rows to show based on the available data
-  let breakdownData = [];
-  
-  if (hasAdditionalVoice) {
-    breakdownData = [
-      ["Base Monthly Plan", formatCurrency(basePriceSafe)],
-      ["Additional Voice Minutes", formatCurrency(additionalVoiceCost)],
-      ["Total Monthly Cost", formatCurrency(totalCostSafe)]
-    ];
-  } else {
-    breakdownData = [
-      ["Base Monthly Plan", formatCurrency(basePriceSafe)],
-      ["Total Monthly Cost", formatCurrency(totalCostSafe)]
-    ];
+  // Only proceed if we have a base price to show
+  if (!basePriceMonthly) {
+    return yPosition;
   }
   
+  // Cost Breakdown Section
+  doc.setFontSize(16);
+  doc.setTextColor(246, 82, 40); // Brand color for section header
+  doc.text("Cost Breakdown", 20, yPosition);
+  
+  yPosition += 8;
+  
+  // Cost breakdown table - one row for base price and another for voice if applicable
+  const tableRows = [];
+  
+  // Always add the base AI service
+  tableRows.push(['AI Service Base', formatCurrency(basePriceMonthly || 0)]);
+  
+  // Add additional voice minutes if applicable
+  if (additionalVoiceMinutes && additionalVoiceMinutes > 0) {
+    // Calculate cost of additional minutes (12 cents per minute)
+    const additionalMinutesRate = 0.12;
+    const additionalVoiceCost = additionalVoiceMinutes * additionalMinutesRate;
+    tableRows.push([
+      `Additional Voice Minutes (${additionalVoiceMinutes} @ ${formatCurrency(additionalMinutesRate)}/min)`, 
+      formatCurrency(additionalVoiceCost)
+    ]);
+  }
+  
+  // Add total if we have it
+  if (totalMonthlyCost) {
+    tableRows.push(['Monthly Total', formatCurrency(totalMonthlyCost)]);
+  }
+  
+  // Create the breakdown table
   autoTable(doc, {
-    startY: yPosition + 5,
-    head: [["Item", "Cost"]],
-    body: breakdownData,
-    styles: { fontSize: 11 },
-    headStyles: { fillColor: [200, 230, 201] },
-    bodyStyles: { textColor: [0, 0, 0] },
-    alternateRowStyles: { fillColor: [240, 240, 240] },
+    startY: yPosition,
+    head: [['Item', 'Monthly Cost']],
+    body: tableRows,
+    headStyles: {
+      fillColor: [246, 82, 40],
+      textColor: [255, 255, 255],
+      fontStyle: 'bold'
+    },
+    bodyStyles: {
+      textColor: [0, 0, 0]
+    },
+    alternateRowStyles: {
+      fillColor: [245, 245, 245]
+    },
+    styles: {
+      fontSize: 11
+    },
+    columnStyles: {
+      0: { fontStyle: 'normal' },
+      1: { halign: 'right' }
+    },
+    margin: { left: 20, right: 20 }
   });
   
+  // Return the new y position
   return (doc as any).lastAutoTable.finalY + 15;
 };
