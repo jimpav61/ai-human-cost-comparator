@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from 'react';
 import { DEFAULT_AI_RATES, HUMAN_HOURLY_RATES, fetchPricingConfigurations, type AIRates } from '@/constants/pricing';
 
@@ -142,7 +143,7 @@ export const useCalculator = (inputs: CalculatorInputs): CalculationResults => {
       aiCostMonthly: {
         voice: additionalVoiceCost,
         chatbot: tierBase,
-        total: Math.max(totalMonthlyCost, baseMonthlyPrice), // Ensure we never have 0 cost
+        total: totalMonthlyCost, // Fixed: removed reference to baseMonthlyPrice 
         setupFee: setupFee
       },
       basePriceMonthly: tierBase,
