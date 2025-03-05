@@ -74,7 +74,7 @@ export const processLeadData = (lead: Lead): ProcessedLeadData => {
     monthlySavings: 3800 - (baseMonthlyPrice + additionalVoiceCost),
     yearlySavings: (3800 - (baseMonthlyPrice + additionalVoiceCost)) * 12,
     savingsPercentage: ((3800 - (baseMonthlyPrice + additionalVoiceCost)) / 3800) * 100,
-    breakEvenPoint: { voice: 240, chatbot: 520 },
+    breakEvenPoint: { voice: extraVoiceMinutes, chatbot: 520 },
     humanHours: {
       dailyPerEmployee: 8,
       weeklyTotal: 200,
@@ -95,7 +95,7 @@ export const processLeadData = (lead: Lead): ProcessedLeadData => {
   }
   
   if (!results.breakEvenPoint) {
-    results.breakEvenPoint = { voice: 240, chatbot: 520 };
+    results.breakEvenPoint = { voice: extraVoiceMinutes, chatbot: 520 };
   }
   
   if (!results.humanHours) {
