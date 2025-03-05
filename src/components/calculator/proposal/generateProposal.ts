@@ -43,7 +43,8 @@ export const generateProposal = (params: GenerateProposalParams) => {
       monthlyTotal: 0,
       yearlyTotal: 0
     },
-    annualPlan: 0
+    annualPlan: 0,
+    basePriceMonthly: 0
   };
   
   // Merge provided results with default values to ensure all required properties exist

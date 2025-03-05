@@ -32,6 +32,33 @@ export const useProposalGenerator = ({ lead }: UseProposalGeneratorProps) => {
       console.log("Calculator results for proposal:", calculatorResults);
       console.log("Calculator inputs for proposal:", calculatorInputs);
       
+      // Ensure required properties exist with sensible defaults
+      const safeResults = {
+        ...calculatorResults,
+        aiCostMonthly: calculatorResults.aiCostMonthly || {
+          voice: 0,
+          chatbot: 0,
+          total: 0,
+          setupFee: 0
+        },
+        breakEvenPoint: calculatorResults.breakEvenPoint || { 
+          voice: 0, 
+          chatbot: 0 
+        },
+        humanHours: calculatorResults.humanHours || {
+          dailyPerEmployee: 8,
+          weeklyTotal: 40,
+          monthlyTotal: 160,
+          yearlyTotal: 2080
+        },
+        annualPlan: calculatorResults.annualPlan || 0,
+        basePriceMonthly: calculatorResults.basePriceMonthly || 0,
+        humanCostMonthly: calculatorResults.humanCostMonthly || 0,
+        monthlySavings: calculatorResults.monthlySavings || 0,
+        yearlySavings: calculatorResults.yearlySavings || 0,
+        savingsPercentage: calculatorResults.savingsPercentage || 0
+      };
+      
       // Generate proposal using the same function as frontend
       const doc = generateProposal({
         contactInfo: lead.name || 'Valued Client',
@@ -40,7 +67,7 @@ export const useProposalGenerator = ({ lead }: UseProposalGeneratorProps) => {
         phoneNumber: lead.phone_number || '',
         industry: lead.industry || 'Other',
         employeeCount: lead.employee_count || 5,
-        results: calculatorResults,
+        results: safeResults,
         tierName: calculatorInputs?.aiTier ? 
           (calculatorInputs.aiTier === 'starter' ? 'Starter Plan' : 
           calculatorInputs.aiTier === 'growth' ? 'Growth Plan' : 

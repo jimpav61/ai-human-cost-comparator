@@ -54,7 +54,9 @@ export const useReportGenerator = ({ lead }: UseReportGeneratorProps) => {
           monthlyTotal: 160,
           yearlyTotal: 2080
         },
-        annualPlan: calculatorResults.annualPlan || 0
+        annualPlan: calculatorResults.annualPlan || 0,
+        // Ensure basePriceMonthly is always defined
+        basePriceMonthly: calculatorResults.basePriceMonthly || 0
       };
       
       console.log("Using preserved calculator results structure:", safeResults);

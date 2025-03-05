@@ -22,9 +22,9 @@ export interface SharedResults {
   monthlySavings: number;
   yearlySavings: number;
   savingsPercentage: number;
-  breakEvenPoint?: {
-    voice?: number;
-    chatbot?: number;
+  breakEvenPoint: {
+    voice: number;
+    chatbot: number;
   };
   humanHours?: {
     dailyPerEmployee?: number;
