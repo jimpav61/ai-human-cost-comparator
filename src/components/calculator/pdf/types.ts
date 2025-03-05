@@ -7,6 +7,9 @@ import type { SharedGenerationParams } from '../shared/types';
 // Re-export the shared types
 export type { JsPDFWithAutoTable, CalculationResults };
 
+// Define PDFResults for the financialImpact section
+export type PDFResults = CalculationResults;
+
 // Extend the shared params with PDF-specific properties
 export interface GeneratePDFParams extends SharedGenerationParams {
   businessSuggestions: BusinessSuggestion[];

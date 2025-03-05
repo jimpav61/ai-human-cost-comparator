@@ -3,6 +3,7 @@ import { JsPDFWithAutoTable, SectionParams } from '../types';
 import { getTierDisplayName, getAITypeDisplay } from '@/components/calculator/pricingDetailsCalculator';
 import { AI_RATES } from '@/constants/pricing';
 import { formatCurrency, formatNumber } from '@/utils/formatters';
+import { SharedResults } from '../../shared/types';
 
 export const addRecommendedSolution = (doc: JsPDFWithAutoTable, yPosition: number, params: SectionParams): number => {
   // Recommended Solution section header
@@ -15,12 +16,18 @@ export const addRecommendedSolution = (doc: JsPDFWithAutoTable, yPosition: numbe
   doc.setTextColor(0, 0, 0); // Regular text in black
   
   // Get tier name and AI type display names
-  const tierKey = params.results?.tierKey || 'starter';
+  const sharedResults = params.results as SharedResults;
+  const tierKey = sharedResults.tierKey || params.tierName?.toLowerCase().includes('starter') ? 'starter' : 
+                  params.tierName?.toLowerCase().includes('growth') ? 'growth' : 
+                  params.tierName?.toLowerCase().includes('premium') ? 'premium' : 'growth';
+  
   const tierName = params.tierName || getTierDisplayName(tierKey);
-  const aiType = params.aiType || getAITypeDisplay(params.results?.aiType || 'chatbot');
+  const aiTypeKey = sharedResults.aiType || params.aiType?.toLowerCase().includes('text only') ? 'chatbot' :
+                    params.aiType?.toLowerCase().includes('voice') ? 'voice' : 'chatbot';
+  const aiType = params.aiType || getAITypeDisplay(aiTypeKey);
   
   // Get exact fixed price for the tier - always use hardcoded values
-  const basePrice = getTierBasePrice(tierKey);
+  const basePrice = getTierBasePrice(typeof tierKey === 'string' ? tierKey : 'growth');
   
   // Get included minutes based on tier
   const includedMinutes = tierKey !== 'starter' ? 600 : 0;

@@ -19,7 +19,7 @@ export const addFinancialImpact = (doc: JsPDFWithAutoTable, yPosition: number, p
   // Safely extract values with fallbacks
   const humanCost = typeof resultsData.humanCostMonthly === 'number' ? resultsData.humanCostMonthly : 15000;
   const aiCost = typeof resultsData.aiCostMonthly?.total === 'number' ? resultsData.aiCostMonthly.total : 499;
-  const setupFee = typeof resultsData.aiCostMonthly?.setupFee === 'number' ? resultsData.aiCostMonthly.setupFee : 1149;
+  const setupFee = typeof resultsData.aiCostMonthly?.setupFee === 'number' ? resultsData.aiCostMonthly.setupFee : 749; // Use Growth plan default
   const monthlySavings = typeof resultsData.monthlySavings === 'number' ? resultsData.monthlySavings : 14500;
   const yearlySavings = typeof resultsData.yearlySavings === 'number' ? resultsData.yearlySavings : 174000;
   const savingsPercent = typeof resultsData.savingsPercentage === 'number' ? resultsData.savingsPercentage : 96;

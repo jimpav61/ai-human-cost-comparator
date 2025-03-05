@@ -1,4 +1,3 @@
-
 import jsPDF from 'jspdf';
 import autoTable from 'jspdf-autotable';
 import { formatCurrency, formatNumber } from '@/utils/formatters';
@@ -15,7 +14,7 @@ import { addNextSteps } from './sections/nextSteps';
 import { addAdditionalResources } from './sections/additionalResources';
 import { addContactInformation } from './sections/contactInformation';
 import { addFooter } from './sections/footer';
-import { JsPDFWithAutoTable } from '../shared/types';
+import { JsPDFWithAutoTable, SharedResults } from '../shared/types';
 import { GenerateProposalParams } from './types';
 
 export const generateProposal = (params: GenerateProposalParams) => {
@@ -47,6 +46,19 @@ export const generateProposal = (params: GenerateProposalParams) => {
     basePriceMonthly: 0
   };
   
+  // Extract tier and AI type information from params
+  const tierName = params.tierName || 'Growth Plan';
+  const aiType = params.aiType || 'Text Only';
+  
+  // Determine tier key for additional properties
+  const tierKey = tierName.toLowerCase().includes('starter') ? 'starter' : 
+                 tierName.toLowerCase().includes('growth') ? 'growth' : 
+                 tierName.toLowerCase().includes('premium') ? 'premium' : 'growth';
+                 
+  // Determine AI type key
+  const aiTypeKey = aiType.toLowerCase().includes('text only') ? 'chatbot' :
+                   aiType.toLowerCase().includes('voice') ? 'voice' : 'chatbot';
+  
   // Merge provided results with default values to ensure all required properties exist
   // Also, ensure all values are numbers, not strings or undefined
   const safeResults = {
@@ -72,8 +84,10 @@ export const generateProposal = (params: GenerateProposalParams) => {
       weeklyTotal: Number(params.results?.humanHours?.weeklyTotal) || defaultResults.humanHours.weeklyTotal,
       monthlyTotal: Number(params.results?.humanHours?.monthlyTotal) || defaultResults.humanHours.monthlyTotal,
       yearlyTotal: Number(params.results?.humanHours?.yearlyTotal) || defaultResults.humanHours.yearlyTotal
-    }
-  };
+    },
+    tierKey: tierKey,
+    aiType: aiTypeKey
+  } as SharedResults;
   
   console.log("Proposal generation - sanitized results:", safeResults);
   console.log("Proposal generation - additionalVoiceMinutes:", params.additionalVoiceMinutes);
