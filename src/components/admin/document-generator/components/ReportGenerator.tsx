@@ -24,8 +24,8 @@ export const ReportGenerator = ({ lead, buttonStyle = "default" }: ReportGenerat
       console.log('[REPORT] Generating report for lead:', lead);
       
       // Check if lead exists and has calculator results
-      if (!lead || !lead.calculator_results) {
-        throw new Error("Lead data is missing or incomplete");
+      if (!lead) {
+        throw new Error("Lead data is missing");
       }
 
       console.log('[REPORT] Starting PDF generation with calculator data');
@@ -34,7 +34,30 @@ export const ReportGenerator = ({ lead, buttonStyle = "default" }: ReportGenerat
       const aiTier = lead.calculator_inputs?.aiTier || 'growth';
       const includedVoiceMinutes = aiTier === 'starter' ? 0 : 600;
       const callVolume = lead.calculator_inputs?.callVolume ? Number(lead.calculator_inputs.callVolume) : 0;
-      const additionalVoiceMinutes = Math.max(0, callVolume);
+      const additionalVoiceMinutes = callVolume;
+      
+      // Ensure calculator_results has at least an empty object
+      const calculatorResults = lead.calculator_results || {};
+      
+      // Prepare safe base price from tier
+      const basePriceMonthly = 
+        aiTier === 'starter' ? 99 : 
+        aiTier === 'growth' ? 229 : 
+        aiTier === 'premium' ? 429 : 229;
+      
+      // Ensure calculator_results has basic structure
+      if (!calculatorResults.aiCostMonthly) {
+        calculatorResults.aiCostMonthly = {
+          voice: additionalVoiceMinutes * 0.12,
+          chatbot: basePriceMonthly,
+          total: basePriceMonthly + (additionalVoiceMinutes * 0.12),
+          setupFee: aiTier === 'starter' ? 499 : aiTier === 'growth' ? 749 : 999
+        };
+      }
+      
+      if (!calculatorResults.basePriceMonthly) {
+        calculatorResults.basePriceMonthly = basePriceMonthly;
+      }
       
       // Prepare report parameters from lead data - ensuring all required fields are present
       const doc = generatePDF({
@@ -44,7 +67,7 @@ export const ReportGenerator = ({ lead, buttonStyle = "default" }: ReportGenerat
         phoneNumber: lead.phone_number || '',
         industry: lead.industry || 'Other',
         employeeCount: Number(lead.employee_count) || 5,
-        results: lead.calculator_results,
+        results: calculatorResults,
         additionalVoiceMinutes: additionalVoiceMinutes,
         includedVoiceMinutes: includedVoiceMinutes,
         businessSuggestions: [

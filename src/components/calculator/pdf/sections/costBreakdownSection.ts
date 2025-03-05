@@ -42,7 +42,6 @@ export const addCostBreakdownSection = (
   
   // Add additional voice minutes if applicable
   if (additionalVoiceMinutes && additionalVoiceMinutes > 0) {
-    // Calculate additional voice cost (12 cents per minute)
     tableRows.push(['Additional Voice Minutes', formatCurrency(additionalVoiceCost)]);
   }
   

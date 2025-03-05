@@ -55,12 +55,22 @@ export const generatePDF = (params: GeneratePDFParams): JsPDFWithAutoTable => {
   
   console.log("Validated PDF parameters:", validatedParams);
   
+  // Make sure we have a properly structured aiCostMonthly object
+  if (!validatedParams.results.aiCostMonthly) {
+    validatedParams.results.aiCostMonthly = {
+      voice: 0,
+      chatbot: 0,
+      total: 0,
+      setupFee: 0
+    };
+  }
+  
   // Calculate the additional voice cost for correct total cost
   const additionalVoiceCost = 
     validatedParams.additionalVoiceMinutes > 0 ? 
     validatedParams.additionalVoiceMinutes * 0.12 : 0;
   
-  // Update total cost to include additional voice minutes
+  // Determine base price from tier if not explicitly provided
   const basePriceMonthly = 
     validatedParams.results.basePriceMonthly || 
     (validatedParams.tierName.toLowerCase().includes('starter') ? 99 : 
@@ -69,13 +79,17 @@ export const generatePDF = (params: GeneratePDFParams): JsPDFWithAutoTable => {
   
   validatedParams.results.basePriceMonthly = basePriceMonthly;
   
-  if (additionalVoiceCost > 0) {
-    validatedParams.results.aiCostMonthly.voice = additionalVoiceCost;
-    validatedParams.results.aiCostMonthly.total = basePriceMonthly + additionalVoiceCost;
-  } else {
-    // Ensure total is at least the base price if we don't have additional voice costs
-    validatedParams.results.aiCostMonthly.total = 
-      Math.max(validatedParams.results.aiCostMonthly.total || 0, basePriceMonthly);
+  // Update aiCostMonthly with additional voice and base price
+  validatedParams.results.aiCostMonthly.voice = additionalVoiceCost;
+  validatedParams.results.aiCostMonthly.chatbot = basePriceMonthly;
+  validatedParams.results.aiCostMonthly.total = basePriceMonthly + additionalVoiceCost;
+  
+  // Ensure setup fee is set
+  if (!validatedParams.results.aiCostMonthly.setupFee) {
+    validatedParams.results.aiCostMonthly.setupFee = 
+      validatedParams.tierName.toLowerCase().includes('starter') ? 499 : 
+      validatedParams.tierName.toLowerCase().includes('growth') ? 749 : 
+      validatedParams.tierName.toLowerCase().includes('premium') ? 999 : 749;
   }
   
   // Add header section with contact info
