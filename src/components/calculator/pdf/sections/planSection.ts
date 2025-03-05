@@ -13,6 +13,9 @@ export const addPlanSection = (
 ): number => {
   let currentY = yPosition;
 
+  // Ensure setupFee has a value
+  const safeSetupFee = typeof setupFee === 'number' ? setupFee : 0;
+  
   doc.setFontSize(14);
   doc.setTextColor(0, 0, 0);
   doc.text("Selected Plan", 20, currentY);
@@ -49,7 +52,7 @@ export const addPlanSection = (
   // Add the one-time setup fee information
   doc.setFontSize(10);
   doc.setTextColor(100, 100, 100);
-  doc.text(`One-time setup fee: ${formatCurrency(setupFee || 0)}`, 20, currentY);
+  doc.text(`One-time setup fee: ${formatCurrency(safeSetupFee)}`, 20, currentY);
   
   return currentY + 12; // Extra spacing
 };

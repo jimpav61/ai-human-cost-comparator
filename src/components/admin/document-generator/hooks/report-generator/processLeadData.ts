@@ -28,12 +28,6 @@ export interface ProcessedLeadData {
 export const processLeadData = (lead: Lead): ProcessedLeadData => {
   console.log("Processing lead data for report:", lead);
 
-  // IMPORTANT: Always use the calculator results directly from the lead
-  // This ensures the report matches exactly what the user saw in the frontend
-  if (!lead.calculator_results) {
-    console.error("No calculator results found in lead data");
-  }
-  
   // Use the calculator inputs from lead or fallback to defaults
   const inputs = lead.calculator_inputs || {
     aiType: 'chatbot',
@@ -58,9 +52,31 @@ export const processLeadData = (lead: Lead): ProcessedLeadData => {
   // Get voice minutes data
   const extraVoiceMinutes = inputs.callVolume || 0;
   
-  // Use the calculator results directly from lead
+  // Ensure calculator_results has all required properties with fallbacks
   if (lead.calculator_results) {
     console.log("Using lead's existing calculator results:", lead.calculator_results);
+    
+    // Safety check: ensure aiCostMonthly exists and has required properties
+    const safeResults = {
+      ...lead.calculator_results,
+      aiCostMonthly: lead.calculator_results.aiCostMonthly || {}
+    };
+    
+    // Ensure setupFee exists (this is the property causing the error)
+    if (!safeResults.aiCostMonthly.setupFee) {
+      console.warn("setupFee missing, adding default value based on tier");
+      safeResults.aiCostMonthly.setupFee = AI_RATES.chatbot[tierToUse].setupFee;
+    }
+    
+    // Ensure other required properties exist
+    if (!safeResults.aiCostMonthly.total) {
+      safeResults.aiCostMonthly.total = safeResults.basePriceMonthly || 
+        AI_RATES.chatbot[tierToUse].base;
+    }
+    
+    if (!safeResults.basePriceMonthly) {
+      safeResults.basePriceMonthly = AI_RATES.chatbot[tierToUse].base;
+    }
     
     // Get display names for tier and AI type
     const tierName = getTierDisplayName(tierToUse);
@@ -73,7 +89,7 @@ export const processLeadData = (lead: Lead): ProcessedLeadData => {
       phoneNumber: lead.phone_number || '',
       industry: lead.industry || 'Other',
       employeeCount: lead.employee_count || 5,
-      results: lead.calculator_results,  // Use exact results from frontend
+      results: safeResults,  // Use the enhanced results that ensure properties exist
       tierName,
       aiType,
       additionalVoiceMinutes: extraVoiceMinutes,

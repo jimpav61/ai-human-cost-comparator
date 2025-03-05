@@ -20,8 +20,20 @@ export const useReportGenerator = ({ lead }: UseReportGeneratorProps) => {
     try {
       console.log('Generating report for lead:', lead);
       
-      // Process the lead data
-      const processedData = processLeadData(lead);
+      // Check if lead exists
+      if (!lead) {
+        throw new Error("Lead data is missing");
+      }
+      
+      // Process the lead data with more detailed error handling
+      let processedData;
+      try {
+        processedData = processLeadData(lead);
+        console.log("Processed lead data:", processedData);
+      } catch (processError) {
+        console.error("Error processing lead data:", processError);
+        throw new Error(`Failed to process lead data: ${processError instanceof Error ? processError.message : 'Unknown error'}`);
+      }
       
       try {
         // Generate the PDF
