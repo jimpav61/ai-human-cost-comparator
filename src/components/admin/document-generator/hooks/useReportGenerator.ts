@@ -24,34 +24,7 @@ export const useReportGenerator = ({ lead }: UseReportGeneratorProps) => {
         throw new Error("Lead data is missing");
       }
 
-      // Get calculator data from the lead
-      const calculatorResults = lead.calculator_results || {};
-      const calculatorInputs = lead.calculator_inputs || {};
-      
-      console.log("Using calculator results for PDF generation:", calculatorResults);
-      
-      // Get the display names
-      const tierName = calculatorInputs.aiTier === 'starter' ? 'Starter Plan' : 
-                      calculatorInputs.aiTier === 'growth' ? 'Growth Plan' : 
-                      calculatorInputs.aiTier === 'premium' ? 'Premium Plan' : 'Growth Plan';
-                     
-      const aiType = calculatorInputs.aiType === 'chatbot' ? 'Text Only' : 
-                    calculatorInputs.aiType === 'voice' ? 'Basic Voice' : 
-                    calculatorInputs.aiType === 'conversationalVoice' ? 'Conversational Voice' : 
-                    calculatorInputs.aiType === 'both' ? 'Text & Basic Voice' : 
-                    calculatorInputs.aiType === 'both-premium' ? 'Text & Conversational Voice' : 'Text Only';
-      
-      // Get the correct setup fee based on tier
-      const tierKey = calculatorInputs.aiTier || 'growth';
-      const setupFee = tierKey === 'starter' ? 249 : tierKey === 'growth' ? 749 : 1149;
-      
-      // Get voice minutes value directly from calculator inputs 
-      const additionalVoiceMinutes = Number(calculatorInputs.callVolume) || 0;
-      
-      // Create tier-specific included minutes
-      const includedVoiceMinutes = tierKey === 'starter' ? 0 : 600;
-      
-      // Generate the PDF using the shared utility
+      // Generate the PDF using the shared utility - exactly the same as frontend
       const doc = generatePDF({
         contactInfo: lead.name || 'Valued Client',
         companyName: lead.company_name || 'Your Company',
@@ -59,9 +32,9 @@ export const useReportGenerator = ({ lead }: UseReportGeneratorProps) => {
         phoneNumber: lead.phone_number || '',
         industry: lead.industry || 'Other',
         employeeCount: Number(lead.employee_count) || 5,
-        results: calculatorResults,
-        additionalVoiceMinutes: additionalVoiceMinutes,
-        includedVoiceMinutes: includedVoiceMinutes,
+        results: lead.calculator_results,
+        additionalVoiceMinutes: Number(lead.calculator_inputs?.callVolume) || 0,
+        includedVoiceMinutes: lead.calculator_inputs?.aiTier === 'starter' ? 0 : 600,
         businessSuggestions: [
           {
             title: "Automate Common Customer Inquiries",
@@ -90,8 +63,14 @@ export const useReportGenerator = ({ lead }: UseReportGeneratorProps) => {
             capabilities: ["Answer product questions", "Provide pricing information", "Schedule demonstrations with sales team"]
           }
         ],
-        tierName: tierName,
-        aiType: aiType
+        tierName: lead.calculator_inputs?.aiTier === 'starter' ? 'Starter Plan' : 
+                 lead.calculator_inputs?.aiTier === 'growth' ? 'Growth Plan' : 
+                 lead.calculator_inputs?.aiTier === 'premium' ? 'Premium Plan' : 'Growth Plan',
+        aiType: lead.calculator_inputs?.aiType === 'chatbot' ? 'Text Only' : 
+                lead.calculator_inputs?.aiType === 'voice' ? 'Basic Voice' : 
+                lead.calculator_inputs?.aiType === 'conversationalVoice' ? 'Conversational Voice' : 
+                lead.calculator_inputs?.aiType === 'both' ? 'Text & Basic Voice' : 
+                lead.calculator_inputs?.aiType === 'both-premium' ? 'Text & Conversational Voice' : 'Text Only'
       });
       
       // Save the PDF
