@@ -1,7 +1,8 @@
 
-import { JsPDFWithAutoTable, SectionParams, ProposalResults } from '../types';
+import { JsPDFWithAutoTable, SectionParams } from '../types';
 import { formatCurrency, formatNumber, formatPercent } from '@/utils/formatters';
 import autoTable from 'jspdf-autotable';
+import { SharedResults } from '../../shared/types';
 
 export const addFinancialImpact = (doc: JsPDFWithAutoTable, yPosition: number, params: SectionParams): number => {
   // Financial Impact Section
@@ -15,7 +16,7 @@ export const addFinancialImpact = (doc: JsPDFWithAutoTable, yPosition: number, p
   
   // Format financial values - use values from results or fall back to defaults
   // Ensure we have valid results with fallbacks for missing properties
-  const resultsData: ProposalResults = params.results || {} as ProposalResults;
+  const resultsData = params.results || {} as SharedResults;
   
   // Safely extract values and ensure they are numbers
   const humanCost = Number(resultsData.humanCostMonthly) || 15000;

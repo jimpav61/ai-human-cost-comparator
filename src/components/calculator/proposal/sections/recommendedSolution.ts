@@ -16,14 +16,31 @@ export const addRecommendedSolution = (doc: JsPDFWithAutoTable, yPosition: numbe
   doc.setTextColor(0, 0, 0); // Regular text in black
   
   // Get tier name and AI type display names
-  const sharedResults = params.results as SharedResults;
-  const tierKey = sharedResults.tierKey || params.tierName?.toLowerCase().includes('starter') ? 'starter' : 
-                  params.tierName?.toLowerCase().includes('growth') ? 'growth' : 
-                  params.tierName?.toLowerCase().includes('premium') ? 'premium' : 'growth';
+  // First try to get from SharedResults, then fall back to params
+  let tierKey = '';
+  let aiTypeKey = '';
+  
+  // Safely access tierKey and aiType from results if available
+  if (params.results) {
+    const sharedResults = params.results as SharedResults;
+    tierKey = sharedResults.tierKey || '';
+    aiTypeKey = sharedResults.aiType || '';
+  }
+  
+  // If not available from results, extract from params.tierName
+  if (!tierKey && params.tierName) {
+    tierKey = params.tierName.toLowerCase().includes('starter') ? 'starter' : 
+              params.tierName.toLowerCase().includes('growth') ? 'growth' : 
+              params.tierName.toLowerCase().includes('premium') ? 'premium' : 'growth';
+  }
+  
+  // If not available from results, extract from params.aiType
+  if (!aiTypeKey && params.aiType) {
+    aiTypeKey = params.aiType.toLowerCase().includes('text only') ? 'chatbot' :
+                params.aiType.toLowerCase().includes('voice') ? 'voice' : 'chatbot';
+  }
   
   const tierName = params.tierName || getTierDisplayName(tierKey);
-  const aiTypeKey = sharedResults.aiType || params.aiType?.toLowerCase().includes('text only') ? 'chatbot' :
-                    params.aiType?.toLowerCase().includes('voice') ? 'voice' : 'chatbot';
   const aiType = params.aiType || getAITypeDisplay(aiTypeKey);
   
   // Get exact fixed price for the tier - always use hardcoded values

@@ -29,7 +29,7 @@ export const generatePDF = (params: GeneratePDFParams): JsPDFWithAutoTable => {
         voice: 0,
         chatbot: 229,
         total: 229,
-        setupFee: 1149
+        setupFee: 749
       },
       basePriceMonthly: 229,
       monthlySavings: 14771,
@@ -54,6 +54,18 @@ export const generatePDF = (params: GeneratePDFParams): JsPDFWithAutoTable => {
   };
   
   console.log("Validated PDF parameters:", validatedParams);
+  
+  // Calculate the additional voice cost for correct total cost
+  const additionalVoiceCost = 
+    validatedParams.additionalVoiceMinutes > 0 ? 
+    validatedParams.additionalVoiceMinutes * 0.12 : 0;
+  
+  // Update total cost to include additional voice minutes
+  if (additionalVoiceCost > 0) {
+    validatedParams.results.aiCostMonthly.voice = additionalVoiceCost;
+    validatedParams.results.aiCostMonthly.total = 
+      validatedParams.results.basePriceMonthly + additionalVoiceCost;
+  }
   
   // Add header section with contact info
   let currentY = addHeaderSection(
