@@ -20,11 +20,20 @@ export const addFinancialImpact = (doc: JsPDFWithAutoTable, yPosition: number, p
   
   // Safely extract values and ensure they are numbers
   const humanCost = Number(resultsData.humanCostMonthly) || 15000;
-  const aiCost = Number(resultsData.aiCostMonthly?.total) || 499;
+  
+  // For AI cost, we need to carefully consider additional voice minutes
+  const basePrice = Number(resultsData.basePriceMonthly) || 499;
+  const additionalVoiceMinutes = Number(params.additionalVoiceMinutes) || 0;
+  const additionalVoiceCost = additionalVoiceMinutes > 0 ? additionalVoiceMinutes * 0.12 : 0;
+  
+  // The total AI cost should include any additional voice costs
+  const aiCost = Number(resultsData.aiCostMonthly?.total) || basePrice + additionalVoiceCost;
   const setupFee = Number(resultsData.aiCostMonthly?.setupFee) || 1149;
-  const monthlySavings = Number(resultsData.monthlySavings) || 14500;
-  const yearlySavings = Number(resultsData.yearlySavings) || 174000;
-  const savingsPercent = Number(resultsData.savingsPercentage) || 96;
+  
+  // Recalculate savings with additional voice costs included
+  const monthlySavings = humanCost - aiCost;
+  const yearlySavings = monthlySavings * 12;
+  const savingsPercent = (monthlySavings / humanCost) * 100;
   
   const humanCostFormatted = formatCurrency(humanCost);
   const aiCostFormatted = formatCurrency(aiCost);

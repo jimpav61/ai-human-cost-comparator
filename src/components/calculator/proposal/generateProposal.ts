@@ -60,6 +60,24 @@ export const generateProposal = (params: GenerateProposalParams) => {
   const aiTypeKey = aiType.toLowerCase().includes('text only') ? 'chatbot' :
                    aiType.toLowerCase().includes('voice') ? 'voice' : 'chatbot';
   
+  // Extract additional voice minutes
+  const additionalVoiceMinutes = typeof params.additionalVoiceMinutes === 'number' ? 
+                               params.additionalVoiceMinutes : 0;
+  
+  // Calculate additional voice cost
+  const additionalVoiceCost = additionalVoiceMinutes > 0 ? additionalVoiceMinutes * 0.12 : 0;
+  
+  // Determine the base price based on tier
+  const basePriceByTier = {
+    starter: 99,
+    growth: 229,
+    premium: 429
+  };
+  const basePrice = basePriceByTier[tierKey] || 229;
+  
+  // Calculate total cost with additional voice
+  const totalCost = basePrice + additionalVoiceCost;
+  
   // Merge provided results with default values to ensure all required properties exist
   // Also, ensure all values are numbers, not strings or undefined
   const safeResults = {
@@ -69,11 +87,11 @@ export const generateProposal = (params: GenerateProposalParams) => {
     yearlySavings: Number(params.results?.yearlySavings) || defaultResults.yearlySavings,
     savingsPercentage: Number(params.results?.savingsPercentage) || defaultResults.savingsPercentage,
     annualPlan: Number(params.results?.annualPlan) || defaultResults.annualPlan,
-    basePriceMonthly: Number(params.results?.basePriceMonthly) || defaultResults.basePriceMonthly,
+    basePriceMonthly: Number(params.results?.basePriceMonthly) || basePrice,
     aiCostMonthly: {
-      voice: Number(params.results?.aiCostMonthly?.voice) || defaultResults.aiCostMonthly.voice,
-      chatbot: Number(params.results?.aiCostMonthly?.chatbot) || defaultResults.aiCostMonthly.chatbot,
-      total: Number(params.results?.aiCostMonthly?.total) || defaultResults.aiCostMonthly.total,
+      voice: additionalVoiceCost, // Always use calculated value
+      chatbot: basePrice, // Always use calculated value
+      total: totalCost, // Always use calculated value
       setupFee: Number(params.results?.aiCostMonthly?.setupFee) || defaultResults.aiCostMonthly.setupFee
     },
     breakEvenPoint: {
@@ -97,8 +115,12 @@ export const generateProposal = (params: GenerateProposalParams) => {
   const reportDate = new Date().toLocaleDateString();
   let yPosition = 20;
 
-  // Add document sections with the safe results
-  const safeParams = { ...params, results: safeResults };
+  // Add document sections with the safe results and additional voice minutes
+  const safeParams = { 
+    ...params, 
+    results: safeResults,
+    additionalVoiceMinutes: additionalVoiceMinutes
+  };
   
   yPosition = addBranding(doc, yPosition);
   yPosition = addIntroduction(doc, yPosition, safeParams);

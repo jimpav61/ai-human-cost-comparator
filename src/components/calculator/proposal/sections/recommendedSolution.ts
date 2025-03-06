@@ -49,6 +49,11 @@ export const addRecommendedSolution = (doc: JsPDFWithAutoTable, yPosition: numbe
   // Get included minutes based on tier
   const includedMinutes = tierKey !== 'starter' ? 600 : 0;
   
+  // Get additional voice minutes and calculate cost
+  const additionalVoiceMinutes = params.additionalVoiceMinutes || 0;
+  const additionalVoiceCost = additionalVoiceMinutes > 0 ? additionalVoiceMinutes * 0.12 : 0;
+  const totalCost = basePrice + additionalVoiceCost;
+  
   // Create plan description based on tier and AI type
   let planText = `Based on your specific needs, we recommend our ${tierName} with ${aiType} capabilities for ${formatCurrency(basePrice)}/month. This provides optimal functionality while maximizing your return on investment.`;
   
@@ -60,7 +65,17 @@ export const addRecommendedSolution = (doc: JsPDFWithAutoTable, yPosition: numbe
   const splitPlanText = doc.splitTextToSize(planText, 170);
   doc.text(splitPlanText, 20, yPosition);
   
-  return yPosition + splitPlanText.length * 7 + 15;
+  yPosition += splitPlanText.length * 7 + 8;
+  
+  // If there are additional voice minutes, add that information
+  if (additionalVoiceMinutes > 0) {
+    const additionalText = `Your proposal includes ${formatNumber(additionalVoiceMinutes)} additional voice minutes at a cost of ${formatCurrency(additionalVoiceCost)}/month, making your total monthly cost ${formatCurrency(totalCost)}.`;
+    const splitAdditionalText = doc.splitTextToSize(additionalText, 170);
+    doc.text(splitAdditionalText, 20, yPosition);
+    yPosition += splitAdditionalText.length * 7 + 8;
+  }
+  
+  return yPosition + 7;
 };
 
 // Helper function to get exact base price for each tier
