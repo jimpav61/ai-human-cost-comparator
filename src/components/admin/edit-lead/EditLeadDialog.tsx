@@ -31,6 +31,22 @@ export const EditLeadDialog = ({ lead, isOpen, onClose, onSave }: EditLeadDialog
     avgChatResolutionTime: 0 // Keep for backward compatibility but no longer used
   };
 
+  // Helper function to validate aiType
+  function validateAiType(aiType: string): 'chatbot' | 'voice' | 'both' | 'conversationalVoice' | 'both-premium' {
+    const validTypes = ['chatbot', 'voice', 'both', 'conversationalVoice', 'both-premium'];
+    return validTypes.includes(aiType) 
+      ? aiType as 'chatbot' | 'voice' | 'both' | 'conversationalVoice' | 'both-premium'
+      : 'chatbot';
+  }
+  
+  // Helper function to validate aiTier
+  function validateAiTier(aiTier: string): 'starter' | 'growth' | 'premium' {
+    const validTiers = ['starter', 'growth', 'premium'];
+    return validTiers.includes(aiTier)
+      ? aiTier as 'starter' | 'growth' | 'premium' 
+      : 'starter';
+  }
+
   // Ensure we have valid calculator inputs by merging defaults with lead data if available
   const [calculatorInputs, setCalculatorInputs] = useState<CalculatorInputs>(() => {
     if (lead.calculator_inputs && typeof lead.calculator_inputs === 'object') {
@@ -59,19 +75,21 @@ export const EditLeadDialog = ({ lead, isOpen, onClose, onSave }: EditLeadDialog
       const results = lead.calculator_results as any;
       if (results.basePriceMonthly) {
         // Determine tier from base price
-        let detectedTier = 'starter' as const;
+        let detectedTier: 'starter' | 'growth' | 'premium' = 'starter';
         if (results.basePriceMonthly === 229) {
-          detectedTier = 'growth' as const;
+          detectedTier = 'growth';
         } else if (results.basePriceMonthly === 429) {
-          detectedTier = 'premium' as const;
+          detectedTier = 'premium';
         }
         
         // Determine appropriate AI type based on tier
-        let detectedAiType: 'chatbot' | 'both' | 'both-premium' = 'chatbot';
+        let detectedAiType: 'chatbot' | 'both' | 'both-premium';
         if (detectedTier === 'growth') {
           detectedAiType = 'both';
         } else if (detectedTier === 'premium') {
           detectedAiType = 'both-premium';
+        } else {
+          detectedAiType = 'chatbot';
         }
         
         // Update default inputs with the detected tier
@@ -88,22 +106,6 @@ export const EditLeadDialog = ({ lead, isOpen, onClose, onSave }: EditLeadDialog
     
     return defaultCalculatorInputs;
   });
-
-  // Helper function to validate aiType
-  function validateAiType(aiType: string): 'chatbot' | 'voice' | 'both' | 'conversationalVoice' | 'both-premium' {
-    const validTypes = ['chatbot', 'voice', 'both', 'conversationalVoice', 'both-premium'];
-    return validTypes.includes(aiType) 
-      ? aiType as 'chatbot' | 'voice' | 'both' | 'conversationalVoice' | 'both-premium'
-      : 'chatbot';
-  }
-  
-  // Helper function to validate aiTier
-  function validateAiTier(aiTier: string): 'starter' | 'growth' | 'premium' {
-    const validTiers = ['starter', 'growth', 'premium'];
-    return validTiers.includes(aiTier)
-      ? aiTier as 'starter' | 'growth' | 'premium' 
-      : 'starter';
-  }
 
   // Use the calculator hook to get calculation results
   const calculationResults = useCalculator(calculatorInputs);
@@ -135,19 +137,21 @@ export const EditLeadDialog = ({ lead, isOpen, onClose, onSave }: EditLeadDialog
       const results = lead.calculator_results as any;
       if (results.basePriceMonthly) {
         // Determine tier from base price
-        let detectedTier = 'starter' as const;
+        let detectedTier: 'starter' | 'growth' | 'premium' = 'starter';
         if (results.basePriceMonthly === 229) {
-          detectedTier = 'growth' as const;
+          detectedTier = 'growth';
         } else if (results.basePriceMonthly === 429) {
-          detectedTier = 'premium' as const;
+          detectedTier = 'premium';
         }
         
         // Determine appropriate AI type based on tier
-        let detectedAiType: 'chatbot' | 'both' | 'both-premium' = 'chatbot';
+        let detectedAiType: 'chatbot' | 'both' | 'both-premium';
         if (detectedTier === 'growth') {
           detectedAiType = 'both';
         } else if (detectedTier === 'premium') {
           detectedAiType = 'both-premium';
+        } else {
+          detectedAiType = 'chatbot';
         }
         
         // Update inputs with the detected tier
