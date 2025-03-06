@@ -17,7 +17,6 @@ export interface LeadFormData {
   employeeCount: number;
 }
 
-// Industry options for dropdown
 const INDUSTRY_OPTIONS = [
   "Agriculture",
   "Automotive",
@@ -50,7 +49,6 @@ const INDUSTRY_OPTIONS = [
   "Other"
 ];
 
-// Free email providers that should be rejected
 const FREE_EMAIL_DOMAINS = [
   "gmail.com",
   "yahoo.com",
@@ -69,7 +67,6 @@ const FREE_EMAIL_DOMAINS = [
   "msn.com"
 ];
 
-// Function to validate business email
 const isBusinessEmail = (email: string): boolean => {
   const domain = email.split('@')[1]?.toLowerCase();
   if (!domain) return false;
@@ -113,7 +110,6 @@ export const LeadForm: React.FC<LeadFormProps> = ({ onSubmit }) => {
       return false;
     }
     
-    // Simple domain validation - exact validation will happen server-side
     const domainPattern = /^(https?:\/\/)?[a-zA-Z0-9][a-zA-Z0-9-]{1,61}[a-zA-Z0-9](?:\.[a-zA-Z]{2,})+/;
     if (!domainPattern.test(website)) {
       setWebsiteError('Please enter a valid website domain');
@@ -140,7 +136,6 @@ export const LeadForm: React.FC<LeadFormProps> = ({ onSubmit }) => {
     setFormData(prev => ({ ...prev, website }));
     
     if (website) {
-      // Don't validate on every keystroke, just clear previous errors
       setWebsiteError('');
     }
   };
@@ -157,7 +152,6 @@ export const LeadForm: React.FC<LeadFormProps> = ({ onSubmit }) => {
       return;
     }
 
-    // Validate email before submission
     if (!validateEmail(formData.email)) {
       toast({
         title: "Invalid Email",
@@ -167,7 +161,6 @@ export const LeadForm: React.FC<LeadFormProps> = ({ onSubmit }) => {
       return;
     }
 
-    // Validate website before submission
     if (!validateWebsite(formData.website)) {
       toast({
         title: "Invalid Website",
@@ -180,7 +173,6 @@ export const LeadForm: React.FC<LeadFormProps> = ({ onSubmit }) => {
     setIsSubmitting(true);
 
     try {
-      // Ensure website has protocol
       let finalWebsite = formData.website;
       if (!finalWebsite.startsWith('http://') && !finalWebsite.startsWith('https://')) {
         finalWebsite = 'https://' + finalWebsite;
@@ -194,7 +186,6 @@ export const LeadForm: React.FC<LeadFormProps> = ({ onSubmit }) => {
         website: finalWebsite,
       });
 
-      // Save the first step data to the database immediately
       const { data, error } = await supabase
         .from('leads')
         .insert([{
@@ -203,9 +194,9 @@ export const LeadForm: React.FC<LeadFormProps> = ({ onSubmit }) => {
           email: formData.email,
           phone_number: formData.phoneNumber,
           website: finalWebsite,
-          industry: "Not yet provided", // Placeholder until step 2
-          employee_count: 0, // Placeholder until step 2
-          calculator_inputs: {}, 
+          industry: "Not yet provided",
+          employee_count: 0,
+          calculator_inputs: {},
           calculator_results: {},
           proposal_sent: false,
           form_completed: false
@@ -221,13 +212,10 @@ export const LeadForm: React.FC<LeadFormProps> = ({ onSubmit }) => {
         const leadRecord = data[0] as any;
         setLeadId(leadRecord.id);
         
-        // Update the form data with the properly formatted website
         setFormData(prev => ({ ...prev, website: finalWebsite }));
         
-        // Always clear the isSubmitting state before changing steps to prevent the button staying in loading state
-        setIsSubmitting(false);
-        
         setStep(2);
+        setIsSubmitting(false);
         
         toast({
           title: "Information Saved!",
@@ -244,7 +232,6 @@ export const LeadForm: React.FC<LeadFormProps> = ({ onSubmit }) => {
         description: "There was an error saving your information. Please try again.",
         variant: "destructive",
       });
-      // Always ensure isSubmitting is set to false in case of error
       setIsSubmitting(false);
     }
   };
@@ -264,7 +251,6 @@ export const LeadForm: React.FC<LeadFormProps> = ({ onSubmit }) => {
     setIsSubmitting(true);
 
     try {
-      // Update the existing record with step 2 data
       if (leadId) {
         console.log("Updating lead:", leadId, {
           industry: formData.industry,
@@ -285,7 +271,6 @@ export const LeadForm: React.FC<LeadFormProps> = ({ onSubmit }) => {
           throw error;
         }
       } else {
-        // If for some reason leadId is missing, use a full submission approach
         console.log("Full submission as fallback");
         
         const finalWebsite = formData.website.startsWith('http') 
@@ -314,7 +299,6 @@ export const LeadForm: React.FC<LeadFormProps> = ({ onSubmit }) => {
         }
       }
 
-      // Call the onSubmit prop with form data
       onSubmit(formData);
       
       toast({
@@ -341,7 +325,6 @@ export const LeadForm: React.FC<LeadFormProps> = ({ onSubmit }) => {
           Calculate Your Potential AI Savings
         </h2>
         
-        {/* Progress indicator */}
         <div className="mb-8">
           <div className="flex justify-between mb-2">
             <span className={`text-sm font-medium ${step === 1 ? 'text-brand-600' : 'text-gray-500'}`}>Contact Information</span>
