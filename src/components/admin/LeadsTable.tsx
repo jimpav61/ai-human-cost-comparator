@@ -240,7 +240,7 @@ export const LeadsTable = ({ leads, onLeadUpdated }: LeadsTableProps) => {
         </div>
       </div>
 
-      {/* Edit Lead Dialog - Fixed this to make it always render conditionally */}
+      {/* Edit Lead Dialog - Render only when a lead is selected */}
       {editingLead && (
         <EditLeadDialog
           lead={editingLead}

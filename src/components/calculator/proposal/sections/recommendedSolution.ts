@@ -47,13 +47,19 @@ export const addRecommendedSolution = (doc: JsPDFWithAutoTable, yPosition: numbe
   const basePrice = getTierBasePrice(tierKey);
   
   // Get included minutes based on tier
-  const includedMinutes = tierKey === 'starter' ? 0 : 600;
+  const includedVoiceMinutes = tierKey === 'starter' ? 0 : 600;
   
   // Get additional voice minutes and calculate correct cost
   const additionalVoiceMinutes = params.additionalVoiceMinutes || 0;
   
+  console.log("Recommended Solution - Voice minutes:", {
+    tier: tierKey,
+    additionalVoiceMinutes,
+    includedVoiceMinutes
+  });
+  
   // Calculate cost only for minutes beyond the included amount
-  const chargeableMinutes = Math.max(0, additionalVoiceMinutes - includedMinutes);
+  const chargeableMinutes = Math.max(0, additionalVoiceMinutes - includedVoiceMinutes);
   const additionalVoiceCost = chargeableMinutes * 0.12;
   const totalCost = basePrice + additionalVoiceCost;
   
@@ -61,8 +67,8 @@ export const addRecommendedSolution = (doc: JsPDFWithAutoTable, yPosition: numbe
   let planText = `Based on your specific needs, we recommend our ${tierName} with ${aiType} capabilities for ${formatCurrency(basePrice)}/month. This provides optimal functionality while maximizing your return on investment.`;
   
   // Add voice minutes information if applicable
-  if (includedMinutes > 0 && (aiType.toLowerCase().includes('voice'))) {
-    planText += ` The plan includes ${formatNumber(includedMinutes)} free voice minutes per month, with additional minutes billed at 12¢ per minute only if you exceed this limit.`;
+  if (includedVoiceMinutes > 0 && (aiType.toLowerCase().includes('voice'))) {
+    planText += ` The plan includes ${formatNumber(includedVoiceMinutes)} free voice minutes per month, with additional minutes billed at 12¢ per minute only if you exceed this limit.`;
   }
   
   const splitPlanText = doc.splitTextToSize(planText, 170);
@@ -74,12 +80,12 @@ export const addRecommendedSolution = (doc: JsPDFWithAutoTable, yPosition: numbe
   if (additionalVoiceMinutes > 0) {
     let additionalText;
     
-    if (additionalVoiceMinutes <= includedMinutes) {
+    if (additionalVoiceMinutes <= includedVoiceMinutes) {
       // If all minutes are covered by the included amount
       additionalText = `Your proposal includes ${formatNumber(additionalVoiceMinutes)} voice minutes, which are fully covered by your ${tierName}'s included minutes. No additional cost for voice minutes.`;
     } else {
       // If there are minutes beyond the included amount
-      additionalText = `Your proposal includes ${formatNumber(additionalVoiceMinutes)} voice minutes (${formatNumber(includedMinutes)} included in your plan + ${formatNumber(chargeableMinutes)} additional minutes at a cost of ${formatCurrency(additionalVoiceCost)}/month), making your total monthly cost ${formatCurrency(totalCost)}.`;
+      additionalText = `Your proposal includes ${formatNumber(additionalVoiceMinutes)} voice minutes (${formatNumber(includedVoiceMinutes)} included in your plan + ${formatNumber(chargeableMinutes)} additional minutes at a cost of ${formatCurrency(additionalVoiceCost)}/month), making your total monthly cost ${formatCurrency(totalCost)}.`;
     }
     
     const splitAdditionalText = doc.splitTextToSize(additionalText, 170);

@@ -35,8 +35,10 @@ export const useProposalGenerator = ({ lead }: UseProposalGeneratorProps) => {
       const aiTier = calculatorInputs?.aiTier || 'growth';
       
       // IMPORTANT: Extract the call volume and make sure it's a number
-      const callVolume = calculatorInputs?.callVolume ? 
-        parseInt(String(calculatorInputs.callVolume), 10) : 0;
+      const callVolume = typeof calculatorInputs?.callVolume === 'number' ? 
+        calculatorInputs.callVolume : 
+        typeof calculatorInputs?.callVolume === 'string' ?
+        parseInt(calculatorInputs.callVolume, 10) : 0;
       
       // Additional voice minutes is exactly equal to the call volume input value
       const additionalVoiceMinutes = callVolume;
@@ -104,7 +106,8 @@ export const useProposalGenerator = ({ lead }: UseProposalGeneratorProps) => {
           voice: additionalVoiceCost,
           chatbot: basePriceMonthly,
           total: totalMonthlyCost,
-          setupFee: aiTier === 'starter' ? 499 : aiTier === 'growth' ? 749 : 999
+          setupFee: calculatorResults.aiCostMonthly?.setupFee || 
+            (aiTier === 'starter' ? 499 : aiTier === 'growth' ? 749 : 999)
         },
         breakEvenPoint: calculatorResults.breakEvenPoint || { 
           voice: 0, 

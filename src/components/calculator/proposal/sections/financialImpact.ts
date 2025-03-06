@@ -18,6 +18,12 @@ export const addFinancialImpact = (doc: JsPDFWithAutoTable, yPosition: number, p
   const additionalVoiceMinutes = Number(params.additionalVoiceMinutes) || 0;
   const includedVoiceMinutes = params.tierName?.toLowerCase().includes('starter') ? 0 : 600;
   
+  console.log("Financial Impact - Voice minutes:", {
+    additionalVoiceMinutes,
+    includedVoiceMinutes,
+    tierName: params.tierName
+  });
+  
   // Calculate voice costs
   const chargeableMinutes = Math.max(0, additionalVoiceMinutes - includedVoiceMinutes);
   const additionalVoiceCost = chargeableMinutes * 0.12;
@@ -123,7 +129,7 @@ export const addFinancialImpact = (doc: JsPDFWithAutoTable, yPosition: number, p
     if (chargeableMinutes > 0) {
       doc.text(`Additional Voice Minutes (${formatNumber(chargeableMinutes)} @ $0.12/min): ${formatCurrency(additionalVoiceCost)}/month`, 20, yPosition);
       yPosition += 6;
-      doc.text(`Total Monthly Cost: ${formatCurrency(totalAICost)}/month`, 20, yPosition);
+      doc.text(`Total Monthly Cost: ${formatCurrency(totalCost)}/month`, 20, yPosition);
     } else {
       doc.text(`Voice Minutes (${formatNumber(additionalVoiceMinutes)}): Included in plan`, 20, yPosition);
     }
