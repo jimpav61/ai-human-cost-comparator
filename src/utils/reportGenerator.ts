@@ -24,8 +24,11 @@ export const generateAndDownloadReport = (lead: Lead) => {
     // Calculate additional voice minutes directly from the calculator inputs
     const aiTier = lead.calculator_inputs?.aiTier || 'growth';
     
-    // Get additional voice minutes directly from inputs
-    const additionalVoiceMinutes = lead.calculator_inputs?.callVolume ? Number(lead.calculator_inputs.callVolume) : 0;
+    // IMPORTANT: For admin reports, we need to explicitly extract the callVolume 
+    // from calculator_inputs to ensure voice minutes are correctly included
+    const additionalVoiceMinutes = lead.calculator_inputs?.callVolume ? 
+      parseInt(String(lead.calculator_inputs.callVolume), 10) : 0;
+    
     const includedVoiceMinutes = aiTier === 'starter' ? 0 : 600;
     
     console.log('[SHARED REPORT] Additional voice minutes:', additionalVoiceMinutes);
@@ -37,7 +40,7 @@ export const generateAndDownloadReport = (lead: Lead) => {
       aiTier === 'premium' ? 429 : 229;
     
     // Calculate additional voice cost - always $0.12 per minute
-    const additionalVoiceCost = additionalVoiceMinutes > 0 ? additionalVoiceMinutes * 0.12 : 0;
+    const additionalVoiceCost = Math.max(0, additionalVoiceMinutes - includedVoiceMinutes) * 0.12;
     const totalMonthlyCost = basePriceMonthly + additionalVoiceCost;
     
     // Ensure calculator_results has basic structure with safe defaults

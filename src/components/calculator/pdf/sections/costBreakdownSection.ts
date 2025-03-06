@@ -19,7 +19,8 @@ export const addCostBreakdownSection = (
   // Ensure we have valid values
   const basePrice = typeof basePriceMonthly === 'number' ? basePriceMonthly : 229;
   
-  // Calculate additional voice cost
+  // Calculate additional voice cost - but only for minutes BEYOND the included amount
+  // For admin panel, we need to explicitly calculate this 
   const additionalVoiceCost = 
     (typeof additionalVoiceMinutes === 'number' && additionalVoiceMinutes > 0) ? 
     additionalVoiceMinutes * 0.12 : 0;
@@ -43,7 +44,7 @@ export const addCostBreakdownSection = (
   
   // Add additional voice minutes if applicable
   if (additionalVoiceMinutes && additionalVoiceMinutes > 0) {
-    tableRows.push([`Additional Voice Minutes (${formatNumber(additionalVoiceMinutes)} @ $0.12/min)`, formatCurrency(additionalVoiceCost)]);
+    tableRows.push([`Additional Voice Minutes (${formatNumber(additionalVoiceMinutes)}) @ $0.12/min`, formatCurrency(additionalVoiceCost)]);
   }
   
   // Add total
