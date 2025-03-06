@@ -32,17 +32,23 @@ export const ReportGenerator = ({ lead, buttonStyle = "default" }: ReportGenerat
       
       // Calculate additional voice minutes directly from the calculator inputs
       const aiTier = lead.calculator_inputs?.aiTier || 'growth';
-      const includedVoiceMinutes = aiTier === 'starter' ? 0 : 600;
       const callVolume = lead.calculator_inputs?.callVolume ? Number(lead.calculator_inputs.callVolume) : 0;
+      
+      // Additional voice minutes is exactly equal to call volume (input field)
       const additionalVoiceMinutes = callVolume;
+      const includedVoiceMinutes = aiTier === 'starter' ? 0 : 600;
       
       console.log('[REPORT] Additional voice minutes:', additionalVoiceMinutes);
       
-      // Prepare safe base price from tier
+      // Prepare safe base price from tier - using exact fixed prices
       const basePriceMonthly = 
         aiTier === 'starter' ? 99 : 
         aiTier === 'growth' ? 229 : 
         aiTier === 'premium' ? 429 : 229;
+      
+      // Calculate additional voice cost - always $0.12 per minute
+      const additionalVoiceCost = additionalVoiceMinutes > 0 ? additionalVoiceMinutes * 0.12 : 0;
+      const totalMonthlyCost = basePriceMonthly + additionalVoiceCost;
       
       // Ensure calculator_results has basic structure with safe defaults
       const calculatorResults = lead.calculator_results || {};
@@ -50,32 +56,36 @@ export const ReportGenerator = ({ lead, buttonStyle = "default" }: ReportGenerat
       // Properly populate aiCostMonthly if it's missing or incomplete
       if (!calculatorResults.aiCostMonthly) {
         calculatorResults.aiCostMonthly = {
-          voice: additionalVoiceMinutes > 0 ? additionalVoiceMinutes * 0.12 : 0,
+          voice: additionalVoiceCost,
           chatbot: basePriceMonthly,
-          total: basePriceMonthly + (additionalVoiceMinutes > 0 ? additionalVoiceMinutes * 0.12 : 0),
+          total: totalMonthlyCost,
           setupFee: aiTier === 'starter' ? 249 : aiTier === 'growth' ? 749 : 1149
         };
       } else {
-        // Ensure all properties exist in aiCostMonthly
-        calculatorResults.aiCostMonthly.voice = additionalVoiceMinutes > 0 ? additionalVoiceMinutes * 0.12 : 0;
-        calculatorResults.aiCostMonthly.chatbot = calculatorResults.aiCostMonthly.chatbot ?? basePriceMonthly;
-        calculatorResults.aiCostMonthly.total = basePriceMonthly + (additionalVoiceMinutes > 0 ? additionalVoiceMinutes * 0.12 : 0);
-        calculatorResults.aiCostMonthly.setupFee = calculatorResults.aiCostMonthly.setupFee ?? (aiTier === 'starter' ? 249 : aiTier === 'growth' ? 749 : 1149);
+        // Ensure all properties exist in aiCostMonthly with correct values
+        calculatorResults.aiCostMonthly.voice = additionalVoiceCost;
+        calculatorResults.aiCostMonthly.chatbot = basePriceMonthly;
+        calculatorResults.aiCostMonthly.total = totalMonthlyCost;
+        calculatorResults.aiCostMonthly.setupFee = calculatorResults.aiCostMonthly.setupFee ?? 
+          (aiTier === 'starter' ? 249 : aiTier === 'growth' ? 749 : 1149);
       }
       
       // Make sure we have a valid base price
       if (!calculatorResults.basePriceMonthly) {
         calculatorResults.basePriceMonthly = basePriceMonthly;
+      } else {
+        calculatorResults.basePriceMonthly = basePriceMonthly; // Override to ensure consistency
       }
       
       // Set reasonable defaults for the rest of the calculation results
       const humanCostMonthly = calculatorResults.humanCostMonthly ?? 15000;
-      const totalMonthlyCost = calculatorResults.aiCostMonthly.total;
       calculatorResults.monthlySavings = calculatorResults.monthlySavings ?? (humanCostMonthly - totalMonthlyCost);
       calculatorResults.yearlySavings = calculatorResults.yearlySavings ?? (calculatorResults.monthlySavings * 12);
-      calculatorResults.savingsPercentage = calculatorResults.savingsPercentage ?? ((humanCostMonthly - totalMonthlyCost) / humanCostMonthly * 100);
+      calculatorResults.savingsPercentage = calculatorResults.savingsPercentage ?? 
+        ((humanCostMonthly - totalMonthlyCost) / humanCostMonthly * 100);
       
       console.log('[REPORT] Prepared calculator results with additionalVoiceMinutes:', additionalVoiceMinutes);
+      console.log('[REPORT] aiCostMonthly:', calculatorResults.aiCostMonthly);
       
       // Prepare report parameters from lead data - ensuring all required fields are present
       const doc = generatePDF({
@@ -86,7 +96,7 @@ export const ReportGenerator = ({ lead, buttonStyle = "default" }: ReportGenerat
         industry: lead.industry || 'Other',
         employeeCount: Number(lead.employee_count) || 5,
         results: calculatorResults,
-        additionalVoiceMinutes: additionalVoiceMinutes,
+        additionalVoiceMinutes: additionalVoiceMinutes, // Explicitly pass the additionalVoiceMinutes
         includedVoiceMinutes: includedVoiceMinutes,
         businessSuggestions: [
           {

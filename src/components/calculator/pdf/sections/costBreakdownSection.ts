@@ -20,8 +20,9 @@ export const addCostBreakdownSection = (
   const basePrice = typeof basePriceMonthly === 'number' ? basePriceMonthly : 229;
   
   // Calculate additional voice cost
-  const additionalVoiceCost = (typeof additionalVoiceMinutes === 'number' && additionalVoiceMinutes > 0) 
-    ? additionalVoiceMinutes * 0.12 : 0;
+  const additionalVoiceCost = 
+    (typeof additionalVoiceMinutes === 'number' && additionalVoiceMinutes > 0) ? 
+    additionalVoiceMinutes * 0.12 : 0;
   
   // Use total cost if provided, otherwise calculate it
   const totalCost = typeof totalMonthlyCost === 'number' ? 

@@ -31,31 +31,40 @@ export const useProposalGenerator = ({ lead }: UseProposalGeneratorProps) => {
       console.log("Calculator results for proposal:", calculatorResults);
       console.log("Calculator inputs for proposal:", calculatorInputs);
       
-      // Calculate additional voice minutes directly from call volume
+      // Get call volume (additional voice minutes) directly from calculator inputs
+      // Ensure it's treated as a number
       const aiTier = calculatorInputs?.aiTier || 'growth';
       const callVolume = calculatorInputs?.callVolume ? Number(calculatorInputs.callVolume) : 0;
+      
+      // Additional voice minutes is exactly equal to the call volume input value
+      // (this matches the logic in the frontend and server)
       const additionalVoiceMinutes = callVolume;
       
       console.log("Additional voice minutes for proposal:", additionalVoiceMinutes);
       
-      // Prepare safe base price from tier
+      // Prepare safe base price from tier - using exact fixed prices
       const basePriceMonthly = 
         aiTier === 'starter' ? 99 : 
         aiTier === 'growth' ? 229 : 
         aiTier === 'premium' ? 429 : 229;
       
+      // Calculate additional voice cost - always $0.12 per minute
+      const additionalVoiceCost = additionalVoiceMinutes > 0 ? additionalVoiceMinutes * 0.12 : 0;
+      const totalMonthlyCost = basePriceMonthly + additionalVoiceCost;
+      
       // Ensure we have a valid structure for calculatorResults
       if (!calculatorResults.aiCostMonthly) {
         calculatorResults.aiCostMonthly = {
-          voice: additionalVoiceMinutes > 0 ? additionalVoiceMinutes * 0.12 : 0,
+          voice: additionalVoiceCost,
           chatbot: basePriceMonthly,
-          total: basePriceMonthly + (additionalVoiceMinutes > 0 ? additionalVoiceMinutes * 0.12 : 0),
+          total: totalMonthlyCost,
           setupFee: aiTier === 'starter' ? 499 : aiTier === 'growth' ? 749 : 999
         };
       } else {
         // Update voice cost calculation to ensure it's accurate
-        calculatorResults.aiCostMonthly.voice = additionalVoiceMinutes > 0 ? additionalVoiceMinutes * 0.12 : 0;
-        calculatorResults.aiCostMonthly.total = basePriceMonthly + (additionalVoiceMinutes > 0 ? additionalVoiceMinutes * 0.12 : 0);
+        calculatorResults.aiCostMonthly.voice = additionalVoiceCost;
+        calculatorResults.aiCostMonthly.chatbot = basePriceMonthly;
+        calculatorResults.aiCostMonthly.total = totalMonthlyCost;
       }
       
       if (!calculatorResults.basePriceMonthly) {
@@ -73,9 +82,9 @@ export const useProposalGenerator = ({ lead }: UseProposalGeneratorProps) => {
       const safeResults = {
         ...calculatorResults,
         aiCostMonthly: {
-          voice: additionalVoiceMinutes > 0 ? additionalVoiceMinutes * 0.12 : 0,
+          voice: additionalVoiceCost,
           chatbot: basePriceMonthly,
-          total: basePriceMonthly + (additionalVoiceMinutes > 0 ? additionalVoiceMinutes * 0.12 : 0),
+          total: totalMonthlyCost,
           setupFee: aiTier === 'starter' ? 499 : aiTier === 'growth' ? 749 : 999
         },
         breakEvenPoint: calculatorResults.breakEvenPoint || { 
@@ -97,6 +106,7 @@ export const useProposalGenerator = ({ lead }: UseProposalGeneratorProps) => {
       };
       
       console.log("Safe results with additional voice cost:", safeResults.aiCostMonthly);
+      console.log("Additional voice minutes being passed to generateProposal:", additionalVoiceMinutes);
       
       // Generate proposal using the same function as frontend
       const doc = generateProposal({
@@ -107,7 +117,7 @@ export const useProposalGenerator = ({ lead }: UseProposalGeneratorProps) => {
         industry: lead.industry || 'Other',
         employeeCount: lead.employee_count || 5,
         results: safeResults,
-        additionalVoiceMinutes: additionalVoiceMinutes,
+        additionalVoiceMinutes: additionalVoiceMinutes, // Explicitly pass the additionalVoiceMinutes
         tierName: calculatorInputs?.aiTier ? 
           (calculatorInputs.aiTier === 'starter' ? 'Starter Plan' : 
           calculatorInputs.aiTier === 'growth' ? 'Growth Plan' : 

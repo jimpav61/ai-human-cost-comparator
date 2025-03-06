@@ -108,9 +108,11 @@ serve(async (req) => {
 
             <div class="section">
               <h3>Recommended Solution: ${getTierDisplayName(aiTier)} with ${getAITypeDisplay(aiType)}</h3>
-              <p>Monthly Price: ${new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD' }).format(basePrice)}</p>
-              ${additionalVoiceMinutes > 0 ? `<p>Additional Voice Minutes (${additionalVoiceMinutes}): ${new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD' }).format(additionalVoiceCost)}</p>` : ''}
-              ${additionalVoiceMinutes > 0 ? `<p>Total Monthly Cost: ${new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD' }).format(totalMonthlyCost)}</p>` : ''}
+              <p>Monthly Base Price: ${new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD' }).format(basePrice)}</p>
+              ${additionalVoiceMinutes > 0 ? 
+                `<p>Additional Voice Minutes (${additionalVoiceMinutes} @ $0.12/min): ${new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD' }).format(additionalVoiceCost)}</p>` : ''}
+              ${additionalVoiceMinutes > 0 ? 
+                `<p>Total Monthly Cost: ${new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD' }).format(totalMonthlyCost)}</p>` : ''}
               <p>We've analyzed your needs and recommend our ${getTierDisplayName(aiTier)} with ${getAITypeDisplay(aiType)} capabilities for optimal results.</p>
             </div>
 
