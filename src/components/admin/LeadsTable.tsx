@@ -1,4 +1,3 @@
-
 import {
   Table,
   TableBody,
@@ -39,19 +38,20 @@ export const LeadsTable = ({ leads, onLeadUpdated }: LeadsTableProps) => {
   };
 
   const handleOpenEditDialog = (lead: Lead) => {
+    console.log("Opening edit dialog for lead:", lead);
     setEditingLead(lead);
     setIsEditDialogOpen(true);
   };
 
   const handleCloseEditDialog = () => {
+    console.log("Closing edit dialog");
     setIsEditDialogOpen(false);
     setEditingLead(null);
   };
 
   const handleSaveLead = async (updatedLead: Lead) => {
+    console.log("Saving lead:", updatedLead);
     try {
-      console.log("Saving updated lead:", updatedLead);
-      
       // Update the lead in the database
       const { error } = await supabase
         .from('leads')
@@ -240,7 +240,7 @@ export const LeadsTable = ({ leads, onLeadUpdated }: LeadsTableProps) => {
         </div>
       </div>
 
-      {/* Edit Lead Dialog */}
+      {/* Edit Lead Dialog - Fixed this to make it always render conditionally */}
       {editingLead && (
         <EditLeadDialog
           lead={editingLead}
