@@ -1,3 +1,4 @@
+
 import {
   Table,
   TableBody,
@@ -17,12 +18,15 @@ import { exportLeadsToCSV } from "@/utils/exportUtils";
 import { useState } from "react";
 import { Card, CardContent } from "@/components/ui/card";
 import { EditLeadDialog } from "./edit-lead/EditLeadDialog";
+import { supabase } from "@/integrations/supabase/client";
+import { toast } from "@/hooks/use-toast";
 
 interface LeadsTableProps {
   leads: Lead[];
+  onLeadUpdated?: () => void; // Add callback for when a lead is updated
 }
 
-export const LeadsTable = ({ leads }: LeadsTableProps) => {
+export const LeadsTable = ({ leads, onLeadUpdated }: LeadsTableProps) => {
   const [expandedLeads, setExpandedLeads] = useState<Record<string, boolean>>({});
   const [editingLead, setEditingLead] = useState<Lead | null>(null);
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
@@ -44,10 +48,46 @@ export const LeadsTable = ({ leads }: LeadsTableProps) => {
     setEditingLead(null);
   };
 
-  const handleSaveLead = (updatedLead: Lead) => {
-    console.log("Saving updated lead:", updatedLead);
-    // Here you would add logic to update the lead in your database
-    // For now, we'll just log it to the console
+  const handleSaveLead = async (updatedLead: Lead) => {
+    try {
+      console.log("Saving updated lead:", updatedLead);
+      
+      // Update the lead in the database
+      const { error } = await supabase
+        .from('leads')
+        .update({
+          name: updatedLead.name,
+          company_name: updatedLead.company_name,
+          email: updatedLead.email,
+          phone_number: updatedLead.phone_number,
+          industry: updatedLead.industry,
+          employee_count: updatedLead.employee_count,
+          website: updatedLead.website,
+          calculator_inputs: updatedLead.calculator_inputs,
+          calculator_results: updatedLead.calculator_results
+        })
+        .eq('id', updatedLead.id);
+      
+      if (error) throw error;
+      
+      toast({
+        title: "Success",
+        description: "Lead updated successfully",
+        variant: "default",
+      });
+      
+      // Call the onLeadUpdated callback if provided
+      if (onLeadUpdated) {
+        onLeadUpdated();
+      }
+    } catch (error) {
+      console.error("Error updating lead:", error);
+      toast({
+        title: "Error",
+        description: `Failed to update lead: ${error instanceof Error ? error.message : 'Unknown error'}`,
+        variant: "destructive",
+      });
+    }
   };
 
   return (
