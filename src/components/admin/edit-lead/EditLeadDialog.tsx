@@ -5,8 +5,6 @@ import { EditLeadTabs } from "./EditLeadTabs";
 import { useCalculator, type CalculatorInputs } from "@/hooks/useCalculator";
 import { Lead } from "@/types/leads";
 import { Button } from "@/components/ui/button";
-import { useAITypeUpdater } from "./hooks/useAITypeUpdater";
-import { AI_RATES } from "@/constants/pricing";
 import { toast } from "@/components/ui/use-toast";
 
 interface EditLeadDialogProps {
@@ -37,10 +35,13 @@ export const EditLeadDialog = ({ lead, isOpen, onClose, onSave }: EditLeadDialog
   const [calculatorInputs, setCalculatorInputs] = useState<CalculatorInputs>(() => {
     if (lead.calculator_inputs && typeof lead.calculator_inputs === 'object') {
       // Merge with defaults to ensure all properties exist
-      return { 
+      const mergedInputs = { 
         ...defaultCalculatorInputs, 
         ...lead.calculator_inputs 
       } as CalculatorInputs;
+      
+      console.log("Initialized calculator inputs from lead:", mergedInputs);
+      return mergedInputs;
     }
     return defaultCalculatorInputs;
   });
@@ -55,10 +56,13 @@ export const EditLeadDialog = ({ lead, isOpen, onClose, onSave }: EditLeadDialog
     
     // Ensure we always have valid calculator inputs when lead changes
     if (lead.calculator_inputs && typeof lead.calculator_inputs === 'object') {
-      setCalculatorInputs({ 
+      const mergedInputs = { 
         ...defaultCalculatorInputs, 
         ...lead.calculator_inputs 
-      } as CalculatorInputs);
+      } as CalculatorInputs;
+      
+      console.log("Updated calculator inputs from lead change:", mergedInputs);
+      setCalculatorInputs(mergedInputs);
     } else {
       setCalculatorInputs(defaultCalculatorInputs);
     }

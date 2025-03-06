@@ -1,7 +1,6 @@
 
 import { JsPDFWithAutoTable, SectionParams } from '../types';
 import { getTierDisplayName, getAITypeDisplay } from '@/components/calculator/pricingDetailsCalculator';
-import { AI_RATES } from '@/constants/pricing';
 import { formatCurrency, formatNumber } from '@/utils/formatters';
 import { SharedResults } from '../../shared/types';
 
@@ -43,7 +42,7 @@ export const addRecommendedSolution = (doc: JsPDFWithAutoTable, yPosition: numbe
   // Determine the correct AI capability display based on the tier
   let displayAIType = params.aiType || getAITypeDisplay(aiTypeKey);
   
-  // Ensure Growth plan never shows as "Text Only" - always include voice capabilities
+  // Ensure Growth plan always shows with voice capabilities
   if (tierKey === 'growth' && displayAIType === 'Text Only') {
     displayAIType = 'Text & Basic Voice';
   }

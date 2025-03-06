@@ -3,10 +3,10 @@ import { CalculatorInputs } from "@/hooks/useCalculator";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { getTierDisplayName } from "@/components/calculator/pricingDetailsCalculator";
+import { getTierDisplayName, getAITypeDisplay } from "@/components/calculator/pricingDetailsCalculator";
 import { AI_RATES } from "@/constants/pricing";
 import { Card } from "@/components/ui/card";
-import { formatCurrency } from "@/utils/formatters";
+import { formatCurrency, formatNumber } from "@/utils/formatters";
 
 interface CalculatorOptionsTabProps {
   calculatorInputs: CalculatorInputs;
@@ -42,6 +42,12 @@ export const CalculatorOptionsTab = ({
   const callVolume = calculatorInputs?.callVolume || 0;
   const additionalVoiceCost = callVolume * 0.12;
   const includedVoiceMinutes = getIncludedVoiceMinutes();
+  
+  // Get current monthly costs for display
+  const basePrice = currentTier === 'starter' ? 99 : 
+                   currentTier === 'growth' ? 229 : 
+                   currentTier === 'premium' ? 429 : 229;
+  const totalMonthlyCost = basePrice + additionalVoiceCost;
 
   return (
     <div className="space-y-6">
@@ -185,16 +191,36 @@ export const CalculatorOptionsTab = ({
       </Card>
       
       <Card className="p-4 shadow-sm bg-gray-50">
-        <h3 className="text-lg font-medium mb-4">Calculation Preview</h3>
+        <h3 className="text-lg font-medium mb-4">Cost Breakdown</h3>
         <div className="text-sm grid grid-cols-2 gap-3">
-          <div>Monthly AI Cost:</div>
-          <div className="font-medium">${safeFormatNumber(calculationResults?.aiCostMonthly?.total || 0)}</div>
+          <div>Plan Base Rate:</div>
+          <div className="font-medium">{formatCurrency(basePrice)}/month</div>
+          
+          {currentTier !== 'starter' && (
+            <>
+              <div>Included Voice Minutes:</div>
+              <div className="font-medium">{formatNumber(includedVoiceMinutes)} minutes</div>
+              
+              {callVolume > 0 && (
+                <>
+                  <div>Additional Voice Minutes:</div>
+                  <div className="font-medium">{formatNumber(callVolume)} minutes</div>
+                  
+                  <div>Additional Voice Cost:</div>
+                  <div className="font-medium">{formatCurrency(additionalVoiceCost)}/month</div>
+                </>
+              )}
+            </>
+          )}
+          
+          <div className="font-medium text-brand-600">Total Monthly Cost:</div>
+          <div className="font-medium text-brand-600">{formatCurrency(totalMonthlyCost)}/month</div>
           
           <div>Setup Fee:</div>
-          <div className="font-medium">${safeFormatNumber(calculationResults?.aiCostMonthly?.setupFee || 0)}</div>
+          <div className="font-medium">{formatCurrency(calculationResults?.aiCostMonthly?.setupFee || 0)}</div>
           
-          <div>Monthly Savings:</div>
-          <div className="font-medium text-green-600">${safeFormatNumber(calculationResults?.monthlySavings || 0)}</div>
+          <div className="mt-3 font-medium text-green-600">Monthly Savings:</div>
+          <div className="mt-3 font-medium text-green-600">{formatCurrency(calculationResults?.monthlySavings || 0)}</div>
           
           <div>Savings Percentage:</div>
           <div className="font-medium text-green-600">{safeFormatNumber(calculationResults?.savingsPercentage || 0)}%</div>
