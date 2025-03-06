@@ -205,8 +205,8 @@ export const LeadForm: React.FC<LeadFormProps> = ({ onSubmit }) => {
           website: finalWebsite,
           industry: "Not yet provided", // Placeholder until step 2
           employee_count: 0, // Placeholder until step 2
-          calculator_inputs: {} as any,
-          calculator_results: {} as any,
+          calculator_inputs: {}, 
+          calculator_results: {},
           proposal_sent: false,
           form_completed: false
         }])
@@ -223,6 +223,9 @@ export const LeadForm: React.FC<LeadFormProps> = ({ onSubmit }) => {
         
         // Update the form data with the properly formatted website
         setFormData(prev => ({ ...prev, website: finalWebsite }));
+        
+        // Always clear the isSubmitting state before changing steps to prevent the button staying in loading state
+        setIsSubmitting(false);
         
         setStep(2);
         
@@ -241,7 +244,7 @@ export const LeadForm: React.FC<LeadFormProps> = ({ onSubmit }) => {
         description: "There was an error saving your information. Please try again.",
         variant: "destructive",
       });
-    } finally {
+      // Always ensure isSubmitting is set to false in case of error
       setIsSubmitting(false);
     }
   };
