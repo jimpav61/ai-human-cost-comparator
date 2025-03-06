@@ -30,11 +30,13 @@ export const ReportGenerator = ({ lead, buttonStyle = "default" }: ReportGenerat
 
       console.log('[REPORT] Starting PDF generation with calculator data');
       
-      // Calculate additional voice minutes
+      // Calculate additional voice minutes directly from the calculator inputs
       const aiTier = lead.calculator_inputs?.aiTier || 'growth';
       const includedVoiceMinutes = aiTier === 'starter' ? 0 : 600;
       const callVolume = lead.calculator_inputs?.callVolume ? Number(lead.calculator_inputs.callVolume) : 0;
       const additionalVoiceMinutes = callVolume;
+      
+      console.log('[REPORT] Additional voice minutes:', additionalVoiceMinutes);
       
       // Prepare safe base price from tier
       const basePriceMonthly = 
@@ -55,9 +57,9 @@ export const ReportGenerator = ({ lead, buttonStyle = "default" }: ReportGenerat
         };
       } else {
         // Ensure all properties exist in aiCostMonthly
-        calculatorResults.aiCostMonthly.voice = calculatorResults.aiCostMonthly.voice ?? (additionalVoiceMinutes > 0 ? additionalVoiceMinutes * 0.12 : 0);
+        calculatorResults.aiCostMonthly.voice = additionalVoiceMinutes > 0 ? additionalVoiceMinutes * 0.12 : 0;
         calculatorResults.aiCostMonthly.chatbot = calculatorResults.aiCostMonthly.chatbot ?? basePriceMonthly;
-        calculatorResults.aiCostMonthly.total = calculatorResults.aiCostMonthly.total ?? (basePriceMonthly + (additionalVoiceMinutes > 0 ? additionalVoiceMinutes * 0.12 : 0));
+        calculatorResults.aiCostMonthly.total = basePriceMonthly + (additionalVoiceMinutes > 0 ? additionalVoiceMinutes * 0.12 : 0);
         calculatorResults.aiCostMonthly.setupFee = calculatorResults.aiCostMonthly.setupFee ?? (aiTier === 'starter' ? 249 : aiTier === 'growth' ? 749 : 1149);
       }
       
