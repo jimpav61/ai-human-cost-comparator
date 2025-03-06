@@ -1,6 +1,6 @@
 
 import { JsPDFWithAutoTable } from '../types';
-import { formatCurrency } from '@/utils/formatters';
+import { formatCurrency, formatNumber } from '@/utils/formatters';
 import autoTable from 'jspdf-autotable';
 
 export const addCostBreakdownSection = (
@@ -42,7 +42,7 @@ export const addCostBreakdownSection = (
   
   // Add additional voice minutes if applicable
   if (additionalVoiceMinutes && additionalVoiceMinutes > 0) {
-    tableRows.push(['Additional Voice Minutes', formatCurrency(additionalVoiceCost)]);
+    tableRows.push([`Additional Voice Minutes (${formatNumber(additionalVoiceMinutes)} @ $0.12/min)`, formatCurrency(additionalVoiceCost)]);
   }
   
   // Add total

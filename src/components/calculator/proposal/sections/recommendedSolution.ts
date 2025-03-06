@@ -47,7 +47,7 @@ export const addRecommendedSolution = (doc: JsPDFWithAutoTable, yPosition: numbe
   const basePrice = getTierBasePrice(typeof tierKey === 'string' ? tierKey : 'growth');
   
   // Get included minutes based on tier
-  const includedMinutes = tierKey !== 'starter' ? 600 : 0;
+  const includedMinutes = tierKey === 'starter' ? 0 : 600;
   
   // Get additional voice minutes and calculate cost
   const additionalVoiceMinutes = params.additionalVoiceMinutes || 0;
@@ -58,7 +58,7 @@ export const addRecommendedSolution = (doc: JsPDFWithAutoTable, yPosition: numbe
   let planText = `Based on your specific needs, we recommend our ${tierName} with ${aiType} capabilities for ${formatCurrency(basePrice)}/month. This provides optimal functionality while maximizing your return on investment.`;
   
   // Add voice minutes information if applicable
-  if (includedMinutes > 0 && (aiType.includes('Voice') || aiType.includes('voice'))) {
+  if (includedMinutes > 0 && (aiType.toLowerCase().includes('voice'))) {
     planText += ` The plan includes ${formatNumber(includedMinutes)} free voice minutes per month, with additional minutes billed at 12¢ per minute only if you exceed this limit.`;
   }
   
@@ -69,7 +69,7 @@ export const addRecommendedSolution = (doc: JsPDFWithAutoTable, yPosition: numbe
   
   // If there are additional voice minutes, add that information
   if (additionalVoiceMinutes > 0) {
-    const additionalText = `Your proposal includes ${formatNumber(additionalVoiceMinutes)} additional voice minutes at a cost of ${formatCurrency(additionalVoiceCost)}/month, making your total monthly cost ${formatCurrency(totalCost)}.`;
+    const additionalText = `Your proposal includes ${formatNumber(additionalVoiceMinutes)} additional voice minutes at a cost of ${formatCurrency(additionalVoiceCost)}/month (12¢ per minute), making your total monthly cost ${formatCurrency(totalCost)}.`;
     const splitAdditionalText = doc.splitTextToSize(additionalText, 170);
     doc.text(splitAdditionalText, 20, yPosition);
     yPosition += splitAdditionalText.length * 7 + 8;
