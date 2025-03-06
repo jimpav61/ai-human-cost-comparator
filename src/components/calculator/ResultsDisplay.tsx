@@ -5,9 +5,8 @@ import { ResultsDetailView } from './ResultsDetailView';
 import { calculatePricingDetails, getTierDisplayName, getAITypeDisplay } from './pricingDetailsCalculator';
 import type { CalculationResults, CalculatorInputs } from '@/hooks/useCalculator';
 import type { LeadData } from './types';
-import { ReportGenerator } from '@/components/admin/document-generator/components/ReportGenerator';
-import { Lead } from '@/types/leads';
 import { generateAndDownloadReport } from '@/utils/reportGenerator';
+import { Lead } from '@/types/leads';
 
 interface ResultsDisplayProps {
   results: CalculationResults;
@@ -59,7 +58,12 @@ export const ResultsDisplay: React.FC<ResultsDisplayProps> = ({
 
       {reportGenerated && (
         <div className="mt-4">
-          <ReportGenerator lead={leadForReport} buttonStyle="large" />
+          <button
+            onClick={() => generateAndDownloadReport(leadForReport)}
+            className="w-full bg-brand-600 hover:bg-brand-700 text-white font-medium py-3 px-4 rounded-lg transition-colors duration-200"
+          >
+            Download Detailed Report
+          </button>
         </div>
       )}
 
