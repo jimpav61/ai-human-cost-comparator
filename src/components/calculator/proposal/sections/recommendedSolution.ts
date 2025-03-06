@@ -40,8 +40,20 @@ export const addRecommendedSolution = (doc: JsPDFWithAutoTable, yPosition: numbe
                 params.aiType.toLowerCase().includes('voice') ? 'voice' : 'chatbot';
   }
   
+  // Determine the correct AI capability display based on the tier
+  let displayAIType = params.aiType || getAITypeDisplay(aiTypeKey);
+  
+  // Ensure Growth plan never shows as "Text Only" - always include voice capabilities
+  if (tierKey === 'growth' && displayAIType === 'Text Only') {
+    displayAIType = 'Text & Basic Voice';
+  }
+  
+  // Premium plan should always include conversational voice
+  if (tierKey === 'premium' && (displayAIType === 'Text Only' || displayAIType === 'Text & Basic Voice')) {
+    displayAIType = 'Text & Conversational Voice';
+  }
+  
   const tierName = params.tierName || getTierDisplayName(tierKey);
-  const aiType = params.aiType || getAITypeDisplay(aiTypeKey);
   
   // Get exact fixed price for the tier - always use hardcoded values
   const basePrice = getTierBasePrice(tierKey);
@@ -63,10 +75,10 @@ export const addRecommendedSolution = (doc: JsPDFWithAutoTable, yPosition: numbe
   const totalCost = basePrice + additionalVoiceCost;
   
   // Create plan description based on tier and AI type
-  let planText = `Based on your specific needs, we recommend our ${tierName} with ${aiType} capabilities for ${formatCurrency(basePrice)}/month. This provides optimal functionality while maximizing your return on investment.`;
+  let planText = `Based on your specific needs, we recommend our ${tierName} with ${displayAIType} capabilities for ${formatCurrency(basePrice)}/month. This provides optimal functionality while maximizing your return on investment.`;
   
   // Add voice minutes information if applicable
-  if (includedVoiceMinutes > 0 && (aiType.toLowerCase().includes('voice'))) {
+  if (includedVoiceMinutes > 0 && tierKey !== 'starter') {
     planText += ` The plan includes ${formatNumber(includedVoiceMinutes)} free voice minutes per month, with additional minutes billed at 12¢ per minute.`;
   }
   

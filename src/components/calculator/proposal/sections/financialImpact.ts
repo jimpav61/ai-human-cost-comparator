@@ -16,21 +16,25 @@ export const addFinancialImpact = (doc: JsPDFWithAutoTable, yPosition: number, p
   
   // Extract and validate voice-related parameters
   const additionalVoiceMinutes = Number(params.additionalVoiceMinutes) || 0;
-  const includedVoiceMinutes = params.tierName?.toLowerCase().includes('starter') ? 0 : 600;
+  const tierKey = params.tierName?.toLowerCase().includes('starter') ? 'starter' : 
+                params.tierName?.toLowerCase().includes('growth') ? 'growth' : 
+                params.tierName?.toLowerCase().includes('premium') ? 'premium' : 'growth';
+  const includedVoiceMinutes = tierKey === 'starter' ? 0 : 600;
   
   console.log("Financial Impact - Voice minutes:", {
     additionalVoiceMinutes,
     includedVoiceMinutes,
-    tierName: params.tierName
+    tierName: params.tierName,
+    tierKey
   });
   
   // Calculate voice costs
   const additionalVoiceCost = additionalVoiceMinutes * 0.12;
   
   // Get base price based on tier
-  const basePrice = params.tierName?.toLowerCase().includes('starter') ? 99 :
-                   params.tierName?.toLowerCase().includes('growth') ? 229 :
-                   params.tierName?.toLowerCase().includes('premium') ? 429 : 229;
+  const basePrice = tierKey === 'starter' ? 99 :
+                   tierKey === 'growth' ? 229 :
+                   tierKey === 'premium' ? 429 : 229;
   
   // Calculate total AI cost
   const totalAICost = basePrice + additionalVoiceCost;
@@ -54,10 +58,13 @@ export const addFinancialImpact = (doc: JsPDFWithAutoTable, yPosition: number, p
   // Introduction text with voice minutes info
   let financialText = `Our AI solution offers significant cost reductions compared to traditional staffing. `;
   
-  if (additionalVoiceMinutes > 0) {
-    financialText += `Your plan includes ${formatNumber(includedVoiceMinutes)} voice minutes at no extra cost, plus ${formatNumber(additionalVoiceMinutes)} additional minutes at $0.12/minute (${formatCurrency(additionalVoiceCost)}/month). `;
-  } else if (includedVoiceMinutes > 0) {
-    financialText += `Your plan includes ${formatNumber(includedVoiceMinutes)} voice minutes at no extra cost. `;
+  // For Growth and Premium plans, always mention voice capabilities
+  if (tierKey !== 'starter') {
+    if (additionalVoiceMinutes > 0) {
+      financialText += `Your plan includes ${formatNumber(includedVoiceMinutes)} voice minutes at no extra cost, plus ${formatNumber(additionalVoiceMinutes)} additional minutes at $0.12/minute (${formatCurrency(additionalVoiceCost)}/month). `;
+    } else {
+      financialText += `Your plan includes ${formatNumber(includedVoiceMinutes)} voice minutes at no extra cost. `;
+    }
   }
   
   financialText += `The potential monthly savings for ${params.companyName} is ${monthlySavingsFormatted}, representing ${savingsPercentFormatted} of your current staffing costs.`;
@@ -124,17 +131,18 @@ export const addFinancialImpact = (doc: JsPDFWithAutoTable, yPosition: number, p
   yPosition += 6;
   doc.text(`Base Plan (${params.tierName}): ${formatCurrency(basePrice)}/month`, 20, yPosition);
   
-  if (includedVoiceMinutes > 0) {
+  // For Growth and Premium plans, always show voice minutes info
+  if (tierKey !== 'starter') {
     yPosition += 6;
     doc.text(`Included Voice Minutes: ${formatNumber(includedVoiceMinutes)} minutes`, 20, yPosition);
-  }
-  
-  if (additionalVoiceMinutes > 0) {
-    yPosition += 6;
-    doc.text(`Additional Voice Minutes: ${formatNumber(additionalVoiceMinutes)} minutes at $0.12/min`, 20, yPosition);
     
-    yPosition += 6;
-    doc.text(`Additional Voice Cost: ${formatCurrency(additionalVoiceCost)}/month`, 20, yPosition);
+    if (additionalVoiceMinutes > 0) {
+      yPosition += 6;
+      doc.text(`Additional Voice Minutes: ${formatNumber(additionalVoiceMinutes)} minutes at $0.12/min`, 20, yPosition);
+      
+      yPosition += 6;
+      doc.text(`Additional Voice Cost: ${formatCurrency(additionalVoiceCost)}/month`, 20, yPosition);
+    }
     
     yPosition += 6;
     doc.setFont(undefined, 'bold');

@@ -51,7 +51,17 @@ serve(async (req) => {
     }
     
     // Get AI type from calculator_inputs if available
-    const aiType = lead.calculator_inputs?.aiType || lead.calculatorResults?.aiType || 'chatbot';
+    let aiType = lead.calculator_inputs?.aiType || lead.calculatorResults?.aiType || 'chatbot';
+    
+    // Ensure Growth plan never shows as "Text Only" - always include voice capabilities
+    if (aiTier === 'growth' && (aiType === 'chatbot' || getAITypeDisplay(aiType) === 'Text Only')) {
+      aiType = 'both'; // Change to "Text & Basic Voice"
+    }
+    
+    // Premium plan should always include conversational voice
+    if (aiTier === 'premium' && (aiType === 'chatbot' || aiType === 'voice' || aiType === 'both')) {
+      aiType = 'both-premium'; // Change to "Text & Conversational Voice"
+    }
     
     // Calculate any additional voice costs
     const includedVoiceMinutes = aiTier === 'starter' ? 0 : 600;
