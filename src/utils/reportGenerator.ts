@@ -24,8 +24,7 @@ export const generateAndDownloadReport = (lead: Lead) => {
     // Calculate additional voice minutes directly from the calculator inputs
     const aiTier = lead.calculator_inputs?.aiTier || 'growth';
     
-    // IMPORTANT: callVolume directly represents the additional minutes
-    // This ensures consistency between frontend and admin reports
+    // Get additional voice minutes directly from inputs
     const additionalVoiceMinutes = lead.calculator_inputs?.callVolume ? Number(lead.calculator_inputs.callVolume) : 0;
     const includedVoiceMinutes = aiTier === 'starter' ? 0 : 600;
     
