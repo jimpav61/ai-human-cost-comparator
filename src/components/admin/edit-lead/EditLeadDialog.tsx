@@ -33,9 +33,17 @@ export const EditLeadDialog = ({ lead, isOpen, onClose, onSave }: EditLeadDialog
     avgChatResolutionTime: 10
   };
 
-  const [calculatorInputs, setCalculatorInputs] = useState<CalculatorInputs>(
-    (lead.calculator_inputs as CalculatorInputs) || defaultCalculatorInputs
-  );
+  // Ensure we have valid calculator inputs by merging defaults with lead data if available
+  const [calculatorInputs, setCalculatorInputs] = useState<CalculatorInputs>(() => {
+    if (lead.calculator_inputs && typeof lead.calculator_inputs === 'object') {
+      // Merge with defaults to ensure all properties exist
+      return { 
+        ...defaultCalculatorInputs, 
+        ...lead.calculator_inputs 
+      } as CalculatorInputs;
+    }
+    return defaultCalculatorInputs;
+  });
 
   // Use the calculator hook to get calculation results
   const calculationResults = useCalculator(calculatorInputs);
@@ -44,7 +52,16 @@ export const EditLeadDialog = ({ lead, isOpen, onClose, onSave }: EditLeadDialog
   useEffect(() => {
     console.log("Lead changed in EditLeadDialog:", lead);
     setFormData(lead);
-    setCalculatorInputs((lead.calculator_inputs as CalculatorInputs) || defaultCalculatorInputs);
+    
+    // Ensure we always have valid calculator inputs when lead changes
+    if (lead.calculator_inputs && typeof lead.calculator_inputs === 'object') {
+      setCalculatorInputs({ 
+        ...defaultCalculatorInputs, 
+        ...lead.calculator_inputs 
+      } as CalculatorInputs);
+    } else {
+      setCalculatorInputs(defaultCalculatorInputs);
+    }
   }, [lead]);
 
   // Handle changes to basic lead information
@@ -54,6 +71,7 @@ export const EditLeadDialog = ({ lead, isOpen, onClose, onSave }: EditLeadDialog
 
   // Handle changes to calculator inputs
   const handleCalculatorInputChange = (field: string, value: any) => {
+    console.log(`Changing calculator input ${field} to:`, value);
     setCalculatorInputs(prev => ({
       ...prev,
       [field]: value
@@ -94,8 +112,10 @@ export const EditLeadDialog = ({ lead, isOpen, onClose, onSave }: EditLeadDialog
   // For debugging
   useEffect(() => {
     console.log("EditLeadDialog mounted/updated. isOpen:", isOpen);
+    console.log("Current calculator inputs:", calculatorInputs);
+    console.log("Current calculation results:", calculationResults);
     return () => console.log("EditLeadDialog unmounted");
-  }, [isOpen]);
+  }, [isOpen, calculatorInputs, calculationResults]);
 
   if (!isOpen) {
     return null;

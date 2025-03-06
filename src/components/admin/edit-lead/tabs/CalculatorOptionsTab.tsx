@@ -19,13 +19,27 @@ export const CalculatorOptionsTab = ({
   calculationResults,
   safeFormatNumber
 }: CalculatorOptionsTabProps) => {
+  // Ensure we have a valid tier value
+  const currentTier = calculatorInputs.aiTier || 'starter';
+  
+  // Safely get the included voice minutes, with fallback to 0
+  const getIncludedVoiceMinutes = () => {
+    if (currentTier === 'starter') return 0;
+    try {
+      return AI_RATES.chatbot[currentTier]?.includedVoiceMinutes || 600;
+    } catch (error) {
+      console.error("Error getting included voice minutes:", error);
+      return 600; // Default for growth/premium tiers
+    }
+  };
+
   return (
     <>
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
         <div className="space-y-2">
           <Label htmlFor="aiTier">AI Plan Tier</Label>
           <Select
-            value={calculatorInputs.aiTier || 'starter'}
+            value={currentTier}
             onValueChange={(value) => handleCalculatorInputChange('aiTier', value)}
           >
             <SelectTrigger>
@@ -38,11 +52,11 @@ export const CalculatorOptionsTab = ({
             </SelectContent>
           </Select>
           <p className="text-xs text-gray-500 mt-1">
-            Current: {getTierDisplayName(calculatorInputs.aiTier || 'starter')}
+            Current: {getTierDisplayName(currentTier)}
           </p>
-          {calculatorInputs.aiTier !== 'starter' && (
+          {currentTier !== 'starter' && (
             <p className="text-xs text-green-600 mt-1">
-              Includes {AI_RATES.chatbot[calculatorInputs.aiTier].includedVoiceMinutes || 0} free voice minutes
+              Includes {getIncludedVoiceMinutes()} free voice minutes
             </p>
           )}
         </div>
@@ -58,18 +72,18 @@ export const CalculatorOptionsTab = ({
             </SelectTrigger>
             <SelectContent>
               <SelectItem value="chatbot">Text Only</SelectItem>
-              <SelectItem value="voice" disabled={calculatorInputs.aiTier === 'starter'}>Basic Voice Only</SelectItem>
-              <SelectItem value="conversationalVoice" disabled={calculatorInputs.aiTier !== 'premium'}>Conversational Voice Only</SelectItem>
-              <SelectItem value="both" disabled={calculatorInputs.aiTier === 'starter'}>Text & Basic Voice</SelectItem>
-              <SelectItem value="both-premium" disabled={calculatorInputs.aiTier !== 'premium'}>Text & Conversational Voice</SelectItem>
+              <SelectItem value="voice" disabled={currentTier === 'starter'}>Basic Voice Only</SelectItem>
+              <SelectItem value="conversationalVoice" disabled={currentTier !== 'premium'}>Conversational Voice Only</SelectItem>
+              <SelectItem value="both" disabled={currentTier === 'starter'}>Text & Basic Voice</SelectItem>
+              <SelectItem value="both-premium" disabled={currentTier !== 'premium'}>Text & Conversational Voice</SelectItem>
             </SelectContent>
           </Select>
-          {calculatorInputs.aiTier === 'starter' && calculatorInputs.aiType !== 'chatbot' && (
+          {currentTier === 'starter' && calculatorInputs.aiType !== 'chatbot' && (
             <p className="text-xs text-amber-600 mt-1">
               Starter Plan only supports text capabilities
             </p>
           )}
-          {calculatorInputs.aiTier !== 'premium' && (calculatorInputs.aiType === 'conversationalVoice' || calculatorInputs.aiType === 'both-premium') && (
+          {currentTier !== 'premium' && (calculatorInputs.aiType === 'conversationalVoice' || calculatorInputs.aiType === 'both-premium') && (
             <p className="text-xs text-amber-600 mt-1">
               Conversational voice requires Premium Plan
             </p>
@@ -131,11 +145,11 @@ export const CalculatorOptionsTab = ({
             type="number"
             value={calculatorInputs.callVolume || ''}
             onChange={(e) => handleCalculatorInputChange('callVolume', Number(e.target.value))}
-            disabled={calculatorInputs.aiTier === 'starter'}
+            disabled={currentTier === 'starter'}
           />
-          {calculatorInputs.aiTier !== 'starter' && (
+          {currentTier !== 'starter' && (
             <p className="text-xs text-green-600 mt-1">
-              {AI_RATES.chatbot[calculatorInputs.aiTier].includedVoiceMinutes || 0} minutes included free
+              {getIncludedVoiceMinutes()} minutes included free
             </p>
           )}
         </div>
@@ -147,7 +161,7 @@ export const CalculatorOptionsTab = ({
             type="number"
             value={calculatorInputs.avgCallDuration || ''}
             onChange={(e) => handleCalculatorInputChange('avgCallDuration', Number(e.target.value))}
-            disabled={calculatorInputs.aiTier === 'starter'}
+            disabled={currentTier === 'starter'}
           />
         </div>
         
@@ -166,16 +180,16 @@ export const CalculatorOptionsTab = ({
         <h3 className="text-sm font-medium text-gray-900 mb-3">Recalculated Values Preview:</h3>
         <div className="text-sm grid grid-cols-2 gap-2">
           <div>Monthly AI Cost:</div>
-          <div className="font-medium">${safeFormatNumber(calculationResults.aiCostMonthly.total)}</div>
+          <div className="font-medium">${safeFormatNumber(calculationResults?.aiCostMonthly?.total || 0)}</div>
           
           <div>Setup Fee:</div>
-          <div className="font-medium">${safeFormatNumber(calculationResults.aiCostMonthly.setupFee)}</div>
+          <div className="font-medium">${safeFormatNumber(calculationResults?.aiCostMonthly?.setupFee || 0)}</div>
           
           <div>Monthly Savings:</div>
-          <div className="font-medium text-green-600">${safeFormatNumber(calculationResults.monthlySavings)}</div>
+          <div className="font-medium text-green-600">${safeFormatNumber(calculationResults?.monthlySavings || 0)}</div>
           
           <div>Savings Percentage:</div>
-          <div className="font-medium text-green-600">{safeFormatNumber(calculationResults.savingsPercentage)}%</div>
+          <div className="font-medium text-green-600">{safeFormatNumber(calculationResults?.savingsPercentage || 0)}%</div>
         </div>
       </div>
     </>

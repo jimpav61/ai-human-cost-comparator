@@ -70,7 +70,20 @@ export const useCalculator = (inputs: CalculatorInputs): CalculationResults => {
   }, []);
 
   useEffect(() => {
-    console.log("Calculating with inputs:", inputs);
+    // Ensure we have valid inputs - use defaults if needed
+    const validInputs: CalculatorInputs = {
+      aiType: inputs.aiType || 'chatbot',
+      aiTier: inputs.aiTier || 'starter',
+      role: inputs.role || 'customerService',
+      numEmployees: inputs.numEmployees || 5,
+      callVolume: typeof inputs.callVolume === 'number' ? inputs.callVolume : 0,
+      avgCallDuration: inputs.avgCallDuration || 3,
+      chatVolume: inputs.chatVolume || 2000,
+      avgChatLength: inputs.avgChatLength || 8,
+      avgChatResolutionTime: inputs.avgChatResolutionTime || 10
+    };
+    
+    console.log("Calculating with validated inputs:", validInputs);
     console.log("Using AI rates:", aiRates);
     
     // Standard time calculations
@@ -82,12 +95,12 @@ export const useCalculator = (inputs: CalculatorInputs): CalculationResults => {
     // Calculate human resource time usage
     const dailyHoursPerEmployee = HOURS_PER_SHIFT;
     const weeklyHoursPerEmployee = dailyHoursPerEmployee * DAYS_PER_WEEK;
-    const weeklyTotalHours = weeklyHoursPerEmployee * inputs.numEmployees;
+    const weeklyTotalHours = weeklyHoursPerEmployee * validInputs.numEmployees;
     const monthlyTotalHours = (weeklyTotalHours * WEEKS_PER_YEAR) / MONTHS_PER_YEAR;
     const yearlyTotalHours = weeklyTotalHours * WEEKS_PER_YEAR;
 
     // Calculate human resource costs
-    const baseHourlyRate = HUMAN_HOURLY_RATES[inputs.role];
+    const baseHourlyRate = HUMAN_HOURLY_RATES[validInputs.role];
     const hourlyRateWithBenefits = baseHourlyRate * 1.3; // Add 30% for benefits
     const monthlyHumanCost = hourlyRateWithBenefits * monthlyTotalHours;
 
@@ -99,36 +112,50 @@ export const useCalculator = (inputs: CalculatorInputs): CalculationResults => {
     };
     
     // Get the exact fixed price for the selected tier
-    const tierBase = hardcodedBasePrices[inputs.aiTier];
+    const tierBase = hardcodedBasePrices[validInputs.aiTier];
     
     // Safe setup fee retrieval with fallback
     let setupFee = 0;
-    if (aiRates.chatbot[inputs.aiTier] && 'setupFee' in aiRates.chatbot[inputs.aiTier]) {
-      setupFee = aiRates.chatbot[inputs.aiTier].setupFee;
-    } else {
-      // Fallback to default values
-      setupFee = inputs.aiTier === 'starter' ? 249 : inputs.aiTier === 'growth' ? 749 : 1149;
+    try {
+      if (aiRates.chatbot && 
+          aiRates.chatbot[validInputs.aiTier] && 
+          'setupFee' in aiRates.chatbot[validInputs.aiTier]) {
+        setupFee = aiRates.chatbot[validInputs.aiTier].setupFee;
+      } else {
+        // Fallback to default values
+        setupFee = validInputs.aiTier === 'starter' ? 249 : validInputs.aiTier === 'growth' ? 749 : 1149;
+      }
+    } catch (error) {
+      console.error("Error getting setup fee:", error);
+      setupFee = validInputs.aiTier === 'starter' ? 249 : validInputs.aiTier === 'growth' ? 749 : 1149;
     }
     
     // Safe annual plan retrieval with fallback
     let annualPlan = 0;
-    if (aiRates.chatbot[inputs.aiTier] && 'annualPrice' in aiRates.chatbot[inputs.aiTier]) {
-      annualPlan = aiRates.chatbot[inputs.aiTier].annualPrice;
-    } else {
-      // Fallback to default values
-      annualPlan = inputs.aiTier === 'starter' ? 990 : inputs.aiTier === 'growth' ? 2290 : 4290;
+    try {
+      if (aiRates.chatbot && 
+          aiRates.chatbot[validInputs.aiTier] && 
+          'annualPrice' in aiRates.chatbot[validInputs.aiTier]) {
+        annualPlan = aiRates.chatbot[validInputs.aiTier].annualPrice;
+      } else {
+        // Fallback to default values
+        annualPlan = validInputs.aiTier === 'starter' ? 990 : validInputs.aiTier === 'growth' ? 2290 : 4290;
+      }
+    } catch (error) {
+      console.error("Error getting annual plan price:", error);
+      annualPlan = validInputs.aiTier === 'starter' ? 990 : validInputs.aiTier === 'growth' ? 2290 : 4290;
     }
     
-    console.log(`Using EXACT pricing for ${inputs.aiTier} tier: ${tierBase}/month`);
+    console.log(`Using EXACT pricing for ${validInputs.aiTier} tier: ${tierBase}/month`);
     
     // Calculate additional voice costs - input field is now the ADDITIONAL minutes
     let additionalVoiceCost = 0;
-    const includedVoiceMinutes = inputs.aiTier === 'starter' ? 0 : 600;
+    const includedVoiceMinutes = validInputs.aiTier === 'starter' ? 0 : 600;
     
     // inputs.callVolume now directly represents the additional minutes
-    const extraVoiceMinutes = inputs.callVolume;
+    const extraVoiceMinutes = validInputs.callVolume;
     
-    if (extraVoiceMinutes > 0 && inputs.aiTier !== 'starter') {
+    if (extraVoiceMinutes > 0 && validInputs.aiTier !== 'starter') {
       // Always use 12¢ per minute for additional voice minutes
       const additionalMinuteRate = 0.12;
       additionalVoiceCost = extraVoiceMinutes * additionalMinuteRate;
@@ -171,7 +198,7 @@ export const useCalculator = (inputs: CalculatorInputs): CalculationResults => {
       savingsPercentage: savingsPercentage,
       breakEvenPoint: { 
         voice: extraVoiceMinutes,
-        chatbot: Math.ceil(totalMonthlyCost / ((HUMAN_HOURLY_RATES[inputs.role] * 1.3) / 60))
+        chatbot: Math.ceil(totalMonthlyCost / ((HUMAN_HOURLY_RATES[validInputs.role] * 1.3) / 60))
       },
       humanHours: {
         dailyPerEmployee: dailyHoursPerEmployee,
