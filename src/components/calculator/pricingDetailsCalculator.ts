@@ -1,4 +1,3 @@
-
 import { formatCurrency } from '@/utils/formatters';
 import type { CalculatorInputs } from '@/hooks/useCalculator';
 import type { PricingDetail } from './types';
@@ -46,20 +45,6 @@ export const calculatePricingDetails = (inputs: CalculatorInputs): PricingDetail
       ? totalVoiceMinutes : null,
     monthlyCost: baseRate
   });
-  
-  // Add additional voice minutes if applicable
-  if (extraVoiceMinutes > 0 && inputs.aiTier !== 'starter') {
-    // Always use 12¢ per minute for additional voice minutes
-    const additionalMinuteRate = 0.12;
-    pricingDetails.push({
-      title: 'Additional Voice Minutes',
-      base: 0,
-      rate: `${formatCurrency(additionalMinuteRate)}/minute`,
-      totalMessages: null,
-      totalMinutes: extraVoiceMinutes,
-      monthlyCost: additionalVoiceCost
-    });
-  }
 
   return pricingDetails;
 };
