@@ -4,6 +4,13 @@ import type { CalculatorInputs } from '@/hooks/useCalculator';
 import { toast } from "@/components/ui/use-toast";
 import { Input } from "@/components/ui/input";
 import { formatCurrency } from '@/utils/formatters';
+import { 
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue
+} from "@/components/ui/select";
 
 interface VoiceConfigSectionProps {
   callVolume: number;
@@ -18,6 +25,9 @@ export const VoiceConfigSection: React.FC<VoiceConfigSectionProps> = ({
 }) => {
   const includedMinutes = aiTier === 'starter' ? 0 : 600;
   const isStarterPlan = aiTier === 'starter';
+  
+  // Create preset volume options in increments of 50
+  const volumeOptions = Array.from({ length: 21 }, (_, i) => i * 50);
   
   // Reset call volume to 0 when tier changes to starter
   useEffect(() => {
@@ -49,7 +59,6 @@ export const VoiceConfigSection: React.FC<VoiceConfigSectionProps> = ({
   };
   
   // Calculate additional voice minutes for display
-  // No change to this calculation - callVolume now directly represents additional minutes
   const additionalVoiceCost = callVolume * 0.12; // Always 12¢ per minute
   
   return (
@@ -58,15 +67,22 @@ export const VoiceConfigSection: React.FC<VoiceConfigSectionProps> = ({
         <label className="block text-sm font-medium text-gray-700 mb-1">
           Additional Voice Minutes
         </label>
-        <Input 
-          type="number" 
-          min={0}
-          step="50"
-          value={callVolume}
-          onChange={(e) => handleCallVolumeChange(parseInt(e.target.value) || 0)}
-          className="calculator-input"
-          disabled={isStarterPlan} // Disable for starter plan
-        />
+        <Select
+          value={callVolume.toString()}
+          onValueChange={(value) => handleCallVolumeChange(parseInt(value))}
+          disabled={isStarterPlan}
+        >
+          <SelectTrigger className="calculator-input border border-red-100 focus:border-red-300">
+            <SelectValue placeholder="Select volume" />
+          </SelectTrigger>
+          <SelectContent>
+            {volumeOptions.map((option) => (
+              <SelectItem key={option} value={option.toString()}>
+                {option} minutes
+              </SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
         {!isStarterPlan && includedMinutes > 0 && (
           <p className="text-xs text-green-600 mt-1">
             Your plan includes {includedMinutes} free voice minutes per month

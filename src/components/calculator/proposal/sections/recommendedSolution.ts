@@ -58,9 +58,8 @@ export const addRecommendedSolution = (doc: JsPDFWithAutoTable, yPosition: numbe
     includedVoiceMinutes
   });
   
-  // Calculate cost only for minutes beyond the included amount
-  const chargeableMinutes = Math.max(0, additionalVoiceMinutes - includedVoiceMinutes);
-  const additionalVoiceCost = chargeableMinutes * 0.12;
+  // Calculate cost for additional minutes
+  const additionalVoiceCost = additionalVoiceMinutes * 0.12;
   const totalCost = basePrice + additionalVoiceCost;
   
   // Create plan description based on tier and AI type
@@ -68,7 +67,7 @@ export const addRecommendedSolution = (doc: JsPDFWithAutoTable, yPosition: numbe
   
   // Add voice minutes information if applicable
   if (includedVoiceMinutes > 0 && (aiType.toLowerCase().includes('voice'))) {
-    planText += ` The plan includes ${formatNumber(includedVoiceMinutes)} free voice minutes per month, with additional minutes billed at 12¢ per minute only if you exceed this limit.`;
+    planText += ` The plan includes ${formatNumber(includedVoiceMinutes)} free voice minutes per month, with additional minutes billed at 12¢ per minute.`;
   }
   
   const splitPlanText = doc.splitTextToSize(planText, 170);
@@ -78,15 +77,7 @@ export const addRecommendedSolution = (doc: JsPDFWithAutoTable, yPosition: numbe
   
   // If there are additional voice minutes, add that information
   if (additionalVoiceMinutes > 0) {
-    let additionalText;
-    
-    if (additionalVoiceMinutes <= includedVoiceMinutes) {
-      // If all minutes are covered by the included amount
-      additionalText = `Your proposal includes ${formatNumber(additionalVoiceMinutes)} voice minutes, which are fully covered by your ${tierName}'s included minutes. No additional cost for voice minutes.`;
-    } else {
-      // If there are minutes beyond the included amount
-      additionalText = `Your proposal includes ${formatNumber(additionalVoiceMinutes)} voice minutes (${formatNumber(includedVoiceMinutes)} included in your plan + ${formatNumber(chargeableMinutes)} additional minutes at a cost of ${formatCurrency(additionalVoiceCost)}/month), making your total monthly cost ${formatCurrency(totalCost)}.`;
-    }
+    let additionalText = `Your proposal includes ${formatNumber(additionalVoiceMinutes)} additional voice minutes at 12¢ per minute (${formatCurrency(additionalVoiceCost)}/month), making your total monthly cost ${formatCurrency(totalCost)}.`;
     
     const splitAdditionalText = doc.splitTextToSize(additionalText, 170);
     doc.text(splitAdditionalText, 20, yPosition);

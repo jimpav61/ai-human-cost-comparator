@@ -63,6 +63,22 @@ export const PricingDetails: React.FC<PricingDetailsProps> = ({
           </div>
         </div>
       )}
+      
+      {extraVoiceMinutes > 0 && (
+        <div className="border-b border-gray-200 pb-3">
+          <div className="flex justify-between items-center mb-2">
+            <span className="font-medium text-gray-900">Additional Voice Minutes</span>
+            <span className="text-brand-600 font-semibold">{formatNumber(extraVoiceMinutes)} minutes</span>
+          </div>
+          <div className="flex justify-between items-center text-sm text-gray-600">
+            <div className="flex items-center">
+              <Clock className="h-4 w-4 mr-1" />
+              At 12¢ per minute
+            </div>
+            <span className="text-brand-600 font-medium">{formatCurrency(additionalVoiceCost)}</span>
+          </div>
+        </div>
+      )}
 
       {details.map((detail, index) => (
         <div key={index} className="border-b border-gray-200 pb-3 last:border-0 last:pb-0">
@@ -81,15 +97,6 @@ export const PricingDetails: React.FC<PricingDetailsProps> = ({
               <div className="flex items-center">
                 <Clock className="h-4 w-4 mr-1" />
                 Monthly message capacity: {formatNumber(detail.totalMessages)} messages
-              </div>
-            )}
-            {detail.totalMinutes && (
-              <div className="flex justify-between items-center">
-                <div className="flex items-center">
-                  <Clock className="h-4 w-4 mr-1" />
-                  Additional voice minutes: {formatNumber(detail.totalMinutes)} minutes
-                </div>
-                <span className="text-brand-600 font-medium">{formatCurrency(detail.totalMinutes * 0.12)}</span>
               </div>
             )}
           </div>

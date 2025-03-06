@@ -35,6 +35,9 @@ export const CalculatorOptionsTab = ({
     }
   };
   
+  // Create preset volume options in increments of 50
+  const volumeOptions = Array.from({ length: 21 }, (_, i) => i * 50);
+  
   // Calculate the additional voice cost
   const callVolume = calculatorInputs?.callVolume || 0;
   const additionalVoiceCost = callVolume * 0.12;
@@ -151,14 +154,22 @@ export const CalculatorOptionsTab = ({
           
           <div className="space-y-2">
             <Label htmlFor="callVolume" className="text-sm font-medium">Additional Voice Minutes</Label>
-            <Input
-              id="callVolume"
-              type="number"
-              value={calculatorInputs?.callVolume || ''}
-              onChange={(e) => handleCalculatorInputChange('callVolume', Number(e.target.value))}
+            <Select
+              value={(calculatorInputs?.callVolume || 0).toString()}
+              onValueChange={(value) => handleCalculatorInputChange('callVolume', Number(value))}
               disabled={currentTier === 'starter'}
-              className="w-full border border-red-100 focus:border-red-300"
-            />
+            >
+              <SelectTrigger className="w-full">
+                <SelectValue placeholder="Select volume" />
+              </SelectTrigger>
+              <SelectContent>
+                {volumeOptions.map((option) => (
+                  <SelectItem key={option} value={option.toString()}>
+                    {option} minutes
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
             {currentTier !== 'starter' && (
               <p className="text-xs text-green-600 mt-1">
                 {includedVoiceMinutes} minutes included free
