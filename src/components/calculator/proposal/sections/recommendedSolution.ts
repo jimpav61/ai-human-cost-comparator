@@ -53,7 +53,8 @@ export const addRecommendedSolution = (doc: JsPDFWithAutoTable, yPosition: numbe
   const additionalVoiceMinutes = params.additionalVoiceMinutes || 0;
   
   // Calculate cost only for minutes beyond the included amount
-  const additionalVoiceCost = Math.max(0, additionalVoiceMinutes - includedMinutes) * 0.12;
+  const chargeableMinutes = Math.max(0, additionalVoiceMinutes - includedMinutes);
+  const additionalVoiceCost = chargeableMinutes * 0.12;
   const totalCost = basePrice + additionalVoiceCost;
   
   // Create plan description based on tier and AI type
@@ -78,8 +79,7 @@ export const addRecommendedSolution = (doc: JsPDFWithAutoTable, yPosition: numbe
       additionalText = `Your proposal includes ${formatNumber(additionalVoiceMinutes)} voice minutes, which are fully covered by your ${tierName}'s included minutes. No additional cost for voice minutes.`;
     } else {
       // If there are minutes beyond the included amount
-      const extraMinutes = additionalVoiceMinutes - includedMinutes;
-      additionalText = `Your proposal includes ${formatNumber(additionalVoiceMinutes)} voice minutes (${formatNumber(includedMinutes)} included in your plan + ${formatNumber(extraMinutes)} additional minutes at a cost of ${formatCurrency(additionalVoiceCost)}/month), making your total monthly cost ${formatCurrency(totalCost)}.`;
+      additionalText = `Your proposal includes ${formatNumber(additionalVoiceMinutes)} voice minutes (${formatNumber(includedMinutes)} included in your plan + ${formatNumber(chargeableMinutes)} additional minutes at a cost of ${formatCurrency(additionalVoiceCost)}/month), making your total monthly cost ${formatCurrency(totalCost)}.`;
     }
     
     const splitAdditionalText = doc.splitTextToSize(additionalText, 170);

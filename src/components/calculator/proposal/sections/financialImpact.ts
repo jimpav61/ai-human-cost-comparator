@@ -27,13 +27,14 @@ export const addFinancialImpact = (doc: JsPDFWithAutoTable, yPosition: number, p
   // Extract voice minutes and included minutes
   const additionalVoiceMinutes = Number(params.additionalVoiceMinutes) || 0;
   const includedVoiceMinutes = Number(params.includedVoiceMinutes) || 
-                              (params.tierName?.toLowerCase().includes('starter') ? 0 : 600);
+                               (params.tierName?.toLowerCase().includes('starter') ? 0 : 600);
   
   // Calculate additional voice cost - only for minutes beyond the included amount
-  const additionalVoiceCost = Math.max(0, additionalVoiceMinutes - includedVoiceMinutes) * 0.12;
+  const chargeableMinutes = Math.max(0, additionalVoiceMinutes - includedVoiceMinutes);
+  const additionalVoiceCost = chargeableMinutes * 0.12;
   
   // The total AI cost should include any additional voice costs
-  const aiCost = Number(resultsData.aiCostMonthly?.total) || basePrice + additionalVoiceCost;
+  const aiCost = basePrice + additionalVoiceCost;
   const setupFee = Number(resultsData.aiCostMonthly?.setupFee) || 1149;
   
   // Recalculate savings with additional voice costs included
@@ -49,7 +50,16 @@ export const addFinancialImpact = (doc: JsPDFWithAutoTable, yPosition: number, p
   const savingsPercentFormatted = formatPercent(savingsPercent);
   
   // Introduction text for financial impact
-  const financialText = `Our AI solution offers significant cost reductions compared to traditional staffing. The potential monthly savings for ${params.companyName} is ${monthlySavingsFormatted}, which represents ${savingsPercentFormatted} of your current staffing costs for this function.`;
+  let financialText = `Our AI solution offers significant cost reductions compared to traditional staffing. The potential monthly savings for ${params.companyName} is ${monthlySavingsFormatted}, which represents ${savingsPercentFormatted} of your current staffing costs for this function.`;
+  
+  // Add voice minutes information if applicable
+  if (additionalVoiceMinutes > 0) {
+    if (chargeableMinutes > 0) {
+      financialText += ` Your solution includes ${formatNumber(additionalVoiceMinutes)} voice minutes (${formatNumber(includedVoiceMinutes)} included in your plan + ${formatNumber(chargeableMinutes)} additional minutes at ${formatCurrency(additionalVoiceCost)}).`;
+    } else {
+      financialText += ` Your solution includes ${formatNumber(additionalVoiceMinutes)} voice minutes, which are fully covered within your plan's included minutes.`;
+    }
+  }
   
   const splitFinancialText = doc.splitTextToSize(financialText, 170);
   doc.text(splitFinancialText, 20, yPosition);
@@ -104,6 +114,28 @@ export const addFinancialImpact = (doc: JsPDFWithAutoTable, yPosition: number, p
   yPosition += 7;
   
   doc.text(`Setup fee payback period: ${paybackPeriod} months`, 20, yPosition);
+  
+  // Add explicit breakdown of costs if there are additional voice minutes
+  if (additionalVoiceMinutes > 0) {
+    yPosition += 10;
+    doc.setFontSize(11);
+    doc.text("Cost Breakdown:", 20, yPosition);
+    
+    yPosition += 6;
+    doc.text(`Base Plan (${params.tierName}): ${formatCurrency(basePrice)}/month`, 20, yPosition);
+    
+    yPosition += 6;
+    if (chargeableMinutes > 0) {
+      doc.text(`Additional Voice Minutes (${formatNumber(chargeableMinutes)} @ $0.12/min): ${formatCurrency(additionalVoiceCost)}/month`, 20, yPosition);
+    } else {
+      doc.text(`Voice Minutes (${formatNumber(additionalVoiceMinutes)}): Included in plan`, 20, yPosition);
+    }
+    
+    if (chargeableMinutes > 0) {
+      yPosition += 6;
+      doc.text(`Total Monthly Cost: ${formatCurrency(aiCost)}/month`, 20, yPosition);
+    }
+  }
   
   return yPosition + 15;
 };
