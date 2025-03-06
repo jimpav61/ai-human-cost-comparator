@@ -7,6 +7,7 @@ import type { CalculationResults, CalculatorInputs } from '@/hooks/useCalculator
 import type { LeadData } from './types';
 import { ReportGenerator } from '@/components/admin/document-generator/components/ReportGenerator';
 import { Lead } from '@/types/leads';
+import { generateAndDownloadReport } from '@/utils/reportGenerator';
 
 interface ResultsDisplayProps {
   results: CalculationResults;
