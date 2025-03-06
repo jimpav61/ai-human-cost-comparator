@@ -129,7 +129,7 @@ export const addFinancialImpact = (doc: JsPDFWithAutoTable, yPosition: number, p
     if (chargeableMinutes > 0) {
       doc.text(`Additional Voice Minutes (${formatNumber(chargeableMinutes)} @ $0.12/min): ${formatCurrency(additionalVoiceCost)}/month`, 20, yPosition);
       yPosition += 6;
-      doc.text(`Total Monthly Cost: ${formatCurrency(totalCost)}/month`, 20, yPosition);
+      doc.text(`Total Monthly Cost: ${formatCurrency(totalAICost)}/month`, 20, yPosition);
     } else {
       doc.text(`Voice Minutes (${formatNumber(additionalVoiceMinutes)}): Included in plan`, 20, yPosition);
     }
