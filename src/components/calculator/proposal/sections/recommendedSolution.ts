@@ -75,13 +75,27 @@ export const addRecommendedSolution = (doc: JsPDFWithAutoTable, yPosition: numbe
   
   yPosition += splitPlanText.length * 7 + 8;
   
-  // If there are additional voice minutes, add that information
+  // If there are additional voice minutes, add that information in a highlighted section
   if (additionalVoiceMinutes > 0) {
-    let additionalText = `Your proposal includes ${formatNumber(additionalVoiceMinutes)} additional voice minutes at 12¢ per minute (${formatCurrency(additionalVoiceCost)}/month), making your total monthly cost ${formatCurrency(totalCost)}.`;
+    // Draw a light background for the additional minutes section
+    doc.setFillColor(245, 245, 245);
+    doc.rect(20, yPosition - 3, 170, 20, 'F');
     
-    const splitAdditionalText = doc.splitTextToSize(additionalText, 170);
-    doc.text(splitAdditionalText, 20, yPosition);
-    yPosition += splitAdditionalText.length * 7 + 8;
+    // Add clear information about the additional minutes
+    doc.setFont(undefined, 'bold');
+    doc.text("Additional Voice Minutes:", 25, yPosition + 5);
+    doc.setFont(undefined, 'normal');
+    
+    let minutesText = `${formatNumber(additionalVoiceMinutes)} additional minutes at 12¢ per minute = ${formatCurrency(additionalVoiceCost)}/month`;
+    doc.text(minutesText, 95, yPosition + 5);
+    
+    // Add the total monthly cost on a new line
+    doc.setFont(undefined, 'bold');
+    doc.text("Total Monthly Cost:", 25, yPosition + 14);
+    doc.text(formatCurrency(totalCost) + "/month", 95, yPosition + 14);
+    doc.setFont(undefined, 'normal');
+    
+    yPosition += 25;
   }
   
   return yPosition + 7;

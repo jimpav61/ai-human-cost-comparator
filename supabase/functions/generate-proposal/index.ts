@@ -58,9 +58,8 @@ serve(async (req) => {
     const callVolume = lead.calculator_inputs?.callVolume ? Number(lead.calculator_inputs.callVolume) : 0;
     const additionalVoiceMinutes = callVolume;
     
-    // Only charge for minutes beyond what's included
-    const chargeableMinutes = Math.max(0, additionalVoiceMinutes - includedVoiceMinutes);
-    const additionalVoiceCost = chargeableMinutes * 0.12;
+    // Calculate cost for additional minutes
+    const additionalVoiceCost = additionalVoiceMinutes * 0.12;
     
     // Total monthly cost
     const totalMonthlyCost = basePrice + additionalVoiceCost;
@@ -90,7 +89,8 @@ serve(async (req) => {
             .footer { margin-top: 40px; text-align: center; font-size: 0.9em; }
             .cost-breakdown { background-color: #f9f9f9; padding: 15px; border-radius: 5px; margin: 15px 0; }
             .cost-item { margin: 5px 0; }
-            .total { font-weight: bold; margin-top: 10px; }
+            .voice-minutes { background-color: #f0f8ff; padding: 10px; border-left: 3px solid #4299e1; margin: 10px 0; }
+            .total { font-weight: bold; margin-top: 10px; padding-top: 10px; border-top: 1px solid #e5e5e5; }
           </style>
         </head>
         <body>
@@ -120,20 +120,18 @@ serve(async (req) => {
               <h3>Recommended Solution: ${getTierDisplayName(aiTier)} with ${getAITypeDisplay(aiType)}</h3>
               
               <div class="cost-breakdown">
-                <div class="cost-item">Base Monthly Price: ${new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD' }).format(basePrice)}</div>
+                <div class="cost-item"><strong>Base Monthly Price:</strong> ${new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD' }).format(basePrice)}</div>
+                
+                ${includedVoiceMinutes > 0 ? 
+                  `<div class="cost-item"><strong>Included Voice Minutes:</strong> ${includedVoiceMinutes.toLocaleString()} minutes (included with your plan)</div>` : ''}
                 
                 ${additionalVoiceMinutes > 0 ? 
-                  `<div class="cost-item">Voice Minutes: ${additionalVoiceMinutes.toLocaleString()} 
-                  ${includedVoiceMinutes > 0 ? 
-                    `(${includedVoiceMinutes.toLocaleString()} included with your plan)` : 
-                    ''}
+                  `<div class="voice-minutes">
+                    <strong>Additional Voice Minutes:</strong> ${additionalVoiceMinutes.toLocaleString()} minutes at $0.12/minute<br>
+                    <strong>Additional Voice Cost:</strong> ${new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD' }).format(additionalVoiceCost)}
                   </div>` : ''}
                 
-                ${chargeableMinutes > 0 ? 
-                  `<div class="cost-item">Additional Voice Minutes Cost (${chargeableMinutes.toLocaleString()} @ $0.12/min): ${new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD' }).format(additionalVoiceCost)}</div>` : ''}
-                
-                ${additionalVoiceCost > 0 ? 
-                  `<div class="cost-item total">Total Monthly Cost: ${new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD' }).format(totalMonthlyCost)}</div>` : ''}
+                <div class="cost-item total"><strong>Total Monthly Cost:</strong> ${new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD' }).format(totalMonthlyCost)}</div>
               </div>
               
               <p>We've analyzed your needs and recommend our ${getTierDisplayName(aiTier)} with ${getAITypeDisplay(aiType)} capabilities for optimal results.</p>

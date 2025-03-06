@@ -113,26 +113,33 @@ export const addFinancialImpact = (doc: JsPDFWithAutoTable, yPosition: number, p
   yPosition += 7;
   doc.text(`Setup fee payback period: ${paybackPeriod} months`, 20, yPosition);
   
-  // Cost breakdown section for voice minutes
-  if (additionalVoiceMinutes > 0 || includedVoiceMinutes > 0) {
-    yPosition += 10;
-    doc.setFontSize(11);
-    doc.text("Monthly Cost Breakdown:", 20, yPosition);
+  // Cost breakdown section for voice minutes - always show this section clearly
+  yPosition += 10;
+  doc.setFontSize(11);
+  doc.setTextColor(35, 35, 35);
+  doc.setFont(undefined, 'bold');
+  doc.text("Monthly Cost Breakdown:", 20, yPosition);
+  doc.setFont(undefined, 'normal');
+  
+  yPosition += 6;
+  doc.text(`Base Plan (${params.tierName}): ${formatCurrency(basePrice)}/month`, 20, yPosition);
+  
+  if (includedVoiceMinutes > 0) {
+    yPosition += 6;
+    doc.text(`Included Voice Minutes: ${formatNumber(includedVoiceMinutes)} minutes`, 20, yPosition);
+  }
+  
+  if (additionalVoiceMinutes > 0) {
+    yPosition += 6;
+    doc.text(`Additional Voice Minutes: ${formatNumber(additionalVoiceMinutes)} minutes at $0.12/min`, 20, yPosition);
     
     yPosition += 6;
-    doc.text(`Base Plan (${params.tierName}): ${formatCurrency(basePrice)}/month`, 20, yPosition);
+    doc.text(`Additional Voice Cost: ${formatCurrency(additionalVoiceCost)}/month`, 20, yPosition);
     
-    if (includedVoiceMinutes > 0) {
-      yPosition += 6;
-      doc.text(`Included Voice Minutes: ${formatNumber(includedVoiceMinutes)} minutes`, 20, yPosition);
-    }
-    
-    if (additionalVoiceMinutes > 0) {
-      yPosition += 6;
-      doc.text(`Additional Voice Minutes (${formatNumber(additionalVoiceMinutes)} @ $0.12/min): ${formatCurrency(additionalVoiceCost)}/month`, 20, yPosition);
-      yPosition += 6;
-      doc.text(`Total Monthly Cost: ${formatCurrency(totalAICost)}/month`, 20, yPosition);
-    }
+    yPosition += 6;
+    doc.setFont(undefined, 'bold');
+    doc.text(`Total Monthly Cost: ${formatCurrency(totalAICost)}/month`, 20, yPosition);
+    doc.setFont(undefined, 'normal');
   }
   
   return yPosition + 15;
