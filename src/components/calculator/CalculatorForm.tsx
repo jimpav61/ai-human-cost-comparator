@@ -172,8 +172,6 @@ export const CalculatorForm: React.FC<CalculatorFormProps> = ({ inputs, onInputC
         {(inputs.aiType === 'chatbot' || inputs.aiType === 'both' || inputs.aiType === 'both-premium') && (
           <ChatConfigSection 
             chatVolume={inputs.chatVolume}
-            avgChatLength={inputs.avgChatLength}
-            avgChatResolutionTime={inputs.avgChatResolutionTime}
             onInputChange={onInputChange}
           />
         )}
