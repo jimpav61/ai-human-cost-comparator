@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from 'react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
 import { EditLeadTabs } from "./EditLeadTabs";
@@ -19,7 +18,7 @@ interface EditLeadDialogProps {
 export const EditLeadDialog = ({ lead, isOpen, onClose, onSave }: EditLeadDialogProps) => {
   const [formData, setFormData] = useState<Lead>(lead);
 
-  // Set default calculator inputs if none exist
+  // Initialize calculator inputs from lead data or defaults
   const defaultCalculatorInputs: CalculatorInputs = {
     aiType: 'chatbot',
     aiTier: 'starter',
@@ -32,20 +31,12 @@ export const EditLeadDialog = ({ lead, isOpen, onClose, onSave }: EditLeadDialog
     avgChatResolutionTime: 10
   };
 
-  // Initialize calculator inputs from lead data or defaults
   const [calculatorInputs, setCalculatorInputs] = useState<CalculatorInputs>(
     (lead.calculator_inputs as CalculatorInputs) || defaultCalculatorInputs
   );
 
   // Use the calculator hook to get calculation results
   const calculationResults = useCalculator(calculatorInputs);
-
-  // Use the AI type updater hook with the correct parameters
-  const { updateAITypeBasedOnTier } = useAITypeUpdater(
-    calculatorInputs,
-    setCalculatorInputs,
-    setFormData
-  );
 
   // Reset form when lead changes
   useEffect(() => {
@@ -60,60 +51,10 @@ export const EditLeadDialog = ({ lead, isOpen, onClose, onSave }: EditLeadDialog
 
   // Handle changes to calculator inputs
   const handleCalculatorInputChange = (field: string, value: any) => {
-    setCalculatorInputs(prev => {
-      const updatedInputs = { ...prev, [field]: value };
-      
-      // Special handling for aiTier changes
-      if (field === 'aiTier') {
-        // When switching to starter, force chatbot only (no voice)
-        if (value === 'starter' && prev.aiType !== 'chatbot') {
-          updatedInputs.aiType = 'chatbot';
-          updatedInputs.callVolume = 0;
-        }
-        // When upgrading to growth, update voice capabilities if needed
-        else if (value === 'growth') {
-          if (prev.aiType === 'conversationalVoice') {
-            updatedInputs.aiType = 'voice';
-          } else if (prev.aiType === 'both-premium') {
-            updatedInputs.aiType = 'both';
-          }
-        }
-        // When selecting premium, enhance voice if applicable
-        else if (value === 'premium') {
-          if (prev.aiType === 'voice') {
-            updatedInputs.aiType = 'conversationalVoice';
-          } else if (prev.aiType === 'both') {
-            updatedInputs.aiType = 'both-premium';
-          }
-        }
-      }
-      
-      // Special handling for aiType changes
-      if (field === 'aiType') {
-        const newAIType = value;
-        
-        // Update tier based on AI type
-        if ((newAIType === 'voice' || newAIType === 'both') && prev.aiTier === 'starter') {
-          updatedInputs.aiTier = 'growth';
-        } 
-        else if ((newAIType === 'conversationalVoice' || newAIType === 'both-premium') && 
-                 prev.aiTier !== 'premium') {
-          updatedInputs.aiTier = 'premium';
-        }
-        
-        // Set voice volume to 0 if switching to chatbot only
-        if (newAIType === 'chatbot') {
-          updatedInputs.callVolume = 0;
-        }
-        
-        // Set chat volume to 0 if switching to voice only
-        if (newAIType === 'voice' || newAIType === 'conversationalVoice') {
-          updatedInputs.chatVolume = 0;
-        }
-      }
-      
-      return updatedInputs;
-    });
+    setCalculatorInputs(prev => ({
+      ...prev,
+      [field]: value
+    }));
   };
 
   // Handle save button click
