@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { toast } from "@/components/ui/use-toast";
 import { supabase } from "@/integrations/supabase/client";
@@ -215,12 +214,8 @@ export const LeadForm: React.FC<LeadFormProps> = ({ onSubmit }) => {
         
         setFormData(prev => ({ ...prev, website: finalWebsite }));
         
-        // Move to step 2 before resetting isSubmitting state
-        // This is critical - first update the step, then reset the submitting state
-        setStep(2);
-        
-        // Now reset the submitting state after changing steps
         setIsSubmitting(false);
+        setStep(2);
         
         toast({
           title: "Information Saved!",
