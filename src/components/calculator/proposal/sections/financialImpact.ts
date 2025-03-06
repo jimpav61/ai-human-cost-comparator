@@ -26,8 +26,7 @@ export const addFinancialImpact = (doc: JsPDFWithAutoTable, yPosition: number, p
   
   // Extract voice minutes and included minutes
   const additionalVoiceMinutes = Number(params.additionalVoiceMinutes) || 0;
-  const includedVoiceMinutes = Number(params.includedVoiceMinutes) || 
-                               (params.tierName?.toLowerCase().includes('starter') ? 0 : 600);
+  const includedVoiceMinutes = params.tierName?.toLowerCase().includes('starter') ? 0 : 600;
   
   // Calculate additional voice cost - only for minutes beyond the included amount
   const chargeableMinutes = Math.max(0, additionalVoiceMinutes - includedVoiceMinutes);
