@@ -17,6 +17,8 @@ interface Lead {
   website?: string;
   phoneNumber?: string;
   calculatorResults: any;
+  calculator_inputs?: any;
+  industry?: string;
 }
 
 serve(async (req) => {
@@ -27,8 +29,9 @@ serve(async (req) => {
   try {
     const { lead } = await req.json() as { lead: Lead };
 
-    // Get the plan details
-    const aiTier = lead.calculatorResults.tierKey || 'growth';
+    // Get the plan details from either calculatorResults.tierKey or calculator_inputs.aiTier
+    const aiTier = lead.calculatorResults.tierKey || 
+                  (lead.calculator_inputs?.aiTier || 'growth');
     
     // Use the exact fixed prices for each tier
     let basePrice = 0;
@@ -45,6 +48,26 @@ serve(async (req) => {
       default:
         basePrice = 229;
     }
+    
+    // Get AI type from calculator_inputs if available
+    const aiType = lead.calculator_inputs?.aiType || lead.calculatorResults.aiType || 'chatbot';
+    
+    // Calculate any additional voice costs
+    const includedVoiceMinutes = aiTier === 'starter' ? 0 : 600;
+    const callVolume = lead.calculator_inputs?.callVolume ? Number(lead.calculator_inputs.callVolume) : 0;
+    const additionalVoiceMinutes = callVolume;
+    const additionalVoiceCost = additionalVoiceMinutes > 0 ? additionalVoiceMinutes * 0.12 : 0;
+    
+    // Total monthly cost
+    const totalMonthlyCost = basePrice + additionalVoiceCost;
+    
+    // Get industry if available
+    const industry = lead.industry || 'your industry';
+    
+    // Calculate monthly and yearly savings with fallbacks
+    const monthlySavings = lead.calculatorResults.monthlySavings || 0;
+    const yearlySavings = lead.calculatorResults.yearlySavings || 0;
+    const savingsPercentage = lead.calculatorResults.savingsPercentage || 0;
     
     // Create a professional HTML proposal
     const proposalHtml = `
@@ -69,24 +92,26 @@ serve(async (req) => {
 
             <div class="section">
               <h2>Dear ${lead.name},</h2>
-              <p>Thank you for your interest in integrating AI solutions into your business operations. Based on our analysis, we've prepared a customized proposal that addresses your specific needs.</p>
+              <p>Thank you for your interest in integrating AI solutions into your business operations. Based on our analysis, we've prepared a customized proposal that addresses your specific needs in ${industry}.</p>
             </div>
 
             <div class="section">
               <h3>Your Potential ROI</h3>
               <p>Based on our calculations, implementing our AI solution could result in:</p>
               <ul>
-                <li>Monthly cost: ${new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD' }).format(basePrice)}</li>
-                <li>Monthly savings of ${new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD' }).format(lead.calculatorResults.monthlySavings)}</li>
-                <li>Annual savings of ${new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD' }).format(lead.calculatorResults.yearlySavings)}</li>
-                <li>${lead.calculatorResults.savingsPercentage.toFixed(1)}% improvement in operational efficiency</li>
+                <li>Monthly cost: ${new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD' }).format(totalMonthlyCost)}</li>
+                <li>Monthly savings of ${new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD' }).format(monthlySavings)}</li>
+                <li>Annual savings of ${new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD' }).format(yearlySavings)}</li>
+                <li>${savingsPercentage.toFixed(1)}% improvement in operational efficiency</li>
               </ul>
             </div>
 
             <div class="section">
-              <h3>Recommended Solution: ${getTierDisplayName(aiTier)} with ${getAITypeDisplay(lead.calculatorResults.aiType)}</h3>
+              <h3>Recommended Solution: ${getTierDisplayName(aiTier)} with ${getAITypeDisplay(aiType)}</h3>
               <p>Monthly Price: ${new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD' }).format(basePrice)}</p>
-              <p>We've analyzed your needs and recommend our ${getTierDisplayName(aiTier)} with ${getAITypeDisplay(lead.calculatorResults.aiType)} capabilities for optimal results.</p>
+              ${additionalVoiceMinutes > 0 ? `<p>Additional Voice Minutes (${additionalVoiceMinutes}): ${new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD' }).format(additionalVoiceCost)}</p>` : ''}
+              ${additionalVoiceMinutes > 0 ? `<p>Total Monthly Cost: ${new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD' }).format(totalMonthlyCost)}</p>` : ''}
+              <p>We've analyzed your needs and recommend our ${getTierDisplayName(aiTier)} with ${getAITypeDisplay(aiType)} capabilities for optimal results.</p>
             </div>
 
             <div class="section">

@@ -36,28 +36,44 @@ export const ReportGenerator = ({ lead, buttonStyle = "default" }: ReportGenerat
       const callVolume = lead.calculator_inputs?.callVolume ? Number(lead.calculator_inputs.callVolume) : 0;
       const additionalVoiceMinutes = callVolume;
       
-      // Ensure calculator_results has at least an empty object
-      const calculatorResults = lead.calculator_results || {};
-      
       // Prepare safe base price from tier
       const basePriceMonthly = 
         aiTier === 'starter' ? 99 : 
         aiTier === 'growth' ? 229 : 
         aiTier === 'premium' ? 429 : 229;
       
-      // Ensure calculator_results has basic structure
+      // Ensure calculator_results has basic structure with safe defaults
+      const calculatorResults = lead.calculator_results || {};
+      
+      // Properly populate aiCostMonthly if it's missing or incomplete
       if (!calculatorResults.aiCostMonthly) {
         calculatorResults.aiCostMonthly = {
-          voice: additionalVoiceMinutes * 0.12,
+          voice: additionalVoiceMinutes > 0 ? additionalVoiceMinutes * 0.12 : 0,
           chatbot: basePriceMonthly,
-          total: basePriceMonthly + (additionalVoiceMinutes * 0.12),
-          setupFee: aiTier === 'starter' ? 499 : aiTier === 'growth' ? 749 : 999
+          total: basePriceMonthly + (additionalVoiceMinutes > 0 ? additionalVoiceMinutes * 0.12 : 0),
+          setupFee: aiTier === 'starter' ? 249 : aiTier === 'growth' ? 749 : 1149
         };
+      } else {
+        // Ensure all properties exist in aiCostMonthly
+        calculatorResults.aiCostMonthly.voice = calculatorResults.aiCostMonthly.voice ?? (additionalVoiceMinutes > 0 ? additionalVoiceMinutes * 0.12 : 0);
+        calculatorResults.aiCostMonthly.chatbot = calculatorResults.aiCostMonthly.chatbot ?? basePriceMonthly;
+        calculatorResults.aiCostMonthly.total = calculatorResults.aiCostMonthly.total ?? (basePriceMonthly + (additionalVoiceMinutes > 0 ? additionalVoiceMinutes * 0.12 : 0));
+        calculatorResults.aiCostMonthly.setupFee = calculatorResults.aiCostMonthly.setupFee ?? (aiTier === 'starter' ? 249 : aiTier === 'growth' ? 749 : 1149);
       }
       
+      // Make sure we have a valid base price
       if (!calculatorResults.basePriceMonthly) {
         calculatorResults.basePriceMonthly = basePriceMonthly;
       }
+      
+      // Set reasonable defaults for the rest of the calculation results
+      const humanCostMonthly = calculatorResults.humanCostMonthly ?? 15000;
+      const totalMonthlyCost = calculatorResults.aiCostMonthly.total;
+      calculatorResults.monthlySavings = calculatorResults.monthlySavings ?? (humanCostMonthly - totalMonthlyCost);
+      calculatorResults.yearlySavings = calculatorResults.yearlySavings ?? (calculatorResults.monthlySavings * 12);
+      calculatorResults.savingsPercentage = calculatorResults.savingsPercentage ?? ((humanCostMonthly - totalMonthlyCost) / humanCostMonthly * 100);
+      
+      console.log('[REPORT] Prepared calculator results with additionalVoiceMinutes:', additionalVoiceMinutes);
       
       // Prepare report parameters from lead data - ensuring all required fields are present
       const doc = generatePDF({
