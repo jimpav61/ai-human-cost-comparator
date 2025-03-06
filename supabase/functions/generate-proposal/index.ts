@@ -19,6 +19,7 @@ interface Lead {
   calculatorResults: any;
   calculator_inputs?: any;
   industry?: string;
+  company_name?: string;
 }
 
 serve(async (req) => {
@@ -30,7 +31,7 @@ serve(async (req) => {
     const { lead } = await req.json() as { lead: Lead };
 
     // Get the plan details from either calculatorResults.tierKey or calculator_inputs.aiTier
-    const aiTier = lead.calculatorResults.tierKey || 
+    const aiTier = lead.calculatorResults?.tierKey || 
                   (lead.calculator_inputs?.aiTier || 'growth');
     
     // Use the exact fixed prices for each tier
@@ -50,7 +51,7 @@ serve(async (req) => {
     }
     
     // Get AI type from calculator_inputs if available
-    const aiType = lead.calculator_inputs?.aiType || lead.calculatorResults.aiType || 'chatbot';
+    const aiType = lead.calculator_inputs?.aiType || lead.calculatorResults?.aiType || 'chatbot';
     
     // Calculate any additional voice costs
     const includedVoiceMinutes = aiTier === 'starter' ? 0 : 600;
@@ -64,13 +65,16 @@ serve(async (req) => {
     // Total monthly cost
     const totalMonthlyCost = basePrice + additionalVoiceCost;
     
-    // Get industry if available
+    // Get industry if available and company name
     const industry = lead.industry || 'your industry';
+    const companyName = lead.company_name || lead.companyName || 'Your Company';
     
     // Calculate monthly and yearly savings with fallbacks
-    const monthlySavings = lead.calculatorResults.monthlySavings || 0;
-    const yearlySavings = lead.calculatorResults.yearlySavings || 0;
-    const savingsPercentage = lead.calculatorResults.savingsPercentage || 0;
+    const humanCostMonthly = lead.calculatorResults?.humanCostMonthly || 15000;
+    const monthlySavings = lead.calculatorResults?.monthlySavings || (humanCostMonthly - totalMonthlyCost);
+    const yearlySavings = lead.calculatorResults?.yearlySavings || (monthlySavings * 12);
+    const savingsPercentage = lead.calculatorResults?.savingsPercentage || 
+      Math.round((monthlySavings / humanCostMonthly) * 100);
     
     // Create a professional HTML proposal
     const proposalHtml = `
@@ -93,7 +97,7 @@ serve(async (req) => {
           <div class="container">
             <div class="header">
               <h1>AI Integration Proposal</h1>
-              <p>Prepared exclusively for ${lead.companyName}</p>
+              <p>Prepared exclusively for ${companyName}</p>
             </div>
 
             <div class="section">
@@ -137,7 +141,7 @@ serve(async (req) => {
 
             <div class="section">
               <h3>Next Steps</h3>
-              <p>We'd love to schedule a detailed walkthrough of our solution and discuss how we can best implement it for ${lead.companyName}. Here's what we propose:</p>
+              <p>We'd love to schedule a detailed walkthrough of our solution and discuss how we can best implement it for ${companyName}. Here's what we propose:</p>
               <ol>
                 <li>30-minute initial consultation</li>
                 <li>Custom implementation plan presentation</li>
@@ -159,7 +163,7 @@ serve(async (req) => {
     const { data: emailResponse, error: emailError } = await resend.emails.send({
       from: 'ChatSites.ai <onboarding@resend.dev>',
       to: [lead.email],
-      subject: `AI Integration Proposal for ${lead.companyName}`,
+      subject: `AI Integration Proposal for ${companyName}`,
       html: proposalHtml,
     });
 

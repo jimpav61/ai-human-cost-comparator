@@ -15,7 +15,7 @@ export const ProposalGenerator = ({ lead }: ProposalGeneratorProps) => {
     <DownloadButton
       hasDownloaded={hasDownloaded}
       label="Proposal"
-      downloadedLabel="Sent"
+      downloadedLabel="Downloaded"
       icon={<FileDown className="h-4 w-4 mr-1" />}
       onClick={generateProposalDocument}
     />

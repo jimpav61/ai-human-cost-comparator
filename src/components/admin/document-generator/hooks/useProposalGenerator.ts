@@ -54,15 +54,15 @@ export const useProposalGenerator = ({ lead }: UseProposalGeneratorProps) => {
         aiTier === 'premium' ? 429 : 229;
       
       // Calculate additional voice cost - now correctly using only minutes beyond the included amount
-      const additionalVoiceCost = additionalVoiceMinutes > 0 ?
-        Math.max(0, additionalVoiceMinutes - includedVoiceMinutes) * 0.12 : 0;
+      const chargeableMinutes = Math.max(0, additionalVoiceMinutes - includedVoiceMinutes);
+      const additionalVoiceCost = chargeableMinutes * 0.12;
       
       const totalMonthlyCost = basePriceMonthly + additionalVoiceCost;
       
       console.log("Voice cost calculation:", {
         additionalVoiceMinutes,
         includedVoiceMinutes,
-        chargeable: Math.max(0, additionalVoiceMinutes - includedVoiceMinutes),
+        chargeable: chargeableMinutes,
         additionalVoiceCost,
         basePriceMonthly,
         totalMonthlyCost
@@ -85,6 +85,8 @@ export const useProposalGenerator = ({ lead }: UseProposalGeneratorProps) => {
       
       if (!calculatorResults.basePriceMonthly) {
         calculatorResults.basePriceMonthly = basePriceMonthly;
+      } else {
+        calculatorResults.basePriceMonthly = basePriceMonthly; // Override to ensure consistency
       }
       
       // Set fallback values for any missing properties
@@ -92,7 +94,8 @@ export const useProposalGenerator = ({ lead }: UseProposalGeneratorProps) => {
       const aiTotalCost = calculatorResults.aiCostMonthly.total;
       const monthlySavings = calculatorResults.monthlySavings || (humanCostMonthly - aiTotalCost);
       const yearlySavings = calculatorResults.yearlySavings || (monthlySavings * 12);
-      const savingsPercentage = calculatorResults.savingsPercentage || Math.round((monthlySavings / humanCostMonthly) * 100);
+      const savingsPercentage = calculatorResults.savingsPercentage || 
+        Math.round((monthlySavings / humanCostMonthly) * 100);
       
       // Ensure required properties exist with sensible defaults
       const safeResults = {
@@ -120,7 +123,9 @@ export const useProposalGenerator = ({ lead }: UseProposalGeneratorProps) => {
         yearlySavings: yearlySavings,
         savingsPercentage: savingsPercentage,
         // Add these properties to ensure they're available in the proposal generation
-        includedVoiceMinutes: includedVoiceMinutes
+        includedVoiceMinutes: includedVoiceMinutes,
+        tierKey: aiTier,
+        aiType: calculatorInputs?.aiType || 'chatbot'
       };
       
       console.log("Safe results with additional voice cost:", safeResults.aiCostMonthly);

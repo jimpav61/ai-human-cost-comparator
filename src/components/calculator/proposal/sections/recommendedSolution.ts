@@ -44,7 +44,7 @@ export const addRecommendedSolution = (doc: JsPDFWithAutoTable, yPosition: numbe
   const aiType = params.aiType || getAITypeDisplay(aiTypeKey);
   
   // Get exact fixed price for the tier - always use hardcoded values
-  const basePrice = getTierBasePrice(typeof tierKey === 'string' ? tierKey : 'growth');
+  const basePrice = getTierBasePrice(tierKey);
   
   // Get included minutes based on tier
   const includedMinutes = tierKey === 'starter' ? 0 : 600;
