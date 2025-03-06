@@ -56,7 +56,10 @@ serve(async (req) => {
     const includedVoiceMinutes = aiTier === 'starter' ? 0 : 600;
     const callVolume = lead.calculator_inputs?.callVolume ? Number(lead.calculator_inputs.callVolume) : 0;
     const additionalVoiceMinutes = callVolume;
-    const additionalVoiceCost = additionalVoiceMinutes > 0 ? additionalVoiceMinutes * 0.12 : 0;
+    
+    // Only charge for minutes beyond what's included
+    const chargeableMinutes = Math.max(0, additionalVoiceMinutes - includedVoiceMinutes);
+    const additionalVoiceCost = chargeableMinutes * 0.12;
     
     // Total monthly cost
     const totalMonthlyCost = basePrice + additionalVoiceCost;
@@ -110,7 +113,13 @@ serve(async (req) => {
               <h3>Recommended Solution: ${getTierDisplayName(aiTier)} with ${getAITypeDisplay(aiType)}</h3>
               <p>Monthly Base Price: ${new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD' }).format(basePrice)}</p>
               ${additionalVoiceMinutes > 0 ? 
-                `<p>Additional Voice Minutes (${additionalVoiceMinutes} @ $0.12/min): ${new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD' }).format(additionalVoiceCost)}</p>` : ''}
+                `<p>Voice Minutes: ${additionalVoiceMinutes.toLocaleString()} 
+                ${includedVoiceMinutes > 0 ? 
+                  `(${includedVoiceMinutes.toLocaleString()} included with your plan)` : 
+                  ''}
+                </p>` : ''}
+              ${chargeableMinutes > 0 ? 
+                `<p>Additional Voice Minutes Cost (${chargeableMinutes.toLocaleString()} @ $0.12/min): ${new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD' }).format(additionalVoiceCost)}</p>` : ''}
               ${additionalVoiceMinutes > 0 ? 
                 `<p>Total Monthly Cost: ${new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD' }).format(totalMonthlyCost)}</p>` : ''}
               <p>We've analyzed your needs and recommend our ${getTierDisplayName(aiTier)} with ${getAITypeDisplay(aiType)} capabilities for optimal results.</p>

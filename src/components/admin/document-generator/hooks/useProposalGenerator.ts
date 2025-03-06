@@ -32,15 +32,20 @@ export const useProposalGenerator = ({ lead }: UseProposalGeneratorProps) => {
       console.log("Calculator inputs for proposal:", calculatorInputs);
       
       // Get call volume (additional voice minutes) directly from calculator inputs
-      // Ensure it's treated as a number
       const aiTier = calculatorInputs?.aiTier || 'growth';
-      const callVolume = calculatorInputs?.callVolume ? Number(calculatorInputs.callVolume) : 0;
+      
+      // IMPORTANT: Extract the call volume and make sure it's a number
+      const callVolume = calculatorInputs?.callVolume ? 
+        parseInt(String(calculatorInputs.callVolume), 10) : 0;
       
       // Additional voice minutes is exactly equal to the call volume input value
-      // (this matches the logic in the frontend and server)
       const additionalVoiceMinutes = callVolume;
       
+      // Determine the included minutes based on the tier
+      const includedVoiceMinutes = aiTier === 'starter' ? 0 : 600;
+      
       console.log("Additional voice minutes for proposal:", additionalVoiceMinutes);
+      console.log("Included voice minutes for tier:", includedVoiceMinutes);
       
       // Prepare safe base price from tier - using exact fixed prices
       const basePriceMonthly = 
@@ -48,9 +53,20 @@ export const useProposalGenerator = ({ lead }: UseProposalGeneratorProps) => {
         aiTier === 'growth' ? 229 : 
         aiTier === 'premium' ? 429 : 229;
       
-      // Calculate additional voice cost - always $0.12 per minute
-      const additionalVoiceCost = additionalVoiceMinutes > 0 ? additionalVoiceMinutes * 0.12 : 0;
+      // Calculate additional voice cost - now correctly using only minutes beyond the included amount
+      const additionalVoiceCost = additionalVoiceMinutes > 0 ?
+        Math.max(0, additionalVoiceMinutes - includedVoiceMinutes) * 0.12 : 0;
+      
       const totalMonthlyCost = basePriceMonthly + additionalVoiceCost;
+      
+      console.log("Voice cost calculation:", {
+        additionalVoiceMinutes,
+        includedVoiceMinutes,
+        chargeable: Math.max(0, additionalVoiceMinutes - includedVoiceMinutes),
+        additionalVoiceCost,
+        basePriceMonthly,
+        totalMonthlyCost
+      });
       
       // Ensure we have a valid structure for calculatorResults
       if (!calculatorResults.aiCostMonthly) {
@@ -102,7 +118,9 @@ export const useProposalGenerator = ({ lead }: UseProposalGeneratorProps) => {
         humanCostMonthly: humanCostMonthly,
         monthlySavings: monthlySavings,
         yearlySavings: yearlySavings,
-        savingsPercentage: savingsPercentage
+        savingsPercentage: savingsPercentage,
+        // Add these properties to ensure they're available in the proposal generation
+        includedVoiceMinutes: includedVoiceMinutes
       };
       
       console.log("Safe results with additional voice cost:", safeResults.aiCostMonthly);
@@ -118,6 +136,7 @@ export const useProposalGenerator = ({ lead }: UseProposalGeneratorProps) => {
         employeeCount: lead.employee_count || 5,
         results: safeResults,
         additionalVoiceMinutes: additionalVoiceMinutes, // Explicitly pass the additionalVoiceMinutes
+        includedVoiceMinutes: includedVoiceMinutes, // Explicitly pass the includedVoiceMinutes
         tierName: calculatorInputs?.aiTier ? 
           (calculatorInputs.aiTier === 'starter' ? 'Starter Plan' : 
           calculatorInputs.aiTier === 'growth' ? 'Growth Plan' : 

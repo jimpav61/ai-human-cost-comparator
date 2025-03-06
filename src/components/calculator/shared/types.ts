@@ -14,6 +14,7 @@ export interface JsPDFWithAutoTable extends jsPDF {
 export interface SharedResults extends CalculationResults {
   tierKey?: string;
   aiType?: string;
+  includedVoiceMinutes?: number;
   [key: string]: any;
 }
 
@@ -29,4 +30,5 @@ export interface SharedGenerationParams {
   tierName?: string;
   aiType?: string;
   additionalVoiceMinutes?: number;
+  includedVoiceMinutes?: number;
 }

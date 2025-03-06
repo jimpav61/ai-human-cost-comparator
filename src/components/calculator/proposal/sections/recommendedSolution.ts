@@ -49,9 +49,11 @@ export const addRecommendedSolution = (doc: JsPDFWithAutoTable, yPosition: numbe
   // Get included minutes based on tier
   const includedMinutes = tierKey === 'starter' ? 0 : 600;
   
-  // Get additional voice minutes and calculate cost
+  // Get additional voice minutes and calculate correct cost
   const additionalVoiceMinutes = params.additionalVoiceMinutes || 0;
-  const additionalVoiceCost = additionalVoiceMinutes > 0 ? additionalVoiceMinutes * 0.12 : 0;
+  
+  // Calculate cost only for minutes beyond the included amount
+  const additionalVoiceCost = Math.max(0, additionalVoiceMinutes - includedMinutes) * 0.12;
   const totalCost = basePrice + additionalVoiceCost;
   
   // Create plan description based on tier and AI type
@@ -69,7 +71,17 @@ export const addRecommendedSolution = (doc: JsPDFWithAutoTable, yPosition: numbe
   
   // If there are additional voice minutes, add that information
   if (additionalVoiceMinutes > 0) {
-    const additionalText = `Your proposal includes ${formatNumber(additionalVoiceMinutes)} additional voice minutes at a cost of ${formatCurrency(additionalVoiceCost)}/month (12¢ per minute), making your total monthly cost ${formatCurrency(totalCost)}.`;
+    let additionalText;
+    
+    if (additionalVoiceMinutes <= includedMinutes) {
+      // If all minutes are covered by the included amount
+      additionalText = `Your proposal includes ${formatNumber(additionalVoiceMinutes)} voice minutes, which are fully covered by your ${tierName}'s included minutes. No additional cost for voice minutes.`;
+    } else {
+      // If there are minutes beyond the included amount
+      const extraMinutes = additionalVoiceMinutes - includedMinutes;
+      additionalText = `Your proposal includes ${formatNumber(additionalVoiceMinutes)} voice minutes (${formatNumber(includedMinutes)} included in your plan + ${formatNumber(extraMinutes)} additional minutes at a cost of ${formatCurrency(additionalVoiceCost)}/month), making your total monthly cost ${formatCurrency(totalCost)}.`;
+    }
+    
     const splitAdditionalText = doc.splitTextToSize(additionalText, 170);
     doc.text(splitAdditionalText, 20, yPosition);
     yPosition += splitAdditionalText.length * 7 + 8;

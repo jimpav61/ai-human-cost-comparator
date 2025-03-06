@@ -23,8 +23,15 @@ export const addFinancialImpact = (doc: JsPDFWithAutoTable, yPosition: number, p
   
   // For AI cost, we need to carefully consider additional voice minutes
   const basePrice = Number(resultsData.basePriceMonthly) || 499;
+  
+  // Extract voice minutes and included minutes
   const additionalVoiceMinutes = Number(params.additionalVoiceMinutes) || 0;
-  const additionalVoiceCost = additionalVoiceMinutes > 0 ? additionalVoiceMinutes * 0.12 : 0;
+  const includedVoiceMinutes = Number(params.includedVoiceMinutes) || 
+                              (resultsData.includedVoiceMinutes) || 
+                              (params.tierName?.toLowerCase().includes('starter') ? 0 : 600);
+  
+  // Calculate additional voice cost - only for minutes beyond the included amount
+  const additionalVoiceCost = Math.max(0, additionalVoiceMinutes - includedVoiceMinutes) * 0.12;
   
   // The total AI cost should include any additional voice costs
   const aiCost = Number(resultsData.aiCostMonthly?.total) || basePrice + additionalVoiceCost;
