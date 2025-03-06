@@ -6,6 +6,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { getTierDisplayName } from "@/components/calculator/pricingDetailsCalculator";
 import { AI_RATES } from "@/constants/pricing";
 import { Card } from "@/components/ui/card";
+import { formatCurrency } from "@/utils/formatters";
 
 interface CalculatorOptionsTabProps {
   calculatorInputs: CalculatorInputs;
@@ -33,6 +34,11 @@ export const CalculatorOptionsTab = ({
       return 600; // Default for growth/premium tiers
     }
   };
+  
+  // Calculate the additional voice cost
+  const callVolume = calculatorInputs?.callVolume || 0;
+  const additionalVoiceCost = callVolume * 0.12;
+  const includedVoiceMinutes = getIncludedVoiceMinutes();
 
   return (
     <div className="space-y-6">
@@ -59,7 +65,7 @@ export const CalculatorOptionsTab = ({
             </p>
             {currentTier !== 'starter' && (
               <p className="text-xs text-green-600 mt-1">
-                Includes {getIncludedVoiceMinutes()} free voice minutes
+                Includes {includedVoiceMinutes} free voice minutes
               </p>
             )}
           </div>
@@ -144,18 +150,23 @@ export const CalculatorOptionsTab = ({
           </div>
           
           <div className="space-y-2">
-            <Label htmlFor="callVolume" className="text-sm font-medium">Monthly Call Volume</Label>
+            <Label htmlFor="callVolume" className="text-sm font-medium">Additional Voice Minutes</Label>
             <Input
               id="callVolume"
               type="number"
               value={calculatorInputs?.callVolume || ''}
               onChange={(e) => handleCalculatorInputChange('callVolume', Number(e.target.value))}
               disabled={currentTier === 'starter'}
-              className="w-full"
+              className="w-full border border-red-100 focus:border-red-300"
             />
             {currentTier !== 'starter' && (
               <p className="text-xs text-green-600 mt-1">
-                {getIncludedVoiceMinutes()} minutes included free
+                {includedVoiceMinutes} minutes included free
+              </p>
+            )}
+            {currentTier !== 'starter' && callVolume > 0 && (
+              <p className="text-xs text-amber-600 mt-1">
+                {callVolume} additional minutes at 12¢/min = {formatCurrency(additionalVoiceCost)}
               </p>
             )}
           </div>
