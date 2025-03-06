@@ -5,6 +5,7 @@ import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { getTierDisplayName } from "@/components/calculator/pricingDetailsCalculator";
 import { AI_RATES } from "@/constants/pricing";
+import { Card } from "@/components/ui/card";
 
 interface CalculatorOptionsTabProps {
   calculatorInputs: CalculatorInputs;
@@ -20,13 +21,13 @@ export const CalculatorOptionsTab = ({
   safeFormatNumber
 }: CalculatorOptionsTabProps) => {
   // Ensure we have a valid tier value
-  const currentTier = calculatorInputs.aiTier || 'starter';
+  const currentTier = calculatorInputs?.aiTier || 'starter';
   
   // Safely get the included voice minutes, with fallback to 0
   const getIncludedVoiceMinutes = () => {
     if (currentTier === 'starter') return 0;
     try {
-      return AI_RATES.chatbot[currentTier]?.includedVoiceMinutes || 600;
+      return AI_RATES?.chatbot?.[currentTier]?.includedVoiceMinutes || 600;
     } catch (error) {
       console.error("Error getting included voice minutes:", error);
       return 600; // Default for growth/premium tiers
@@ -34,151 +35,136 @@ export const CalculatorOptionsTab = ({
   };
 
   return (
-    <>
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-        <div className="space-y-2">
-          <Label htmlFor="aiTier">AI Plan Tier</Label>
-          <Select
-            value={currentTier}
-            onValueChange={(value) => handleCalculatorInputChange('aiTier', value)}
-          >
-            <SelectTrigger>
-              <SelectValue placeholder="Select tier" />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="starter">Starter Plan (Text Only)</SelectItem>
-              <SelectItem value="growth">Growth Plan (Text & Basic Voice)</SelectItem>
-              <SelectItem value="premium">Premium Plan (Text & Conversational Voice)</SelectItem>
-            </SelectContent>
-          </Select>
-          <p className="text-xs text-gray-500 mt-1">
-            Current: {getTierDisplayName(currentTier)}
-          </p>
-          {currentTier !== 'starter' && (
-            <p className="text-xs text-green-600 mt-1">
-              Includes {getIncludedVoiceMinutes()} free voice minutes
+    <div className="space-y-6">
+      <Card className="p-4 shadow-sm">
+        <h3 className="text-lg font-medium mb-4">Plan Configuration</h3>
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-4">
+          <div className="space-y-2">
+            <Label htmlFor="aiTier" className="text-sm font-medium">AI Plan Tier</Label>
+            <Select
+              value={currentTier}
+              onValueChange={(value) => handleCalculatorInputChange('aiTier', value)}
+            >
+              <SelectTrigger className="w-full">
+                <SelectValue placeholder="Select tier" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="starter">Starter Plan (Text Only)</SelectItem>
+                <SelectItem value="growth">Growth Plan (Text & Basic Voice)</SelectItem>
+                <SelectItem value="premium">Premium Plan (Text & Conversational Voice)</SelectItem>
+              </SelectContent>
+            </Select>
+            <p className="text-xs text-gray-500 mt-1">
+              Current: {getTierDisplayName(currentTier)}
             </p>
-          )}
+            {currentTier !== 'starter' && (
+              <p className="text-xs text-green-600 mt-1">
+                Includes {getIncludedVoiceMinutes()} free voice minutes
+              </p>
+            )}
+          </div>
+          
+          <div className="space-y-2">
+            <Label htmlFor="aiType" className="text-sm font-medium">AI Type</Label>
+            <Select
+              value={calculatorInputs?.aiType || 'chatbot'}
+              onValueChange={(value) => handleCalculatorInputChange('aiType', value)}
+            >
+              <SelectTrigger className="w-full">
+                <SelectValue placeholder="Select AI type" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="chatbot">Text Only</SelectItem>
+                <SelectItem value="voice" disabled={currentTier === 'starter'}>Basic Voice Only</SelectItem>
+                <SelectItem value="conversationalVoice" disabled={currentTier !== 'premium'}>Conversational Voice Only</SelectItem>
+                <SelectItem value="both" disabled={currentTier === 'starter'}>Text & Basic Voice</SelectItem>
+                <SelectItem value="both-premium" disabled={currentTier !== 'premium'}>Text & Conversational Voice</SelectItem>
+              </SelectContent>
+            </Select>
+            {currentTier === 'starter' && calculatorInputs?.aiType !== 'chatbot' && (
+              <p className="text-xs text-amber-600 mt-1">
+                Starter Plan only supports text capabilities
+              </p>
+            )}
+            {currentTier !== 'premium' && (calculatorInputs?.aiType === 'conversationalVoice' || calculatorInputs?.aiType === 'both-premium') && (
+              <p className="text-xs text-amber-600 mt-1">
+                Conversational voice requires Premium Plan
+              </p>
+            )}
+          </div>
         </div>
-        
-        <div className="space-y-2">
-          <Label htmlFor="aiType">AI Type</Label>
-          <Select
-            value={calculatorInputs.aiType || 'chatbot'}
-            onValueChange={(value) => handleCalculatorInputChange('aiType', value)}
-          >
-            <SelectTrigger>
-              <SelectValue placeholder="Select AI type" />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="chatbot">Text Only</SelectItem>
-              <SelectItem value="voice" disabled={currentTier === 'starter'}>Basic Voice Only</SelectItem>
-              <SelectItem value="conversationalVoice" disabled={currentTier !== 'premium'}>Conversational Voice Only</SelectItem>
-              <SelectItem value="both" disabled={currentTier === 'starter'}>Text & Basic Voice</SelectItem>
-              <SelectItem value="both-premium" disabled={currentTier !== 'premium'}>Text & Conversational Voice</SelectItem>
-            </SelectContent>
-          </Select>
-          {currentTier === 'starter' && calculatorInputs.aiType !== 'chatbot' && (
-            <p className="text-xs text-amber-600 mt-1">
-              Starter Plan only supports text capabilities
-            </p>
-          )}
-          {currentTier !== 'premium' && (calculatorInputs.aiType === 'conversationalVoice' || calculatorInputs.aiType === 'both-premium') && (
-            <p className="text-xs text-amber-600 mt-1">
-              Conversational voice requires Premium Plan
-            </p>
-          )}
-        </div>
-        
-        <div className="space-y-2">
-          <Label htmlFor="numEmployees">Number of Employees</Label>
-          <Input
-            id="numEmployees"
-            type="number"
-            value={calculatorInputs.numEmployees || ''}
-            onChange={(e) => handleCalculatorInputChange('numEmployees', Number(e.target.value))}
-          />
-        </div>
-        
-        <div className="space-y-2">
-          <Label htmlFor="role">Employee Role</Label>
-          <Select
-            value={calculatorInputs.role || 'customerService'}
-            onValueChange={(value) => handleCalculatorInputChange('role', value)}
-          >
-            <SelectTrigger>
-              <SelectValue placeholder="Select role" />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="customerService">Customer Service</SelectItem>
-              <SelectItem value="sales">Sales</SelectItem>
-              <SelectItem value="technicalSupport">Technical Support</SelectItem>
-              <SelectItem value="generalAdmin">Administrative</SelectItem>
-            </SelectContent>
-          </Select>
-        </div>
-        
-        <div className="space-y-2">
-          <Label htmlFor="chatVolume">Monthly Chat Volume</Label>
-          <Input
-            id="chatVolume"
-            type="number"
-            value={calculatorInputs.chatVolume || ''}
-            onChange={(e) => handleCalculatorInputChange('chatVolume', Number(e.target.value))}
-          />
-        </div>
-        
-        <div className="space-y-2">
-          <Label htmlFor="avgChatLength">Average Chat Length (messages)</Label>
-          <Input
-            id="avgChatLength"
-            type="number"
-            value={calculatorInputs.avgChatLength || ''}
-            onChange={(e) => handleCalculatorInputChange('avgChatLength', Number(e.target.value))}
-          />
-        </div>
-        
-        <div className="space-y-2">
-          <Label htmlFor="callVolume">Monthly Call Volume</Label>
-          <Input
-            id="callVolume"
-            type="number"
-            value={calculatorInputs.callVolume || ''}
-            onChange={(e) => handleCalculatorInputChange('callVolume', Number(e.target.value))}
-            disabled={currentTier === 'starter'}
-          />
-          {currentTier !== 'starter' && (
-            <p className="text-xs text-green-600 mt-1">
-              {getIncludedVoiceMinutes()} minutes included free
-            </p>
-          )}
-        </div>
-        
-        <div className="space-y-2">
-          <Label htmlFor="avgCallDuration">Average Call Duration (minutes)</Label>
-          <Input
-            id="avgCallDuration"
-            type="number"
-            value={calculatorInputs.avgCallDuration || ''}
-            onChange={(e) => handleCalculatorInputChange('avgCallDuration', Number(e.target.value))}
-            disabled={currentTier === 'starter'}
-          />
-        </div>
-        
-        <div className="space-y-2">
-          <Label htmlFor="avgChatResolutionTime">Average Chat Resolution Time (minutes)</Label>
-          <Input
-            id="avgChatResolutionTime"
-            type="number"
-            value={calculatorInputs.avgChatResolutionTime || ''}
-            onChange={(e) => handleCalculatorInputChange('avgChatResolutionTime', Number(e.target.value))}
-          />
-        </div>
-      </div>
+      </Card>
       
-      <div className="mt-6 p-4 bg-gray-50 rounded-lg border border-gray-200">
-        <h3 className="text-sm font-medium text-gray-900 mb-3">Recalculated Values Preview:</h3>
-        <div className="text-sm grid grid-cols-2 gap-2">
+      <Card className="p-4 shadow-sm">
+        <h3 className="text-lg font-medium mb-4">Business Information</h3>
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-4">
+          <div className="space-y-2">
+            <Label htmlFor="numEmployees" className="text-sm font-medium">Number of Employees</Label>
+            <Input
+              id="numEmployees"
+              type="number"
+              value={calculatorInputs?.numEmployees || ''}
+              onChange={(e) => handleCalculatorInputChange('numEmployees', Number(e.target.value))}
+              className="w-full"
+            />
+          </div>
+          
+          <div className="space-y-2">
+            <Label htmlFor="role" className="text-sm font-medium">Employee Role</Label>
+            <Select
+              value={calculatorInputs?.role || 'customerService'}
+              onValueChange={(value) => handleCalculatorInputChange('role', value)}
+            >
+              <SelectTrigger className="w-full">
+                <SelectValue placeholder="Select role" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="customerService">Customer Service</SelectItem>
+                <SelectItem value="sales">Sales</SelectItem>
+                <SelectItem value="technicalSupport">Technical Support</SelectItem>
+                <SelectItem value="generalAdmin">Administrative</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
+        </div>
+      </Card>
+      
+      <Card className="p-4 shadow-sm">
+        <h3 className="text-lg font-medium mb-4">Volume Information</h3>
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-4">
+          <div className="space-y-2">
+            <Label htmlFor="chatVolume" className="text-sm font-medium">Monthly Chat Volume</Label>
+            <Input
+              id="chatVolume"
+              type="number"
+              value={calculatorInputs?.chatVolume || ''}
+              onChange={(e) => handleCalculatorInputChange('chatVolume', Number(e.target.value))}
+              className="w-full"
+            />
+          </div>
+          
+          <div className="space-y-2">
+            <Label htmlFor="callVolume" className="text-sm font-medium">Monthly Call Volume</Label>
+            <Input
+              id="callVolume"
+              type="number"
+              value={calculatorInputs?.callVolume || ''}
+              onChange={(e) => handleCalculatorInputChange('callVolume', Number(e.target.value))}
+              disabled={currentTier === 'starter'}
+              className="w-full"
+            />
+            {currentTier !== 'starter' && (
+              <p className="text-xs text-green-600 mt-1">
+                {getIncludedVoiceMinutes()} minutes included free
+              </p>
+            )}
+          </div>
+        </div>
+      </Card>
+      
+      <Card className="p-4 shadow-sm bg-gray-50">
+        <h3 className="text-lg font-medium mb-4">Calculation Preview</h3>
+        <div className="text-sm grid grid-cols-2 gap-3">
           <div>Monthly AI Cost:</div>
           <div className="font-medium">${safeFormatNumber(calculationResults?.aiCostMonthly?.total || 0)}</div>
           
@@ -191,7 +177,7 @@ export const CalculatorOptionsTab = ({
           <div>Savings Percentage:</div>
           <div className="font-medium text-green-600">{safeFormatNumber(calculationResults?.savingsPercentage || 0)}%</div>
         </div>
-      </div>
-    </>
+      </Card>
+    </div>
   );
 };

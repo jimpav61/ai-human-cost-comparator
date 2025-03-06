@@ -8,10 +8,10 @@ export interface CalculatorInputs {
   role: keyof typeof HUMAN_HOURLY_RATES;
   numEmployees: number;
   callVolume: number;
-  avgCallDuration: number; // Keep for backward compatibility, but we won't use it
+  avgCallDuration: number; // Keep for backward compatibility, but no longer used
   chatVolume: number;
-  avgChatLength: number;
-  avgChatResolutionTime: number;
+  avgChatLength: number; // Keep for backward compatibility, but no longer used
+  avgChatResolutionTime: number; // Keep for backward compatibility, but no longer used
 }
 
 export interface CalculationResults {
@@ -77,10 +77,10 @@ export const useCalculator = (inputs: CalculatorInputs): CalculationResults => {
       role: inputs.role || 'customerService',
       numEmployees: inputs.numEmployees || 5,
       callVolume: typeof inputs.callVolume === 'number' ? inputs.callVolume : 0,
-      avgCallDuration: inputs.avgCallDuration || 3,
+      avgCallDuration: 0, // No longer used in calculations
       chatVolume: inputs.chatVolume || 2000,
-      avgChatLength: inputs.avgChatLength || 8,
-      avgChatResolutionTime: inputs.avgChatResolutionTime || 10
+      avgChatLength: 0, // No longer used in calculations
+      avgChatResolutionTime: 0 // No longer used in calculations
     };
     
     console.log("Calculating with validated inputs:", validInputs);

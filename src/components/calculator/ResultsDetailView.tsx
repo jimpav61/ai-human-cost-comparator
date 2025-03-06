@@ -26,7 +26,7 @@ export const ResultsDetailView: React.FC<ResultsDetailViewProps> = ({
   const setupFee = results.aiCostMonthly.setupFee;
   
   // Calculate additional voice minutes and costs
-  const includedVoiceMinutes = AI_RATES.chatbot[inputs.aiTier].includedVoiceMinutes || 0;
+  const includedVoiceMinutes = AI_RATES.chatbot[inputs.aiTier]?.includedVoiceMinutes || 0;
   const extraVoiceMinutes = Math.max(0, inputs.callVolume - includedVoiceMinutes);
   const additionalVoiceCost = extraVoiceMinutes > 0 ? extraVoiceMinutes * 0.12 : 0;
   

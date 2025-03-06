@@ -20,10 +20,10 @@ export const AIVsHumanCalculator: React.FC<AIVsHumanCalculatorProps> = ({ leadDa
     role: 'customerService',
     numEmployees: leadData.employeeCount || 10,
     callVolume: 0, // Always start with 0 call volume (minutes)
-    avgCallDuration: 4.5, // Keep for backward compatibility but won't be used
+    avgCallDuration: 0, // Keep for backward compatibility but no longer used
     chatVolume: 5000,
-    avgChatLength: 8,
-    avgChatResolutionTime: 10,
+    avgChatLength: 0, // Keep for backward compatibility but no longer used
+    avgChatResolutionTime: 0 // Keep for backward compatibility but no longer used
   });
   
   const [reportGenerated, setReportGenerated] = useState(false);

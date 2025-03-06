@@ -27,10 +27,10 @@ export const EditLeadDialog = ({ lead, isOpen, onClose, onSave }: EditLeadDialog
     role: 'customerService',
     numEmployees: lead.employee_count || 5,
     callVolume: 0,
-    avgCallDuration: 3,
+    avgCallDuration: 0, // Keep for backward compatibility but no longer used
     chatVolume: 2000,
-    avgChatLength: 8,
-    avgChatResolutionTime: 10
+    avgChatLength: 0, // Keep for backward compatibility but no longer used
+    avgChatResolutionTime: 0 // Keep for backward compatibility but no longer used
   };
 
   // Ensure we have valid calculator inputs by merging defaults with lead data if available
