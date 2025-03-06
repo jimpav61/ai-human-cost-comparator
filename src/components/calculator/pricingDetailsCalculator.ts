@@ -19,8 +19,8 @@ export const calculatePricingDetails = (inputs: CalculatorInputs): PricingDetail
   // Calculate any additional voice costs
   // Always use 600 minutes for included voice in growth and premium plans
   const includedVoiceMinutes = inputs.aiTier === 'starter' ? 0 : 600;
-  const totalVoiceMinutes = inputs.callVolume;
-  const extraVoiceMinutes = Math.max(0, totalVoiceMinutes - includedVoiceMinutes);
+  const totalVoiceMinutes = inputs.aiTier !== 'starter' ? includedVoiceMinutes + inputs.callVolume : 0;
+  const extraVoiceMinutes = inputs.callVolume;
   let additionalVoiceCost = 0;
   
   if (extraVoiceMinutes > 0 && inputs.aiTier !== 'starter') {
@@ -32,12 +32,33 @@ export const calculatePricingDetails = (inputs: CalculatorInputs): PricingDetail
   // Total monthly cost
   const totalMonthlyCost = baseRate + additionalVoiceCost;
   
+  // Create an appropriate title based on AI type and tier
+  let planTitle = '';
+  
+  // Determine title based on AI type and tier
+  if (inputs.aiTier === 'starter') {
+    planTitle = 'Text AI (Starter Plan)';
+  } else if (inputs.aiTier === 'growth') {
+    if (inputs.aiType === 'chatbot') {
+      planTitle = 'Text AI (Growth Plan)';
+    } else if (inputs.aiType === 'voice') {
+      planTitle = 'Voice AI (Growth Plan)';
+    } else {
+      planTitle = 'Text & Voice AI (Growth Plan)';
+    }
+  } else if (inputs.aiTier === 'premium') {
+    if (inputs.aiType === 'chatbot') {
+      planTitle = 'Text AI (Premium Plan)';
+    } else if (inputs.aiType === 'conversationalVoice') {
+      planTitle = 'Conversational Voice AI (Premium Plan)';
+    } else {
+      planTitle = 'Text & Conversational Voice AI (Premium Plan)';
+    }
+  }
+  
   // Create a pricing detail entry with the fixed base price
   pricingDetails.push({
-    title: inputs.aiType === 'chatbot' ? 'Text AI' : 
-           inputs.aiType === 'voice' ? 'Voice AI' :
-           inputs.aiType === 'conversationalVoice' ? 'Conversational Voice AI' :
-           inputs.aiType === 'both' ? 'Text & Voice AI' : 'Text & Conversational Voice AI',
+    title: planTitle,
     base: baseRate,
     rate: "Flat monthly rate",
     totalMessages: inputs.aiType === 'chatbot' || inputs.aiType === 'both' || inputs.aiType === 'both-premium' 
