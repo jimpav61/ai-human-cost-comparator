@@ -100,8 +100,24 @@ export const useCalculator = (inputs: CalculatorInputs): CalculationResults => {
     
     // Get the exact fixed price for the selected tier
     const tierBase = hardcodedBasePrices[inputs.aiTier];
-    const setupFee = aiRates.chatbot[inputs.aiTier].setupFee;
-    const annualPlan = aiRates.chatbot[inputs.aiTier].annualPrice;
+    
+    // Safe setup fee retrieval with fallback
+    let setupFee = 0;
+    if (aiRates.chatbot[inputs.aiTier] && 'setupFee' in aiRates.chatbot[inputs.aiTier]) {
+      setupFee = aiRates.chatbot[inputs.aiTier].setupFee;
+    } else {
+      // Fallback to default values
+      setupFee = inputs.aiTier === 'starter' ? 249 : inputs.aiTier === 'growth' ? 749 : 1149;
+    }
+    
+    // Safe annual plan retrieval with fallback
+    let annualPlan = 0;
+    if (aiRates.chatbot[inputs.aiTier] && 'annualPrice' in aiRates.chatbot[inputs.aiTier]) {
+      annualPlan = aiRates.chatbot[inputs.aiTier].annualPrice;
+    } else {
+      // Fallback to default values
+      annualPlan = inputs.aiTier === 'starter' ? 990 : inputs.aiTier === 'growth' ? 2290 : 4290;
+    }
     
     console.log(`Using EXACT pricing for ${inputs.aiTier} tier: ${tierBase}/month`);
     
@@ -136,14 +152,16 @@ export const useCalculator = (inputs: CalculatorInputs): CalculationResults => {
       monthlyHumanCost,
       monthlySavings,
       yearlySavings,
-      savingsPercentage
+      savingsPercentage,
+      setupFee,
+      annualPlan
     });
     
     setResults({
       aiCostMonthly: {
         voice: additionalVoiceCost,
         chatbot: tierBase,
-        total: totalMonthlyCost, // Fixed: replaced reference to baseMonthlyPrice with totalMonthlyCost
+        total: totalMonthlyCost,
         setupFee: setupFee
       },
       basePriceMonthly: tierBase,

@@ -1,5 +1,5 @@
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { ResultsSummary } from './ResultsSummary';
 import { ResultsDetailView } from './ResultsDetailView';
 import { calculatePricingDetails, getTierDisplayName, getAITypeDisplay } from './pricingDetailsCalculator';
@@ -7,6 +7,7 @@ import type { CalculationResults, CalculatorInputs } from '@/hooks/useCalculator
 import type { LeadData } from './types';
 import { generateAndDownloadReport } from '@/utils/reportGenerator';
 import { Lead } from '@/types/leads';
+import { toast } from '@/components/ui/use-toast';
 
 interface ResultsDisplayProps {
   results: CalculationResults;
@@ -28,6 +29,13 @@ export const ResultsDisplay: React.FC<ResultsDisplayProps> = ({
   const tierDisplayName = getTierDisplayName(inputs.aiTier);
   const aiTypeDisplay = getAITypeDisplay(inputs.aiType);
   
+  // For debugging
+  useEffect(() => {
+    console.log("ResultsDisplay - Inputs:", inputs);
+    console.log("ResultsDisplay - Results:", results);
+    console.log("ResultsDisplay - PricingDetails:", pricingDetails);
+  }, [inputs, results, pricingDetails]);
+  
   // Create a Lead object from the leadData and calculator results
   const leadForReport: Lead = {
     id: leadData.id || 'temp-id',
@@ -46,6 +54,20 @@ export const ResultsDisplay: React.FC<ResultsDisplayProps> = ({
     form_completed: true
   };
 
+  const handleDownloadReport = () => {
+    try {
+      console.log("Downloading report with lead data:", leadForReport);
+      generateAndDownloadReport(leadForReport);
+    } catch (error) {
+      console.error("Error downloading report:", error);
+      toast({
+        title: "Error",
+        description: "Failed to download report. Please try again.",
+        variant: "destructive",
+      });
+    }
+  };
+
   return (
     <div className="animate-fadeIn">
       <ResultsSummary
@@ -59,7 +81,7 @@ export const ResultsDisplay: React.FC<ResultsDisplayProps> = ({
       {reportGenerated && (
         <div className="mt-4">
           <button
-            onClick={() => generateAndDownloadReport(leadForReport)}
+            onClick={handleDownloadReport}
             className="w-full bg-brand-600 hover:bg-brand-700 text-white font-medium py-3 px-4 rounded-lg transition-colors duration-200"
           >
             Download Detailed Report

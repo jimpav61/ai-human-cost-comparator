@@ -7,7 +7,7 @@ import { Lead } from "@/types/leads";
 import { Button } from "@/components/ui/button";
 import { useAITypeUpdater } from "./hooks/useAITypeUpdater";
 import { AI_RATES } from "@/constants/pricing";
-import { toast } from "@/hooks/use-toast";
+import { toast } from "@/components/ui/use-toast";
 
 interface EditLeadDialogProps {
   lead: Lead;
@@ -18,6 +18,7 @@ interface EditLeadDialogProps {
 
 export const EditLeadDialog = ({ lead, isOpen, onClose, onSave }: EditLeadDialogProps) => {
   const [formData, setFormData] = useState<Lead>(lead);
+  console.log("EditLeadDialog rendering. isOpen:", isOpen, "lead:", lead);
 
   // Initialize calculator inputs from lead data or defaults
   const defaultCalculatorInputs: CalculatorInputs = {
@@ -41,6 +42,7 @@ export const EditLeadDialog = ({ lead, isOpen, onClose, onSave }: EditLeadDialog
 
   // Reset form when lead changes
   useEffect(() => {
+    console.log("Lead changed in EditLeadDialog:", lead);
     setFormData(lead);
     setCalculatorInputs((lead.calculator_inputs as CalculatorInputs) || defaultCalculatorInputs);
   }, [lead]);
@@ -89,8 +91,19 @@ export const EditLeadDialog = ({ lead, isOpen, onClose, onSave }: EditLeadDialog
     }
   };
 
+  // For debugging
+  useEffect(() => {
+    console.log("EditLeadDialog mounted/updated. isOpen:", isOpen);
+    return () => console.log("EditLeadDialog unmounted");
+  }, [isOpen]);
+
+  if (!isOpen) {
+    return null;
+  }
+
   return (
     <Dialog open={isOpen} onOpenChange={(open) => {
+      console.log("Dialog open state changing to:", open);
       if (!open) onClose();
     }}>
       <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
