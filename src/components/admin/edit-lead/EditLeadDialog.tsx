@@ -34,10 +34,20 @@ export const EditLeadDialog = ({ lead, isOpen, onClose, onSave }: EditLeadDialog
   // Ensure we have valid calculator inputs by merging defaults with lead data if available
   const [calculatorInputs, setCalculatorInputs] = useState<CalculatorInputs>(() => {
     if (lead.calculator_inputs && typeof lead.calculator_inputs === 'object') {
+      // Get AI type from inputs, ensure it's a valid value
+      const aiTypeFromInputs = lead.calculator_inputs.aiType as string;
+      const validatedAiType = validateAiType(aiTypeFromInputs);
+      
+      // Get tier from inputs, ensure it's a valid value
+      const aiTierFromInputs = lead.calculator_inputs.aiTier as string;
+      const validatedAiTier = validateAiTier(aiTierFromInputs);
+      
       // Merge with defaults to ensure all properties exist
       const mergedInputs = { 
         ...defaultCalculatorInputs, 
-        ...lead.calculator_inputs 
+        ...lead.calculator_inputs,
+        aiType: validatedAiType,
+        aiTier: validatedAiTier
       } as CalculatorInputs;
       
       console.log("Initialized calculator inputs from lead:", mergedInputs);
@@ -49,20 +59,26 @@ export const EditLeadDialog = ({ lead, isOpen, onClose, onSave }: EditLeadDialog
       const results = lead.calculator_results as any;
       if (results.basePriceMonthly) {
         // Determine tier from base price
-        let detectedTier = 'starter';
+        let detectedTier = 'starter' as const;
         if (results.basePriceMonthly === 229) {
-          detectedTier = 'growth';
+          detectedTier = 'growth' as const;
         } else if (results.basePriceMonthly === 429) {
-          detectedTier = 'premium';
+          detectedTier = 'premium' as const;
+        }
+        
+        // Determine appropriate AI type based on tier
+        let detectedAiType: 'chatbot' | 'both' | 'both-premium' = 'chatbot';
+        if (detectedTier === 'growth') {
+          detectedAiType = 'both';
+        } else if (detectedTier === 'premium') {
+          detectedAiType = 'both-premium';
         }
         
         // Update default inputs with the detected tier
-        const updatedInputs = {
+        const updatedInputs: CalculatorInputs = {
           ...defaultCalculatorInputs,
           aiTier: detectedTier,
-          // If tier is growth or premium, set appropriate AI type
-          aiType: detectedTier === 'starter' ? 'chatbot' : 
-                  detectedTier === 'growth' ? 'both' : 'both-premium'
+          aiType: detectedAiType
         };
         
         console.log("Detected tier from results:", detectedTier, "Updated inputs:", updatedInputs);
@@ -72,6 +88,22 @@ export const EditLeadDialog = ({ lead, isOpen, onClose, onSave }: EditLeadDialog
     
     return defaultCalculatorInputs;
   });
+
+  // Helper function to validate aiType
+  function validateAiType(aiType: string): 'chatbot' | 'voice' | 'both' | 'conversationalVoice' | 'both-premium' {
+    const validTypes = ['chatbot', 'voice', 'both', 'conversationalVoice', 'both-premium'];
+    return validTypes.includes(aiType) 
+      ? aiType as 'chatbot' | 'voice' | 'both' | 'conversationalVoice' | 'both-premium'
+      : 'chatbot';
+  }
+  
+  // Helper function to validate aiTier
+  function validateAiTier(aiTier: string): 'starter' | 'growth' | 'premium' {
+    const validTiers = ['starter', 'growth', 'premium'];
+    return validTiers.includes(aiTier)
+      ? aiTier as 'starter' | 'growth' | 'premium' 
+      : 'starter';
+  }
 
   // Use the calculator hook to get calculation results
   const calculationResults = useCalculator(calculatorInputs);
@@ -83,10 +115,18 @@ export const EditLeadDialog = ({ lead, isOpen, onClose, onSave }: EditLeadDialog
     
     // Ensure we always have valid calculator inputs when lead changes
     if (lead.calculator_inputs && typeof lead.calculator_inputs === 'object') {
-      const mergedInputs = { 
+      const aiTypeFromInputs = lead.calculator_inputs.aiType as string;
+      const validatedAiType = validateAiType(aiTypeFromInputs);
+      
+      const aiTierFromInputs = lead.calculator_inputs.aiTier as string;
+      const validatedAiTier = validateAiTier(aiTierFromInputs);
+      
+      const mergedInputs: CalculatorInputs = { 
         ...defaultCalculatorInputs, 
-        ...lead.calculator_inputs 
-      } as CalculatorInputs;
+        ...lead.calculator_inputs,
+        aiType: validatedAiType,
+        aiTier: validatedAiTier
+      };
       
       console.log("Updated calculator inputs from lead change:", mergedInputs);
       setCalculatorInputs(mergedInputs);
@@ -95,19 +135,26 @@ export const EditLeadDialog = ({ lead, isOpen, onClose, onSave }: EditLeadDialog
       const results = lead.calculator_results as any;
       if (results.basePriceMonthly) {
         // Determine tier from base price
-        let detectedTier = 'starter';
+        let detectedTier = 'starter' as const;
         if (results.basePriceMonthly === 229) {
-          detectedTier = 'growth';
+          detectedTier = 'growth' as const;
         } else if (results.basePriceMonthly === 429) {
-          detectedTier = 'premium';
+          detectedTier = 'premium' as const;
         }
         
-        // Update inputs with the detected tier and appropriate AI type
-        const updatedInputs = {
+        // Determine appropriate AI type based on tier
+        let detectedAiType: 'chatbot' | 'both' | 'both-premium' = 'chatbot';
+        if (detectedTier === 'growth') {
+          detectedAiType = 'both';
+        } else if (detectedTier === 'premium') {
+          detectedAiType = 'both-premium';
+        }
+        
+        // Update inputs with the detected tier
+        const updatedInputs: CalculatorInputs = {
           ...defaultCalculatorInputs,
           aiTier: detectedTier,
-          aiType: detectedTier === 'starter' ? 'chatbot' : 
-                  detectedTier === 'growth' ? 'both' : 'both-premium',
+          aiType: detectedAiType,
           numEmployees: lead.employee_count || defaultCalculatorInputs.numEmployees
         };
         
@@ -129,6 +176,13 @@ export const EditLeadDialog = ({ lead, isOpen, onClose, onSave }: EditLeadDialog
   // Handle changes to calculator inputs
   const handleCalculatorInputChange = (field: string, value: any) => {
     console.log(`Changing calculator input ${field} to:`, value);
+    
+    if (field === 'aiType') {
+      value = validateAiType(value);
+    } else if (field === 'aiTier') {
+      value = validateAiTier(value);
+    }
+    
     setCalculatorInputs(prev => ({
       ...prev,
       [field]: value
