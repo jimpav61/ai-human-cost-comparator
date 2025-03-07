@@ -31,15 +31,22 @@ export const useProposalGenerator = ({ lead }: UseProposalGeneratorProps) => {
       console.log("Calculator results for proposal:", calculatorResults);
       console.log("Calculator inputs for proposal:", calculatorInputs);
       
-      // Get call volume (additional voice minutes) directly from calculator inputs
+      // EXPLICITLY extract plan tier from calculator inputs
       const aiTier = calculatorInputs?.aiTier || 'growth';
+      console.log("Explicitly extracted aiTier:", aiTier);
       
-      // IMPORTANT: Extract the call volume and make sure it's a number
-      // Always get callVolume directly from calculator_inputs to ensure consistency with the report
-      const callVolume = typeof calculatorInputs?.callVolume === 'number' ? 
-        calculatorInputs.callVolume : 
-        typeof calculatorInputs?.callVolume === 'string' ?
-        parseInt(calculatorInputs.callVolume, 10) : 0;
+      // EXPLICITLY extract the call volume (additional voice minutes)
+      // Always use the raw value from calculator_inputs.callVolume
+      const rawCallVolume = calculatorInputs?.callVolume;
+      console.log("Raw callVolume from inputs:", rawCallVolume);
+      
+      // Parse to ensure it's a valid number
+      const callVolume = typeof rawCallVolume === 'number' ? 
+        rawCallVolume : 
+        typeof rawCallVolume === 'string' ?
+        parseInt(rawCallVolume, 10) : 0;
+      
+      console.log("Parsed callVolume:", callVolume);
       
       // Additional voice minutes is exactly equal to the call volume input value
       const additionalVoiceMinutes = callVolume;
@@ -47,6 +54,7 @@ export const useProposalGenerator = ({ lead }: UseProposalGeneratorProps) => {
       // Determine the included minutes based on the tier
       const includedVoiceMinutes = aiTier === 'starter' ? 0 : 600;
       
+      console.log("Plan tier:", aiTier);
       console.log("Additional voice minutes for proposal:", additionalVoiceMinutes);
       console.log("Included voice minutes for tier:", includedVoiceMinutes);
       
@@ -133,6 +141,23 @@ export const useProposalGenerator = ({ lead }: UseProposalGeneratorProps) => {
       console.log("Safe results with additional voice cost:", safeResults.aiCostMonthly);
       console.log("Additional voice minutes being passed to generateProposal:", additionalVoiceMinutes);
       
+      // Get the AI type display value
+      const aiTypeDisplay = calculatorInputs?.aiType ? 
+        (calculatorInputs.aiType === 'chatbot' ? 'Text Only' : 
+        calculatorInputs.aiType === 'voice' ? 'Basic Voice' : 
+        calculatorInputs.aiType === 'conversationalVoice' ? 'Conversational Voice' : 
+        calculatorInputs.aiType === 'both' ? 'Text & Basic Voice' : 
+        calculatorInputs.aiType === 'both-premium' ? 'Text & Conversational Voice' : 'Text Only') : 'Text Only';
+      
+      console.log("AI Type Display for proposal:", aiTypeDisplay);
+      
+      // Generate tier name for display
+      const tierName = aiTier === 'starter' ? 'Starter Plan' : 
+                      aiTier === 'growth' ? 'Growth Plan' : 
+                      aiTier === 'premium' ? 'Premium Plan' : 'Growth Plan';
+      
+      console.log("Tier Name for proposal:", tierName);
+      
       // Generate proposal using the same function as frontend
       const doc = generateProposal({
         contactInfo: lead.name || 'Valued Client',
@@ -144,16 +169,8 @@ export const useProposalGenerator = ({ lead }: UseProposalGeneratorProps) => {
         results: safeResults,
         additionalVoiceMinutes: additionalVoiceMinutes, // Explicitly pass the additionalVoiceMinutes
         includedVoiceMinutes: includedVoiceMinutes, // Explicitly pass the includedVoiceMinutes
-        tierName: calculatorInputs?.aiTier ? 
-          (calculatorInputs.aiTier === 'starter' ? 'Starter Plan' : 
-          calculatorInputs.aiTier === 'growth' ? 'Growth Plan' : 
-          'Premium Plan') : 'Growth Plan',
-        aiType: calculatorInputs?.aiType ? 
-          (calculatorInputs.aiType === 'chatbot' ? 'Text Only' : 
-          calculatorInputs.aiType === 'voice' ? 'Basic Voice' : 
-          calculatorInputs.aiType === 'conversationalVoice' ? 'Conversational Voice' : 
-          calculatorInputs.aiType === 'both' ? 'Text & Basic Voice' : 
-          calculatorInputs.aiType === 'both-premium' ? 'Text & Conversational Voice' : 'Text Only') : 'Text Only'
+        tierName: tierName, // Explicitly pass the tierName
+        aiType: aiTypeDisplay // Explicitly pass the aiType display value
       });
       
       console.log("Proposal generation completed successfully");
