@@ -1,0 +1,2 @@
+
+export { LeadsTable } from './LeadsTable';
