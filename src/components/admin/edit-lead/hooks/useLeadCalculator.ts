@@ -35,7 +35,21 @@ const defaultCalculatorInputs: CalculatorInputs = {
 export function useLeadCalculator(lead: Lead) {
   // Ensure we have valid calculator inputs by merging defaults with lead data if available
   const [calculatorInputs, setCalculatorInputs] = useState<CalculatorInputs>(() => {
-    if (lead.calculator_inputs && typeof lead.calculator_inputs === 'object') {
+    // Check if lead has valid calculator_inputs
+    const hasValidInputs = lead.calculator_inputs && 
+                          typeof lead.calculator_inputs === 'object' && 
+                          Object.keys(lead.calculator_inputs).length > 0;
+    
+    // Check if lead has valid calculator_results                      
+    const hasValidResults = lead.calculator_results && 
+                           typeof lead.calculator_results === 'object' && 
+                           Object.keys(lead.calculator_results).length > 0;
+    
+    console.log("Initializing calculator: hasValidInputs=", hasValidInputs, "hasValidResults=", hasValidResults);
+    console.log("Lead calculator_inputs:", lead.calculator_inputs);
+    console.log("Lead calculator_results:", lead.calculator_results);
+    
+    if (hasValidInputs) {
       // Get AI type from inputs, ensure it's a valid value
       const aiTypeFromInputs = lead.calculator_inputs.aiType as string;
       const validatedAiType = validateAiType(aiTypeFromInputs);
@@ -57,37 +71,63 @@ export function useLeadCalculator(lead: Lead) {
       return mergedInputs;
     }
     
-    // Check if we can get the tier from calculator_results if calculator_inputs is empty
-    if (lead.calculator_results && typeof lead.calculator_results === 'object') {
+    // Try to infer calculator inputs from calculator_results if available
+    if (hasValidResults) {
       const results = lead.calculator_results as any;
       if (results.basePriceMonthly) {
         // Determine tier from base price
         let detectedTier: 'starter' | 'growth' | 'premium' = 'starter';
+        
+        // Map the base price to tier
         if (results.basePriceMonthly === 229) {
           detectedTier = 'growth';
         } else if (results.basePriceMonthly === 429) {
           detectedTier = 'premium';
+        } else if (results.basePriceMonthly === 99) {
+          detectedTier = 'starter';
         }
         
-        // Determine appropriate AI type based on tier
-        let detectedAiType: 'chatbot' | 'both' | 'both-premium' = 'chatbot';
-        if (detectedTier === 'growth') {
-          detectedAiType = 'both';
-        } else if (detectedTier === 'premium') {
-          detectedAiType = 'both-premium';
+        console.log("Detected tier from base price:", detectedTier, "Base price:", results.basePriceMonthly);
+        
+        // Determine appropriate AI type based on tier and voice costs
+        let detectedAiType: 'chatbot' | 'voice' | 'both' | 'conversationalVoice' | 'both-premium' = 'chatbot';
+        
+        // If there are voice costs, determine the AI type accordingly
+        if (results.aiCostMonthly && results.aiCostMonthly.voice > 0) {
+          // If premium tier, use premium voice capabilities
+          if (detectedTier === 'premium') {
+            detectedAiType = 'both-premium';
+          } else if (detectedTier === 'growth') {
+            detectedAiType = 'both';
+          }
         } else {
-          detectedAiType = 'chatbot';
+          // No voice costs - use chatbot for starter, and tier-appropriate defaults for others
+          if (detectedTier === 'growth') {
+            detectedAiType = 'both';
+          } else if (detectedTier === 'premium') {
+            detectedAiType = 'both-premium';
+          } else {
+            detectedAiType = 'chatbot';
+          }
         }
         
-        // Update default inputs with the detected tier
+        // Get chat volume and voice volume if available
+        const chatVolume = results.chatVolume || defaultCalculatorInputs.chatVolume;
+        const callVolume = results.aiCostMonthly && results.aiCostMonthly.voice > 0 
+          ? Math.ceil(results.aiCostMonthly.voice / 0.12) // Calculate call volume from voice cost
+          : 0;
+        
+        // Update inputs with the detected values
         const updatedInputs: CalculatorInputs = {
           ...defaultCalculatorInputs,
           aiTier: detectedTier,
           aiType: detectedAiType,
-          numEmployees: lead.employee_count || defaultCalculatorInputs.numEmployees
+          numEmployees: lead.employee_count || defaultCalculatorInputs.numEmployees,
+          chatVolume: chatVolume,
+          callVolume: callVolume
         };
         
-        console.log("Detected tier from results:", detectedTier, "Updated inputs:", updatedInputs);
+        console.log("Detected inputs from results:", updatedInputs);
         return updatedInputs;
       }
     }
@@ -98,6 +138,7 @@ export function useLeadCalculator(lead: Lead) {
       numEmployees: lead.employee_count || defaultCalculatorInputs.numEmployees
     };
     
+    console.log("Using default inputs:", defaultInputs);
     return defaultInputs;
   });
 
@@ -124,8 +165,20 @@ export function useLeadCalculator(lead: Lead) {
   useEffect(() => {
     console.log("Lead changed in useLeadCalculator:", lead);
     
+    // Check if lead has valid calculator_inputs
+    const hasValidInputs = lead.calculator_inputs && 
+                          typeof lead.calculator_inputs === 'object' && 
+                          Object.keys(lead.calculator_inputs).length > 0;
+    
+    // Check if lead has valid calculator_results                      
+    const hasValidResults = lead.calculator_results && 
+                           typeof lead.calculator_results === 'object' && 
+                           Object.keys(lead.calculator_results).length > 0;
+    
+    console.log("Lead change: hasValidInputs=", hasValidInputs, "hasValidResults=", hasValidResults);
+    
     // Ensure we always have valid calculator inputs when lead changes
-    if (lead.calculator_inputs && typeof lead.calculator_inputs === 'object') {
+    if (hasValidInputs) {
       const aiTypeFromInputs = lead.calculator_inputs.aiType as string;
       const validatedAiType = validateAiType(aiTypeFromInputs);
       
@@ -142,37 +195,63 @@ export function useLeadCalculator(lead: Lead) {
       
       console.log("Updated calculator inputs from lead change:", mergedInputs);
       setCalculatorInputs(mergedInputs);
-    } else if (lead.calculator_results && typeof lead.calculator_results === 'object') {
+    } else if (hasValidResults) {
       // If no calculator_inputs but we have results, try to determine tier from base price
       const results = lead.calculator_results as any;
       if (results.basePriceMonthly) {
         // Determine tier from base price
         let detectedTier: 'starter' | 'growth' | 'premium' = 'starter';
+        
+        // Map the base price to tier
         if (results.basePriceMonthly === 229) {
           detectedTier = 'growth';
         } else if (results.basePriceMonthly === 429) {
           detectedTier = 'premium';
+        } else if (results.basePriceMonthly === 99) {
+          detectedTier = 'starter';
         }
         
-        // Determine appropriate AI type based on tier
-        let detectedAiType: 'chatbot' | 'both' | 'both-premium' = 'chatbot';
-        if (detectedTier === 'growth') {
-          detectedAiType = 'both';
-        } else if (detectedTier === 'premium') {
-          detectedAiType = 'both-premium';
+        console.log("Lead change: Detected tier from base price:", detectedTier, "Base price:", results.basePriceMonthly);
+        
+        // Determine appropriate AI type based on tier and voice costs
+        let detectedAiType: 'chatbot' | 'voice' | 'both' | 'conversationalVoice' | 'both-premium' = 'chatbot';
+        
+        // If there are voice costs, determine the AI type accordingly
+        if (results.aiCostMonthly && results.aiCostMonthly.voice > 0) {
+          // If premium tier, use premium voice capabilities
+          if (detectedTier === 'premium') {
+            detectedAiType = 'both-premium';
+          } else if (detectedTier === 'growth') {
+            detectedAiType = 'both';
+          }
         } else {
-          detectedAiType = 'chatbot';
+          // No voice costs - use chatbot for starter, and tier-appropriate defaults for others
+          if (detectedTier === 'growth') {
+            detectedAiType = 'both';
+          } else if (detectedTier === 'premium') {
+            detectedAiType = 'both-premium';
+          } else {
+            detectedAiType = 'chatbot';
+          }
         }
         
-        // Update inputs with the detected tier
+        // Get chat volume and voice volume if available
+        const chatVolume = results.chatVolume || defaultCalculatorInputs.chatVolume;
+        const callVolume = results.aiCostMonthly && results.aiCostMonthly.voice > 0 
+          ? Math.ceil(results.aiCostMonthly.voice / 0.12) // Calculate call volume from voice cost
+          : 0;
+        
+        // Update inputs with the detected values
         const updatedInputs: CalculatorInputs = {
           ...defaultCalculatorInputs,
           aiTier: detectedTier,
           aiType: detectedAiType,
-          numEmployees: lead.employee_count || defaultCalculatorInputs.numEmployees
+          numEmployees: lead.employee_count || defaultCalculatorInputs.numEmployees,
+          chatVolume: chatVolume,
+          callVolume: callVolume
         };
         
-        console.log("Lead change: Detected tier from results:", detectedTier, "Updated inputs:", updatedInputs);
+        console.log("Lead change: Detected inputs from results:", updatedInputs);
         setCalculatorInputs(updatedInputs);
       } else {
         setCalculatorInputs({

@@ -10,7 +10,15 @@ export function useLeadEditing(onLeadUpdated?: () => void) {
 
   const handleOpenEditDialog = (lead: Lead) => {
     console.log("Opening edit dialog for lead:", lead);
-    setEditingLead(lead);
+    
+    // Ensure calculator_inputs and calculator_results are objects, not null
+    const preparedLead: Lead = {
+      ...lead,
+      calculator_inputs: lead.calculator_inputs || {},
+      calculator_results: lead.calculator_results || {}
+    };
+    
+    setEditingLead(preparedLead);
     setIsEditDialogOpen(true);
   };
 
