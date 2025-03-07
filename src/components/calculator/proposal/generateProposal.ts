@@ -60,7 +60,7 @@ export const generateProposal = (params: GenerateProposalParams) => {
   const aiTypeKey = aiType.toLowerCase().includes('text only') ? 'chatbot' :
                    aiType.toLowerCase().includes('voice') ? 'voice' : 'chatbot';
   
-  // Extract additional voice minutes
+  // Extract additional voice minutes directly from params
   const additionalVoiceMinutes = typeof params.additionalVoiceMinutes === 'number' ? 
                                params.additionalVoiceMinutes : 0;
   
@@ -77,6 +77,9 @@ export const generateProposal = (params: GenerateProposalParams) => {
   
   // Calculate total cost with additional voice
   const totalCost = basePrice + additionalVoiceCost;
+  
+  console.log("Proposal generation - additionalVoiceMinutes:", additionalVoiceMinutes);
+  console.log("Proposal generation - additionalVoiceCost:", additionalVoiceCost);
   
   // Merge provided results with default values to ensure all required properties exist
   // Also, ensure all values are numbers, not strings or undefined

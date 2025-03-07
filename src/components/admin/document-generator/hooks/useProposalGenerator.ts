@@ -35,6 +35,7 @@ export const useProposalGenerator = ({ lead }: UseProposalGeneratorProps) => {
       const aiTier = calculatorInputs?.aiTier || 'growth';
       
       // IMPORTANT: Extract the call volume and make sure it's a number
+      // Always get callVolume directly from calculator_inputs to ensure consistency with the report
       const callVolume = typeof calculatorInputs?.callVolume === 'number' ? 
         calculatorInputs.callVolume : 
         typeof calculatorInputs?.callVolume === 'string' ?
@@ -55,16 +56,14 @@ export const useProposalGenerator = ({ lead }: UseProposalGeneratorProps) => {
         aiTier === 'growth' ? 229 : 
         aiTier === 'premium' ? 429 : 229;
       
-      // Calculate additional voice cost - now correctly using only minutes beyond the included amount
-      const chargeableMinutes = Math.max(0, additionalVoiceMinutes - includedVoiceMinutes);
-      const additionalVoiceCost = chargeableMinutes * 0.12;
+      // Calculate additional voice cost
+      const additionalVoiceCost = additionalVoiceMinutes * 0.12;
       
       const totalMonthlyCost = basePriceMonthly + additionalVoiceCost;
       
       console.log("Voice cost calculation:", {
         additionalVoiceMinutes,
         includedVoiceMinutes,
-        chargeable: chargeableMinutes,
         additionalVoiceCost,
         basePriceMonthly,
         totalMonthlyCost

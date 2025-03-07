@@ -65,8 +65,18 @@ serve(async (req) => {
     
     // Calculate any additional voice costs
     const includedVoiceMinutes = aiTier === 'starter' ? 0 : 600;
-    const callVolume = lead.calculator_inputs?.callVolume ? Number(lead.calculator_inputs.callVolume) : 0;
+    
+    // Extract callVolume and ensure it's a number
+    const callVolume = lead.calculator_inputs?.callVolume ? 
+      (typeof lead.calculator_inputs.callVolume === 'number' ? 
+       lead.calculator_inputs.callVolume : 
+       parseInt(String(lead.calculator_inputs.callVolume), 10)) : 0;
+    
+    // Additional voice minutes is exactly equal to the call volume
     const additionalVoiceMinutes = callVolume;
+    
+    console.log("Email proposal - callVolume:", callVolume);
+    console.log("Email proposal - additionalVoiceMinutes:", additionalVoiceMinutes);
     
     // Calculate cost for additional minutes
     const additionalVoiceCost = additionalVoiceMinutes * 0.12;

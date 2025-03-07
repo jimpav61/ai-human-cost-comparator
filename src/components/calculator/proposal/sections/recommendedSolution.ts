@@ -60,7 +60,7 @@ export const addRecommendedSolution = (doc: JsPDFWithAutoTable, yPosition: numbe
   // Get included minutes based on tier
   const includedVoiceMinutes = tierKey === 'starter' ? 0 : 600;
   
-  // Get additional voice minutes and calculate correct cost
+  // Get additional voice minutes directly from params
   const additionalVoiceMinutes = params.additionalVoiceMinutes || 0;
   
   console.log("Recommended Solution - Voice minutes:", {

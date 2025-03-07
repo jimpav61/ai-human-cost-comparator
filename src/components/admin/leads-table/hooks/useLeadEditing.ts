@@ -18,6 +18,18 @@ export function useLeadEditing(onLeadUpdated?: () => void) {
       calculator_results: lead.calculator_results || {}
     };
     
+    // Before setting the editing lead, ensure callVolume is properly extracted from calculator_inputs
+    if (preparedLead.calculator_inputs && 
+        typeof preparedLead.calculator_inputs === 'object' && 
+        'callVolume' in preparedLead.calculator_inputs) {
+      
+      // Make sure callVolume is a number for proper proposal generation
+      if (typeof preparedLead.calculator_inputs.callVolume === 'string') {
+        preparedLead.calculator_inputs.callVolume = parseInt(preparedLead.calculator_inputs.callVolume, 10) || 0;
+      }
+    }
+    
+    console.log("Opening edit dialog with prepared lead:", preparedLead);
     setEditingLead(preparedLead);
     setIsEditDialogOpen(true);
   };
