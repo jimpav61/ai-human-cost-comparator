@@ -4,6 +4,8 @@ import { Lead } from "@/types/leads";
 import { getSafeFileName } from "@/components/admin/document-generator/hooks/report-generator/saveReport";
 import { toast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
+import { CalculationResults } from "@/hooks/calculator/types";
+import { SharedResults } from "@/components/calculator/shared/types";
 
 /**
  * Checks if a lead has calculator results and can generate a report
@@ -47,6 +49,10 @@ export const generateAndDownloadReport = async (lead: Lead) => {
     if (existingReport) {
       console.log('[SHARED REPORT] Found existing report, using saved data:', existingReport);
       
+      // Cast JSON data to expected types
+      const calculatorInputs = existingReport.calculator_inputs as Record<string, any>;
+      const calculatorResults = existingReport.calculator_results as CalculationResults;
+      
       // Generate PDF using the saved report data
       const doc = generatePDF({
         contactInfo: existingReport.contact_name || lead.name || 'Valued Client',
@@ -55,9 +61,9 @@ export const generateAndDownloadReport = async (lead: Lead) => {
         phoneNumber: existingReport.phone_number || lead.phone_number || '',
         industry: lead.industry || 'Other',
         employeeCount: Number(lead.employee_count) || 5,
-        results: existingReport.calculator_results,
-        additionalVoiceMinutes: existingReport.calculator_inputs?.callVolume || 0,
-        includedVoiceMinutes: existingReport.calculator_inputs?.aiTier === 'starter' ? 0 : 600,
+        results: calculatorResults,
+        additionalVoiceMinutes: calculatorInputs?.callVolume || 0,
+        includedVoiceMinutes: calculatorInputs?.aiTier === 'starter' ? 0 : 600,
         businessSuggestions: [
           {
             title: "Automate Common Customer Inquiries",
@@ -86,15 +92,14 @@ export const generateAndDownloadReport = async (lead: Lead) => {
             capabilities: ["Answer product questions", "Provide pricing information", "Schedule demonstrations with sales team"]
           }
         ],
-        tierName: existingReport.calculator_inputs?.aiTier === 'starter' ? 'Starter Plan' : 
-                 existingReport.calculator_inputs?.aiTier === 'growth' ? 'Growth Plan' : 
-                 existingReport.calculator_inputs?.aiTier === 'premium' ? 'Premium Plan' : 'Growth Plan',
-        aiType: existingReport.calculator_inputs?.aiType === 'chatbot' ? 'Text Only' : 
-                existingReport.calculator_inputs?.aiType === 'voice' ? 'Basic Voice' : 
-                existingReport.calculator_inputs?.aiType === 'conversationalVoice' ? 'Conversational Voice' : 
-                existingReport.calculator_inputs?.aiType === 'both' ? 'Text & Basic Voice' : 
-                existingReport.calculator_inputs?.aiType === 'both-premium' ? 'Text & Conversational Voice' : 'Text Only',
-        setupFee: existingReport.calculator_results?.aiCostMonthly?.setupFee
+        tierName: calculatorInputs?.aiTier === 'starter' ? 'Starter Plan' : 
+                 calculatorInputs?.aiTier === 'growth' ? 'Growth Plan' : 
+                 calculatorInputs?.aiTier === 'premium' ? 'Premium Plan' : 'Growth Plan',
+        aiType: calculatorInputs?.aiType === 'chatbot' ? 'Text Only' : 
+                calculatorInputs?.aiType === 'voice' ? 'Basic Voice' : 
+                calculatorInputs?.aiType === 'conversationalVoice' ? 'Conversational Voice' : 
+                calculatorInputs?.aiType === 'both' ? 'Text & Basic Voice' : 
+                calculatorInputs?.aiType === 'both-premium' ? 'Text & Conversational Voice' : 'Text Only'
       });
       
       // Save file with proper naming
@@ -138,7 +143,7 @@ export const generateAndDownloadReport = async (lead: Lead) => {
       phoneNumber: lead.phone_number || '',
       industry: lead.industry || 'Other',
       employeeCount: Number(lead.employee_count) || 5,
-      results: lead.calculator_results,
+      results: lead.calculator_results as CalculationResults,
       additionalVoiceMinutes: lead.calculator_inputs?.callVolume || 0,
       includedVoiceMinutes: aiTier === 'starter' ? 0 : 600,
       businessSuggestions: [
@@ -170,8 +175,7 @@ export const generateAndDownloadReport = async (lead: Lead) => {
         }
       ],
       tierName: tierName,
-      aiType: aiTypeDisplay,
-      setupFee: lead.calculator_results?.aiCostMonthly?.setupFee
+      aiType: aiTypeDisplay
     });
     
     // Save report to database for future retrieval
