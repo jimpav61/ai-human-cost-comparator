@@ -62,6 +62,8 @@ export const EditLeadDialog = ({ lead, isOpen, onClose, onSave }: EditLeadDialog
       if (aiTier === 'starter' && aiType !== 'chatbot') {
         aiType = 'chatbot';
         calculatorInputs.aiType = 'chatbot';
+        // Set call volume to 0 for starter plan since it doesn't support voice
+        calculatorInputs.callVolume = 0;
       } else if (aiTier === 'premium') {
         if (aiType === 'voice') {
           aiType = 'conversationalVoice';
@@ -78,6 +80,11 @@ export const EditLeadDialog = ({ lead, isOpen, onClose, onSave }: EditLeadDialog
           aiType = 'both';
           calculatorInputs.aiType = 'both';
         }
+      }
+
+      // Make sure call volume is a number
+      if (typeof calculatorInputs.callVolume === 'string') {
+        calculatorInputs.callVolume = parseInt(calculatorInputs.callVolume, 10) || 0;
       }
 
       const updatedLead: Lead = {

@@ -1,4 +1,3 @@
-
 import { HUMAN_HOURLY_RATES } from '@/constants/pricing';
 import { CalculatorInputs, CalculationResults } from './types';
 
@@ -19,17 +18,64 @@ const HARDCODED_BASE_PRICES = {
  * Validate calculator inputs and provide defaults
  */
 export function validateInputs(inputs: CalculatorInputs): CalculatorInputs {
-  return {
-    aiType: inputs.aiType || 'chatbot',
-    aiTier: inputs.aiTier || 'starter',
+  console.log("Validating calculator inputs:", inputs);
+  
+  // Ensure aiType is consistent with aiTier
+  let aiType = inputs.aiType || 'chatbot';
+  const aiTier = inputs.aiTier || 'starter';
+  
+  // Force consistent AI type values based on tier
+  if (aiTier === 'starter' && aiType !== 'chatbot') {
+    aiType = 'chatbot';
+    console.log("Starter plan can only use chatbot - corrected aiType to:", aiType);
+  } else if (aiTier === 'premium') {
+    if (aiType === 'voice') {
+      aiType = 'conversationalVoice';
+      console.log("Premium plan upgraded voice to conversational - corrected aiType to:", aiType);
+    } else if (aiType === 'both') {
+      aiType = 'both-premium';
+      console.log("Premium plan upgraded voice features - corrected aiType to:", aiType);
+    }
+  } else if (aiTier === 'growth') {
+    if (aiType === 'conversationalVoice') {
+      aiType = 'voice';
+      console.log("Growth plan can only use basic voice - corrected aiType to:", aiType);
+    } else if (aiType === 'both-premium') {
+      aiType = 'both';
+      console.log("Growth plan can only use basic voice features - corrected aiType to:", aiType);
+    }
+  }
+  
+  // Ensure callVolume is a number
+  let callVolume = inputs.callVolume;
+  if (typeof callVolume === 'string') {
+    callVolume = parseInt(callVolume, 10) || 0;
+    console.log("Converted callVolume from string to number:", callVolume);
+  } else if (typeof callVolume !== 'number') {
+    callVolume = 0;
+    console.log("callVolume was not a number or string, set to default:", callVolume);
+  }
+  
+  // Make sure starter plan has 0 call volume
+  if (aiTier === 'starter' && callVolume > 0) {
+    callVolume = 0;
+    console.log("Starter plan cannot have call volume - reset to 0");
+  }
+  
+  const validatedInputs = {
+    aiType: aiType,
+    aiTier: aiTier,
     role: inputs.role || 'customerService',
     numEmployees: inputs.numEmployees || 5,
-    callVolume: typeof inputs.callVolume === 'number' ? inputs.callVolume : 0,
+    callVolume: callVolume,
     avgCallDuration: 0, // No longer used in calculations
     chatVolume: inputs.chatVolume || 2000,
     avgChatLength: 0, // No longer used in calculations
     avgChatResolutionTime: 0 // No longer used in calculations
   };
+  
+  console.log("Validated calculator inputs:", validatedInputs);
+  return validatedInputs;
 }
 
 /**
@@ -69,8 +115,11 @@ export function calculateHumanCosts(inputs: CalculatorInputs, monthlyHours: numb
  * Calculate AI costs and pricing details
  */
 export function calculateAICosts(inputs: CalculatorInputs, aiRates: any) {
+  console.log("Calculating AI costs with inputs:", inputs);
+  
   // Get the exact fixed price for the selected tier
   const tierBase = HARDCODED_BASE_PRICES[inputs.aiTier];
+  console.log("Tier base price:", tierBase, "for tier:", inputs.aiTier);
   
   // Calculate additional voice costs - input field is now the ADDITIONAL minutes
   let additionalVoiceCost = 0;
@@ -78,11 +127,13 @@ export function calculateAICosts(inputs: CalculatorInputs, aiRates: any) {
   
   // inputs.callVolume now directly represents the additional minutes
   const extraVoiceMinutes = inputs.callVolume;
+  console.log("Extra voice minutes:", extraVoiceMinutes, "Included minutes:", includedVoiceMinutes);
   
   if (extraVoiceMinutes > 0 && inputs.aiTier !== 'starter') {
     // Always use 12¢ per minute for additional voice minutes
     const additionalMinuteRate = 0.12;
     additionalVoiceCost = extraVoiceMinutes * additionalMinuteRate;
+    console.log("Additional voice cost:", additionalVoiceCost);
   }
   
   // Calculate setup fee
@@ -94,11 +145,11 @@ export function calculateAICosts(inputs: CalculatorInputs, aiRates: any) {
       setupFee = aiRates.chatbot[inputs.aiTier].setupFee;
     } else {
       // Fallback to default values
-      setupFee = inputs.aiTier === 'starter' ? 249 : inputs.aiTier === 'growth' ? 749 : 1149;
+      setupFee = inputs.aiTier === 'starter' ? 499 : inputs.aiTier === 'growth' ? 749 : 999;
     }
   } catch (error) {
     console.error("Error getting setup fee:", error);
-    setupFee = inputs.aiTier === 'starter' ? 249 : inputs.aiTier === 'growth' ? 749 : 1149;
+    setupFee = inputs.aiTier === 'starter' ? 499 : inputs.aiTier === 'growth' ? 749 : 999;
   }
   
   // Calculate annual plan price
@@ -119,6 +170,7 @@ export function calculateAICosts(inputs: CalculatorInputs, aiRates: any) {
   
   // Total monthly cost
   const totalMonthlyCost = tierBase + additionalVoiceCost;
+  console.log("Total monthly cost:", totalMonthlyCost);
   
   return {
     tierBase,
@@ -166,6 +218,8 @@ export function performCalculations(
   inputs: CalculatorInputs, 
   aiRates: any
 ): CalculationResults {
+  console.log("Performing full calculations with inputs:", inputs);
+  
   const validatedInputs = validateInputs(inputs);
   
   const humanHours = calculateHumanResources(validatedInputs);
@@ -174,7 +228,7 @@ export function performCalculations(
   const savings = calculateSavings(humanCosts.monthlyHumanCost, aiCosts.totalMonthlyCost);
   const breakEvenPoint = calculateBreakEvenPoints(validatedInputs, humanCosts, aiCosts);
   
-  return {
+  const results = {
     aiCostMonthly: {
       voice: aiCosts.additionalVoiceCost,
       chatbot: aiCosts.tierBase,
@@ -188,6 +242,11 @@ export function performCalculations(
     savingsPercentage: savings.savingsPercentage,
     breakEvenPoint: breakEvenPoint,
     humanHours: humanHours,
-    annualPlan: aiCosts.annualPlan
+    annualPlan: aiCosts.annualPlan,
+    tierKey: validatedInputs.aiTier,
+    aiType: validatedInputs.aiType
   };
+  
+  console.log("Final calculation results:", results);
+  return results;
 }

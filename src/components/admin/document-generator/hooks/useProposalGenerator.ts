@@ -24,19 +24,16 @@ export const useProposalGenerator = ({ lead }: UseProposalGeneratorProps) => {
         throw new Error("Lead data is missing");
       }
       
-      // Extract calculator results and inputs directly from lead data
-      const calculatorResults = lead.calculator_results || {};
+      // Extract calculator_inputs directly from lead data - ensure it's an object
       const calculatorInputs = lead.calculator_inputs || {};
       
-      console.log("Calculator results for proposal:", calculatorResults);
-      console.log("Calculator inputs for proposal:", calculatorInputs);
+      console.log("Raw calculator inputs for proposal:", calculatorInputs);
       
       // DIRECTLY extract plan tier from calculator inputs - don't use defaults
       const aiTier = calculatorInputs.aiTier || 'growth';
       console.log("Direct aiTier extraction:", aiTier);
       
       // DIRECTLY extract the call volume (additional voice minutes)
-      // Use the exact value from calculator_inputs.callVolume
       let callVolume = calculatorInputs.callVolume;
       console.log("Raw callVolume directly from inputs:", callVolume, "type:", typeof callVolume);
       
@@ -111,6 +108,9 @@ export const useProposalGenerator = ({ lead }: UseProposalGeneratorProps) => {
       
       console.log("AI Type for proposal:", aiTypeValue);
       console.log("AI Type Display for proposal:", aiTypeDisplay);
+      
+      // Extract calculator results from lead - ensure it's an object
+      const calculatorResults = lead.calculator_results || {};
       
       // Create safe calculations results with voice cost included
       const safeResults = {

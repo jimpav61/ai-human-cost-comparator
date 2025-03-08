@@ -12,16 +12,19 @@ export function useLeadEditing(onLeadUpdated?: () => void) {
     console.log("Opening edit dialog for lead:", lead);
     
     // Create a deep clone of the lead to avoid reference issues
-    const preparedLead: Lead = {
-      ...lead,
-      calculator_inputs: lead.calculator_inputs ? JSON.parse(JSON.stringify(lead.calculator_inputs)) : {},
-      calculator_results: lead.calculator_results ? JSON.parse(JSON.stringify(lead.calculator_results)) : {}
-    };
+    const preparedLead: Lead = JSON.parse(JSON.stringify(lead));
+    
+    // Default calculator_inputs and results if they don't exist
+    if (!preparedLead.calculator_inputs || typeof preparedLead.calculator_inputs !== 'object') {
+      preparedLead.calculator_inputs = {};
+    }
+    
+    if (!preparedLead.calculator_results || typeof preparedLead.calculator_results !== 'object') {
+      preparedLead.calculator_results = {};
+    }
     
     // Before setting the editing lead, ensure callVolume is properly extracted from calculator_inputs
-    if (preparedLead.calculator_inputs && 
-        typeof preparedLead.calculator_inputs === 'object') {
-      
+    if (preparedLead.calculator_inputs) {
       // Make sure employee_count is synced with numEmployees in calculator inputs
       if (preparedLead.employee_count) {
         preparedLead.calculator_inputs.numEmployees = Number(preparedLead.employee_count);
@@ -32,6 +35,8 @@ export function useLeadEditing(onLeadUpdated?: () => void) {
       // Make sure callVolume is a number for proper proposal generation
       if (typeof preparedLead.calculator_inputs.callVolume === 'string') {
         preparedLead.calculator_inputs.callVolume = parseInt(preparedLead.calculator_inputs.callVolume, 10) || 0;
+      } else if (typeof preparedLead.calculator_inputs.callVolume !== 'number') {
+        preparedLead.calculator_inputs.callVolume = 0;
       }
       
       // Make sure aiTier is valid
@@ -41,34 +46,47 @@ export function useLeadEditing(onLeadUpdated?: () => void) {
       }
       
       // Make sure aiType is consistent with aiTier
+      const aiTier = preparedLead.calculator_inputs.aiTier;
+      let aiType = preparedLead.calculator_inputs.aiType || 'both';
+      
       // If on premium plan but not using premium voice features, upgrade automatically
-      if (preparedLead.calculator_inputs.aiTier === 'premium') {
-        if (preparedLead.calculator_inputs.aiType === 'voice') {
+      if (aiTier === 'premium') {
+        if (aiType === 'voice') {
+          aiType = 'conversationalVoice';
           preparedLead.calculator_inputs.aiType = 'conversationalVoice';
-        } else if (preparedLead.calculator_inputs.aiType === 'both') {
+        } else if (aiType === 'both') {
+          aiType = 'both-premium';
           preparedLead.calculator_inputs.aiType = 'both-premium';
-        } else if (!preparedLead.calculator_inputs.aiType || preparedLead.calculator_inputs.aiType === 'chatbot') {
+        } else if (!aiType || aiType === 'chatbot') {
+          aiType = 'both-premium';
           preparedLead.calculator_inputs.aiType = 'both-premium';
         }
       }
       
       // If on starter plan but not using text only, fix it
-      if (preparedLead.calculator_inputs.aiTier === 'starter' && 
-          preparedLead.calculator_inputs.aiType !== 'chatbot') {
-        preparedLead.calculator_inputs.aiType = 'chatbot';
+      if (aiTier === 'starter') {
+        if (aiType !== 'chatbot') {
+          aiType = 'chatbot';
+          preparedLead.calculator_inputs.aiType = 'chatbot';
+        }
         preparedLead.calculator_inputs.callVolume = 0;
       }
       
       // If on growth plan but using premium voice features, downgrade to appropriate type
-      if (preparedLead.calculator_inputs.aiTier === 'growth') {
-        if (preparedLead.calculator_inputs.aiType === 'conversationalVoice') {
+      if (aiTier === 'growth') {
+        if (aiType === 'conversationalVoice') {
+          aiType = 'voice';
           preparedLead.calculator_inputs.aiType = 'voice';
-        } else if (preparedLead.calculator_inputs.aiType === 'both-premium') {
+        } else if (aiType === 'both-premium') {
+          aiType = 'both';
           preparedLead.calculator_inputs.aiType = 'both';
-        } else if (!preparedLead.calculator_inputs.aiType) {
+        } else if (!aiType) {
+          aiType = 'both';
           preparedLead.calculator_inputs.aiType = 'both';
         }
       }
+      
+      console.log("Prepared lead calculator inputs:", preparedLead.calculator_inputs);
     }
     
     console.log("Opening edit dialog with prepared lead:", preparedLead);
@@ -88,6 +106,33 @@ export function useLeadEditing(onLeadUpdated?: () => void) {
       // Ensure calculator_inputs contains the updated employee count
       if (updatedLead.calculator_inputs && typeof updatedLead.calculator_inputs === 'object') {
         updatedLead.calculator_inputs.numEmployees = Number(updatedLead.employee_count) || 5;
+        
+        // Ensure AI type is consistent with tier before saving
+        const aiTier = updatedLead.calculator_inputs.aiTier || 'growth';
+        let aiType = updatedLead.calculator_inputs.aiType || 'both';
+        
+        // Force consistent AI type values based on tier
+        if (aiTier === 'starter' && aiType !== 'chatbot') {
+          aiType = 'chatbot';
+          updatedLead.calculator_inputs.aiType = 'chatbot';
+          updatedLead.calculator_inputs.callVolume = 0;
+        } else if (aiTier === 'premium') {
+          if (aiType === 'voice') {
+            aiType = 'conversationalVoice';
+            updatedLead.calculator_inputs.aiType = 'conversationalVoice';
+          } else if (aiType === 'both') {
+            aiType = 'both-premium';
+            updatedLead.calculator_inputs.aiType = 'both-premium';
+          }
+        } else if (aiTier === 'growth') {
+          if (aiType === 'conversationalVoice') {
+            aiType = 'voice';
+            updatedLead.calculator_inputs.aiType = 'voice';
+          } else if (aiType === 'both-premium') {
+            aiType = 'both';
+            updatedLead.calculator_inputs.aiType = 'both';
+          }
+        }
       }
       
       // Update the lead in the database
