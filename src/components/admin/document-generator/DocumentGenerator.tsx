@@ -19,17 +19,8 @@ export const DocumentGenerator = ({ lead }: DocumentGeneratorProps) => {
       setIsLoading(true);
       console.log("Attempting to download report for lead:", lead);
       
-      // Check if lead has calculator data before attempting to download
-      if (!lead.calculator_results || Object.keys(lead.calculator_results).length === 0) {
-        toast({
-          title: "Report Not Found",
-          description: "This lead has no calculator data. Complete the calculator form first.",
-          variant: "destructive",
-        });
-        return;
-      }
-      
-      // Use the shared utility function to download the report
+      // Use the shared utility function to download the report - do not add any checks here
+      // as they are handled inside the utility function
       const success = await generateAndDownloadReport(lead);
       
       if (!success) {
