@@ -10,9 +10,10 @@ interface UseProposalGeneratorProps {
 }
 
 export const useProposalGenerator = ({ lead }: UseProposalGeneratorProps) => {
+  // Fix: Pass the correct property name 'id' instead of 'leadId' to match the interface
   const { hasDownloaded, markAsDownloaded } = useDownloadState({
     storageKey: 'downloadedProposals',
-    id: lead.id // Changed from leadId to id to match the interface
+    id: lead.id
   });
 
   const generateProposalDocument = async () => {
