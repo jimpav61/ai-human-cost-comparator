@@ -5,7 +5,6 @@ import { useSavedReports } from "../hooks/useSavedReports";
 import { format } from "date-fns";
 import { Download, FileBarChart, Loader2 } from "lucide-react";
 import { toast } from "@/hooks/use-toast";
-import { supabase } from "@/integrations/supabase/client";
 import { useState } from "react";
 
 interface SavedReportsDialogProps {
@@ -22,37 +21,56 @@ export const SavedReportsDialog = ({ lead, isOpen, onClose }: SavedReportsDialog
     try {
       setDownloadLoading(reportId);
       
-      // Fetch the complete report data from the database
-      const { data: reportData, error } = await supabase
-        .from('generated_reports')
-        .select('*')
-        .eq('id', reportId)
-        .single();
-        
-      if (error) throw error;
+      console.log("Downloading original report with ID:", reportId);
+      
+      // Create or get the report data
+      const reportData = reports.find(r => r.id === reportId);
       
       if (!reportData) {
         throw new Error("Report data not found");
       }
       
-      // Create a temporary lead object with the exact original calculator inputs and results
-      const originalReportLead: Lead = {
-        ...lead,
-        calculator_inputs: reportData.calculator_inputs,
-        calculator_results: reportData.calculator_results,
-      };
+      console.log("Found report data for download:", reportData);
       
-      // Use the shared report generator with the ORIGINAL data
-      const success = await import('@/utils/reportGenerator').then(module => {
-        return module.generateAndDownloadReport(originalReportLead);
+      // Create a blob for the report data
+      const originalReportBlob = new Blob(
+        [JSON.stringify(reportData, null, 2)], 
+        { type: 'application/json' }
+      );
+      
+      // Create a hidden link element to trigger the download
+      const downloadUrl = URL.createObjectURL(originalReportBlob);
+      const link = document.createElement('a');
+      link.href = downloadUrl;
+      link.download = `${reportData.company_name.replace(/[^\w\s-]/gi, '')}-original-report-data.json`;
+      document.body.appendChild(link);
+      link.click();
+      
+      // Clean up
+      URL.revokeObjectURL(downloadUrl);
+      document.body.removeChild(link);
+      
+      // Now generate the PDF using the saved data
+      await import('@/utils/reportGenerator').then(module => {
+        // Create a temporary lead with the saved report data
+        const reportLead: Lead = {
+          ...lead,
+          calculator_inputs: reportData.calculator_inputs || {},
+          calculator_results: reportData.calculator_results || {},
+          name: reportData.contact_name,
+          company_name: reportData.company_name,
+          email: reportData.email,
+          phone_number: reportData.phone_number || "",
+        };
+        
+        console.log("Generating PDF with exact saved data:", reportLead);
+        return module.generateAndDownloadReport(reportLead);
       });
       
-      if (success) {
-        toast({
-          title: "Success",
-          description: "Original report downloaded successfully",
-        });
-      }
+      toast({
+        title: "Success",
+        description: "Original report downloaded successfully",
+      });
     } catch (error) {
       console.error("Error downloading report:", error);
       toast({
@@ -113,7 +131,7 @@ export const SavedReportsDialog = ({ lead, isOpen, onClose }: SavedReportsDialog
                     ) : (
                       <Download className="h-4 w-4 mr-1" />
                     )}
-                    Download Original Report
+                    Download Saved Report
                   </button>
                 </div>
               ))}
