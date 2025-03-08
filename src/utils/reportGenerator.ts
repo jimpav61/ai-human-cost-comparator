@@ -93,7 +93,8 @@ export const generateAndDownloadReport = async (lead: Lead) => {
                 existingReport.calculator_inputs?.aiType === 'voice' ? 'Basic Voice' : 
                 existingReport.calculator_inputs?.aiType === 'conversationalVoice' ? 'Conversational Voice' : 
                 existingReport.calculator_inputs?.aiType === 'both' ? 'Text & Basic Voice' : 
-                existingReport.calculator_inputs?.aiType === 'both-premium' ? 'Text & Conversational Voice' : 'Text Only'
+                existingReport.calculator_inputs?.aiType === 'both-premium' ? 'Text & Conversational Voice' : 'Text Only',
+        setupFee: existingReport.calculator_results?.aiCostMonthly?.setupFee
       });
       
       // Save file with proper naming
@@ -169,7 +170,8 @@ export const generateAndDownloadReport = async (lead: Lead) => {
         }
       ],
       tierName: tierName,
-      aiType: aiTypeDisplay
+      aiType: aiTypeDisplay,
+      setupFee: lead.calculator_results?.aiCostMonthly?.setupFee
     });
     
     // Save report to database for future retrieval

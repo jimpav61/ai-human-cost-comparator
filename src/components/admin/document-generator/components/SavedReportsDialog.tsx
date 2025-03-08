@@ -6,7 +6,7 @@ import { format } from "date-fns";
 import { Download, FileBarChart, Loader2 } from "lucide-react";
 import { toast } from "@/hooks/use-toast";
 import { useState } from "react";
-import { generatePDF } from "@/components/calculator/pdf";
+import { generateAndDownloadReport } from "@/utils/reportGenerator";
 import { getSafeFileName } from "../hooks/report-generator/saveReport";
 
 interface SavedReportsDialogProps {
@@ -22,13 +22,13 @@ export const SavedReportsDialog = ({ lead, isOpen, onClose }: SavedReportsDialog
   // Get the single report if available
   const report = reports.length > 0 ? reports[0] : null;
 
-  const handleDownloadOriginalReport = async (reportId: string) => {
+  const handleDownloadSavedReport = async (reportId: string) => {
     try {
       setDownloadLoading(reportId);
       
-      console.log("Downloading original report with ID:", reportId);
+      console.log("Downloading saved report with ID:", reportId);
       
-      // Create or get the report data
+      // Find the matching report data
       const reportData = reports.find(r => r.id === reportId);
       
       if (!reportData) {
@@ -37,81 +37,23 @@ export const SavedReportsDialog = ({ lead, isOpen, onClose }: SavedReportsDialog
       
       console.log("Found report data for download:", reportData);
       
-      // Create a blob for the report data and download JSON
-      const originalReportBlob = new Blob(
-        [JSON.stringify(reportData, null, 2)], 
-        { type: 'application/json' }
-      );
+      // Create a temporary lead object with the saved report data
+      const tempLead: Lead = {
+        ...lead,
+        calculator_inputs: reportData.calculator_inputs,
+        calculator_results: reportData.calculator_results,
+        name: reportData.contact_name || lead.name,
+        company_name: reportData.company_name || lead.company_name,
+        email: reportData.email || lead.email,
+        phone_number: reportData.phone_number || lead.phone_number,
+      };
       
-      // Create a hidden link element to trigger the download
-      const downloadUrl = URL.createObjectURL(originalReportBlob);
-      const link = document.createElement('a');
-      link.href = downloadUrl;
-      link.download = `${reportData.company_name.replace(/[^\w\s-]/gi, '')}-original-report-data.json`;
-      document.body.appendChild(link);
-      link.click();
-      
-      // Clean up
-      URL.revokeObjectURL(downloadUrl);
-      document.body.removeChild(link);
-      
-      // Use the exact same data from the report to create a PDF
-      // This ensures we're using EXACTLY what was saved with no recalculation
-      const doc = generatePDF({
-        contactInfo: reportData.contact_name || 'Valued Client',
-        companyName: reportData.company_name || 'Your Company',
-        email: reportData.email || 'client@example.com',
-        phoneNumber: reportData.phone_number || '',
-        industry: lead.industry || 'Other',
-        employeeCount: Number(lead.employee_count) || 5,
-        results: reportData.calculator_results,
-        additionalVoiceMinutes: reportData.calculator_inputs?.callVolume || 0,
-        includedVoiceMinutes: reportData.calculator_inputs?.aiTier === 'starter' ? 0 : 600,
-        businessSuggestions: [
-          {
-            title: "Automate Common Customer Inquiries",
-            description: "Implement an AI chatbot to handle frequently asked questions, reducing wait times and freeing up human agents."
-          },
-          {
-            title: "Enhance After-Hours Support",
-            description: "Deploy voice AI to provide 24/7 customer service without increasing staffing costs."
-          },
-          {
-            title: "Streamline Onboarding Process",
-            description: "Use AI assistants to guide new customers through product setup and initial questions."
-          }
-        ],
-        aiPlacements: [
-          {
-            role: "Front-line Customer Support",
-            capabilities: ["Handle basic inquiries", "Process simple requests", "Collect customer information"]
-          },
-          {
-            role: "Technical Troubleshooting",
-            capabilities: ["Guide users through common issues", "Recommend solutions based on symptoms", "Escalate complex problems to human agents"]
-          },
-          {
-            role: "Sales Assistant",
-            capabilities: ["Answer product questions", "Provide pricing information", "Schedule demonstrations with sales team"]
-          }
-        ],
-        tierName: reportData.calculator_inputs?.aiTier === 'starter' ? 'Starter Plan' : 
-                 reportData.calculator_inputs?.aiTier === 'growth' ? 'Growth Plan' : 
-                 reportData.calculator_inputs?.aiTier === 'premium' ? 'Premium Plan' : 'Growth Plan',
-        aiType: reportData.calculator_inputs?.aiType === 'chatbot' ? 'Text Only' : 
-                reportData.calculator_inputs?.aiType === 'voice' ? 'Basic Voice' : 
-                reportData.calculator_inputs?.aiType === 'conversationalVoice' ? 'Conversational Voice' : 
-                reportData.calculator_inputs?.aiType === 'both' ? 'Text & Basic Voice' : 
-                reportData.calculator_inputs?.aiType === 'both-premium' ? 'Text & Conversational Voice' : 'Text Only'
-      });
-      
-      // Save file with proper naming
-      const safeCompanyName = reportData.company_name.replace(/[^\w\s-]/gi, '');
-      doc.save(`${safeCompanyName}-ChatSites-ROI-Report.pdf`);
+      // Use the report generator utility with the exact saved data
+      generateAndDownloadReport(tempLead);
       
       toast({
         title: "Success",
-        description: "Original saved report downloaded successfully",
+        description: "Saved report downloaded successfully",
       });
     } catch (error) {
       console.error("Error downloading report:", error);
@@ -139,9 +81,7 @@ export const SavedReportsDialog = ({ lead, isOpen, onClose }: SavedReportsDialog
       }
       
       // Generate a new report based on current lead data
-      import('@/utils/reportGenerator').then(module => {
-        module.generateAndDownloadReport(lead);
-      });
+      generateAndDownloadReport(lead);
     } catch (error) {
       console.error("Error generating new report:", error);
       toast({
@@ -177,7 +117,7 @@ export const SavedReportsDialog = ({ lead, isOpen, onClose }: SavedReportsDialog
                   </div>
                 </div>
                 <button 
-                  onClick={() => handleDownloadOriginalReport(report.id)}
+                  onClick={() => handleDownloadSavedReport(report.id)}
                   disabled={downloadLoading === report.id}
                   className="flex items-center p-2 text-sm text-blue-600 hover:text-blue-800 disabled:text-gray-400"
                 >

@@ -26,7 +26,7 @@ export const useSavedReports = (leadId?: string) => {
       console.log("Fetching saved reports for lead:", leadId);
       
       // First try to find a report with lead ID
-      const { data: exactMatch, error: exactMatchError } = await supabase
+      let { data: exactMatch, error: exactMatchError } = await supabase
         .from('generated_reports')
         .select('*')
         .eq('id', leadId)
@@ -42,20 +42,37 @@ export const useSavedReports = (leadId?: string) => {
         return;
       }
       
-      // If no exact match found, search by report data
-      const { data: relatedReports, error: relatedError } = await supabase
+      // If no exact match found, search by email in case lead ID is actually an email
+      const { data: emailMatch, error: emailMatchError } = await supabase
         .from('generated_reports')
         .select('*')
-        .eq('email', leadId) // Try finding by email (stored in ID field)
+        .eq('email', leadId)
         .order('report_date', { ascending: false });
         
-      if (relatedError) {
-        console.error("Error fetching related reports:", relatedError);
+      if (emailMatchError) {
+        console.error("Error fetching related reports by email:", emailMatchError);
       }
       
-      if (relatedReports && relatedReports.length > 0) {
-        console.log("Found related reports:", relatedReports);
-        setReports(relatedReports);
+      if (emailMatch && emailMatch.length > 0) {
+        console.log("Found email match reports:", emailMatch);
+        setReports(emailMatch);
+        return;
+      }
+      
+      // As a fallback, try to find by company name
+      const { data: companyMatch, error: companyMatchError } = await supabase
+        .from('generated_reports')
+        .select('*')
+        .ilike('company_name', `%${leadId}%`)
+        .order('report_date', { ascending: false });
+        
+      if (companyMatchError) {
+        console.error("Error fetching related reports by company:", companyMatchError);
+      }
+      
+      if (companyMatch && companyMatch.length > 0) {
+        console.log("Found company match reports:", companyMatch);
+        setReports(companyMatch);
         return;
       }
       
