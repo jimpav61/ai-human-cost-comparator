@@ -2,9 +2,8 @@
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Lead } from "@/types/leads";
 import { useSavedReports } from "../hooks/useSavedReports";
-import { generateAndDownloadReport } from "@/utils/reportGenerator";
 import { format } from "date-fns";
-import { Download, FileBarChart, Loader2 } from "lucide-react";
+import { Download, FileBarChart, Loader2, Trash } from "lucide-react";
 import { toast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 import { useState } from "react";
@@ -36,22 +35,29 @@ export const SavedReportsDialog = ({ lead, isOpen, onClose }: SavedReportsDialog
         throw new Error("Report data not found");
       }
       
-      // Create a temporary lead object with the original calculator inputs and results
-      const tempLead: Lead = {
+      // Instead of using the lead or recalculating anything, we'll directly use the saved report data
+      // to create a PDF document with the exact same data that was originally saved
+      console.log("Downloading saved report with original data:", reportData);
+      
+      // Create a temporary lead object with the exact original calculator inputs and results
+      const originalReportLead: Lead = {
         ...lead,
-        calculator_inputs: reportData.calculator_inputs || lead.calculator_inputs,
-        calculator_results: reportData.calculator_results || lead.calculator_results,
+        calculator_inputs: reportData.calculator_inputs,
+        calculator_results: reportData.calculator_results,
       };
       
-      console.log("Downloading original report with data:", tempLead);
-      
-      // Use the shared report generator with the original data
-      generateAndDownloadReport(tempLead);
-      
-      toast({
-        title: "Success",
-        description: "Report downloaded successfully",
+      // Use the shared report generator with the ORIGINAL data
+      // This will produce the exact same report as was generated on the frontend
+      const success = await import('@/utils/reportGenerator').then(module => {
+        return module.generateAndDownloadReport(originalReportLead);
       });
+      
+      if (success) {
+        toast({
+          title: "Success",
+          description: "Original report downloaded successfully",
+        });
+      }
     } catch (error) {
       console.error("Error downloading report:", error);
       toast({
@@ -67,7 +73,9 @@ export const SavedReportsDialog = ({ lead, isOpen, onClose }: SavedReportsDialog
   const handleGenerateNewReport = () => {
     try {
       // Generate a new report based on current lead data
-      generateAndDownloadReport(lead);
+      import('@/utils/reportGenerator').then(module => {
+        module.generateAndDownloadReport(lead);
+      });
       refreshReports();
     } catch (error) {
       console.error("Error generating new report:", error);
@@ -92,7 +100,7 @@ export const SavedReportsDialog = ({ lead, isOpen, onClose }: SavedReportsDialog
               <Loader2 className="h-8 w-8 animate-spin text-gray-400" />
             </div>
           ) : reports.length > 0 ? (
-            <div className="space-y-2">
+            <div className="space-y-2 max-h-[60vh] overflow-y-auto">
               {reports.map(report => (
                 <div key={report.id} className="flex justify-between items-center p-3 bg-gray-50 rounded-md">
                   <div>
