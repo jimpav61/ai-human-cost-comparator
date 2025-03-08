@@ -76,8 +76,9 @@ export const useSavedReports = (leadId?: string) => {
             calculatorResults = report.calculator_results as Record<string, any> || {};
           }
           
-          // Fix any aiType inconsistencies in saved reports
-          if (calculatorInputs.aiTier === 'growth' && calculatorInputs.aiType === 'chatbot') {
+          // Fix aiType inconsistencies in saved reports
+          if (calculatorInputs.aiTier === 'growth' && 
+             (calculatorInputs.aiType === 'chatbot' || calculatorInputs.aiType === 'text only')) {
             // Ensure Growth plan shows Text & Basic Voice
             calculatorInputs.aiType = 'both';
             console.log("Fixed aiType for Growth plan to display as Text & Basic Voice");
@@ -149,8 +150,9 @@ export const useSavedReports = (leadId?: string) => {
                 calculatorResults = report.calculator_results as Record<string, any> || {};
               }
               
-              // Fix any aiType inconsistencies in saved reports
-              if (calculatorInputs.aiTier === 'growth' && calculatorInputs.aiType === 'chatbot') {
+              // Fix aiType inconsistencies in saved reports
+              if (calculatorInputs.aiTier === 'growth' && 
+                 (calculatorInputs.aiType === 'chatbot' || calculatorInputs.aiType === 'text only')) {
                 // Ensure Growth plan shows Text & Basic Voice
                 calculatorInputs.aiType = 'both';
                 console.log("Fixed aiType for Growth plan to display as Text & Basic Voice");

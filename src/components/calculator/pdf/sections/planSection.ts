@@ -41,7 +41,7 @@ export const addPlanSection = (
   
   // Fix display name for aiType if it's inconsistent with tier
   let fixedAiType = aiType;
-  if (tierKey === 'growth' && aiType.toLowerCase().includes('text only')) {
+  if (tierKey === 'growth' && (aiType.toLowerCase().includes('text only') || aiType === 'chatbot')) {
     fixedAiType = 'Text & Basic Voice';
   }
   
