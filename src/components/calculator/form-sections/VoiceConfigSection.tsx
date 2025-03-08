@@ -26,8 +26,14 @@ export const VoiceConfigSection: React.FC<VoiceConfigSectionProps> = ({
   const includedMinutes = aiTier === 'starter' ? 0 : 600;
   const isStarterPlan = aiTier === 'starter';
   
-  // Create preset volume options in increments of 50
-  const volumeOptions = Array.from({ length: 21 }, (_, i) => i * 50);
+  // Create preset volume options in increments of 50 up to 1000, then add 1500, 2000
+  const volumeOptions = [
+    ...Array.from({ length: 21 }, (_, i) => i * 50),
+    1500,
+    2000,
+    3000,
+    5000
+  ];
   
   // Reset call volume to 0 when tier changes to starter
   useEffect(() => {

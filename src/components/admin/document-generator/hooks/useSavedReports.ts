@@ -47,15 +47,48 @@ export const useSavedReports = (leadId?: string) => {
       
       if (allReports && allReports.length > 0) {
         // Process and type reports properly
-        const typedReports: SavedReport[] = allReports.map(report => ({
-          ...report,
-          calculator_inputs: typeof report.calculator_inputs === 'string' 
-            ? JSON.parse(report.calculator_inputs as string) 
-            : (report.calculator_inputs as Record<string, any>),
-          calculator_results: typeof report.calculator_results === 'string'
-            ? JSON.parse(report.calculator_results as string)
-            : (report.calculator_results as Record<string, any>)
-        }));
+        const typedReports: SavedReport[] = allReports.map(report => {
+          // Properly parse calculator inputs and results
+          let calculatorInputs: Record<string, any> = {};
+          let calculatorResults: Record<string, any> = {}; 
+          
+          // Handle calculator_inputs
+          if (typeof report.calculator_inputs === 'string') {
+            try {
+              calculatorInputs = JSON.parse(report.calculator_inputs);
+            } catch (e) {
+              console.error("Error parsing calculator_inputs:", e);
+              calculatorInputs = {};
+            }
+          } else {
+            calculatorInputs = report.calculator_inputs as Record<string, any> || {};
+          }
+          
+          // Handle calculator_results
+          if (typeof report.calculator_results === 'string') {
+            try {
+              calculatorResults = JSON.parse(report.calculator_results);
+            } catch (e) {
+              console.error("Error parsing calculator_results:", e);
+              calculatorResults = {};
+            }
+          } else {
+            calculatorResults = report.calculator_results as Record<string, any> || {};
+          }
+          
+          // Fix any aiType inconsistencies in saved reports
+          if (calculatorInputs.aiTier === 'growth' && calculatorInputs.aiType === 'chatbot') {
+            // Ensure Growth plan shows Text & Basic Voice
+            calculatorInputs.aiType = 'both';
+            console.log("Fixed aiType for Growth plan to display as Text & Basic Voice");
+          }
+          
+          return {
+            ...report,
+            calculator_inputs: calculatorInputs,
+            calculator_results: calculatorResults
+          };
+        });
         
         setReports(typedReports);
         console.log("Processed reports:", typedReports);
@@ -87,15 +120,48 @@ export const useSavedReports = (leadId?: string) => {
             setReports([]);
           } else if (emailReports && emailReports.length > 0) {
             // Process and type reports properly
-            const typedReports: SavedReport[] = emailReports.map(report => ({
-              ...report,
-              calculator_inputs: typeof report.calculator_inputs === 'string' 
-                ? JSON.parse(report.calculator_inputs as string) 
-                : (report.calculator_inputs as Record<string, any>),
-              calculator_results: typeof report.calculator_results === 'string'
-                ? JSON.parse(report.calculator_results as string)
-                : (report.calculator_results as Record<string, any>)
-            }));
+            const typedReports: SavedReport[] = emailReports.map(report => {
+              // Properly parse calculator inputs and results
+              let calculatorInputs: Record<string, any> = {};
+              let calculatorResults: Record<string, any> = {}; 
+              
+              // Handle calculator_inputs
+              if (typeof report.calculator_inputs === 'string') {
+                try {
+                  calculatorInputs = JSON.parse(report.calculator_inputs);
+                } catch (e) {
+                  console.error("Error parsing calculator_inputs:", e);
+                  calculatorInputs = {};
+                }
+              } else {
+                calculatorInputs = report.calculator_inputs as Record<string, any> || {};
+              }
+              
+              // Handle calculator_results
+              if (typeof report.calculator_results === 'string') {
+                try {
+                  calculatorResults = JSON.parse(report.calculator_results);
+                } catch (e) {
+                  console.error("Error parsing calculator_results:", e);
+                  calculatorResults = {};
+                }
+              } else {
+                calculatorResults = report.calculator_results as Record<string, any> || {};
+              }
+              
+              // Fix any aiType inconsistencies in saved reports
+              if (calculatorInputs.aiTier === 'growth' && calculatorInputs.aiType === 'chatbot') {
+                // Ensure Growth plan shows Text & Basic Voice
+                calculatorInputs.aiType = 'both';
+                console.log("Fixed aiType for Growth plan to display as Text & Basic Voice");
+              }
+              
+              return {
+                ...report,
+                calculator_inputs: calculatorInputs,
+                calculator_results: calculatorResults
+              };
+            });
             
             setReports(typedReports);
             console.log("Found reports by email:", typedReports);

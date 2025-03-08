@@ -39,14 +39,20 @@ export const addPlanSection = (
                  tierName.toLowerCase().includes('growth') ? 'growth' : 
                  tierName.toLowerCase().includes('premium') ? 'premium' : 'growth';
   
+  // Fix display name for aiType if it's inconsistent with tier
+  let fixedAiType = aiType;
+  if (tierKey === 'growth' && aiType.toLowerCase().includes('text only')) {
+    fixedAiType = 'Text & Basic Voice';
+  }
+  
   const voiceCapability = tierKey === 'starter' ? 'No voice capabilities' : 
                         `Includes ${voiceMinutes} free voice minutes per month`;
   
-  doc.text(`${tierName} (${aiType})`, 20, currentY);
+  doc.text(`${tierName} (${fixedAiType})`, 20, currentY);
   currentY += 7;
   
   // Only show voice capabilities line if not starter plan or if explicitly mentioned
-  if (tierKey !== 'starter' || aiType.toLowerCase().includes('voice')) {
+  if (tierKey !== 'starter' || fixedAiType.toLowerCase().includes('voice')) {
     doc.setFontSize(10);
     doc.setTextColor(100, 100, 100);
     doc.text(voiceCapability, 20, currentY);
