@@ -7,6 +7,7 @@ import { getTierDisplayName, getAITypeDisplay } from "@/components/calculator/pr
 import { AI_RATES } from "@/constants/pricing";
 import { Card } from "@/components/ui/card";
 import { formatCurrency, formatNumber } from "@/utils/formatters";
+import { useEffect } from "react";
 
 interface CalculatorOptionsTabProps {
   calculatorInputs: CalculatorInputs;
@@ -23,6 +24,41 @@ export const CalculatorOptionsTab = ({
 }: CalculatorOptionsTabProps) => {
   // Ensure we have a valid tier value
   const currentTier = calculatorInputs?.aiTier || 'starter';
+  const currentAIType = calculatorInputs?.aiType || 'chatbot';
+  
+  // Handle changes to AI tier to ensure AI type stays consistent
+  useEffect(() => {
+    // If tier changed to premium, upgrade voice capabilities if applicable
+    if (currentTier === 'premium') {
+      if (currentAIType === 'voice') {
+        console.log("CalculatorOptionsTab: Upgraded to premium, enhancing to conversational voice");
+        handleCalculatorInputChange('aiType', 'conversationalVoice');
+      } 
+      else if (currentAIType === 'both') {
+        console.log("CalculatorOptionsTab: Upgraded to premium, enhancing to premium voice features");
+        handleCalculatorInputChange('aiType', 'both-premium');
+      }
+    }
+    // If downgraded from premium and using premium features, downgrade features
+    else if (currentTier === 'growth') {
+      if (currentAIType === 'conversationalVoice') {
+        console.log("CalculatorOptionsTab: Downgraded to growth, changing to basic voice");
+        handleCalculatorInputChange('aiType', 'voice');
+      } 
+      else if (currentAIType === 'both-premium') {
+        console.log("CalculatorOptionsTab: Downgraded to growth, changing to basic voice features");
+        handleCalculatorInputChange('aiType', 'both');
+      }
+    }
+    // If downgraded to starter, force chatbot
+    else if (currentTier === 'starter') {
+      if (currentAIType !== 'chatbot') {
+        console.log("CalculatorOptionsTab: Downgraded to starter, forcing chatbot only");
+        handleCalculatorInputChange('aiType', 'chatbot');
+        handleCalculatorInputChange('callVolume', 0);
+      }
+    }
+  }, [currentTier, currentAIType, handleCalculatorInputChange]);
   
   // Safely get the included voice minutes, with fallback to 0
   const getIncludedVoiceMinutes = () => {
@@ -48,6 +84,35 @@ export const CalculatorOptionsTab = ({
                    currentTier === 'growth' ? 229 : 
                    currentTier === 'premium' ? 429 : 229;
   const totalMonthlyCost = basePrice + additionalVoiceCost;
+  
+  // Handle tier change with proper AI type adjustment
+  const handleTierChange = (newTier: string) => {
+    console.log(`Changing tier from ${currentTier} to ${newTier}`);
+    
+    // First update the tier
+    handleCalculatorInputChange('aiTier', newTier);
+    
+    // AI type adjustments will be handled by the useEffect
+  };
+  
+  // Handle AI type change with proper tier adjustment
+  const handleAITypeChange = (newType: string) => {
+    console.log(`Changing AI type from ${currentAIType} to ${newType}`);
+    
+    // If selecting premium voice features, upgrade tier if needed
+    if ((newType === 'conversationalVoice' || newType === 'both-premium') && currentTier !== 'premium') {
+      console.log("Upgrading to premium tier for conversational voice");
+      handleCalculatorInputChange('aiTier', 'premium');
+    }
+    // If selecting basic voice features on starter, upgrade to growth
+    else if ((newType === 'voice' || newType === 'both') && currentTier === 'starter') {
+      console.log("Upgrading to growth tier for voice capabilities");
+      handleCalculatorInputChange('aiTier', 'growth');
+    }
+    
+    // Update the AI type
+    handleCalculatorInputChange('aiType', newType);
+  };
 
   return (
     <div className="space-y-6">
@@ -58,7 +123,7 @@ export const CalculatorOptionsTab = ({
             <Label htmlFor="aiTier" className="text-sm font-medium">AI Plan Tier</Label>
             <Select
               value={currentTier}
-              onValueChange={(value) => handleCalculatorInputChange('aiTier', value)}
+              onValueChange={handleTierChange}
             >
               <SelectTrigger className="w-full">
                 <SelectValue placeholder="Select tier" />
@@ -82,8 +147,8 @@ export const CalculatorOptionsTab = ({
           <div className="space-y-2">
             <Label htmlFor="aiType" className="text-sm font-medium">AI Type</Label>
             <Select
-              value={calculatorInputs?.aiType || 'chatbot'}
-              onValueChange={(value) => handleCalculatorInputChange('aiType', value)}
+              value={currentAIType}
+              onValueChange={handleAITypeChange}
             >
               <SelectTrigger className="w-full">
                 <SelectValue placeholder="Select AI type" />
@@ -96,12 +161,12 @@ export const CalculatorOptionsTab = ({
                 <SelectItem value="both-premium" disabled={currentTier !== 'premium'}>Text & Conversational Voice</SelectItem>
               </SelectContent>
             </Select>
-            {currentTier === 'starter' && calculatorInputs?.aiType !== 'chatbot' && (
+            {currentTier === 'starter' && currentAIType !== 'chatbot' && (
               <p className="text-xs text-amber-600 mt-1">
                 Starter Plan only supports text capabilities
               </p>
             )}
-            {currentTier !== 'premium' && (calculatorInputs?.aiType === 'conversationalVoice' || calculatorInputs?.aiType === 'both-premium') && (
+            {currentTier !== 'premium' && (currentAIType === 'conversationalVoice' || currentAIType === 'both-premium') && (
               <p className="text-xs text-amber-600 mt-1">
                 Conversational voice requires Premium Plan
               </p>

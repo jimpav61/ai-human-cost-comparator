@@ -27,12 +27,32 @@ export const EditLeadDialog = ({ lead, isOpen, onClose, onSave }: EditLeadDialog
     console.log("Lead changed in EditLeadDialog:", lead);
     setFormData(lead);
   }, [lead, setFormData]);
+  
+  // Sync employee count between basic info and calculator inputs
+  useEffect(() => {
+    // When employee count changes in basic info, update calculator inputs
+    if (formData.employee_count !== calculatorInputs.numEmployees) {
+      handleCalculatorInputChange('numEmployees', Number(formData.employee_count));
+    }
+  }, [formData.employee_count, calculatorInputs.numEmployees, handleCalculatorInputChange]);
+  
+  // And sync calculator numEmployees back to basic info employee_count
+  useEffect(() => {
+    if (calculatorInputs.numEmployees && Number(formData.employee_count) !== calculatorInputs.numEmployees) {
+      handleBasicInfoChange('employee_count', calculatorInputs.numEmployees);
+    }
+  }, [calculatorInputs.numEmployees, formData.employee_count, handleBasicInfoChange]);
 
   // Handle save button click
   const handleSave = () => {
     try {
       console.log("Saving lead with calculator inputs:", calculatorInputs);
       console.log("Current calculation results:", calculationResults);
+      
+      // Ensure employee count is synced
+      if (formData.employee_count !== calculatorInputs.numEmployees) {
+        calculatorInputs.numEmployees = Number(formData.employee_count);
+      }
 
       const updatedLead: Lead = {
         ...formData,
