@@ -12,7 +12,7 @@ interface UseProposalGeneratorProps {
 export const useProposalGenerator = ({ lead }: UseProposalGeneratorProps) => {
   const { hasDownloaded, markAsDownloaded } = useDownloadState({
     storageKey: 'downloadedProposals',
-    leadId: lead.id
+    id: lead.id // Changed from leadId to id to match the interface
   });
 
   const generateProposalDocument = async () => {
