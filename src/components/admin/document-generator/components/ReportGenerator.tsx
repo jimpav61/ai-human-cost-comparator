@@ -10,7 +10,7 @@ interface ReportGeneratorProps {
 }
 
 export const ReportGenerator = ({ lead }: ReportGeneratorProps) => {
-  const { hasDownloaded, markAsDownloaded } = useDownloadState('report');
+  const { hasDownloaded, markAsDownloaded } = useDownloadState({ id: 'report' });
 
   const handleGenerateReport = () => {
     try {
