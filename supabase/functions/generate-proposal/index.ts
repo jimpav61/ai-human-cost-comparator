@@ -29,10 +29,13 @@ serve(async (req) => {
 
   try {
     const { lead } = await req.json() as { lead: Lead };
+    console.log("Email generation input lead:", lead);
 
-    // Get the plan details from either calculatorResults.tierKey or calculator_inputs.aiTier
-    const aiTier = lead.calculatorResults?.tierKey || 
-                  (lead.calculator_inputs?.aiTier || 'growth');
+    // DIRECTLY extract plan tier from calculator inputs - don't use defaults
+    const aiTier = lead.calculator_inputs?.aiTier || 
+                  lead.calculatorResults?.tierKey || 'growth';
+    
+    console.log("Email proposal - direct aiTier extraction:", aiTier);
     
     // Use the exact fixed prices for each tier
     let basePrice = 0;
@@ -50,39 +53,55 @@ serve(async (req) => {
         basePrice = 229;
     }
     
-    // Get AI type from calculator_inputs if available
-    let aiType = lead.calculator_inputs?.aiType || lead.calculatorResults?.aiType || 'chatbot';
+    // DIRECTLY extract and parse the call volume (additional voice minutes)
+    let callVolume = lead.calculator_inputs?.callVolume;
+    console.log("Email proposal - raw callVolume:", callVolume, "type:", typeof callVolume);
     
-    // Ensure Growth plan never shows as "Text Only" - always include voice capabilities
-    if (aiTier === 'growth' && (aiType === 'chatbot' || getAITypeDisplay(aiType) === 'Text Only')) {
-      aiType = 'both'; // Change to "Text & Basic Voice"
+    // Parse to ensure it's a valid number
+    if (typeof callVolume === 'string') {
+      callVolume = parseInt(callVolume, 10) || 0;
+    } else if (typeof callVolume !== 'number') {
+      callVolume = 0;
     }
-    
-    // Premium plan should always include conversational voice
-    if (aiTier === 'premium' && (aiType === 'chatbot' || aiType === 'voice' || aiType === 'both')) {
-      aiType = 'both-premium'; // Change to "Text & Conversational Voice"
-    }
-    
-    // Calculate any additional voice costs
-    const includedVoiceMinutes = aiTier === 'starter' ? 0 : 600;
-    
-    // Extract callVolume and ensure it's a number
-    const callVolume = lead.calculator_inputs?.callVolume ? 
-      (typeof lead.calculator_inputs.callVolume === 'number' ? 
-       lead.calculator_inputs.callVolume : 
-       parseInt(String(lead.calculator_inputs.callVolume), 10)) : 0;
     
     // Additional voice minutes is exactly equal to the call volume
     const additionalVoiceMinutes = callVolume;
+    console.log("Email proposal - parsed additionalVoiceMinutes:", additionalVoiceMinutes);
     
-    console.log("Email proposal - callVolume:", callVolume);
-    console.log("Email proposal - additionalVoiceMinutes:", additionalVoiceMinutes);
+    // Get AI type from calculator_inputs if available
+    let aiType = lead.calculator_inputs?.aiType || lead.calculatorResults?.aiType || 'chatbot';
     
-    // Calculate cost for additional minutes
+    // Ensure consistency with tier
+    if (aiTier === 'starter' && aiType !== 'chatbot') {
+      aiType = 'chatbot'; // Starter only supports chatbot
+    } else if (aiTier === 'premium') {
+      if (aiType === 'voice') {
+        aiType = 'conversationalVoice'; // Premium upgrades to conversational
+      } else if (aiType === 'both') {
+        aiType = 'both-premium'; // Premium uses premium voice features
+      }
+    } else if (aiTier === 'growth') {
+      if (aiType === 'conversationalVoice') {
+        aiType = 'voice'; // Growth uses basic voice
+      } else if (aiType === 'both-premium') {
+        aiType = 'both'; // Growth uses basic voice features
+      }
+    }
+    
+    console.log("Email proposal - AI type after adjustment:", aiType);
+    
+    // Calculate price components
+    const includedVoiceMinutes = aiTier === 'starter' ? 0 : 600;
     const additionalVoiceCost = additionalVoiceMinutes * 0.12;
-    
-    // Total monthly cost
     const totalMonthlyCost = basePrice + additionalVoiceCost;
+    
+    console.log("Email proposal pricing calculation:", {
+      aiTier,
+      basePrice,
+      additionalVoiceMinutes,
+      additionalVoiceCost,
+      totalMonthlyCost
+    });
     
     // Get industry if available and company name
     const industry = lead.industry || 'your industry';

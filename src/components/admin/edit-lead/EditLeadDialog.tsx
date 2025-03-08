@@ -54,6 +54,32 @@ export const EditLeadDialog = ({ lead, isOpen, onClose, onSave }: EditLeadDialog
         calculatorInputs.numEmployees = Number(formData.employee_count);
       }
 
+      // Ensure AI type is consistent with tier
+      const aiTier = calculatorInputs.aiTier || 'growth';
+      let aiType = calculatorInputs.aiType || 'both';
+      
+      // Force consistent AI type values based on tier
+      if (aiTier === 'starter' && aiType !== 'chatbot') {
+        aiType = 'chatbot';
+        calculatorInputs.aiType = 'chatbot';
+      } else if (aiTier === 'premium') {
+        if (aiType === 'voice') {
+          aiType = 'conversationalVoice';
+          calculatorInputs.aiType = 'conversationalVoice';
+        } else if (aiType === 'both') {
+          aiType = 'both-premium';
+          calculatorInputs.aiType = 'both-premium';
+        }
+      } else if (aiTier === 'growth') {
+        if (aiType === 'conversationalVoice') {
+          aiType = 'voice';
+          calculatorInputs.aiType = 'voice';
+        } else if (aiType === 'both-premium') {
+          aiType = 'both';
+          calculatorInputs.aiType = 'both';
+        }
+      }
+
       const updatedLead: Lead = {
         ...formData,
         calculator_inputs: calculatorInputs,
