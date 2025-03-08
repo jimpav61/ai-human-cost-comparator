@@ -5,7 +5,6 @@ import { getSafeFileName } from "@/components/admin/document-generator/hooks/rep
 import { toast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 import { CalculationResults } from "@/hooks/calculator/types";
-import { SharedResults } from "@/components/calculator/shared/types";
 
 /**
  * Checks if a lead has calculator results and can generate a report
@@ -45,7 +44,7 @@ export const generateAndDownloadReport = async (lead: Lead) => {
       console.error('[SHARED REPORT] Error fetching existing report:', reportError);
     }
     
-    // If we found a saved report, use that exact data
+    // If we found a saved report, use that exact saved data
     if (existingReport) {
       console.log('[SHARED REPORT] Found existing report, using saved data:', existingReport);
       
@@ -134,7 +133,7 @@ export const generateAndDownloadReport = async (lead: Lead) => {
       
       toast({
         title: "Success",
-        description: `Saved report for ${lead.company_name || 'Client'} downloaded successfully`,
+        description: `Report for ${lead.company_name || 'Client'} downloaded successfully`,
         variant: "default",
       });
       
@@ -146,9 +145,10 @@ export const generateAndDownloadReport = async (lead: Lead) => {
       throw new Error("This lead has no saved calculation results");
     }
 
-    // Use the saved calculator inputs and results
-    const aiTier = lead.calculator_inputs?.aiTier || 'growth';
-    const aiType = lead.calculator_inputs?.aiType || 'chatbot';
+    // Use the saved calculator inputs and results directly without recalculation
+    const calculatorInputs = lead.calculator_inputs as unknown as Record<string, any>;
+    const aiTier = calculatorInputs?.aiTier || 'growth';
+    const aiType = calculatorInputs?.aiType || 'chatbot';
     
     // Format tier and AI type display names
     const tierName = aiTier === 'starter' ? 'Starter Plan' : 
@@ -197,7 +197,7 @@ export const generateAndDownloadReport = async (lead: Lead) => {
       industry: lead.industry || 'Other',
       employeeCount: Number(lead.employee_count) || 5,
       results: calculatorResults,
-      additionalVoiceMinutes: lead.calculator_inputs?.callVolume || 0,
+      additionalVoiceMinutes: calculatorInputs?.callVolume || 0,
       includedVoiceMinutes: aiTier === 'starter' ? 0 : 600,
       businessSuggestions: [
         {
