@@ -1,7 +1,7 @@
 
 import { useState } from "react";
 import { Lead } from "@/types/leads";
-import { Database, SaveAll } from "lucide-react";
+import { FileBarChart } from "lucide-react";
 import { SavedReportsDialog } from "./SavedReportsDialog";
 import { useSavedReports } from "../hooks/useSavedReports";
 
@@ -17,10 +17,10 @@ export const SavedReportsButton = ({ lead }: SavedReportsButtonProps) => {
     <>
       <button
         onClick={() => setDialogOpen(true)}
-        className="flex items-center px-4 py-2 text-sm bg-blue-600 text-white rounded-md hover:bg-blue-700 transition-colors"
+        className="flex items-center px-4 py-2 text-sm bg-green-600 text-white rounded-md hover:bg-green-700 transition-colors"
       >
-        <Database className="h-4 w-4 mr-2" />
-        Saved Reports {reports.length > 0 ? `(${reports.length})` : ''}
+        <FileBarChart className="h-4 w-4 mr-2" />
+        View Saved Report
       </button>
       
       <SavedReportsDialog 

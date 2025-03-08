@@ -2,7 +2,6 @@
 import { useState, useEffect } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "@/hooks/use-toast";
-import { Lead } from "@/types/leads";
 
 export interface SavedReport {
   id: string;
@@ -24,36 +23,24 @@ export const useSavedReports = (leadId?: string) => {
     
     setIsLoading(true);
     try {
-      // First get the lead data to ensure we get the correct email and company_name
-      const { data: lead } = await supabase
-        .from('leads')
-        .select('email, company_name')
-        .eq('id', leadId)
-        .single();
-          
-      if (!lead) {
-        console.error("Lead not found:", leadId);
-        setReports([]);
-        return;
-      }
-      
-      // Now query the generated_reports table for reports matching this lead's email and company
+      // Query the generated_reports table directly by ID to get only this specific lead's report
       const { data, error } = await supabase
         .from('generated_reports')
         .select('*')
-        .eq('email', lead.email)
-        .eq('company_name', lead.company_name)
-        .order('report_date', { ascending: false });
+        .eq('id', leadId)
+        .maybeSingle();
       
       if (error) throw error;
       
-      console.log("Fetched reports data for lead:", leadId, "reports:", data);
-      setReports(data || []);
+      console.log("Fetched report data for lead ID:", leadId, "report:", data);
+      
+      // If we found a report, set it as an array with one item, otherwise empty array
+      setReports(data ? [data] : []);
     } catch (error) {
-      console.error("Error fetching reports:", error);
+      console.error("Error fetching report:", error);
       toast({
         title: "Error",
-        description: "Failed to fetch saved reports",
+        description: "Failed to fetch saved report",
         variant: "destructive",
       });
     } finally {

@@ -3,7 +3,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/u
 import { Lead } from "@/types/leads";
 import { useSavedReports } from "../hooks/useSavedReports";
 import { format } from "date-fns";
-import { Download, FileBarChart, Loader2, Trash } from "lucide-react";
+import { Download, FileBarChart, Loader2 } from "lucide-react";
 import { toast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 import { useState } from "react";
@@ -15,7 +15,7 @@ interface SavedReportsDialogProps {
 }
 
 export const SavedReportsDialog = ({ lead, isOpen, onClose }: SavedReportsDialogProps) => {
-  const { reports, isLoading, refreshReports } = useSavedReports(lead.id);
+  const { reports, isLoading } = useSavedReports(lead.id);
   const [downloadLoading, setDownloadLoading] = useState<string | null>(null);
 
   const handleDownloadOriginalReport = async (reportId: string) => {
@@ -35,10 +35,6 @@ export const SavedReportsDialog = ({ lead, isOpen, onClose }: SavedReportsDialog
         throw new Error("Report data not found");
       }
       
-      // Instead of using the lead or recalculating anything, we'll directly use the saved report data
-      // to create a PDF document with the exact same data that was originally saved
-      console.log("Downloading saved report with original data:", reportData);
-      
       // Create a temporary lead object with the exact original calculator inputs and results
       const originalReportLead: Lead = {
         ...lead,
@@ -47,7 +43,6 @@ export const SavedReportsDialog = ({ lead, isOpen, onClose }: SavedReportsDialog
       };
       
       // Use the shared report generator with the ORIGINAL data
-      // This will produce the exact same report as was generated on the frontend
       const success = await import('@/utils/reportGenerator').then(module => {
         return module.generateAndDownloadReport(originalReportLead);
       });
@@ -76,7 +71,6 @@ export const SavedReportsDialog = ({ lead, isOpen, onClose }: SavedReportsDialog
       import('@/utils/reportGenerator').then(module => {
         module.generateAndDownloadReport(lead);
       });
-      refreshReports();
     } catch (error) {
       console.error("Error generating new report:", error);
       toast({
@@ -91,7 +85,7 @@ export const SavedReportsDialog = ({ lead, isOpen, onClose }: SavedReportsDialog
     <Dialog open={isOpen} onOpenChange={onClose}>
       <DialogContent className="sm:max-w-md">
         <DialogHeader>
-          <DialogTitle>Reports for {lead.company_name}</DialogTitle>
+          <DialogTitle>Report for {lead.company_name}</DialogTitle>
         </DialogHeader>
         
         <div className="mt-4">
@@ -119,21 +113,21 @@ export const SavedReportsDialog = ({ lead, isOpen, onClose }: SavedReportsDialog
                     ) : (
                       <Download className="h-4 w-4 mr-1" />
                     )}
-                    Download
+                    Download Original Report
                   </button>
                 </div>
               ))}
             </div>
           ) : (
             <div className="text-center py-6 text-gray-500">
-              No reports found for this lead.
+              No saved report found for this lead.
               <div className="mt-4">
                 <button
                   onClick={handleGenerateNewReport}
                   className="flex items-center px-4 py-2 mx-auto bg-emerald-600 text-white rounded-md hover:bg-emerald-700"
                 >
                   <FileBarChart className="h-4 w-4 mr-2" />
-                  Generate ROI Report
+                  Generate New ROI Report
                 </button>
               </div>
             </div>
