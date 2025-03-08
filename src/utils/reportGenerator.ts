@@ -18,33 +18,14 @@ export const generateAndDownloadReport = (lead: Lead) => {
       throw new Error("Lead data is missing");
     }
 
-    console.log('[SHARED REPORT] Starting PDF generation with calculator data:', {
-      inputs: lead.calculator_inputs,
-      results: lead.calculator_results
-    });
+    // Use the saved calculator inputs and results directly
+    if (!lead.calculator_results || Object.keys(lead.calculator_results).length === 0) {
+      throw new Error("This lead has no saved calculation results");
+    }
     
-    // Extract all data from calculator inputs, using saved values
+    // Extract all data from calculator inputs, using saved values only, no recalculation
     const aiTier = lead.calculator_inputs?.aiTier || 'growth';
     const aiType = lead.calculator_inputs?.aiType || 'chatbot';
-    
-    // Use the EXACT saved values from the report without recalculation
-    const basePriceMonthly = lead.calculator_results?.basePriceMonthly || 0;
-    const additionalVoiceCost = lead.calculator_results?.aiCostMonthly?.voice || 0;
-    const totalMonthlyCost = lead.calculator_results?.aiCostMonthly?.total || 0;
-    const setupFee = lead.calculator_results?.aiCostMonthly?.setupFee || 0;
-    
-    // Extract voice minutes calculation data - use saved data
-    const additionalVoiceMinutes = lead.calculator_inputs?.callVolume || 0;
-    const includedVoiceMinutes = aiTier === 'starter' ? 0 : 600;
-    
-    console.log('[SHARED REPORT] Using exact saved values:', {
-      basePriceMonthly,
-      additionalVoiceCost,
-      totalMonthlyCost,
-      setupFee,
-      additionalVoiceMinutes,
-      includedVoiceMinutes
-    });
     
     // Format tier and AI type display names
     const tierName = aiTier === 'starter' ? 'Starter Plan' : 
@@ -57,7 +38,7 @@ export const generateAndDownloadReport = (lead: Lead) => {
                           aiType === 'both' ? 'Text & Basic Voice' : 
                           aiType === 'both-premium' ? 'Text & Conversational Voice' : 'Text Only';
     
-    // Generate the PDF using the exact saved values - no recalculation
+    // Generate the PDF exactly as it was saved - no recalculation
     const doc = generatePDF({
       contactInfo: lead.name || 'Valued Client',
       companyName: lead.company_name || 'Your Company',
@@ -66,8 +47,8 @@ export const generateAndDownloadReport = (lead: Lead) => {
       industry: lead.industry || 'Other',
       employeeCount: Number(lead.employee_count) || 5,
       results: lead.calculator_results,
-      additionalVoiceMinutes: additionalVoiceMinutes,
-      includedVoiceMinutes: includedVoiceMinutes,
+      additionalVoiceMinutes: lead.calculator_inputs?.callVolume || 0,
+      includedVoiceMinutes: aiTier === 'starter' ? 0 : 600,
       businessSuggestions: [
         {
           title: "Automate Common Customer Inquiries",

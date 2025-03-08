@@ -37,7 +37,7 @@ export const SavedReportsDialog = ({ lead, isOpen, onClose }: SavedReportsDialog
       
       console.log("Found report data for download:", reportData);
       
-      // Create a blob for the report data
+      // Create a blob for the report data and download JSON
       const originalReportBlob = new Blob(
         [JSON.stringify(reportData, null, 2)], 
         { type: 'application/json' }
@@ -55,8 +55,9 @@ export const SavedReportsDialog = ({ lead, isOpen, onClose }: SavedReportsDialog
       URL.revokeObjectURL(downloadUrl);
       document.body.removeChild(link);
       
-      // Create the exact same lead from the saved data
-      const savedLead: Lead = {
+      // Use the exact same data from the report to create a PDF
+      // This ensures we're using EXACTLY what was saved with no recalculation
+      const exactSavedLead: Lead = {
         ...lead,
         id: reportId,
         name: reportData.contact_name,
@@ -67,20 +68,20 @@ export const SavedReportsDialog = ({ lead, isOpen, onClose }: SavedReportsDialog
         calculator_results: reportData.calculator_results || {},
       };
       
-      // Generate the PDF directly from the saved data
-      console.log("Creating PDF with exact saved data:", savedLead);
+      // Generate the PDF directly using the saved data with absolutely no modifications
+      console.log("Creating PDF with exact saved data, no recalculation:", exactSavedLead);
       
-      // Create PDF with the saved data
+      // Use the exact saved values from the report with no calculations
       const doc = generatePDF({
-        contactInfo: savedLead.name || 'Valued Client',
-        companyName: savedLead.company_name || 'Your Company',
-        email: savedLead.email || 'client@example.com',
-        phoneNumber: savedLead.phone_number || '',
-        industry: savedLead.industry || 'Other',
-        employeeCount: Number(savedLead.employee_count) || 5,
-        results: savedLead.calculator_results,
-        additionalVoiceMinutes: savedLead.calculator_inputs?.callVolume || 0,
-        includedVoiceMinutes: savedLead.calculator_inputs?.aiTier === 'starter' ? 0 : 600,
+        contactInfo: exactSavedLead.name || 'Valued Client',
+        companyName: exactSavedLead.company_name || 'Your Company',
+        email: exactSavedLead.email || 'client@example.com',
+        phoneNumber: exactSavedLead.phone_number || '',
+        industry: exactSavedLead.industry || 'Other',
+        employeeCount: Number(exactSavedLead.employee_count) || 5,
+        results: exactSavedLead.calculator_results,
+        additionalVoiceMinutes: exactSavedLead.calculator_inputs?.callVolume || 0,
+        includedVoiceMinutes: exactSavedLead.calculator_inputs?.aiTier === 'starter' ? 0 : 600,
         businessSuggestions: [
           {
             title: "Automate Common Customer Inquiries",
@@ -109,18 +110,18 @@ export const SavedReportsDialog = ({ lead, isOpen, onClose }: SavedReportsDialog
             capabilities: ["Answer product questions", "Provide pricing information", "Schedule demonstrations with sales team"]
           }
         ],
-        tierName: savedLead.calculator_inputs?.aiTier === 'starter' ? 'Starter Plan' : 
-                 savedLead.calculator_inputs?.aiTier === 'growth' ? 'Growth Plan' : 
-                 savedLead.calculator_inputs?.aiTier === 'premium' ? 'Premium Plan' : 'Growth Plan',
-        aiType: savedLead.calculator_inputs?.aiType === 'chatbot' ? 'Text Only' : 
-                savedLead.calculator_inputs?.aiType === 'voice' ? 'Basic Voice' : 
-                savedLead.calculator_inputs?.aiType === 'conversationalVoice' ? 'Conversational Voice' : 
-                savedLead.calculator_inputs?.aiType === 'both' ? 'Text & Basic Voice' : 
-                savedLead.calculator_inputs?.aiType === 'both-premium' ? 'Text & Conversational Voice' : 'Text Only'
+        tierName: exactSavedLead.calculator_inputs?.aiTier === 'starter' ? 'Starter Plan' : 
+                 exactSavedLead.calculator_inputs?.aiTier === 'growth' ? 'Growth Plan' : 
+                 exactSavedLead.calculator_inputs?.aiTier === 'premium' ? 'Premium Plan' : 'Growth Plan',
+        aiType: exactSavedLead.calculator_inputs?.aiType === 'chatbot' ? 'Text Only' : 
+                exactSavedLead.calculator_inputs?.aiType === 'voice' ? 'Basic Voice' : 
+                exactSavedLead.calculator_inputs?.aiType === 'conversationalVoice' ? 'Conversational Voice' : 
+                exactSavedLead.calculator_inputs?.aiType === 'both' ? 'Text & Basic Voice' : 
+                exactSavedLead.calculator_inputs?.aiType === 'both-premium' ? 'Text & Conversational Voice' : 'Text Only'
       });
       
       // Save file with proper naming
-      const safeCompanyName = getSafeFileName(savedLead);
+      const safeCompanyName = getSafeFileName(exactSavedLead);
       doc.save(`${safeCompanyName}-ChatSites-ROI-Report.pdf`);
       
       toast({
