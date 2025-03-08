@@ -16,6 +16,9 @@ interface SavedReportsDialogProps {
 export const SavedReportsDialog = ({ lead, isOpen, onClose }: SavedReportsDialogProps) => {
   const { reports, isLoading } = useSavedReports(lead.id);
   const [downloadLoading, setDownloadLoading] = useState<string | null>(null);
+  
+  // Get the single report if available
+  const report = reports.length > 0 ? reports[0] : null;
 
   const handleDownloadOriginalReport = async (reportId: string) => {
     try {
@@ -111,30 +114,28 @@ export const SavedReportsDialog = ({ lead, isOpen, onClose }: SavedReportsDialog
             <div className="flex justify-center py-8">
               <Loader2 className="h-8 w-8 animate-spin text-gray-400" />
             </div>
-          ) : reports.length > 0 ? (
-            <div className="space-y-2 max-h-[60vh] overflow-y-auto">
-              {reports.map(report => (
-                <div key={report.id} className="flex justify-between items-center p-3 bg-gray-50 rounded-md">
-                  <div>
-                    <div className="font-medium">{report.company_name}</div>
-                    <div className="text-sm text-gray-500">
-                      {report.report_date && format(new Date(report.report_date), 'MMM d, yyyy')}
-                    </div>
+          ) : report ? (
+            <div className="p-3 bg-gray-50 rounded-md">
+              <div className="flex justify-between items-center">
+                <div>
+                  <div className="font-medium">{report.company_name}</div>
+                  <div className="text-sm text-gray-500">
+                    {report.report_date && format(new Date(report.report_date), 'MMM d, yyyy')}
                   </div>
-                  <button 
-                    onClick={() => handleDownloadOriginalReport(report.id)}
-                    disabled={downloadLoading === report.id}
-                    className="flex items-center p-2 text-sm text-blue-600 hover:text-blue-800 disabled:text-gray-400"
-                  >
-                    {downloadLoading === report.id ? (
-                      <Loader2 className="h-4 w-4 mr-1 animate-spin" />
-                    ) : (
-                      <Download className="h-4 w-4 mr-1" />
-                    )}
-                    Download Saved Report
-                  </button>
                 </div>
-              ))}
+                <button 
+                  onClick={() => handleDownloadOriginalReport(report.id)}
+                  disabled={downloadLoading === report.id}
+                  className="flex items-center p-2 text-sm text-blue-600 hover:text-blue-800 disabled:text-gray-400"
+                >
+                  {downloadLoading === report.id ? (
+                    <Loader2 className="h-4 w-4 mr-1 animate-spin" />
+                  ) : (
+                    <Download className="h-4 w-4 mr-1" />
+                  )}
+                  Download Saved Report
+                </button>
+              </div>
             </div>
           ) : (
             <div className="text-center py-6 text-gray-500">
