@@ -1,4 +1,6 @@
 
+import { Lead } from "@/types/leads";
+
 export interface DocumentGeneratorProps {
   lead: Lead;
 }

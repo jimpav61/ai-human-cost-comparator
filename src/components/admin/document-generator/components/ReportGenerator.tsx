@@ -10,13 +10,15 @@ interface ReportGeneratorProps {
 }
 
 export const ReportGenerator = ({ lead }: ReportGeneratorProps) => {
-  const { hasDownloaded, markAsDownloaded } = useDownloadState({ id: 'report' });
+  const { hasDownloaded, markAsDownloaded } = useDownloadState({ id: `report-${lead.id}` });
 
   const handleGenerateReport = () => {
     try {
       console.log("Generating ROI analysis report for lead:", lead.name);
-      generateAndDownloadReport(lead);
-      markAsDownloaded();
+      const success = generateAndDownloadReport(lead);
+      if (success) {
+        markAsDownloaded();
+      }
     } catch (error) {
       console.error("Error generating report:", error);
     }

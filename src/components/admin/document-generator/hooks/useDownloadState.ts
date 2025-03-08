@@ -1,15 +1,11 @@
 
 import { useState, useEffect } from "react";
-
-interface UseDownloadStateProps {
-  id: string;
-  storageKey?: string;
-}
+import { UseDownloadStateProps, UseDownloadStateReturn } from "../types";
 
 export const useDownloadState = ({ 
   id,
   storageKey = 'downloaded_items'
-}: UseDownloadStateProps) => {
+}: UseDownloadStateProps): UseDownloadStateReturn => {
   const [downloadedItems, setDownloadedItems] = useState<Set<string>>(new Set());
   
   // Load downloaded status from localStorage
