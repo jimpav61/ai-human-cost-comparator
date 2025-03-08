@@ -4,8 +4,12 @@ import { UseDownloadStateProps, UseDownloadStateReturn } from "../types";
 
 export const useDownloadState = ({ 
   id,
+  leadId, // Add support for leadId parameter
   storageKey = 'downloaded_items'
 }: UseDownloadStateProps): UseDownloadStateReturn => {
+  // Use leadId as fallback if provided (for backward compatibility)
+  const itemId = id || leadId || '';
+  
   const [downloadedItems, setDownloadedItems] = useState<Set<string>>(new Set());
   
   // Load downloaded status from localStorage
@@ -24,13 +28,13 @@ export const useDownloadState = ({
   
   const markAsDownloaded = () => {
     const newItems = new Set(downloadedItems);
-    newItems.add(id);
+    newItems.add(itemId);
     setDownloadedItems(newItems);
     saveDownloadStatus(newItems);
   };
   
   return {
-    hasDownloaded: downloadedItems.has(id),
+    hasDownloaded: downloadedItems.has(itemId),
     markAsDownloaded,
     downloadedItems
   };

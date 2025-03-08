@@ -7,6 +7,7 @@ export interface DocumentGeneratorProps {
 
 export interface UseDownloadStateProps {
   id: string;
+  leadId?: string; // Added to support existing code that uses leadId
   storageKey?: string;
 }
 
