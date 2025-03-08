@@ -1,7 +1,7 @@
 
 import { useState } from "react";
 import { Lead } from "@/types/leads";
-import { Files } from "lucide-react";
+import { FileBarChart } from "lucide-react";
 import { SavedReportsDialog } from "./SavedReportsDialog";
 
 interface SavedReportsButtonProps {
@@ -15,10 +15,10 @@ export const SavedReportsButton = ({ lead }: SavedReportsButtonProps) => {
     <>
       <button
         onClick={() => setDialogOpen(true)}
-        className="flex items-center px-3 py-1 text-sm bg-blue-600 text-white rounded-md hover:bg-blue-700 transition-colors"
+        className="flex items-center px-3 py-1 text-sm bg-emerald-600 text-white rounded-md hover:bg-emerald-700 transition-colors"
       >
-        <Files className="h-4 w-4 mr-1" />
-        View Reports
+        <FileBarChart className="h-4 w-4 mr-1" />
+        Saved Reports
       </button>
       
       <SavedReportsDialog 

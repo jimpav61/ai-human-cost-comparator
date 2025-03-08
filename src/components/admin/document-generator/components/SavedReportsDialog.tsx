@@ -5,6 +5,9 @@ import { useSavedReports } from "../hooks/useSavedReports";
 import { generateAndDownloadReport } from "@/utils/reportGenerator";
 import { format } from "date-fns";
 import { Download, FileBarChart, Loader2 } from "lucide-react";
+import { toast } from "@/hooks/use-toast";
+import { supabase } from "@/integrations/supabase/client";
+import { useState } from "react";
 
 interface SavedReportsDialogProps {
   lead: Lead;
@@ -13,15 +16,66 @@ interface SavedReportsDialogProps {
 }
 
 export const SavedReportsDialog = ({ lead, isOpen, onClose }: SavedReportsDialogProps) => {
-  const { reports, isLoading } = useSavedReports(lead.id);
+  const { reports, isLoading, refreshReports } = useSavedReports(lead.id);
+  const [downloadLoading, setDownloadLoading] = useState<string | null>(null);
 
-  const handleDownloadReport = () => {
+  const handleDownloadOriginalReport = async (reportId: string) => {
     try {
-      // Use the same report generator function that's used in the frontend
-      // This ensures the exact same report is downloaded
-      generateAndDownloadReport(lead);
+      setDownloadLoading(reportId);
+      
+      // Fetch the complete report data from the database
+      const { data: reportData, error } = await supabase
+        .from('generated_reports')
+        .select('*')
+        .eq('id', reportId)
+        .single();
+        
+      if (error) throw error;
+      
+      if (!reportData) {
+        throw new Error("Report data not found");
+      }
+      
+      // Create a temporary lead object with the original calculator inputs and results
+      const tempLead: Lead = {
+        ...lead,
+        calculator_inputs: reportData.calculator_inputs || lead.calculator_inputs,
+        calculator_results: reportData.calculator_results || lead.calculator_results,
+      };
+      
+      console.log("Downloading original report with data:", tempLead);
+      
+      // Use the shared report generator with the original data
+      generateAndDownloadReport(tempLead);
+      
+      toast({
+        title: "Success",
+        description: "Report downloaded successfully",
+      });
     } catch (error) {
       console.error("Error downloading report:", error);
+      toast({
+        title: "Error",
+        description: "Failed to download report. Please try again.",
+        variant: "destructive",
+      });
+    } finally {
+      setDownloadLoading(null);
+    }
+  };
+
+  const handleGenerateNewReport = () => {
+    try {
+      // Generate a new report based on current lead data
+      generateAndDownloadReport(lead);
+      refreshReports();
+    } catch (error) {
+      console.error("Error generating new report:", error);
+      toast({
+        title: "Error",
+        description: "Failed to generate report. Please try again.",
+        variant: "destructive",
+      });
     }
   };
 
@@ -48,10 +102,15 @@ export const SavedReportsDialog = ({ lead, isOpen, onClose }: SavedReportsDialog
                     </div>
                   </div>
                   <button 
-                    onClick={handleDownloadReport}
-                    className="flex items-center p-2 text-sm text-blue-600 hover:text-blue-800"
+                    onClick={() => handleDownloadOriginalReport(report.id)}
+                    disabled={downloadLoading === report.id}
+                    className="flex items-center p-2 text-sm text-blue-600 hover:text-blue-800 disabled:text-gray-400"
                   >
-                    <Download className="h-4 w-4 mr-1" />
+                    {downloadLoading === report.id ? (
+                      <Loader2 className="h-4 w-4 mr-1 animate-spin" />
+                    ) : (
+                      <Download className="h-4 w-4 mr-1" />
+                    )}
                     Download
                   </button>
                 </div>
@@ -62,7 +121,7 @@ export const SavedReportsDialog = ({ lead, isOpen, onClose }: SavedReportsDialog
               No reports found for this lead.
               <div className="mt-4">
                 <button
-                  onClick={handleDownloadReport}
+                  onClick={handleGenerateNewReport}
                   className="flex items-center px-4 py-2 mx-auto bg-emerald-600 text-white rounded-md hover:bg-emerald-700"
                 >
                   <FileBarChart className="h-4 w-4 mr-2" />

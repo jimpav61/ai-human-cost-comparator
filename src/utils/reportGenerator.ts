@@ -19,19 +19,27 @@ export const generateAndDownloadReport = (lead: Lead) => {
       throw new Error("Lead data is missing");
     }
 
-    console.log('[SHARED REPORT] Starting PDF generation with calculator data');
+    console.log('[SHARED REPORT] Starting PDF generation with calculator data:', {
+      inputs: lead.calculator_inputs,
+      results: lead.calculator_results
+    });
     
-    // Calculate additional voice minutes directly from the calculator inputs
+    // Extract all data from calculator inputs
     const aiTier = lead.calculator_inputs?.aiTier || 'growth';
+    const aiType = lead.calculator_inputs?.aiType || 'chatbot';
     
-    // IMPORTANT: For admin reports, we need to explicitly extract the callVolume 
-    // from calculator_inputs to ensure voice minutes are correctly included
+    // Extract voice minutes calculation data
     const additionalVoiceMinutes = lead.calculator_inputs?.callVolume ? 
       parseInt(String(lead.calculator_inputs.callVolume), 10) : 0;
     
     const includedVoiceMinutes = aiTier === 'starter' ? 0 : 600;
     
-    console.log('[SHARED REPORT] Additional voice minutes:', additionalVoiceMinutes);
+    console.log('[SHARED REPORT] Voice minutes data:', {
+      additionalVoiceMinutes,
+      includedVoiceMinutes,
+      aiTier,
+      aiType
+    });
     
     // Prepare safe base price from tier - using exact fixed prices
     const basePriceMonthly = 
@@ -77,8 +85,28 @@ export const generateAndDownloadReport = (lead: Lead) => {
     calculatorResults.savingsPercentage = calculatorResults.savingsPercentage ?? 
       ((humanCostMonthly - totalMonthlyCost) / humanCostMonthly * 100);
     
-    console.log('[SHARED REPORT] Prepared calculator results with additionalVoiceMinutes:', additionalVoiceMinutes);
-    console.log('[SHARED REPORT] aiCostMonthly:', calculatorResults.aiCostMonthly);
+    // Ensure human hours are properly set
+    if (!calculatorResults.humanHours) {
+      calculatorResults.humanHours = {
+        dailyPerEmployee: 8,
+        weeklyTotal: lead.calculator_inputs?.numEmployees ? lead.calculator_inputs.numEmployees * 8 * 5 : 160,
+        monthlyTotal: lead.calculator_inputs?.numEmployees ? lead.calculator_inputs.numEmployees * 8 * 21.67 : 693,
+        yearlyTotal: lead.calculator_inputs?.numEmployees ? lead.calculator_inputs.numEmployees * 8 * 260 : 8320
+      };
+    }
+    
+    // Format tier and AI type display names
+    const tierName = aiTier === 'starter' ? 'Starter Plan' : 
+                     aiTier === 'growth' ? 'Growth Plan' : 
+                     aiTier === 'premium' ? 'Premium Plan' : 'Growth Plan';
+                     
+    const aiTypeDisplay = aiType === 'chatbot' ? 'Text Only' : 
+                          aiType === 'voice' ? 'Basic Voice' : 
+                          aiType === 'conversationalVoice' ? 'Conversational Voice' : 
+                          aiType === 'both' ? 'Text & Basic Voice' : 
+                          aiType === 'both-premium' ? 'Text & Conversational Voice' : 'Text Only';
+    
+    console.log('[SHARED REPORT] Final calculator results:', calculatorResults);
     
     // Generate the PDF using the shared generator
     const doc = generatePDF({
@@ -89,7 +117,7 @@ export const generateAndDownloadReport = (lead: Lead) => {
       industry: lead.industry || 'Other',
       employeeCount: Number(lead.employee_count) || 5,
       results: calculatorResults,
-      additionalVoiceMinutes: additionalVoiceMinutes, // Explicitly pass the additionalVoiceMinutes
+      additionalVoiceMinutes: additionalVoiceMinutes,
       includedVoiceMinutes: includedVoiceMinutes,
       businessSuggestions: [
         {
@@ -119,14 +147,8 @@ export const generateAndDownloadReport = (lead: Lead) => {
           capabilities: ["Answer product questions", "Provide pricing information", "Schedule demonstrations with sales team"]
         }
       ],
-      tierName: lead.calculator_inputs?.aiTier === 'starter' ? 'Starter Plan' : 
-              lead.calculator_inputs?.aiTier === 'growth' ? 'Growth Plan' : 
-              lead.calculator_inputs?.aiTier === 'premium' ? 'Premium Plan' : 'Growth Plan',
-      aiType: lead.calculator_inputs?.aiType === 'chatbot' ? 'Text Only' : 
-              lead.calculator_inputs?.aiType === 'voice' ? 'Basic Voice' : 
-              lead.calculator_inputs?.aiType === 'conversationalVoice' ? 'Conversational Voice' : 
-              lead.calculator_inputs?.aiType === 'both' ? 'Text & Basic Voice' : 
-              lead.calculator_inputs?.aiType === 'both-premium' ? 'Text & Conversational Voice' : 'Text Only'
+      tierName: tierName,
+      aiType: aiTypeDisplay
     });
     
     // Save file with proper naming

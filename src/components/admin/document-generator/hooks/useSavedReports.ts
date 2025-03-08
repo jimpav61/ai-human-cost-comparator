@@ -9,6 +9,8 @@ export interface SavedReport {
   company_name: string;
   contact_name: string;
   report_date: string;
+  calculator_inputs: any;
+  calculator_results: any;
 }
 
 export const useSavedReports = (leadId?: string) => {
@@ -22,7 +24,7 @@ export const useSavedReports = (leadId?: string) => {
       
       // If leadId is provided, filter reports by that lead
       if (leadId) {
-        // Assuming there's some way to filter by lead, using email+company for now
+        // First get the lead data
         const { data: lead } = await supabase
           .from('leads')
           .select('email, company_name')
@@ -40,6 +42,7 @@ export const useSavedReports = (leadId?: string) => {
       
       if (error) throw error;
       
+      console.log("Fetched reports data:", data);
       setReports(data || []);
     } catch (error) {
       console.error("Error fetching reports:", error);
