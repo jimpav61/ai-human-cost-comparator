@@ -34,33 +34,40 @@ export const generateAndDownloadReport = async (lead: Lead) => {
 
     // First check if there's a saved report in the database
     console.log('[SHARED REPORT] Checking for existing saved report for lead ID:', lead.id);
-    const { data: existingReport, error: reportError } = await supabase
+    
+    // Try multiple methods to find a report
+    const { data: exactReport, error: exactError } = await supabase
       .from('generated_reports')
       .select('*')
       .eq('id', lead.id)
       .maybeSingle();
       
-    if (reportError) {
-      console.error('[SHARED REPORT] Error fetching existing report:', reportError);
+    if (exactError) {
+      console.error('[SHARED REPORT] Error fetching exact report:', exactError);
     }
     
-    // If we found a saved report, use that exact data
-    if (existingReport) {
-      console.log('[SHARED REPORT] Found existing report, using saved data:', existingReport);
+    // If we have an exact match by ID
+    if (exactReport) {
+      console.log('[SHARED REPORT] Found existing report by ID match:', exactReport);
       
-      // Cast the calculator inputs/results to the expected type
-      const calculatorResults = existingReport.calculator_results as unknown as SharedResults;
-      const calculatorInputs = existingReport.calculator_inputs as Record<string, any>;
+      // Process the calculatorInputs and calculatorResults, ensuring proper typing
+      const calculatorInputs = typeof exactReport.calculator_inputs === 'string'
+        ? JSON.parse(exactReport.calculator_inputs as string)
+        : (exactReport.calculator_inputs as Record<string, any>);
+        
+      const calculatorResults = typeof exactReport.calculator_results === 'string'
+        ? JSON.parse(exactReport.calculator_results as string)
+        : (exactReport.calculator_results as SharedResults);
       
       // Generate PDF using the saved report data
       const doc = generatePDF({
-        contactInfo: existingReport.contact_name || lead.name || 'Valued Client',
-        companyName: existingReport.company_name || lead.company_name || 'Your Company',
-        email: existingReport.email || lead.email || 'client@example.com',
-        phoneNumber: existingReport.phone_number || lead.phone_number || '',
+        contactInfo: exactReport.contact_name || lead.name || 'Valued Client',
+        companyName: exactReport.company_name || lead.company_name || 'Your Company',
+        email: exactReport.email || lead.email || 'client@example.com',
+        phoneNumber: exactReport.phone_number || lead.phone_number || '',
         industry: lead.industry || 'Other',
         employeeCount: Number(lead.employee_count) || 5,
-        results: calculatorResults,
+        results: calculatorResults as SharedResults,
         additionalVoiceMinutes: calculatorInputs?.callVolume || 0,
         includedVoiceMinutes: calculatorInputs?.aiTier === 'starter' ? 0 : 600,
         businessSuggestions: [
@@ -92,8 +99,8 @@ export const generateAndDownloadReport = async (lead: Lead) => {
           }
         ],
         tierName: calculatorInputs?.aiTier === 'starter' ? 'Starter Plan' : 
-                 calculatorInputs?.aiTier === 'growth' ? 'Growth Plan' : 
-                 calculatorInputs?.aiTier === 'premium' ? 'Premium Plan' : 'Growth Plan',
+                calculatorInputs?.aiTier === 'growth' ? 'Growth Plan' : 
+                calculatorInputs?.aiTier === 'premium' ? 'Premium Plan' : 'Growth Plan',
         aiType: calculatorInputs?.aiType === 'chatbot' ? 'Text Only' : 
                 calculatorInputs?.aiType === 'voice' ? 'Basic Voice' : 
                 calculatorInputs?.aiType === 'conversationalVoice' ? 'Conversational Voice' : 
@@ -114,9 +121,96 @@ export const generateAndDownloadReport = async (lead: Lead) => {
       return true;
     }
     
-    // If no saved report, check if we can generate from current lead data
+    // Try finding by email if no direct ID match
+    const { data: emailReports, error: emailError } = await supabase
+      .from('generated_reports')
+      .select('*')
+      .eq('email', lead.email);
+      
+    if (emailError) {
+      console.error('[SHARED REPORT] Error fetching report by email:', emailError);
+    }
+    
+    // If we found a report by email
+    if (emailReports && emailReports.length > 0) {
+      console.log('[SHARED REPORT] Found existing report by email match:', emailReports[0]);
+      
+      const reportByEmail = emailReports[0];
+      
+      // Process the calculatorInputs and calculatorResults, ensuring proper typing
+      const calculatorInputs = typeof reportByEmail.calculator_inputs === 'string'
+        ? JSON.parse(reportByEmail.calculator_inputs as string)
+        : (reportByEmail.calculator_inputs as Record<string, any>);
+        
+      const calculatorResults = typeof reportByEmail.calculator_results === 'string'
+        ? JSON.parse(reportByEmail.calculator_results as string)
+        : (reportByEmail.calculator_results as SharedResults);
+      
+      // Generate PDF using the saved report data
+      const doc = generatePDF({
+        contactInfo: reportByEmail.contact_name || lead.name || 'Valued Client',
+        companyName: reportByEmail.company_name || lead.company_name || 'Your Company',
+        email: reportByEmail.email || lead.email || 'client@example.com',
+        phoneNumber: reportByEmail.phone_number || lead.phone_number || '',
+        industry: lead.industry || 'Other',
+        employeeCount: Number(lead.employee_count) || 5,
+        results: calculatorResults as SharedResults,
+        additionalVoiceMinutes: calculatorInputs?.callVolume || 0,
+        includedVoiceMinutes: calculatorInputs?.aiTier === 'starter' ? 0 : 600,
+        businessSuggestions: [
+          {
+            title: "Automate Common Customer Inquiries",
+            description: "Implement an AI chatbot to handle frequently asked questions, reducing wait times and freeing up human agents."
+          },
+          {
+            title: "Enhance After-Hours Support",
+            description: "Deploy voice AI to provide 24/7 customer service without increasing staffing costs."
+          },
+          {
+            title: "Streamline Onboarding Process",
+            description: "Use AI assistants to guide new customers through product setup and initial questions."
+          }
+        ],
+        aiPlacements: [
+          {
+            role: "Front-line Customer Support",
+            capabilities: ["Handle basic inquiries", "Process simple requests", "Collect customer information"]
+          },
+          {
+            role: "Technical Troubleshooting",
+            capabilities: ["Guide users through common issues", "Recommend solutions based on symptoms", "Escalate complex problems to human agents"]
+          },
+          {
+            role: "Sales Assistant",
+            capabilities: ["Answer product questions", "Provide pricing information", "Schedule demonstrations with sales team"]
+          }
+        ],
+        tierName: calculatorInputs?.aiTier === 'starter' ? 'Starter Plan' : 
+                calculatorInputs?.aiTier === 'growth' ? 'Growth Plan' : 
+                calculatorInputs?.aiTier === 'premium' ? 'Premium Plan' : 'Growth Plan',
+        aiType: calculatorInputs?.aiType === 'chatbot' ? 'Text Only' : 
+                calculatorInputs?.aiType === 'voice' ? 'Basic Voice' : 
+                calculatorInputs?.aiType === 'conversationalVoice' ? 'Conversational Voice' : 
+                calculatorInputs?.aiType === 'both' ? 'Text & Basic Voice' : 
+                calculatorInputs?.aiType === 'both-premium' ? 'Text & Conversational Voice' : 'Text Only'
+      });
+      
+      // Save file with proper naming
+      const safeCompanyName = getSafeFileName(lead);
+      doc.save(`${safeCompanyName}-ChatSites-ROI-Report.pdf`);
+      
+      toast({
+        title: "Success",
+        description: `Saved report for ${lead.company_name || 'Client'} downloaded successfully`,
+        variant: "default",
+      });
+      
+      return true;
+    }
+    
+    // If no saved report found anywhere, check if we can generate from current lead data
     if (!canGenerateReport(lead)) {
-      throw new Error("This lead has no saved calculation results");
+      throw new Error("This lead has no saved calculation results. Please contact support if you believe this is an error.");
     }
 
     // Use the saved calculator inputs and results

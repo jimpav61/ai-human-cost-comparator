@@ -3,7 +3,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } f
 import { Lead } from "@/types/leads";
 import { useSavedReports } from "../hooks/useSavedReports";
 import { format } from "date-fns";
-import { Download, FileBarChart, Loader2 } from "lucide-react";
+import { Download, FileBarChart, Loader2, RefreshCw } from "lucide-react";
 import { toast } from "@/hooks/use-toast";
 import { useState } from "react";
 import { generatePDF } from "@/components/calculator/pdf";
@@ -17,7 +17,7 @@ interface SavedReportsDialogProps {
 }
 
 export const SavedReportsDialog = ({ lead, isOpen, onClose }: SavedReportsDialogProps) => {
-  const { reports, isLoading } = useSavedReports(lead.id);
+  const { reports, isLoading, refreshReports } = useSavedReports(lead.id);
   const [downloadLoading, setDownloadLoading] = useState<string | null>(null);
   
   // Get the single report if available
@@ -56,11 +56,16 @@ export const SavedReportsDialog = ({ lead, isOpen, onClose }: SavedReportsDialog
       URL.revokeObjectURL(downloadUrl);
       document.body.removeChild(link);
       
-      // Use the exact same data from the report to create a PDF
-      // This ensures we're using EXACTLY what was saved with no recalculation
-      const calculatorInputs = reportData.calculator_inputs as Record<string, any>;
-      const calculatorResults = reportData.calculator_results as SharedResults;
+      // Make sure calculator_inputs and calculator_results are properly typed
+      const calculatorInputs = typeof reportData.calculator_inputs === 'string' 
+        ? JSON.parse(reportData.calculator_inputs) 
+        : reportData.calculator_inputs;
+        
+      const calculatorResults = typeof reportData.calculator_results === 'string'
+        ? JSON.parse(reportData.calculator_results)
+        : reportData.calculator_results;
       
+      // Use the exact same data from the report to create a PDF
       const doc = generatePDF({
         contactInfo: reportData.contact_name || 'Valued Client',
         companyName: reportData.company_name || 'Your Company',
@@ -68,7 +73,7 @@ export const SavedReportsDialog = ({ lead, isOpen, onClose }: SavedReportsDialog
         phoneNumber: reportData.phone_number || '',
         industry: lead.industry || 'Other',
         employeeCount: Number(lead.employee_count) || 5,
-        results: calculatorResults,
+        results: calculatorResults as SharedResults,
         additionalVoiceMinutes: calculatorInputs?.callVolume || 0,
         includedVoiceMinutes: calculatorInputs?.aiTier === 'starter' ? 0 : 600,
         businessSuggestions: [
@@ -129,31 +134,6 @@ export const SavedReportsDialog = ({ lead, isOpen, onClose }: SavedReportsDialog
     }
   };
 
-  const handleGenerateNewReport = () => {
-    try {
-      // Only proceed if we have an existing report
-      if (reports.length === 0) {
-        toast({
-          title: "Error",
-          description: "No saved report found. The client must complete a calculation first.",
-          variant: "destructive",
-        });
-        return;
-      }
-      
-      // Use the exact saved report data - no recalculation
-      const reportData = reports[0];
-      handleDownloadOriginalReport(reportData.id);
-    } catch (error) {
-      console.error("Error generating new report:", error);
-      toast({
-        title: "Error",
-        description: "Failed to generate report. Please try again.",
-        variant: "destructive",
-      });
-    }
-  };
-
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
       <DialogContent className="sm:max-w-md">
@@ -193,9 +173,16 @@ export const SavedReportsDialog = ({ lead, isOpen, onClose }: SavedReportsDialog
               </div>
             </div>
           ) : (
-            <div className="text-center py-6 text-gray-500">
+            <div className="flex flex-col items-center py-6 text-gray-500">
               <p>No saved report found for this lead.</p>
               <p className="text-sm mt-2">The client needs to complete a calculation first.</p>
+              <button
+                onClick={refreshReports}
+                className="mt-4 flex items-center px-3 py-1.5 bg-gray-100 hover:bg-gray-200 rounded-md text-sm text-gray-700"
+              >
+                <RefreshCw className="h-3.5 w-3.5 mr-1.5" />
+                Refresh Reports
+              </button>
             </div>
           )}
         </div>

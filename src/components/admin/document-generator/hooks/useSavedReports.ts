@@ -23,63 +23,99 @@ export const useSavedReports = (leadId?: string) => {
     
     setIsLoading(true);
     try {
-      console.log("Fetching saved reports for lead:", leadId);
+      console.log("Fetching saved reports for lead ID:", leadId);
       
-      // First try to find a report with lead ID
-      const { data: exactMatch, error: exactMatchError } = await supabase
+      // First try to find reports by lead ID directly (both in id field and email field)
+      const { data: allReports, error: reportsError } = await supabase
         .from('generated_reports')
         .select('*')
-        .eq('id', leadId)
-        .maybeSingle();
+        .or(`id.eq.${leadId},email.eq.${leadId}`);
         
-      if (exactMatchError) {
-        console.error("Error fetching exact match report:", exactMatchError);
-      }
-      
-      if (exactMatch) {
-        console.log("Found exact match report by ID:", exactMatch);
-        
-        // Ensure proper typing of calculator inputs and results
-        const typedReport: SavedReport = {
-          ...exactMatch,
-          calculator_inputs: exactMatch.calculator_inputs as Record<string, any>,
-          calculator_results: exactMatch.calculator_results as Record<string, any>
-        };
-        
-        setReports([typedReport]);
+      if (reportsError) {
+        console.error("Error fetching reports by ID:", reportsError);
+        toast({
+          title: "Error",
+          description: "Failed to fetch reports. Please try again.",
+          variant: "destructive",
+        });
+        setReports([]);
+        setIsLoading(false);
         return;
       }
       
-      // If no exact match found, search by report data
-      const { data: relatedReports, error: relatedError } = await supabase
-        .from('generated_reports')
-        .select('*')
-        .eq('email', leadId) // Try finding by email (stored in ID field)
-        .order('report_date', { ascending: false });
-        
-      if (relatedError) {
-        console.error("Error fetching related reports:", relatedError);
-      }
+      console.log("Found reports:", allReports);
       
-      if (relatedReports && relatedReports.length > 0) {
-        console.log("Found related reports:", relatedReports);
-        
-        // Ensure proper typing for all reports
-        const typedReports: SavedReport[] = relatedReports.map(report => ({
+      if (allReports && allReports.length > 0) {
+        // Process and type reports properly
+        const typedReports: SavedReport[] = allReports.map(report => ({
           ...report,
-          calculator_inputs: report.calculator_inputs as Record<string, any>,
-          calculator_results: report.calculator_results as Record<string, any>
+          calculator_inputs: typeof report.calculator_inputs === 'string' 
+            ? JSON.parse(report.calculator_inputs as string) 
+            : (report.calculator_inputs as Record<string, any>),
+          calculator_results: typeof report.calculator_results === 'string'
+            ? JSON.parse(report.calculator_results as string)
+            : (report.calculator_results as Record<string, any>)
         }));
         
         setReports(typedReports);
-        return;
+        console.log("Processed reports:", typedReports);
+      } else {
+        // If no reports found using direct ID, try querying by lead email from another source
+        // Fetch the lead info first to get email
+        const { data: leadData, error: leadError } = await supabase
+          .from('leads')
+          .select('email')
+          .eq('id', leadId)
+          .single();
+          
+        if (leadError) {
+          console.error("Error fetching lead email:", leadError);
+          setReports([]);
+          setIsLoading(false);
+          return;
+        }
+        
+        if (leadData?.email) {
+          // Search for reports using the lead's email
+          const { data: emailReports, error: emailError } = await supabase
+            .from('generated_reports')
+            .select('*')
+            .eq('email', leadData.email);
+            
+          if (emailError) {
+            console.error("Error fetching reports by email:", emailError);
+            setReports([]);
+          } else if (emailReports && emailReports.length > 0) {
+            // Process and type reports properly
+            const typedReports: SavedReport[] = emailReports.map(report => ({
+              ...report,
+              calculator_inputs: typeof report.calculator_inputs === 'string' 
+                ? JSON.parse(report.calculator_inputs as string) 
+                : (report.calculator_inputs as Record<string, any>),
+              calculator_results: typeof report.calculator_results === 'string'
+                ? JSON.parse(report.calculator_results as string)
+                : (report.calculator_results as Record<string, any>)
+            }));
+            
+            setReports(typedReports);
+            console.log("Found reports by email:", typedReports);
+          } else {
+            console.log("No reports found for lead ID or email:", leadId, leadData.email);
+            setReports([]);
+          }
+        } else {
+          console.log("No email found for lead ID:", leadId);
+          setReports([]);
+        }
       }
-      
-      console.log("No reports found for lead:", leadId);
-      setReports([]);
     } catch (error) {
       console.error("Error fetching reports:", error);
       setReports([]);
+      toast({
+        title: "Error",
+        description: "Failed to load saved reports. Please try again.",
+        variant: "destructive",
+      });
     } finally {
       setIsLoading(false);
     }
