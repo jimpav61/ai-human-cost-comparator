@@ -49,7 +49,7 @@ export const generateAndDownloadReport = async (lead: Lead) => {
       console.log('[SHARED REPORT] Found existing report, using saved data:', existingReport);
       
       // Cast the calculator inputs/results to the expected type
-      const calculatorResults = existingReport.calculator_results as SharedResults;
+      const calculatorResults = existingReport.calculator_results as unknown as SharedResults;
       const calculatorInputs = existingReport.calculator_inputs as Record<string, any>;
       
       // Generate PDF using the saved report data

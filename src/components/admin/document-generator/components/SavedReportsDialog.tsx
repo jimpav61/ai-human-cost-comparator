@@ -29,7 +29,7 @@ export const SavedReportsDialog = ({ lead, isOpen, onClose }: SavedReportsDialog
       
       console.log("Downloading original report with ID:", reportId);
       
-      // Create or get the report data
+      // Find the report data
       const reportData = reports.find(r => r.id === reportId);
       
       if (!reportData) {
@@ -58,6 +58,9 @@ export const SavedReportsDialog = ({ lead, isOpen, onClose }: SavedReportsDialog
       
       // Use the exact same data from the report to create a PDF
       // This ensures we're using EXACTLY what was saved with no recalculation
+      const calculatorInputs = reportData.calculator_inputs as Record<string, any>;
+      const calculatorResults = reportData.calculator_results as SharedResults;
+      
       const doc = generatePDF({
         contactInfo: reportData.contact_name || 'Valued Client',
         companyName: reportData.company_name || 'Your Company',
@@ -65,9 +68,9 @@ export const SavedReportsDialog = ({ lead, isOpen, onClose }: SavedReportsDialog
         phoneNumber: reportData.phone_number || '',
         industry: lead.industry || 'Other',
         employeeCount: Number(lead.employee_count) || 5,
-        results: reportData.calculator_results as SharedResults,
-        additionalVoiceMinutes: reportData.calculator_inputs?.callVolume || 0,
-        includedVoiceMinutes: reportData.calculator_inputs?.aiTier === 'starter' ? 0 : 600,
+        results: calculatorResults,
+        additionalVoiceMinutes: calculatorInputs?.callVolume || 0,
+        includedVoiceMinutes: calculatorInputs?.aiTier === 'starter' ? 0 : 600,
         businessSuggestions: [
           {
             title: "Automate Common Customer Inquiries",
@@ -96,14 +99,14 @@ export const SavedReportsDialog = ({ lead, isOpen, onClose }: SavedReportsDialog
             capabilities: ["Answer product questions", "Provide pricing information", "Schedule demonstrations with sales team"]
           }
         ],
-        tierName: reportData.calculator_inputs?.aiTier === 'starter' ? 'Starter Plan' : 
-                 reportData.calculator_inputs?.aiTier === 'growth' ? 'Growth Plan' : 
-                 reportData.calculator_inputs?.aiTier === 'premium' ? 'Premium Plan' : 'Growth Plan',
-        aiType: reportData.calculator_inputs?.aiType === 'chatbot' ? 'Text Only' : 
-                reportData.calculator_inputs?.aiType === 'voice' ? 'Basic Voice' : 
-                reportData.calculator_inputs?.aiType === 'conversationalVoice' ? 'Conversational Voice' : 
-                reportData.calculator_inputs?.aiType === 'both' ? 'Text & Basic Voice' : 
-                reportData.calculator_inputs?.aiType === 'both-premium' ? 'Text & Conversational Voice' : 'Text Only'
+        tierName: calculatorInputs?.aiTier === 'starter' ? 'Starter Plan' : 
+                 calculatorInputs?.aiTier === 'growth' ? 'Growth Plan' : 
+                 calculatorInputs?.aiTier === 'premium' ? 'Premium Plan' : 'Growth Plan',
+        aiType: calculatorInputs?.aiType === 'chatbot' ? 'Text Only' : 
+                calculatorInputs?.aiType === 'voice' ? 'Basic Voice' : 
+                calculatorInputs?.aiType === 'conversationalVoice' ? 'Conversational Voice' : 
+                calculatorInputs?.aiType === 'both' ? 'Text & Basic Voice' : 
+                calculatorInputs?.aiType === 'both-premium' ? 'Text & Conversational Voice' : 'Text Only'
       });
       
       // Save file with proper naming
@@ -128,21 +131,19 @@ export const SavedReportsDialog = ({ lead, isOpen, onClose }: SavedReportsDialog
 
   const handleGenerateNewReport = () => {
     try {
-      // Only try to generate a new report if we have calculator inputs and results
-      if (!lead.calculator_inputs || Object.keys(lead.calculator_inputs).length === 0 ||
-          !lead.calculator_results || Object.keys(lead.calculator_results).length === 0) {
+      // Only proceed if we have an existing report
+      if (reports.length === 0) {
         toast({
           title: "Error",
-          description: "This lead has no saved calculation results. Please edit the lead and add calculator data first.",
+          description: "No saved report found. The client must complete a calculation first.",
           variant: "destructive",
         });
         return;
       }
       
-      // Generate a new report based on current lead data
-      import('@/utils/reportGenerator').then(module => {
-        module.generateAndDownloadReport(lead);
-      });
+      // Use the exact saved report data - no recalculation
+      const reportData = reports[0];
+      handleDownloadOriginalReport(reportData.id);
     } catch (error) {
       console.error("Error generating new report:", error);
       toast({
@@ -194,16 +195,7 @@ export const SavedReportsDialog = ({ lead, isOpen, onClose }: SavedReportsDialog
           ) : (
             <div className="text-center py-6 text-gray-500">
               <p>No saved report found for this lead.</p>
-              <p className="text-sm mt-2">A new report can be generated if the lead has calculator data.</p>
-              <div className="mt-4">
-                <button
-                  onClick={handleGenerateNewReport}
-                  className="flex items-center px-4 py-2 mx-auto bg-emerald-600 text-white rounded-md hover:bg-emerald-700"
-                >
-                  <FileBarChart className="h-4 w-4 mr-2" />
-                  Generate New ROI Report
-                </button>
-              </div>
+              <p className="text-sm mt-2">The client needs to complete a calculation first.</p>
             </div>
           )}
         </div>
