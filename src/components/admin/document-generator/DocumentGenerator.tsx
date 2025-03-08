@@ -19,39 +19,12 @@ export const DocumentGenerator = ({ lead }: DocumentGeneratorProps) => {
       setIsLoading(true);
       console.log("Attempting to download report for lead:", lead);
       
-      // First check if there's a saved report in the database for this lead
-      const { data: existingReport, error } = await supabase
-        .from('generated_reports')
-        .select('*')
-        .eq('id', lead.id)
-        .maybeSingle();
-        
-      if (error) {
-        console.error("Error checking for existing report:", error);
-      }
+      // Simply use the shared utility function without any checks
+      // The utility function will handle finding the saved report
+      const success = await generateAndDownloadReport(lead);
       
-      // If we found a report in the database, download it directly
-      if (existingReport) {
-        console.log("Found existing report in database:", existingReport);
-        // Use the shared utility function with the existing report data
-        const success = await generateAndDownloadReport(lead);
-        
-        if (!success) {
-          throw new Error("Failed to download existing report");
-        }
-      } 
-      // If no report exists in the database but the lead has calculator data, try to generate one
-      else if (lead.calculator_results && Object.keys(lead.calculator_results).length > 0) {
-        console.log("No saved report found, but lead has calculator data. Generating new report.");
-        const success = await generateAndDownloadReport(lead);
-        
-        if (!success) {
-          throw new Error("Failed to generate and download report");
-        }
-      }
-      // If no report exists and no calculator data is available
-      else {
-        throw new Error("No report exists for this lead. Complete the calculator form first.");
+      if (!success) {
+        throw new Error("No report found for this lead");
       }
       
     } catch (error) {
@@ -60,7 +33,7 @@ export const DocumentGenerator = ({ lead }: DocumentGeneratorProps) => {
         title: "Report Not Found",
         description: error instanceof Error 
           ? error.message 
-          : "No report exists for this lead. Use the Report Generator to create one first.",
+          : "No report exists for this lead or there was an error accessing it.",
         variant: "destructive",
       });
     } finally {
