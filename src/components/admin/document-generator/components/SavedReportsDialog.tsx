@@ -3,12 +3,11 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } f
 import { Lead } from "@/types/leads";
 import { useSavedReports } from "../hooks/useSavedReports";
 import { format } from "date-fns";
-import { Download, FileBarChart, Loader2, RefreshCw } from "lucide-react";
+import { Download, FileBarChart, Loader2 } from "lucide-react";
 import { toast } from "@/hooks/use-toast";
 import { useState } from "react";
 import { generatePDF } from "@/components/calculator/pdf";
 import { getSafeFileName } from "../hooks/report-generator/saveReport";
-import { SharedResults } from "@/components/calculator/shared/types";
 
 interface SavedReportsDialogProps {
   lead: Lead;
@@ -17,7 +16,7 @@ interface SavedReportsDialogProps {
 }
 
 export const SavedReportsDialog = ({ lead, isOpen, onClose }: SavedReportsDialogProps) => {
-  const { reports, isLoading, refreshReports } = useSavedReports(lead.id);
+  const { reports, isLoading } = useSavedReports(lead.id);
   const [downloadLoading, setDownloadLoading] = useState<string | null>(null);
   
   // Get the single report if available
@@ -29,7 +28,7 @@ export const SavedReportsDialog = ({ lead, isOpen, onClose }: SavedReportsDialog
       
       console.log("Downloading original report with ID:", reportId);
       
-      // Find the report data
+      // Create or get the report data
       const reportData = reports.find(r => r.id === reportId);
       
       if (!reportData) {
@@ -56,16 +55,8 @@ export const SavedReportsDialog = ({ lead, isOpen, onClose }: SavedReportsDialog
       URL.revokeObjectURL(downloadUrl);
       document.body.removeChild(link);
       
-      // Make sure calculator_inputs and calculator_results are properly typed
-      const calculatorInputs = typeof reportData.calculator_inputs === 'string' 
-        ? JSON.parse(reportData.calculator_inputs) 
-        : reportData.calculator_inputs;
-        
-      const calculatorResults = typeof reportData.calculator_results === 'string'
-        ? JSON.parse(reportData.calculator_results)
-        : reportData.calculator_results;
-      
       // Use the exact same data from the report to create a PDF
+      // This ensures we're using EXACTLY what was saved with no recalculation
       const doc = generatePDF({
         contactInfo: reportData.contact_name || 'Valued Client',
         companyName: reportData.company_name || 'Your Company',
@@ -73,9 +64,9 @@ export const SavedReportsDialog = ({ lead, isOpen, onClose }: SavedReportsDialog
         phoneNumber: reportData.phone_number || '',
         industry: lead.industry || 'Other',
         employeeCount: Number(lead.employee_count) || 5,
-        results: calculatorResults as SharedResults,
-        additionalVoiceMinutes: calculatorInputs?.callVolume || 0,
-        includedVoiceMinutes: calculatorInputs?.aiTier === 'starter' ? 0 : 600,
+        results: reportData.calculator_results,
+        additionalVoiceMinutes: reportData.calculator_inputs?.callVolume || 0,
+        includedVoiceMinutes: reportData.calculator_inputs?.aiTier === 'starter' ? 0 : 600,
         businessSuggestions: [
           {
             title: "Automate Common Customer Inquiries",
@@ -104,14 +95,14 @@ export const SavedReportsDialog = ({ lead, isOpen, onClose }: SavedReportsDialog
             capabilities: ["Answer product questions", "Provide pricing information", "Schedule demonstrations with sales team"]
           }
         ],
-        tierName: calculatorInputs?.aiTier === 'starter' ? 'Starter Plan' : 
-                 calculatorInputs?.aiTier === 'growth' ? 'Growth Plan' : 
-                 calculatorInputs?.aiTier === 'premium' ? 'Premium Plan' : 'Growth Plan',
-        aiType: calculatorInputs?.aiType === 'chatbot' ? 'Text Only' : 
-                calculatorInputs?.aiType === 'voice' ? 'Basic Voice' : 
-                calculatorInputs?.aiType === 'conversationalVoice' ? 'Conversational Voice' : 
-                calculatorInputs?.aiType === 'both' ? 'Text & Basic Voice' : 
-                calculatorInputs?.aiType === 'both-premium' ? 'Text & Conversational Voice' : 'Text Only'
+        tierName: reportData.calculator_inputs?.aiTier === 'starter' ? 'Starter Plan' : 
+                 reportData.calculator_inputs?.aiTier === 'growth' ? 'Growth Plan' : 
+                 reportData.calculator_inputs?.aiTier === 'premium' ? 'Premium Plan' : 'Growth Plan',
+        aiType: reportData.calculator_inputs?.aiType === 'chatbot' ? 'Text Only' : 
+                reportData.calculator_inputs?.aiType === 'voice' ? 'Basic Voice' : 
+                reportData.calculator_inputs?.aiType === 'conversationalVoice' ? 'Conversational Voice' : 
+                reportData.calculator_inputs?.aiType === 'both' ? 'Text & Basic Voice' : 
+                reportData.calculator_inputs?.aiType === 'both-premium' ? 'Text & Conversational Voice' : 'Text Only'
       });
       
       // Save file with proper naming
@@ -131,6 +122,33 @@ export const SavedReportsDialog = ({ lead, isOpen, onClose }: SavedReportsDialog
       });
     } finally {
       setDownloadLoading(null);
+    }
+  };
+
+  const handleGenerateNewReport = () => {
+    try {
+      // Only try to generate a new report if we have calculator inputs and results
+      if (!lead.calculator_inputs || Object.keys(lead.calculator_inputs).length === 0 ||
+          !lead.calculator_results || Object.keys(lead.calculator_results).length === 0) {
+        toast({
+          title: "Error",
+          description: "This lead has no saved calculation results. Please edit the lead and add calculator data first.",
+          variant: "destructive",
+        });
+        return;
+      }
+      
+      // Generate a new report based on current lead data
+      import('@/utils/reportGenerator').then(module => {
+        module.generateAndDownloadReport(lead);
+      });
+    } catch (error) {
+      console.error("Error generating new report:", error);
+      toast({
+        title: "Error",
+        description: "Failed to generate report. Please try again.",
+        variant: "destructive",
+      });
     }
   };
 
@@ -173,16 +191,18 @@ export const SavedReportsDialog = ({ lead, isOpen, onClose }: SavedReportsDialog
               </div>
             </div>
           ) : (
-            <div className="flex flex-col items-center py-6 text-gray-500">
+            <div className="text-center py-6 text-gray-500">
               <p>No saved report found for this lead.</p>
-              <p className="text-sm mt-2">The client needs to complete a calculation first.</p>
-              <button
-                onClick={refreshReports}
-                className="mt-4 flex items-center px-3 py-1.5 bg-gray-100 hover:bg-gray-200 rounded-md text-sm text-gray-700"
-              >
-                <RefreshCw className="h-3.5 w-3.5 mr-1.5" />
-                Refresh Reports
-              </button>
+              <p className="text-sm mt-2">A new report can be generated if the lead has calculator data.</p>
+              <div className="mt-4">
+                <button
+                  onClick={handleGenerateNewReport}
+                  className="flex items-center px-4 py-2 mx-auto bg-emerald-600 text-white rounded-md hover:bg-emerald-700"
+                >
+                  <FileBarChart className="h-4 w-4 mr-2" />
+                  Generate New ROI Report
+                </button>
+              </div>
             </div>
           )}
         </div>
