@@ -133,7 +133,7 @@ export const generateAndDownloadReport = async (lead: Lead) => {
       
       toast({
         title: "Success",
-        description: `Report for ${lead.company_name || 'Client'} downloaded successfully`,
+        description: `Downloaded saved report for ${lead.company_name || 'Client'}`,
         variant: "default",
       });
       
