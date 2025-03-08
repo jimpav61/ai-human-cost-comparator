@@ -9,8 +9,8 @@ export const getSafeFileName = (lead: Lead): string => {
 
 export const saveReportPDF = (doc: JsPDFWithAutoTable, lead: Lead): void => {
   const safeCompanyName = getSafeFileName(lead);
-  console.log("Document generated, saving as:", `${safeCompanyName}-Report.pdf`);
+  console.log("Document generated, saving as:", `${safeCompanyName}-ChatSites-ROI-Report.pdf`);
   
   // Save the document with proper company name
-  doc.save(`${safeCompanyName}-Report.pdf`);
+  doc.save(`${safeCompanyName}-ChatSites-ROI-Report.pdf`);
 };

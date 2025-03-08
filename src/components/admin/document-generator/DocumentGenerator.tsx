@@ -1,6 +1,7 @@
 
 import { Lead } from "@/types/leads";
 import { ProposalGenerator } from "./components/ProposalGenerator";
+import { ReportGenerator } from "./components/ReportGenerator";
 import { DocumentGeneratorProps } from "./types";
 import { Send } from "lucide-react";
 import { useEmailProposal } from "./hooks/useEmailProposal";
@@ -11,6 +12,7 @@ export const DocumentGenerator = ({ lead }: DocumentGeneratorProps) => {
   return (
     <div className="flex space-x-2">
       <ProposalGenerator lead={lead} />
+      <ReportGenerator lead={lead} />
       <button
         onClick={() => sendProposalEmail(lead)}
         disabled={isLoading}
