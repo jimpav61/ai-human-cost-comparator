@@ -10,8 +10,8 @@ export interface SavedReport {
   email: string;
   phone_number: string;
   report_date: string;
-  calculator_inputs: any;
-  calculator_results: any;
+  calculator_inputs: Record<string, any>;
+  calculator_results: Record<string, any>;
 }
 
 export const useSavedReports = (leadId?: string) => {
@@ -38,7 +38,15 @@ export const useSavedReports = (leadId?: string) => {
       
       if (exactMatch) {
         console.log("Found exact match report by ID:", exactMatch);
-        setReports([exactMatch]);
+        
+        // Ensure proper typing of calculator inputs and results
+        const typedReport: SavedReport = {
+          ...exactMatch,
+          calculator_inputs: exactMatch.calculator_inputs as Record<string, any>,
+          calculator_results: exactMatch.calculator_results as Record<string, any>
+        };
+        
+        setReports([typedReport]);
         return;
       }
       
@@ -55,7 +63,15 @@ export const useSavedReports = (leadId?: string) => {
       
       if (relatedReports && relatedReports.length > 0) {
         console.log("Found related reports:", relatedReports);
-        setReports(relatedReports);
+        
+        // Ensure proper typing for all reports
+        const typedReports: SavedReport[] = relatedReports.map(report => ({
+          ...report,
+          calculator_inputs: report.calculator_inputs as Record<string, any>,
+          calculator_results: report.calculator_results as Record<string, any>
+        }));
+        
+        setReports(typedReports);
         return;
       }
       

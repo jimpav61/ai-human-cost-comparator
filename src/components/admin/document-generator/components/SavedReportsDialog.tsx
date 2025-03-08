@@ -8,6 +8,7 @@ import { toast } from "@/hooks/use-toast";
 import { useState } from "react";
 import { generatePDF } from "@/components/calculator/pdf";
 import { getSafeFileName } from "../hooks/report-generator/saveReport";
+import { SharedResults } from "@/components/calculator/shared/types";
 
 interface SavedReportsDialogProps {
   lead: Lead;
@@ -64,7 +65,7 @@ export const SavedReportsDialog = ({ lead, isOpen, onClose }: SavedReportsDialog
         phoneNumber: reportData.phone_number || '',
         industry: lead.industry || 'Other',
         employeeCount: Number(lead.employee_count) || 5,
-        results: reportData.calculator_results,
+        results: reportData.calculator_results as SharedResults,
         additionalVoiceMinutes: reportData.calculator_inputs?.callVolume || 0,
         includedVoiceMinutes: reportData.calculator_inputs?.aiTier === 'starter' ? 0 : 600,
         businessSuggestions: [
