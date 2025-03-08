@@ -23,9 +23,9 @@ export const useSavedReports = (leadId?: string) => {
     
     setIsLoading(true);
     try {
-      console.log("Fetching saved report with exact lead ID:", leadId);
+      console.log("Fetching saved reports for lead:", leadId);
       
-      // Only search by the exact lead ID
+      // First try to find a report with lead ID
       const { data: exactMatch, error: exactMatchError } = await supabase
         .from('generated_reports')
         .select('*')
@@ -34,23 +34,35 @@ export const useSavedReports = (leadId?: string) => {
         
       if (exactMatchError) {
         console.error("Error fetching exact match report:", exactMatchError);
-        throw exactMatchError;
       }
       
       if (exactMatch) {
         console.log("Found exact match report by ID:", exactMatch);
         setReports([exactMatch]);
-      } else {
-        console.log("No report found with lead ID:", leadId);
-        setReports([]);
+        return;
       }
+      
+      // If no exact match found, search by report data
+      const { data: relatedReports, error: relatedError } = await supabase
+        .from('generated_reports')
+        .select('*')
+        .eq('email', leadId) // Try finding by email (stored in ID field)
+        .order('report_date', { ascending: false });
+        
+      if (relatedError) {
+        console.error("Error fetching related reports:", relatedError);
+      }
+      
+      if (relatedReports && relatedReports.length > 0) {
+        console.log("Found related reports:", relatedReports);
+        setReports(relatedReports);
+        return;
+      }
+      
+      console.log("No reports found for lead:", leadId);
+      setReports([]);
     } catch (error) {
-      console.error("Error fetching report:", error);
-      toast({
-        title: "Error",
-        description: "Failed to fetch saved report",
-        variant: "destructive",
-      });
+      console.error("Error fetching reports:", error);
       setReports([]);
     } finally {
       setIsLoading(false);

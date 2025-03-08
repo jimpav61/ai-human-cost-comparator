@@ -1,5 +1,5 @@
 
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
 import { Lead } from "@/types/leads";
 import { useSavedReports } from "../hooks/useSavedReports";
 import { format } from "date-fns";
@@ -57,31 +57,16 @@ export const SavedReportsDialog = ({ lead, isOpen, onClose }: SavedReportsDialog
       
       // Use the exact same data from the report to create a PDF
       // This ensures we're using EXACTLY what was saved with no recalculation
-      const exactSavedLead: Lead = {
-        ...lead,
-        id: reportId,
-        name: reportData.contact_name,
-        company_name: reportData.company_name,
-        email: reportData.email,
-        phone_number: reportData.phone_number || "",
-        calculator_inputs: reportData.calculator_inputs || {},
-        calculator_results: reportData.calculator_results || {},
-      };
-      
-      // Generate the PDF directly using the saved data with absolutely no modifications
-      console.log("Creating PDF with exact saved data, no recalculation:", exactSavedLead);
-      
-      // Use the exact saved values from the report with no calculations
       const doc = generatePDF({
-        contactInfo: exactSavedLead.name || 'Valued Client',
-        companyName: exactSavedLead.company_name || 'Your Company',
-        email: exactSavedLead.email || 'client@example.com',
-        phoneNumber: exactSavedLead.phone_number || '',
-        industry: exactSavedLead.industry || 'Other',
-        employeeCount: Number(exactSavedLead.employee_count) || 5,
-        results: exactSavedLead.calculator_results,
-        additionalVoiceMinutes: exactSavedLead.calculator_inputs?.callVolume || 0,
-        includedVoiceMinutes: exactSavedLead.calculator_inputs?.aiTier === 'starter' ? 0 : 600,
+        contactInfo: reportData.contact_name || 'Valued Client',
+        companyName: reportData.company_name || 'Your Company',
+        email: reportData.email || 'client@example.com',
+        phoneNumber: reportData.phone_number || '',
+        industry: lead.industry || 'Other',
+        employeeCount: Number(lead.employee_count) || 5,
+        results: reportData.calculator_results,
+        additionalVoiceMinutes: reportData.calculator_inputs?.callVolume || 0,
+        includedVoiceMinutes: reportData.calculator_inputs?.aiTier === 'starter' ? 0 : 600,
         businessSuggestions: [
           {
             title: "Automate Common Customer Inquiries",
@@ -110,18 +95,18 @@ export const SavedReportsDialog = ({ lead, isOpen, onClose }: SavedReportsDialog
             capabilities: ["Answer product questions", "Provide pricing information", "Schedule demonstrations with sales team"]
           }
         ],
-        tierName: exactSavedLead.calculator_inputs?.aiTier === 'starter' ? 'Starter Plan' : 
-                 exactSavedLead.calculator_inputs?.aiTier === 'growth' ? 'Growth Plan' : 
-                 exactSavedLead.calculator_inputs?.aiTier === 'premium' ? 'Premium Plan' : 'Growth Plan',
-        aiType: exactSavedLead.calculator_inputs?.aiType === 'chatbot' ? 'Text Only' : 
-                exactSavedLead.calculator_inputs?.aiType === 'voice' ? 'Basic Voice' : 
-                exactSavedLead.calculator_inputs?.aiType === 'conversationalVoice' ? 'Conversational Voice' : 
-                exactSavedLead.calculator_inputs?.aiType === 'both' ? 'Text & Basic Voice' : 
-                exactSavedLead.calculator_inputs?.aiType === 'both-premium' ? 'Text & Conversational Voice' : 'Text Only'
+        tierName: reportData.calculator_inputs?.aiTier === 'starter' ? 'Starter Plan' : 
+                 reportData.calculator_inputs?.aiTier === 'growth' ? 'Growth Plan' : 
+                 reportData.calculator_inputs?.aiTier === 'premium' ? 'Premium Plan' : 'Growth Plan',
+        aiType: reportData.calculator_inputs?.aiType === 'chatbot' ? 'Text Only' : 
+                reportData.calculator_inputs?.aiType === 'voice' ? 'Basic Voice' : 
+                reportData.calculator_inputs?.aiType === 'conversationalVoice' ? 'Conversational Voice' : 
+                reportData.calculator_inputs?.aiType === 'both' ? 'Text & Basic Voice' : 
+                reportData.calculator_inputs?.aiType === 'both-premium' ? 'Text & Conversational Voice' : 'Text Only'
       });
       
       // Save file with proper naming
-      const safeCompanyName = getSafeFileName(exactSavedLead);
+      const safeCompanyName = reportData.company_name.replace(/[^\w\s-]/gi, '');
       doc.save(`${safeCompanyName}-ChatSites-ROI-Report.pdf`);
       
       toast({
@@ -142,6 +127,17 @@ export const SavedReportsDialog = ({ lead, isOpen, onClose }: SavedReportsDialog
 
   const handleGenerateNewReport = () => {
     try {
+      // Only try to generate a new report if we have calculator inputs and results
+      if (!lead.calculator_inputs || Object.keys(lead.calculator_inputs).length === 0 ||
+          !lead.calculator_results || Object.keys(lead.calculator_results).length === 0) {
+        toast({
+          title: "Error",
+          description: "This lead has no saved calculation results. Please edit the lead and add calculator data first.",
+          variant: "destructive",
+        });
+        return;
+      }
+      
       // Generate a new report based on current lead data
       import('@/utils/reportGenerator').then(module => {
         module.generateAndDownloadReport(lead);
@@ -161,6 +157,9 @@ export const SavedReportsDialog = ({ lead, isOpen, onClose }: SavedReportsDialog
       <DialogContent className="sm:max-w-md">
         <DialogHeader>
           <DialogTitle>Report for {lead.company_name}</DialogTitle>
+          <DialogDescription>
+            View and download saved reports for this lead
+          </DialogDescription>
         </DialogHeader>
         
         <div className="mt-4">
@@ -193,7 +192,8 @@ export const SavedReportsDialog = ({ lead, isOpen, onClose }: SavedReportsDialog
             </div>
           ) : (
             <div className="text-center py-6 text-gray-500">
-              No saved report found for this lead.
+              <p>No saved report found for this lead.</p>
+              <p className="text-sm mt-2">A new report can be generated if the lead has calculator data.</p>
               <div className="mt-4">
                 <button
                   onClick={handleGenerateNewReport}
