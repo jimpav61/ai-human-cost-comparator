@@ -5,9 +5,7 @@ import { Button } from "@/components/ui/button";
 import { FileBarChart } from "lucide-react";
 import { toast } from "@/hooks/use-toast";
 import { useState } from "react";
-import { saveReportPDF } from "./hooks/report-generator/saveReport";
 import { generateAndDownloadReport } from "@/utils/reportGenerator";
-import { supabase } from "@/integrations/supabase/client";
 
 export const DocumentGenerator = ({ lead }: DocumentGeneratorProps) => {
   const [isLoading, setIsLoading] = useState(false);
