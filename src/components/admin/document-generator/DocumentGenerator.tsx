@@ -18,11 +18,14 @@ export const DocumentGenerator = ({ lead }: DocumentGeneratorProps) => {
       console.log("Attempting to download report for lead ID:", lead.id);
       
       // First check if a report exists in the generated_reports table
-      const { data: existingReport, error } = await supabase
+      // NOTE: We should look for reports where lead.id matches a value in the calculator_inputs or some other field
+      // that relates to the lead, not the report's own primary key
+      const { data: existingReports, error } = await supabase
         .from('generated_reports')
         .select('*')
-        .eq('id', lead.id)
-        .maybeSingle();
+        .eq('email', lead.email)  // Use email as a more reliable way to find the report
+        .order('report_date', { ascending: false })
+        .limit(1);
       
       if (error) {
         console.error("Error checking for existing report:", error);
@@ -30,11 +33,12 @@ export const DocumentGenerator = ({ lead }: DocumentGeneratorProps) => {
       }
       
       // If no report exists, inform the user they need to generate one first
-      if (!existingReport) {
-        console.log("No existing report found in generated_reports for lead ID:", lead.id);
+      if (!existingReports || existingReports.length === 0) {
+        console.log("No existing report found for lead email:", lead.email);
         throw new Error("No report exists for this lead. Complete the calculator form first.");
       }
       
+      const existingReport = existingReports[0];
       console.log("Found existing report in database with ID:", existingReport.id);
       
       // Use the shared utility function to download the report
