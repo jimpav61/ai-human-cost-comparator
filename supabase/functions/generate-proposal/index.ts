@@ -31,10 +31,11 @@ serve(async (req) => {
     const { lead } = await req.json() as { lead: Lead };
     console.log("Email generation input lead:", lead);
 
-    // DIRECTLY extract plan tier from calculator inputs - don't use defaults
-    const aiTier = lead.calculator_inputs?.aiTier || 
-                  lead.calculatorResults?.tierKey || 'growth';
+    // Create a deep copy of the inputs to avoid modifying the original
+    const calculatorInputs = JSON.parse(JSON.stringify(lead.calculator_inputs || {}));
     
+    // CRUCIAL FIX: Extract plan tier directly from calculator inputs
+    const aiTier = calculatorInputs.aiTier || 'growth';
     console.log("Email proposal - direct aiTier extraction:", aiTier);
     
     // Use the exact fixed prices for each tier
@@ -53,8 +54,9 @@ serve(async (req) => {
         basePrice = 229;
     }
     
-    // DIRECTLY extract and parse the call volume (additional voice minutes)
-    let callVolume = lead.calculator_inputs?.callVolume;
+    // CRUCIAL FIX: Extract and parse the call volume (additional voice minutes)
+    // Ensure we handle all formats it might be stored in
+    let callVolume = calculatorInputs.callVolume;
     console.log("Email proposal - raw callVolume:", callVolume, "type:", typeof callVolume);
     
     // Parse to ensure it's a valid number
@@ -69,22 +71,27 @@ serve(async (req) => {
     console.log("Email proposal - parsed additionalVoiceMinutes:", additionalVoiceMinutes);
     
     // Get AI type from calculator_inputs if available
-    let aiType = lead.calculator_inputs?.aiType || lead.calculatorResults?.aiType || 'chatbot';
+    let aiType = calculatorInputs.aiType || 'chatbot';
     
-    // Ensure consistency with tier
+    // CRUCIAL FIX: Ensure consistency with tier
     if (aiTier === 'starter' && aiType !== 'chatbot') {
       aiType = 'chatbot'; // Starter only supports chatbot
+      console.log("Email proposal - forced aiType to chatbot for starter plan");
     } else if (aiTier === 'premium') {
       if (aiType === 'voice') {
         aiType = 'conversationalVoice'; // Premium upgrades to conversational
+        console.log("Email proposal - upgraded voice to conversationalVoice for premium plan");
       } else if (aiType === 'both') {
         aiType = 'both-premium'; // Premium uses premium voice features
+        console.log("Email proposal - upgraded both to both-premium for premium plan");
       }
     } else if (aiTier === 'growth') {
       if (aiType === 'conversationalVoice') {
         aiType = 'voice'; // Growth uses basic voice
+        console.log("Email proposal - downgraded conversationalVoice to voice for growth plan");
       } else if (aiType === 'both-premium') {
         aiType = 'both'; // Growth uses basic voice features
+        console.log("Email proposal - downgraded both-premium to both for growth plan");
       }
     }
     

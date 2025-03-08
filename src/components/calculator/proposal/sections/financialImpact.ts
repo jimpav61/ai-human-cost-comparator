@@ -14,8 +14,22 @@ export const addFinancialImpact = (doc: JsPDFWithAutoTable, yPosition: number, p
   doc.setFontSize(12);
   doc.setTextColor(0, 0, 0);
   
-  // Extract and validate voice-related parameters
-  const additionalVoiceMinutes = Number(params.additionalVoiceMinutes) || 0;
+  // CRUCIAL FIX: Extract and validate voice-related parameters
+  // Ensure additionalVoiceMinutes is properly extracted as a number
+  let additionalVoiceMinutes = 0;
+  if (typeof params.additionalVoiceMinutes === 'number') {
+    additionalVoiceMinutes = params.additionalVoiceMinutes;
+  } else if (typeof params.additionalVoiceMinutes === 'string') {
+    additionalVoiceMinutes = parseInt(params.additionalVoiceMinutes, 10) || 0;
+  }
+  
+  // Log voice minutes data for debugging
+  console.log("Financial Impact - Voice minutes data:", {
+    additionalVoiceMinutes,
+    params_additionalVoiceMinutes: params.additionalVoiceMinutes,
+    type: typeof params.additionalVoiceMinutes
+  });
+  
   const tierKey = params.tierName?.toLowerCase().includes('starter') ? 'starter' : 
                 params.tierName?.toLowerCase().includes('growth') ? 'growth' : 
                 params.tierName?.toLowerCase().includes('premium') ? 'premium' : 'growth';
@@ -120,7 +134,7 @@ export const addFinancialImpact = (doc: JsPDFWithAutoTable, yPosition: number, p
   yPosition += 7;
   doc.text(`Setup fee payback period: ${paybackPeriod} months`, 20, yPosition);
   
-  // Cost breakdown section for voice minutes - always show this section clearly
+  // CRUCIAL FIX: Cost breakdown section for voice minutes - always show this section clearly
   yPosition += 10;
   doc.setFontSize(11);
   doc.setTextColor(35, 35, 35);

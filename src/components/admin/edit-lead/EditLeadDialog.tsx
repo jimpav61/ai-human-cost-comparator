@@ -54,37 +54,54 @@ export const EditLeadDialog = ({ lead, isOpen, onClose, onSave }: EditLeadDialog
         calculatorInputs.numEmployees = Number(formData.employee_count);
       }
 
-      // Ensure AI type is consistent with tier
+      // Get the current tier and AI type
       const aiTier = calculatorInputs.aiTier || 'growth';
       let aiType = calculatorInputs.aiType || 'both';
       
-      // Force consistent AI type values based on tier
+      // CRUCIAL FIX: Force consistent AI type values based on tier
       if (aiTier === 'starter' && aiType !== 'chatbot') {
+        // Starter plan only supports text (chatbot)
         aiType = 'chatbot';
         calculatorInputs.aiType = 'chatbot';
         // Set call volume to 0 for starter plan since it doesn't support voice
         calculatorInputs.callVolume = 0;
+        console.log("Forced aiType to chatbot and callVolume to 0 for starter plan");
       } else if (aiTier === 'premium') {
+        // Premium plan uses conversationalVoice instead of voice
         if (aiType === 'voice') {
           aiType = 'conversationalVoice';
           calculatorInputs.aiType = 'conversationalVoice';
+          console.log("Upgraded voice to conversationalVoice for premium plan");
         } else if (aiType === 'both') {
+          // Premium plan uses both-premium instead of both
           aiType = 'both-premium';
           calculatorInputs.aiType = 'both-premium';
+          console.log("Upgraded both to both-premium for premium plan");
         }
       } else if (aiTier === 'growth') {
+        // Growth plan uses voice instead of conversationalVoice
         if (aiType === 'conversationalVoice') {
           aiType = 'voice';
           calculatorInputs.aiType = 'voice';
+          console.log("Downgraded conversationalVoice to voice for growth plan");
         } else if (aiType === 'both-premium') {
+          // Growth plan uses both instead of both-premium
           aiType = 'both';
           calculatorInputs.aiType = 'both';
+          console.log("Downgraded both-premium to both for growth plan");
         }
       }
 
-      // Make sure call volume is a number
+      // CRUCIAL FIX: Make sure call volume is a number
       if (typeof calculatorInputs.callVolume === 'string') {
         calculatorInputs.callVolume = parseInt(calculatorInputs.callVolume, 10) || 0;
+        console.log("Converted callVolume from string to number:", calculatorInputs.callVolume);
+      }
+      
+      // Ensure starter plan has 0 call volume
+      if (aiTier === 'starter' && calculatorInputs.callVolume > 0) {
+        calculatorInputs.callVolume = 0;
+        console.log("Reset callVolume to 0 for starter plan");
       }
 
       const updatedLead: Lead = {

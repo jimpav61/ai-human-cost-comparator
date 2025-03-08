@@ -60,12 +60,19 @@ export const addRecommendedSolution = (doc: JsPDFWithAutoTable, yPosition: numbe
   // Get included minutes based on tier
   const includedVoiceMinutes = tierKey === 'starter' ? 0 : 600;
   
-  // Get additional voice minutes directly from params
-  const additionalVoiceMinutes = params.additionalVoiceMinutes || 0;
-  
+  // CRUCIAL FIX: Parse additional voice minutes properly
+  let additionalVoiceMinutes = 0;
+  if (typeof params.additionalVoiceMinutes === 'number') {
+    additionalVoiceMinutes = params.additionalVoiceMinutes;
+  } else if (typeof params.additionalVoiceMinutes === 'string') {
+    additionalVoiceMinutes = parseInt(params.additionalVoiceMinutes, 10) || 0;
+  }
+
   console.log("Recommended Solution - Voice minutes:", {
     tier: tierKey,
-    additionalVoiceMinutes,
+    additionalVoiceMinutes: additionalVoiceMinutes,
+    params_additionalVoiceMinutes: params.additionalVoiceMinutes,
+    type: typeof params.additionalVoiceMinutes,
     includedVoiceMinutes
   });
   
@@ -86,7 +93,7 @@ export const addRecommendedSolution = (doc: JsPDFWithAutoTable, yPosition: numbe
   
   yPosition += splitPlanText.length * 7 + 8;
   
-  // If there are additional voice minutes, add that information in a highlighted section
+  // CRUCIAL FIX: If there are additional voice minutes, add that information in a highlighted section
   if (additionalVoiceMinutes > 0) {
     // Draw a light background for the additional minutes section
     doc.setFillColor(245, 245, 245);

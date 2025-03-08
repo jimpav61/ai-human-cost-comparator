@@ -24,20 +24,46 @@ export const useProposalGenerator = ({ lead }: UseProposalGeneratorProps) => {
         throw new Error("Lead data is missing");
       }
       
-      // Extract calculator_inputs directly from lead data - ensure it's an object
-      const calculatorInputs = lead.calculator_inputs || {};
+      // Extract calculator_inputs directly from lead data
+      // Use spread to create a copy to avoid modifying the original
+      const calculatorInputs = {...(lead.calculator_inputs || {})};
       
       console.log("Raw calculator inputs for proposal:", calculatorInputs);
       
-      // DIRECTLY extract plan tier from calculator inputs - don't use defaults
+      // Extract plan tier and force it to a valid value
       const aiTier = calculatorInputs.aiTier || 'growth';
       console.log("Direct aiTier extraction:", aiTier);
       
-      // DIRECTLY extract the call volume (additional voice minutes)
+      // Extract and verify the AI type
+      let aiTypeValue = calculatorInputs.aiType || 'chatbot';
+      console.log("Direct aiType extraction:", aiTypeValue);
+      
+      // Force consistent AI type values based on tier
+      if (aiTier === 'starter' && aiTypeValue !== 'chatbot') {
+        aiTypeValue = 'chatbot';
+        console.log("Forcing AI type to chatbot for starter plan");
+      } else if (aiTier === 'premium') {
+        if (aiTypeValue === 'voice') {
+          aiTypeValue = 'conversationalVoice';
+        } else if (aiTypeValue === 'both') {
+          aiTypeValue = 'both-premium';
+        }
+      } else if (aiTier === 'growth') {
+        if (aiTypeValue === 'conversationalVoice') {
+          aiTypeValue = 'voice';
+        } else if (aiTypeValue === 'both-premium') {
+          aiTypeValue = 'both';
+        }
+      }
+      
+      console.log("Normalized aiType:", aiTypeValue);
+      
+      // CRUCIAL FIX: Properly extract the call volume (additional voice minutes)
+      // And ensure it's parsed as a number no matter what format it's stored in
       let callVolume = calculatorInputs.callVolume;
       console.log("Raw callVolume directly from inputs:", callVolume, "type:", typeof callVolume);
       
-      // Parse to ensure it's a valid number
+      // Ensure callVolume is a number
       if (typeof callVolume === 'string') {
         callVolume = parseInt(callVolume, 10) || 0;
       } else if (typeof callVolume !== 'number') {
@@ -79,26 +105,6 @@ export const useProposalGenerator = ({ lead }: UseProposalGeneratorProps) => {
         totalMonthlyCost
       });
       
-      // Get AI type and ensure it's consistent with the tier
-      let aiTypeValue = calculatorInputs.aiType || 'chatbot';
-      
-      // Force consistent AI type values based on tier
-      if (aiTier === 'starter' && aiTypeValue !== 'chatbot') {
-        aiTypeValue = 'chatbot';
-      } else if (aiTier === 'premium') {
-        if (aiTypeValue === 'voice') {
-          aiTypeValue = 'conversationalVoice';
-        } else if (aiTypeValue === 'both') {
-          aiTypeValue = 'both-premium';
-        }
-      } else if (aiTier === 'growth') {
-        if (aiTypeValue === 'conversationalVoice') {
-          aiTypeValue = 'voice';
-        } else if (aiTypeValue === 'both-premium') {
-          aiTypeValue = 'both';
-        }
-      }
-      
       // Get the AI type display value
       const aiTypeDisplay = aiTypeValue === 'chatbot' ? 'Text Only' : 
         aiTypeValue === 'voice' ? 'Basic Voice' : 
@@ -110,40 +116,32 @@ export const useProposalGenerator = ({ lead }: UseProposalGeneratorProps) => {
       console.log("AI Type Display for proposal:", aiTypeDisplay);
       
       // Extract calculator results from lead - ensure it's an object
-      const calculatorResults = lead.calculator_results || {};
+      // Use spread to create a copy to avoid modifying the original
+      const calculatorResults = {...(lead.calculator_results || {})};
       
-      // Create safe calculations results with voice cost included
-      const safeResults = {
-        ...calculatorResults,
-        aiCostMonthly: {
-          voice: additionalVoiceCost,
-          chatbot: basePriceMonthly,
-          total: totalMonthlyCost,
-          setupFee: calculatorResults.aiCostMonthly?.setupFee || 
-            (aiTier === 'starter' ? 499 : aiTier === 'growth' ? 749 : 999)
-        },
-        breakEvenPoint: calculatorResults.breakEvenPoint || { 
-          voice: 0, 
-          chatbot: 0 
-        },
-        humanHours: calculatorResults.humanHours || {
-          dailyPerEmployee: 8,
-          weeklyTotal: Number(lead.employee_count) * 40 || 40,
-          monthlyTotal: Number(lead.employee_count) * 160 || 160,
-          yearlyTotal: Number(lead.employee_count) * 2080 || 2080
-        },
-        annualPlan: calculatorResults.annualPlan || (basePriceMonthly * 10),
-        basePriceMonthly: basePriceMonthly,
-        humanCostMonthly: calculatorResults.humanCostMonthly || 15000,
-        monthlySavings: calculatorResults.monthlySavings || 0,
-        yearlySavings: calculatorResults.yearlySavings || 0,
-        savingsPercentage: calculatorResults.savingsPercentage || 0,
-        tierKey: aiTier,
-        aiType: aiTypeValue,
-        includedVoiceMinutes: includedVoiceMinutes
+      // CRUCIAL FIX: Update the calculator results with the current calculations
+      // to ensure the PDF generator has the correct values
+      calculatorResults.aiCostMonthly = {
+        voice: additionalVoiceCost,
+        chatbot: basePriceMonthly,
+        total: totalMonthlyCost,
+        setupFee: calculatorResults.aiCostMonthly?.setupFee || 
+          (aiTier === 'starter' ? 499 : aiTier === 'growth' ? 749 : 999)
       };
       
-      console.log("Final results being passed to generateProposal:", safeResults);
+      calculatorResults.basePriceMonthly = basePriceMonthly;
+      calculatorResults.tierKey = aiTier;
+      calculatorResults.aiType = aiTypeValue;
+      
+      // Human cost monthly fallback
+      const humanCostMonthly = calculatorResults.humanCostMonthly || 15000;
+      
+      // Recalculate savings with the current total cost
+      calculatorResults.monthlySavings = humanCostMonthly - totalMonthlyCost;
+      calculatorResults.yearlySavings = calculatorResults.monthlySavings * 12;
+      calculatorResults.savingsPercentage = (calculatorResults.monthlySavings / humanCostMonthly) * 100;
+      
+      console.log("Final results being passed to generateProposal:", calculatorResults);
       console.log("Additional voice minutes being passed to generateProposal:", additionalVoiceMinutes);
       
       // Generate proposal with all the extracted values
@@ -154,11 +152,11 @@ export const useProposalGenerator = ({ lead }: UseProposalGeneratorProps) => {
         phoneNumber: lead.phone_number || '',
         industry: lead.industry || 'Other',
         employeeCount: Number(lead.employee_count) || 5,
-        results: safeResults,
-        additionalVoiceMinutes: additionalVoiceMinutes, // Explicitly pass the additionalVoiceMinutes
-        includedVoiceMinutes: includedVoiceMinutes, // Explicitly pass the includedVoiceMinutes
-        tierName: tierName, // Explicitly pass the tierName
-        aiType: aiTypeDisplay // Explicitly pass the aiType display value
+        results: calculatorResults,
+        additionalVoiceMinutes: additionalVoiceMinutes, // Make sure this value is passed correctly
+        includedVoiceMinutes: includedVoiceMinutes,
+        tierName: tierName,
+        aiType: aiTypeDisplay
       });
       
       console.log("Proposal generation completed successfully");
