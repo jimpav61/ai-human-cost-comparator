@@ -3,7 +3,6 @@ import { generatePDF } from "@/components/calculator/pdf";
 import { Lead } from "@/types/leads";
 import { getSafeFileName } from "@/components/admin/document-generator/hooks/report-generator/saveReport";
 import { toast } from "@/hooks/use-toast";
-import { JsPDFWithAutoTable } from "@/components/calculator/pdf/types";
 
 /**
  * Shared utility function that generates and downloads a PDF report
@@ -24,23 +23,17 @@ export const generateAndDownloadReport = (lead: Lead) => {
       results: lead.calculator_results
     });
     
-    // Extract all data from calculator inputs
+    // Extract all data from calculator inputs, using saved values
     const aiTier = lead.calculator_inputs?.aiTier || 'growth';
     const aiType = lead.calculator_inputs?.aiType || 'chatbot';
     
-    // Use existing data from the saved report instead of recalculating
-    // This ensures we show the exact same values as when the report was saved
-    const basePriceMonthly = lead.calculator_results?.basePriceMonthly || 
-      (aiTier === 'starter' ? 99 : aiTier === 'growth' ? 229 : 429);
-      
+    // Use the EXACT saved values from the report without recalculation
+    const basePriceMonthly = lead.calculator_results?.basePriceMonthly || 0;
     const additionalVoiceCost = lead.calculator_results?.aiCostMonthly?.voice || 0;
-    const totalMonthlyCost = lead.calculator_results?.aiCostMonthly?.total || 
-      (basePriceMonthly + additionalVoiceCost);
+    const totalMonthlyCost = lead.calculator_results?.aiCostMonthly?.total || 0;
+    const setupFee = lead.calculator_results?.aiCostMonthly?.setupFee || 0;
     
-    const setupFee = lead.calculator_results?.aiCostMonthly?.setupFee || 
-      (aiTier === 'starter' ? 249 : aiTier === 'growth' ? 749 : 1149);
-    
-    // Extract voice minutes calculation data - use saved data if available
+    // Extract voice minutes calculation data - use saved data
     const additionalVoiceMinutes = lead.calculator_inputs?.callVolume || 0;
     const includedVoiceMinutes = aiTier === 'starter' ? 0 : 600;
     
@@ -53,9 +46,6 @@ export const generateAndDownloadReport = (lead: Lead) => {
       includedVoiceMinutes
     });
     
-    // Ensure calculator_results has basic structure with saved values (not recalculated)
-    const calculatorResults = lead.calculator_results || {};
-    
     // Format tier and AI type display names
     const tierName = aiTier === 'starter' ? 'Starter Plan' : 
                     aiTier === 'growth' ? 'Growth Plan' : 
@@ -67,7 +57,7 @@ export const generateAndDownloadReport = (lead: Lead) => {
                           aiType === 'both' ? 'Text & Basic Voice' : 
                           aiType === 'both-premium' ? 'Text & Conversational Voice' : 'Text Only';
     
-    // Generate the PDF using the shared generator with exact saved values
+    // Generate the PDF using the exact saved values - no recalculation
     const doc = generatePDF({
       contactInfo: lead.name || 'Valued Client',
       companyName: lead.company_name || 'Your Company',
@@ -75,7 +65,7 @@ export const generateAndDownloadReport = (lead: Lead) => {
       phoneNumber: lead.phone_number || '',
       industry: lead.industry || 'Other',
       employeeCount: Number(lead.employee_count) || 5,
-      results: calculatorResults,
+      results: lead.calculator_results,
       additionalVoiceMinutes: additionalVoiceMinutes,
       includedVoiceMinutes: includedVoiceMinutes,
       businessSuggestions: [

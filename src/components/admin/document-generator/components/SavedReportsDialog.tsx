@@ -6,6 +6,8 @@ import { format } from "date-fns";
 import { Download, FileBarChart, Loader2 } from "lucide-react";
 import { toast } from "@/hooks/use-toast";
 import { useState } from "react";
+import { generatePDF } from "@/components/calculator/pdf";
+import { getSafeFileName } from "../hooks/report-generator/saveReport";
 
 interface SavedReportsDialogProps {
   lead: Lead;
@@ -53,26 +55,77 @@ export const SavedReportsDialog = ({ lead, isOpen, onClose }: SavedReportsDialog
       URL.revokeObjectURL(downloadUrl);
       document.body.removeChild(link);
       
-      // Now generate the PDF using the saved data
-      await import('@/utils/reportGenerator').then(module => {
-        // Create a temporary lead with the saved report data
-        const reportLead: Lead = {
-          ...lead,
-          calculator_inputs: reportData.calculator_inputs || {},
-          calculator_results: reportData.calculator_results || {},
-          name: reportData.contact_name,
-          company_name: reportData.company_name,
-          email: reportData.email,
-          phone_number: reportData.phone_number || "",
-        };
-        
-        console.log("Generating PDF with exact saved data:", reportLead);
-        return module.generateAndDownloadReport(reportLead);
+      // Create the exact same lead from the saved data
+      const savedLead: Lead = {
+        ...lead,
+        id: reportId,
+        name: reportData.contact_name,
+        company_name: reportData.company_name,
+        email: reportData.email,
+        phone_number: reportData.phone_number || "",
+        calculator_inputs: reportData.calculator_inputs || {},
+        calculator_results: reportData.calculator_results || {},
+      };
+      
+      // Generate the PDF directly from the saved data
+      console.log("Creating PDF with exact saved data:", savedLead);
+      
+      // Create PDF with the saved data
+      const doc = generatePDF({
+        contactInfo: savedLead.name || 'Valued Client',
+        companyName: savedLead.company_name || 'Your Company',
+        email: savedLead.email || 'client@example.com',
+        phoneNumber: savedLead.phone_number || '',
+        industry: savedLead.industry || 'Other',
+        employeeCount: Number(savedLead.employee_count) || 5,
+        results: savedLead.calculator_results,
+        additionalVoiceMinutes: savedLead.calculator_inputs?.callVolume || 0,
+        includedVoiceMinutes: savedLead.calculator_inputs?.aiTier === 'starter' ? 0 : 600,
+        businessSuggestions: [
+          {
+            title: "Automate Common Customer Inquiries",
+            description: "Implement an AI chatbot to handle frequently asked questions, reducing wait times and freeing up human agents."
+          },
+          {
+            title: "Enhance After-Hours Support",
+            description: "Deploy voice AI to provide 24/7 customer service without increasing staffing costs."
+          },
+          {
+            title: "Streamline Onboarding Process",
+            description: "Use AI assistants to guide new customers through product setup and initial questions."
+          }
+        ],
+        aiPlacements: [
+          {
+            role: "Front-line Customer Support",
+            capabilities: ["Handle basic inquiries", "Process simple requests", "Collect customer information"]
+          },
+          {
+            role: "Technical Troubleshooting",
+            capabilities: ["Guide users through common issues", "Recommend solutions based on symptoms", "Escalate complex problems to human agents"]
+          },
+          {
+            role: "Sales Assistant",
+            capabilities: ["Answer product questions", "Provide pricing information", "Schedule demonstrations with sales team"]
+          }
+        ],
+        tierName: savedLead.calculator_inputs?.aiTier === 'starter' ? 'Starter Plan' : 
+                 savedLead.calculator_inputs?.aiTier === 'growth' ? 'Growth Plan' : 
+                 savedLead.calculator_inputs?.aiTier === 'premium' ? 'Premium Plan' : 'Growth Plan',
+        aiType: savedLead.calculator_inputs?.aiType === 'chatbot' ? 'Text Only' : 
+                savedLead.calculator_inputs?.aiType === 'voice' ? 'Basic Voice' : 
+                savedLead.calculator_inputs?.aiType === 'conversationalVoice' ? 'Conversational Voice' : 
+                savedLead.calculator_inputs?.aiType === 'both' ? 'Text & Basic Voice' : 
+                savedLead.calculator_inputs?.aiType === 'both-premium' ? 'Text & Conversational Voice' : 'Text Only'
       });
+      
+      // Save file with proper naming
+      const safeCompanyName = getSafeFileName(savedLead);
+      doc.save(`${safeCompanyName}-ChatSites-ROI-Report.pdf`);
       
       toast({
         title: "Success",
-        description: "Original report downloaded successfully",
+        description: "Original saved report downloaded successfully",
       });
     } catch (error) {
       console.error("Error downloading report:", error);
