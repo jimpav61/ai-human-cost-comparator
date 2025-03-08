@@ -28,87 +28,46 @@ export const generateAndDownloadReport = (lead: Lead) => {
     const aiTier = lead.calculator_inputs?.aiTier || 'growth';
     const aiType = lead.calculator_inputs?.aiType || 'chatbot';
     
-    // Extract voice minutes calculation data
-    const additionalVoiceMinutes = lead.calculator_inputs?.callVolume ? 
-      parseInt(String(lead.calculator_inputs.callVolume), 10) : 0;
+    // Use existing data from the saved report instead of recalculating
+    // This ensures we show the exact same values as when the report was saved
+    const basePriceMonthly = lead.calculator_results?.basePriceMonthly || 
+      (aiTier === 'starter' ? 99 : aiTier === 'growth' ? 229 : 429);
+      
+    const additionalVoiceCost = lead.calculator_results?.aiCostMonthly?.voice || 0;
+    const totalMonthlyCost = lead.calculator_results?.aiCostMonthly?.total || 
+      (basePriceMonthly + additionalVoiceCost);
     
+    const setupFee = lead.calculator_results?.aiCostMonthly?.setupFee || 
+      (aiTier === 'starter' ? 249 : aiTier === 'growth' ? 749 : 1149);
+    
+    // Extract voice minutes calculation data - use saved data if available
+    const additionalVoiceMinutes = lead.calculator_inputs?.callVolume || 0;
     const includedVoiceMinutes = aiTier === 'starter' ? 0 : 600;
     
-    console.log('[SHARED REPORT] Voice minutes data:', {
+    console.log('[SHARED REPORT] Using exact saved values:', {
+      basePriceMonthly,
+      additionalVoiceCost,
+      totalMonthlyCost,
+      setupFee,
       additionalVoiceMinutes,
-      includedVoiceMinutes,
-      aiTier,
-      aiType
+      includedVoiceMinutes
     });
     
-    // Prepare safe base price from tier - using exact fixed prices
-    const basePriceMonthly = 
-      aiTier === 'starter' ? 99 : 
-      aiTier === 'growth' ? 229 : 
-      aiTier === 'premium' ? 429 : 229;
-    
-    // Calculate additional voice cost - always $0.12 per minute
-    const additionalVoiceCost = Math.max(0, additionalVoiceMinutes - includedVoiceMinutes) * 0.12;
-    const totalMonthlyCost = basePriceMonthly + additionalVoiceCost;
-    
-    // Ensure calculator_results has basic structure with safe defaults
+    // Ensure calculator_results has basic structure with saved values (not recalculated)
     const calculatorResults = lead.calculator_results || {};
-    
-    // Properly populate aiCostMonthly if it's missing or incomplete
-    if (!calculatorResults.aiCostMonthly) {
-      calculatorResults.aiCostMonthly = {
-        voice: additionalVoiceCost,
-        chatbot: basePriceMonthly,
-        total: totalMonthlyCost,
-        setupFee: aiTier === 'starter' ? 249 : aiTier === 'growth' ? 749 : 1149
-      };
-    } else {
-      // Ensure all properties exist in aiCostMonthly with correct values
-      calculatorResults.aiCostMonthly.voice = additionalVoiceCost;
-      calculatorResults.aiCostMonthly.chatbot = basePriceMonthly;
-      calculatorResults.aiCostMonthly.total = totalMonthlyCost;
-      calculatorResults.aiCostMonthly.setupFee = calculatorResults.aiCostMonthly.setupFee ?? 
-        (aiTier === 'starter' ? 249 : aiTier === 'growth' ? 749 : 1149);
-    }
-    
-    // Make sure we have a valid base price
-    if (!calculatorResults.basePriceMonthly) {
-      calculatorResults.basePriceMonthly = basePriceMonthly;
-    } else {
-      calculatorResults.basePriceMonthly = basePriceMonthly; // Override to ensure consistency
-    }
-    
-    // Set reasonable defaults for the rest of the calculation results
-    const humanCostMonthly = calculatorResults.humanCostMonthly ?? 15000;
-    calculatorResults.monthlySavings = calculatorResults.monthlySavings ?? (humanCostMonthly - totalMonthlyCost);
-    calculatorResults.yearlySavings = calculatorResults.yearlySavings ?? (calculatorResults.monthlySavings * 12);
-    calculatorResults.savingsPercentage = calculatorResults.savingsPercentage ?? 
-      ((humanCostMonthly - totalMonthlyCost) / humanCostMonthly * 100);
-    
-    // Ensure human hours are properly set
-    if (!calculatorResults.humanHours) {
-      calculatorResults.humanHours = {
-        dailyPerEmployee: 8,
-        weeklyTotal: lead.calculator_inputs?.numEmployees ? lead.calculator_inputs.numEmployees * 8 * 5 : 160,
-        monthlyTotal: lead.calculator_inputs?.numEmployees ? lead.calculator_inputs.numEmployees * 8 * 21.67 : 693,
-        yearlyTotal: lead.calculator_inputs?.numEmployees ? lead.calculator_inputs.numEmployees * 8 * 260 : 8320
-      };
-    }
     
     // Format tier and AI type display names
     const tierName = aiTier === 'starter' ? 'Starter Plan' : 
-                     aiTier === 'growth' ? 'Growth Plan' : 
-                     aiTier === 'premium' ? 'Premium Plan' : 'Growth Plan';
-                     
+                    aiTier === 'growth' ? 'Growth Plan' : 
+                    aiTier === 'premium' ? 'Premium Plan' : 'Growth Plan';
+                    
     const aiTypeDisplay = aiType === 'chatbot' ? 'Text Only' : 
                           aiType === 'voice' ? 'Basic Voice' : 
                           aiType === 'conversationalVoice' ? 'Conversational Voice' : 
                           aiType === 'both' ? 'Text & Basic Voice' : 
                           aiType === 'both-premium' ? 'Text & Conversational Voice' : 'Text Only';
     
-    console.log('[SHARED REPORT] Final calculator results:', calculatorResults);
-    
-    // Generate the PDF using the shared generator
+    // Generate the PDF using the shared generator with exact saved values
     const doc = generatePDF({
       contactInfo: lead.name || 'Valued Client',
       companyName: lead.company_name || 'Your Company',
