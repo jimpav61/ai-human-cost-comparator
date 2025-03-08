@@ -49,9 +49,35 @@ export const generateAndDownloadReport = async (lead: Lead) => {
     if (existingReport) {
       console.log('[SHARED REPORT] Found existing report, using saved data:', existingReport);
       
-      // Cast JSON data to expected types
-      const calculatorInputs = existingReport.calculator_inputs as Record<string, any>;
-      const calculatorResults = existingReport.calculator_results as CalculationResults;
+      // Safely cast JSON data to expected types with proper type assertions
+      const calculatorInputs = existingReport.calculator_inputs as unknown as Record<string, any>;
+      
+      // Create a sanitized CalculationResults object from JSON
+      const rawCalculatorResults = existingReport.calculator_results as unknown as Record<string, any>;
+      const calculatorResults: CalculationResults = {
+        aiCostMonthly: {
+          voice: rawCalculatorResults?.aiCostMonthly?.voice || 0,
+          chatbot: rawCalculatorResults?.aiCostMonthly?.chatbot || 0,
+          total: rawCalculatorResults?.aiCostMonthly?.total || 0,
+          setupFee: rawCalculatorResults?.aiCostMonthly?.setupFee || 0
+        },
+        basePriceMonthly: rawCalculatorResults?.basePriceMonthly || 0,
+        humanCostMonthly: rawCalculatorResults?.humanCostMonthly || 0,
+        monthlySavings: rawCalculatorResults?.monthlySavings || 0,
+        yearlySavings: rawCalculatorResults?.yearlySavings || 0,
+        savingsPercentage: rawCalculatorResults?.savingsPercentage || 0,
+        breakEvenPoint: {
+          voice: rawCalculatorResults?.breakEvenPoint?.voice || 0,
+          chatbot: rawCalculatorResults?.breakEvenPoint?.chatbot || 0
+        },
+        humanHours: {
+          dailyPerEmployee: rawCalculatorResults?.humanHours?.dailyPerEmployee || 0,
+          weeklyTotal: rawCalculatorResults?.humanHours?.weeklyTotal || 0,
+          monthlyTotal: rawCalculatorResults?.humanHours?.monthlyTotal || 0,
+          yearlyTotal: rawCalculatorResults?.humanHours?.yearlyTotal || 0
+        },
+        annualPlan: rawCalculatorResults?.annualPlan || 0
+      };
       
       // Generate PDF using the saved report data
       const doc = generatePDF({
@@ -134,6 +160,33 @@ export const generateAndDownloadReport = async (lead: Lead) => {
                           aiType === 'conversationalVoice' ? 'Conversational Voice' : 
                           aiType === 'both' ? 'Text & Basic Voice' : 
                           aiType === 'both-premium' ? 'Text & Conversational Voice' : 'Text Only';
+
+    // Create a safely typed CalculationResults object from JSON
+    const rawCalculatorResults = lead.calculator_results as unknown as Record<string, any>;
+    const calculatorResults: CalculationResults = {
+      aiCostMonthly: {
+        voice: rawCalculatorResults?.aiCostMonthly?.voice || 0,
+        chatbot: rawCalculatorResults?.aiCostMonthly?.chatbot || 0,
+        total: rawCalculatorResults?.aiCostMonthly?.total || 0,
+        setupFee: rawCalculatorResults?.aiCostMonthly?.setupFee || 0
+      },
+      basePriceMonthly: rawCalculatorResults?.basePriceMonthly || 0,
+      humanCostMonthly: rawCalculatorResults?.humanCostMonthly || 0,
+      monthlySavings: rawCalculatorResults?.monthlySavings || 0,
+      yearlySavings: rawCalculatorResults?.yearlySavings || 0,
+      savingsPercentage: rawCalculatorResults?.savingsPercentage || 0,
+      breakEvenPoint: {
+        voice: rawCalculatorResults?.breakEvenPoint?.voice || 0,
+        chatbot: rawCalculatorResults?.breakEvenPoint?.chatbot || 0
+      },
+      humanHours: {
+        dailyPerEmployee: rawCalculatorResults?.humanHours?.dailyPerEmployee || 0,
+        weeklyTotal: rawCalculatorResults?.humanHours?.weeklyTotal || 0,
+        monthlyTotal: rawCalculatorResults?.humanHours?.monthlyTotal || 0,
+        yearlyTotal: rawCalculatorResults?.humanHours?.yearlyTotal || 0
+      },
+      annualPlan: rawCalculatorResults?.annualPlan || 0
+    };
     
     // Generate the PDF
     const doc = generatePDF({
@@ -143,7 +196,7 @@ export const generateAndDownloadReport = async (lead: Lead) => {
       phoneNumber: lead.phone_number || '',
       industry: lead.industry || 'Other',
       employeeCount: Number(lead.employee_count) || 5,
-      results: lead.calculator_results as CalculationResults,
+      results: calculatorResults,
       additionalVoiceMinutes: lead.calculator_inputs?.callVolume || 0,
       includedVoiceMinutes: aiTier === 'starter' ? 0 : 600,
       businessSuggestions: [
