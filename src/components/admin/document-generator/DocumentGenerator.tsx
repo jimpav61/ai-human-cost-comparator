@@ -1,3 +1,4 @@
+
 import { Lead } from "@/types/leads";
 import { DocumentGeneratorProps } from "./types";
 import { Button } from "@/components/ui/button";
@@ -173,24 +174,42 @@ export const DocumentGenerator = ({ lead }: DocumentGeneratorProps) => {
       console.log("---------- ADMIN PROPOSAL DOWNLOAD ATTEMPT ----------");
       console.log("Generating proposal for lead ID:", lead.id);
       
+      // Make sure we have the proper SUPABASE_URL for the edge function
+      const supabaseUrl = import.meta.env.VITE_SUPABASE_URL || "https://ujyhmchmjzlmsimtrtor.supabase.co";
+      const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY;
+      
+      // Log the URL we're using for debugging
+      console.log(`Using Supabase URL: ${supabaseUrl}/functions/v1/generate-proposal`);
+      
       const response = await fetch(
-        `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/generate-proposal`,
+        `${supabaseUrl}/functions/v1/generate-proposal`,
         {
           method: "POST",
           headers: {
             "Content-Type": "application/json",
-            "Authorization": `Bearer ${import.meta.env.VITE_SUPABASE_ANON_KEY}`
+            "Authorization": `Bearer ${supabaseAnonKey}`
           },
           body: JSON.stringify({ lead })
         }
       );
       
-      if (!response.ok) {
-        const errorText = await response.text();
-        throw new Error(`Failed to generate proposal: ${errorText}`);
+      // Get the response as text first to see what's coming back
+      const responseText = await response.text();
+      console.log("Raw response from edge function:", responseText);
+      
+      // Now try to parse as JSON if possible
+      let result;
+      try {
+        result = JSON.parse(responseText);
+      } catch (parseError) {
+        console.error("Error parsing response as JSON:", parseError);
+        throw new Error(`Server returned invalid JSON: ${responseText.substring(0, 100)}...`);
       }
       
-      const result = await response.json();
+      if (!response.ok) {
+        throw new Error(`Failed to generate proposal: ${result?.error || responseText}`);
+      }
+      
       console.log("Proposal generated successfully:", result.message);
       
       toast({
@@ -207,6 +226,7 @@ export const DocumentGenerator = ({ lead }: DocumentGeneratorProps) => {
           ? error.message 
           : "Failed to generate the proposal.",
         variant: "destructive",
+        duration: 3000,
       });
     } finally {
       setIsProposalLoading(false);

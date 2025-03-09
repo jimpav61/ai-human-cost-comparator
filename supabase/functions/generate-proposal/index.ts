@@ -11,18 +11,21 @@ const corsHeaders = {
 };
 
 interface Lead {
+  id?: string;
   name: string;
-  companyName: string;
+  companyName?: string;
   email: string;
   website?: string;
   phoneNumber?: string;
-  calculatorResults: any;
+  calculatorResults?: any;
   calculator_inputs?: any;
   industry?: string;
   company_name?: string;
+  calculator_results?: any;
 }
 
 serve(async (req) => {
+  // Handle CORS preflight requests
   if (req.method === 'OPTIONS') {
     return new Response('ok', { headers: corsHeaders });
   }
@@ -32,9 +35,10 @@ serve(async (req) => {
     console.log("Email generation input lead:", lead);
 
     // Create a deep copy of the inputs to avoid modifying the original
-    const calculatorInputs = JSON.parse(JSON.stringify(lead.calculator_inputs || {}));
+    const calculatorInputs = lead.calculator_inputs ? JSON.parse(JSON.stringify(lead.calculator_inputs)) : {};
+    const calculatorResults = lead.calculator_results || lead.calculatorResults || {};
     
-    // CRUCIAL FIX: Extract plan tier directly from calculator inputs
+    // Extract plan tier directly from calculator inputs
     const aiTier = calculatorInputs.aiTier || 'growth';
     console.log("Email proposal - direct aiTier extraction:", aiTier);
     
@@ -54,8 +58,7 @@ serve(async (req) => {
         basePrice = 229;
     }
     
-    // CRUCIAL FIX: Extract and parse the call volume (additional voice minutes)
-    // Ensure we handle all formats it might be stored in
+    // Extract and parse the call volume (additional voice minutes)
     let callVolume = calculatorInputs.callVolume;
     console.log("Email proposal - raw callVolume:", callVolume, "type:", typeof callVolume);
     
@@ -73,7 +76,7 @@ serve(async (req) => {
     // Get AI type from calculator_inputs if available
     let aiType = calculatorInputs.aiType || 'chatbot';
     
-    // CRUCIAL FIX: Ensure consistency with tier
+    // Ensure consistency with tier
     if (aiTier === 'starter' && aiType !== 'chatbot') {
       aiType = 'chatbot'; // Starter only supports chatbot
       console.log("Email proposal - forced aiType to chatbot for starter plan");
@@ -115,10 +118,10 @@ serve(async (req) => {
     const companyName = lead.company_name || lead.companyName || 'Your Company';
     
     // Calculate monthly and yearly savings with fallbacks
-    const humanCostMonthly = lead.calculatorResults?.humanCostMonthly || 15000;
-    const monthlySavings = lead.calculatorResults?.monthlySavings || (humanCostMonthly - totalMonthlyCost);
-    const yearlySavings = lead.calculatorResults?.yearlySavings || (monthlySavings * 12);
-    const savingsPercentage = lead.calculatorResults?.savingsPercentage || 
+    const humanCostMonthly = calculatorResults?.humanCostMonthly || 15000;
+    const monthlySavings = calculatorResults?.monthlySavings || (humanCostMonthly - totalMonthlyCost);
+    const yearlySavings = calculatorResults?.yearlySavings || (monthlySavings * 12);
+    const savingsPercentage = calculatorResults?.savingsPercentage || 
       Math.round((monthlySavings / humanCostMonthly) * 100);
     
     // Create a professional HTML proposal
@@ -211,22 +214,38 @@ serve(async (req) => {
       html: proposalHtml,
     });
 
-    if (emailError) throw emailError;
+    if (emailError) {
+      console.error("Email sending error:", emailError);
+      throw emailError;
+    }
 
+    // Return a proper JSON response with appropriate headers
     return new Response(
-      JSON.stringify({ message: "Proposal sent successfully", data: emailResponse }),
+      JSON.stringify({ 
+        message: "Proposal sent successfully", 
+        data: emailResponse 
+      }),
       { 
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
+        headers: { 
+          ...corsHeaders, 
+          "Content-Type": "application/json" 
+        },
         status: 200 
       }
     );
 
   } catch (error) {
     console.error('Error:', error);
+    // Make sure we return a proper JSON response even for errors
     return new Response(
-      JSON.stringify({ error: error.message }),
+      JSON.stringify({ 
+        error: error.message || "An unknown error occurred" 
+      }),
       { 
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
+        headers: { 
+          ...corsHeaders, 
+          "Content-Type": "application/json" 
+        },
         status: 500
       }
     );
