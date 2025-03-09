@@ -19,7 +19,12 @@ export const DocumentGenerator = ({ lead }: DocumentGeneratorProps) => {
       console.log("Using lead ID:", lead.id);
       console.log("Full lead object:", JSON.stringify(lead));
       
-      // STRICTLY only lookup by exact ID - no fallbacks
+      // Verify lead has calculator data before proceeding
+      if (!lead.calculator_results || Object.keys(lead.calculator_results).length === 0) {
+        throw new Error("No calculator data found for this lead. Complete the calculator form first.");
+      }
+      
+      // Check for existing report with exact lead ID match
       const { data: existingReport, error } = await supabase
         .from('generated_reports')
         .select('*')
@@ -32,43 +37,20 @@ export const DocumentGenerator = ({ lead }: DocumentGeneratorProps) => {
       
       console.log("Database query response:", existingReport ? "Report found" : "No report found");
       
-      if (!existingReport) {
-        // If no report found, generate one immediately with the lead data
-        console.log("Attempting to generate new report with lead data");
-        
-        // Check if lead has calculator results to generate a report
-        if (!lead.calculator_results || Object.keys(lead.calculator_results).length === 0) {
-          throw new Error("No report exists for this lead ID. Complete the calculator form first.");
-        }
-        
-        // Use the shared utility function to generate and download the report
-        const success = await generateAndDownloadReport(lead);
-        
-        if (!success) {
-          throw new Error("Failed to generate a new report. Please try again.");
-        }
-        
-        console.log("Successfully generated new report");
-        
-        toast({
-          title: "Report Generated and Downloaded",
-          description: "The report has been generated and downloaded successfully.",
-        });
-      } else {
-        console.log("Found report by lead ID:", existingReport.id);
-        
-        // Use the shared utility function to download the report
-        const success = await generateAndDownloadReport(lead);
-        
-        if (!success) {
-          throw new Error("Failed to download the report. Please try again.");
-        }
-        
-        toast({
-          title: "Report Downloaded",
-          description: "The report has been successfully downloaded.",
-        });
+      // Use the shared utility function to generate and download the report
+      // This will save a new report if one doesn't exist yet
+      const success = await generateAndDownloadReport(lead);
+      
+      if (!success) {
+        throw new Error("Failed to generate or download the report. Please try again.");
       }
+      
+      toast({
+        title: existingReport ? "Report Downloaded" : "Report Generated and Downloaded",
+        description: existingReport 
+          ? "The report has been successfully downloaded." 
+          : "A new report has been generated and downloaded successfully.",
+      });
       
     } catch (error) {
       console.error("Error downloading report:", error);
