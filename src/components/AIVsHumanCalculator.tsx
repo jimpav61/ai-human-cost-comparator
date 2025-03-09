@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { useCalculator, type CalculatorInputs } from '@/hooks/useCalculator';
 import { CalculatorForm } from './calculator/CalculatorForm';
@@ -80,8 +81,8 @@ export const AIVsHumanCalculator: React.FC<AIVsHumanCalculatorProps> = ({ leadDa
         company_name: leadData.companyName,
         email: leadData.email,
         phone_number: leadData.phoneNumber || null,
-        calculator_inputs: calculatorInputs as Json,
-        calculator_results: calculationResults as Json,
+        calculator_inputs: calculatorInputs as unknown as Json,
+        calculator_results: calculationResults as unknown as Json,
         report_date: new Date().toISOString()
       };
       
