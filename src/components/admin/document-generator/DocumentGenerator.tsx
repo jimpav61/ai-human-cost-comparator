@@ -1,4 +1,3 @@
-
 import { Lead } from "@/types/leads";
 import { DocumentGeneratorProps } from "./types";
 import { Button } from "@/components/ui/button";
@@ -20,14 +19,12 @@ export const DocumentGenerator = ({ lead }: DocumentGeneratorProps) => {
       console.log("---------- ADMIN REPORT DOWNLOAD ATTEMPT ----------");
       console.log("Searching for report with lead ID:", lead.id);
       
-      // First try finding report by exact ID match
       let { data: existingReport, error } = await supabase
         .from('generated_reports')
         .select('*')
         .eq('id', lead.id)
         .maybeSingle();
       
-      // If not found by ID, try finding by email and company name as fallback
       if (!existingReport && !error) {
         console.log("No report found by lead ID, trying to find by email:", lead.email);
         const { data: reportsByEmail, error: emailError } = await supabase
@@ -40,7 +37,6 @@ export const DocumentGenerator = ({ lead }: DocumentGeneratorProps) => {
           console.error("Error in fallback query:", emailError);
         } else if (reportsByEmail && reportsByEmail.length > 0) {
           console.log(`Found ${reportsByEmail.length} reports by email and company name`);
-          // Use the most recent report if multiple exist
           existingReport = reportsByEmail.sort((a, b) => 
             new Date(b.report_date).getTime() - new Date(a.report_date).getTime()
           )[0];
@@ -58,17 +54,14 @@ export const DocumentGenerator = ({ lead }: DocumentGeneratorProps) => {
         throw new Error("No saved report found for this lead.");
       }
       
-      // Report exists, generate PDF using the saved data
       console.log("Generating PDF from saved report data");
       
-      // Extract calculator data from the saved report
       const calculatorResults = existingReport.calculator_results as Record<string, any>;
       const calculatorInputs = existingReport.calculator_inputs as Record<string, any>;
       
       console.log("Report calculator results:", calculatorResults);
       console.log("Report calculator inputs:", calculatorInputs);
       
-      // Format tier and AI type display names
       const aiTier = calculatorInputs?.aiTier || 'growth';
       const aiType = calculatorInputs?.aiType || 'chatbot';
       
@@ -82,7 +75,6 @@ export const DocumentGenerator = ({ lead }: DocumentGeneratorProps) => {
                             aiType === 'both' ? 'Text & Basic Voice' : 
                             aiType === 'both-premium' ? 'Text & Conversational Voice' : 'Text Only';
       
-      // Create a safely typed CalculationResults object from the data
       const typedCalculatorResults: CalculationResults = {
         aiCostMonthly: {
           voice: Number(calculatorResults?.aiCostMonthly?.voice) || 0,
@@ -108,7 +100,6 @@ export const DocumentGenerator = ({ lead }: DocumentGeneratorProps) => {
         annualPlan: Number(calculatorResults?.annualPlan) || 0
       };
       
-      // Generate the PDF from the saved report data
       const doc = generatePDF({
         contactInfo: existingReport.contact_name || 'Valued Client',
         companyName: existingReport.company_name || 'Your Company',
@@ -151,7 +142,6 @@ export const DocumentGenerator = ({ lead }: DocumentGeneratorProps) => {
         aiType: aiTypeDisplay
       });
       
-      // Save the PDF with proper company name
       const safeCompanyName = getSafeFileName(lead);
       console.log("Report download successful, saving as:", `${safeCompanyName}-ChatSites-ROI-Report.pdf`);
       doc.save(`${safeCompanyName}-ChatSites-ROI-Report.pdf`);
@@ -159,6 +149,7 @@ export const DocumentGenerator = ({ lead }: DocumentGeneratorProps) => {
       toast({
         title: "Report Downloaded",
         description: "The saved report has been successfully downloaded.",
+        duration: 1000,
       });
       
     } catch (error) {
@@ -182,7 +173,6 @@ export const DocumentGenerator = ({ lead }: DocumentGeneratorProps) => {
       console.log("---------- ADMIN PROPOSAL DOWNLOAD ATTEMPT ----------");
       console.log("Generating proposal for lead ID:", lead.id);
       
-      // Make a request to the proposal edge function
       const response = await fetch(
         `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/generate-proposal`,
         {
@@ -206,6 +196,7 @@ export const DocumentGenerator = ({ lead }: DocumentGeneratorProps) => {
       toast({
         title: "Proposal Sent",
         description: "The proposal has been sent to the client's email.",
+        duration: 1000,
       });
       
     } catch (error) {
