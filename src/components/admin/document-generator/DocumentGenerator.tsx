@@ -179,10 +179,11 @@ export const DocumentGenerator = ({ lead }: DocumentGeneratorProps) => {
       const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY;
       
       // Log the URL we're using for debugging
-      console.log(`Using Supabase URL: ${supabaseUrl}/functions/v1/generate-proposal`);
+      const functionUrl = `${supabaseUrl}/functions/v1/generate-proposal`;
+      console.log(`Using Supabase URL: ${functionUrl}`);
       
       const response = await fetch(
-        `${supabaseUrl}/functions/v1/generate-proposal`,
+        functionUrl,
         {
           method: "POST",
           headers: {
@@ -193,23 +194,27 @@ export const DocumentGenerator = ({ lead }: DocumentGeneratorProps) => {
         }
       );
       
-      // Get the response as text first to see what's coming back
-      const responseText = await response.text();
-      console.log("Raw response from edge function:", responseText);
-      
-      // Now try to parse as JSON if possible
-      let result;
-      try {
-        result = JSON.parse(responseText);
-      } catch (parseError) {
-        console.error("Error parsing response as JSON:", parseError);
-        throw new Error(`Server returned invalid JSON: ${responseText.substring(0, 100)}...`);
-      }
-      
       if (!response.ok) {
-        throw new Error(`Failed to generate proposal: ${result?.error || responseText}`);
+        const errorText = await response.text();
+        console.error("Error response from edge function:", errorText);
+        let errorMessage = "Failed to generate proposal";
+        
+        try {
+          // Try to parse as JSON
+          const errorJson = JSON.parse(errorText);
+          if (errorJson.error) {
+            errorMessage = errorJson.error;
+          }
+        } catch (parseError) {
+          // If parsing fails, use the raw text (limited)
+          errorMessage = errorText.substring(0, 100);
+        }
+        
+        throw new Error(errorMessage);
       }
       
+      // Get the response as JSON
+      const result = await response.json();
       console.log("Proposal generated successfully:", result.message);
       
       toast({

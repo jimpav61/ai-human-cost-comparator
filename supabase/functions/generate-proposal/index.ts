@@ -1,6 +1,5 @@
 
 import { serve } from "https://deno.land/std@0.190.0/http/server.ts";
-import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.7.1';
 import { Resend } from "npm:resend@2.0.0";
 
 const resend = new Resend(Deno.env.get("RESEND_API_KEY"));
@@ -206,34 +205,49 @@ serve(async (req) => {
       </html>
     `;
 
-    // Send the proposal via email
-    const { data: emailResponse, error: emailError } = await resend.emails.send({
-      from: 'ChatSites.ai <onboarding@resend.dev>',
-      to: [lead.email],
-      subject: `AI Integration Proposal for ${companyName}`,
-      html: proposalHtml,
-    });
+    try {
+      // Send the proposal via email
+      const { data: emailResponse, error: emailError } = await resend.emails.send({
+        from: 'ChatSites.ai <onboarding@resend.dev>',
+        to: [lead.email],
+        subject: `AI Integration Proposal for ${companyName}`,
+        html: proposalHtml,
+      });
 
-    if (emailError) {
-      console.error("Email sending error:", emailError);
-      throw emailError;
-    }
-
-    // Return a proper JSON response with appropriate headers
-    return new Response(
-      JSON.stringify({ 
-        message: "Proposal sent successfully", 
-        data: emailResponse 
-      }),
-      { 
-        headers: { 
-          ...corsHeaders, 
-          "Content-Type": "application/json" 
-        },
-        status: 200 
+      if (emailError) {
+        console.error("Email sending error:", emailError);
+        throw emailError;
       }
-    );
 
+      // Return a proper JSON response with appropriate headers
+      return new Response(
+        JSON.stringify({ 
+          message: "Proposal sent successfully", 
+          data: emailResponse 
+        }),
+        { 
+          headers: { 
+            ...corsHeaders, 
+            "Content-Type": "application/json" 
+          },
+          status: 200 
+        }
+      );
+    } catch (emailError) {
+      console.error("Email sending error:", emailError);
+      return new Response(
+        JSON.stringify({ 
+          error: emailError.message || "Failed to send email" 
+        }),
+        { 
+          headers: { 
+            ...corsHeaders, 
+            "Content-Type": "application/json" 
+          },
+          status: 500
+        }
+      );
+    }
   } catch (error) {
     console.error('Error:', error);
     // Make sure we return a proper JSON response even for errors
