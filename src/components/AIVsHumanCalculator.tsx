@@ -82,8 +82,12 @@ export const AIVsHumanCalculator: React.FC<AIVsHumanCalculatorProps> = ({ leadDa
   // Generate report and save to database
   const handleGenerateReport = async () => {
     try {
+      // Generate a UUID for the report
+      const reportId = crypto.randomUUID();
+      
       // Create a single record object and convert it to proper JSON format
       const reportData = {
+        id: reportId, // Add ID to fix the null ID issue
         contact_name: leadData.name,
         company_name: leadData.companyName,
         email: leadData.email,
