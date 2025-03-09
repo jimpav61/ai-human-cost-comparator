@@ -19,12 +19,30 @@ export const DocumentGenerator = ({ lead }: DocumentGeneratorProps) => {
       console.log("---------- ADMIN REPORT DOWNLOAD ATTEMPT ----------");
       console.log("Searching for report with lead ID:", lead.id);
       
-      // Query to find the exact report matching the lead ID
-      const { data: existingReport, error } = await supabase
+      // First try finding report by exact ID match
+      let { data: existingReport, error } = await supabase
         .from('generated_reports')
         .select('*')
         .eq('id', lead.id)
         .maybeSingle();
+      
+      // If not found by ID, try finding by email and company name as fallback
+      if (!existingReport && !error) {
+        console.log("No report found by lead ID, trying to find by email:", lead.email);
+        const { data: reportByEmail, error: emailError } = await supabase
+          .from('generated_reports')
+          .select('*')
+          .eq('email', lead.email)
+          .eq('company_name', lead.company_name)
+          .maybeSingle();
+          
+        if (emailError) {
+          console.error("Error in fallback query:", emailError);
+        } else if (reportByEmail) {
+          console.log("Found report by email and company name instead");
+          existingReport = reportByEmail;
+        }
+      }
       
       if (error) {
         console.error("Database query error:", error);
