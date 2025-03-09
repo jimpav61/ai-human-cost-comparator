@@ -123,12 +123,14 @@ export const generateAndDownloadReport = async (lead: Lead) => {
       aiType: aiTypeDisplay
     });
     
-    // For frontend reports, don't try to use temp-id for saving to database
-    // Only save report if the ID is a valid UUID
+    // ====== IMPORTANT: FIX FOR REPORT SAVING ======
+    // Only save report if we have a valid lead ID (not temp-id)
     if (lead.id && lead.id !== 'temp-id') {
-      // Save report to database using the lead ID as the exact identifier
+      // Create a unique report ID that will be consistently used for this lead
+      // The issue might be that the lead ID in the database doesn't match what's being searched
+      // So we'll use the lead ID directly as the report ID
       const reportData = {
-        id: lead.id, // Use lead ID as report ID for exact lookup
+        id: lead.id, // Use lead ID as the primary key for exact lookup
         contact_name: lead.name,
         company_name: lead.company_name,
         email: lead.email,
@@ -140,19 +142,38 @@ export const generateAndDownloadReport = async (lead: Lead) => {
       
       console.log('[CALCULATOR REPORT] Saving report to database with ID:', reportData.id);
       
-      // Save to database using upsert 
-      const { error } = await supabase
+      // First, check if a report already exists for this lead
+      const { data: existingReport } = await supabase
         .from('generated_reports')
-        .upsert([reportData as any]);
+        .select('id')
+        .eq('id', lead.id)
+        .maybeSingle();
+
+      // If report already exists, update it; otherwise, insert new
+      let saveError;
+      if (existingReport) {
+        console.log('[CALCULATOR REPORT] Updating existing report with ID:', lead.id);
+        const { error } = await supabase
+          .from('generated_reports')
+          .update(reportData as any)
+          .eq('id', lead.id);
+        saveError = error;
+      } else {
+        console.log('[CALCULATOR REPORT] Inserting new report with ID:', lead.id);
+        const { error } = await supabase
+          .from('generated_reports')
+          .insert([reportData as any]);
+        saveError = error;
+      }
         
-      if (error) {
-        console.error('[CALCULATOR REPORT] Error saving report to database:', error);
+      if (saveError) {
+        console.error('[CALCULATOR REPORT] Error saving report to database:', saveError);
         console.log('[CALCULATOR REPORT] Continuing with download anyway...');
       } else {
         console.log('[CALCULATOR REPORT] Report saved to database successfully with ID:', lead.id);
       }
     } else {
-      console.log('[CALCULATOR REPORT] Skipping database save for temporary lead ID');
+      console.log('[CALCULATOR REPORT] Skipping database save for temporary lead ID:', lead.id);
     }
     
     // Save file with proper naming
