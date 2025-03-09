@@ -167,9 +167,10 @@ export const generateAndDownloadReport = async (lead: Lead) => {
             saveError = error;
           } else {
             console.log('[CALCULATOR REPORT] Inserting new report with ID:', lead.id);
+            // FIX: Removed the array brackets and the upsert option
             const { error } = await supabase
               .from('generated_reports')
-              .insert([reportData], { upsert: true }); // Use upsert to force the ID
+              .insert(reportData);
             saveError = error;
           }
             
@@ -177,13 +178,11 @@ export const generateAndDownloadReport = async (lead: Lead) => {
             console.error('[CALCULATOR REPORT] Error saving report to database:', saveError);
             console.log('[CALCULATOR REPORT] Attempting alternative save method...');
             
-            // If the first save method fails, try an upsert operation as a fallback
+            // If the first save method fails, try a different operation as a fallback
+            // FIX: Using upsert correctly without array brackets and with correct options
             const { error: upsertError } = await supabase
               .from('generated_reports')
-              .upsert([reportData], { 
-                onConflict: 'id', 
-                ignoreDuplicates: false
-              });
+              .upsert(reportData);
               
             if (upsertError) {
               console.error('[CALCULATOR REPORT] Alternative save method also failed:', upsertError);
