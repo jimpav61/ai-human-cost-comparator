@@ -123,8 +123,8 @@ export const generateAndDownloadReport = async (lead: Lead) => {
       aiType: aiTypeDisplay
     });
     
-    // First generate a UUID for the report if we're in the frontend calculator
-    // This fixes the null ID issue in the database
+    // Generate a report ID that will be used when saving to database
+    // Using crypto.randomUUID() to ensure a valid UUID format
     const reportId = crypto.randomUUID();
     
     // Only save if we have a valid report ID
