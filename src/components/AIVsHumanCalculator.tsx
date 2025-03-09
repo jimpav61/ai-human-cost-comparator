@@ -94,14 +94,15 @@ export const AIVsHumanCalculator: React.FC<AIVsHumanCalculatorProps> = ({ leadDa
         phone_number: leadData.phoneNumber || null,
         calculator_inputs: calculatorInputs,
         calculator_results: calculationResults,
+        report_date: new Date().toISOString() // Add timestamp for report generation
       };
       
       console.log("Saving report data to database:", reportData);
       
-      // Fix TypeScript error by using type assertion
+      // Insert the report data into the database
       const { error } = await supabase
         .from('generated_reports')
-        .insert([reportData] as any);
+        .insert([reportData]);
 
       if (error) throw error;
 
