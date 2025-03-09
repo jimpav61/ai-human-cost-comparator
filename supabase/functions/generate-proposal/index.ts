@@ -9,10 +9,7 @@ serve(async (req) => {
   if (req.method === "OPTIONS") {
     console.log("CORS preflight request received");
     return new Response(null, {
-      headers: {
-        ...corsHeaders,
-        "Content-Type": "application/json",
-      },
+      headers: corsHeaders,
       status: 204,
     });
   }
@@ -42,23 +39,6 @@ serve(async (req) => {
 
     console.log("Lead ID:", lead.id);
     console.log("Lead company:", lead.company_name);
-    
-    // If we have calculator inputs, validate and format them
-    if (lead.calculator_inputs) {
-      console.log("Calculator inputs found, processing...");
-      
-      // Ensure callVolume is a number
-      if (lead.calculator_inputs.callVolume !== undefined) {
-        if (typeof lead.calculator_inputs.callVolume === 'string') {
-          lead.calculator_inputs.callVolume = parseInt(lead.calculator_inputs.callVolume, 10) || 0;
-        }
-        console.log("Call volume processed:", lead.calculator_inputs.callVolume);
-      } else {
-        console.log("No call volume found in inputs");
-      }
-    } else {
-      console.log("No calculator inputs found");
-    }
     
     // In a real implementation, this would generate and email the proposal
     // For now, we'll simulate a successful response
