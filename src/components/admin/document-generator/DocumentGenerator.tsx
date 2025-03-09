@@ -19,32 +19,12 @@ export const DocumentGenerator = ({ lead }: DocumentGeneratorProps) => {
       console.log("---------- ADMIN REPORT DOWNLOAD ATTEMPT ----------");
       console.log("Searching for report with lead ID:", lead.id);
       
-      // First try finding report by exact ID match
-      let { data: existingReport, error } = await supabase
+      // Search ONLY by exact ID match - no fallbacks
+      const { data: existingReport, error } = await supabase
         .from('generated_reports')
         .select('*')
         .eq('id', lead.id)
         .maybeSingle();
-      
-      // If not found by ID, try finding by email and company name as fallback
-      if (!existingReport && !error) {
-        console.log("No report found by lead ID, trying to find by email:", lead.email);
-        const { data: reportsByEmail, error: emailError } = await supabase
-          .from('generated_reports')
-          .select('*')
-          .eq('email', lead.email)
-          .eq('company_name', lead.company_name);
-          
-        if (emailError) {
-          console.error("Error in fallback query:", emailError);
-        } else if (reportsByEmail && reportsByEmail.length > 0) {
-          console.log(`Found ${reportsByEmail.length} reports by email and company name`);
-          // Use the most recent report if multiple exist
-          existingReport = reportsByEmail.sort((a, b) => 
-            new Date(b.report_date).getTime() - new Date(a.report_date).getTime()
-          )[0];
-        }
-      }
       
       if (error) {
         console.error("Database query error:", error);
@@ -54,7 +34,7 @@ export const DocumentGenerator = ({ lead }: DocumentGeneratorProps) => {
       console.log("Database query response:", existingReport ? "Report found" : "No report found");
       
       if (!existingReport) {
-        throw new Error("No saved report found for this lead.");
+        throw new Error("No saved report found for this lead ID.");
       }
       
       // Report exists, generate PDF using the saved data
@@ -166,7 +146,7 @@ export const DocumentGenerator = ({ lead }: DocumentGeneratorProps) => {
         title: "Report Not Found",
         description: error instanceof Error 
           ? error.message 
-          : "No saved report exists for this lead.",
+          : "No saved report exists for this lead ID.",
         variant: "destructive",
       });
     } finally {
