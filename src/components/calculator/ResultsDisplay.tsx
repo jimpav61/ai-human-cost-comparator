@@ -31,10 +31,11 @@ export const ResultsDisplay: React.FC<ResultsDisplayProps> = ({
   
   // For debugging
   useEffect(() => {
+    console.log("ResultsDisplay - Lead ID:", leadData.id);
     console.log("ResultsDisplay - Inputs:", inputs);
     console.log("ResultsDisplay - Results:", results);
     console.log("ResultsDisplay - PricingDetails:", pricingDetails);
-  }, [inputs, results, pricingDetails]);
+  }, [inputs, results, pricingDetails, leadData]);
   
   // Create a Lead object from the leadData and calculator results
   // Ensure ID is preserved for exact lookup later
@@ -58,6 +59,7 @@ export const ResultsDisplay: React.FC<ResultsDisplayProps> = ({
   const handleDownloadReport = () => {
     try {
       console.log("Downloading report with lead ID:", leadForReport.id);
+      console.log("Full lead object for report:", JSON.stringify(leadForReport));
       generateAndDownloadReport(leadForReport);
     } catch (error) {
       console.error("Error downloading report:", error);

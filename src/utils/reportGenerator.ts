@@ -26,6 +26,7 @@ const canGenerateReport = (lead: Lead): boolean => {
 export const generateAndDownloadReport = async (lead: Lead) => {
   try {
     console.log('[SHARED REPORT] Generating report for lead:', lead);
+    console.log('[SHARED REPORT] Lead ID:', lead.id);
     
     // Check if lead exists
     if (!lead) {
@@ -244,6 +245,7 @@ export const generateAndDownloadReport = async (lead: Lead) => {
     };
     
     console.log('[SHARED REPORT] Saving report to database with ID:', reportData.id);
+    console.log('[SHARED REPORT] Full report data:', JSON.stringify(reportData));
     
     // Save to database using upsert to ensure we don't duplicate
     const { error } = await supabase

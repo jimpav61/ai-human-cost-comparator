@@ -17,6 +17,7 @@ export const DocumentGenerator = ({ lead }: DocumentGeneratorProps) => {
       setIsLoading(true);
       console.log("---------- REPORT DOWNLOAD ATTEMPT ----------");
       console.log("Using lead ID:", lead.id);
+      console.log("Full lead object:", JSON.stringify(lead));
       
       // STRICTLY only lookup by exact ID - no fallbacks
       const { data: existingReport, error } = await supabase
@@ -29,23 +30,45 @@ export const DocumentGenerator = ({ lead }: DocumentGeneratorProps) => {
         throw new Error(`Database error: ${error.message}`);
       }
       
+      console.log("Database query response:", existingReport ? "Report found" : "No report found");
+      
       if (!existingReport) {
-        throw new Error("No report exists for this lead ID. Complete the calculator form first.");
+        // If no report found, generate one immediately with the lead data
+        console.log("Attempting to generate new report with lead data");
+        
+        // Check if lead has calculator results to generate a report
+        if (!lead.calculator_results || Object.keys(lead.calculator_results).length === 0) {
+          throw new Error("No report exists for this lead ID. Complete the calculator form first.");
+        }
+        
+        // Use the shared utility function to generate and download the report
+        const success = await generateAndDownloadReport(lead);
+        
+        if (!success) {
+          throw new Error("Failed to generate a new report. Please try again.");
+        }
+        
+        console.log("Successfully generated new report");
+        
+        toast({
+          title: "Report Generated and Downloaded",
+          description: "The report has been generated and downloaded successfully.",
+        });
+      } else {
+        console.log("Found report by lead ID:", existingReport.id);
+        
+        // Use the shared utility function to download the report
+        const success = await generateAndDownloadReport(lead);
+        
+        if (!success) {
+          throw new Error("Failed to download the report. Please try again.");
+        }
+        
+        toast({
+          title: "Report Downloaded",
+          description: "The report has been successfully downloaded.",
+        });
       }
-      
-      console.log("Found report by lead ID:", existingReport.id);
-      
-      // Use the shared utility function to download the report
-      const success = await generateAndDownloadReport(lead);
-      
-      if (!success) {
-        throw new Error("Failed to download the report. Please try again.");
-      }
-      
-      toast({
-        title: "Report Downloaded",
-        description: "The report has been successfully downloaded.",
-      });
       
     } catch (error) {
       console.error("Error downloading report:", error);
