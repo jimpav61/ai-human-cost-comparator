@@ -2,7 +2,7 @@
 import { Lead } from "@/types/leads";
 import { DocumentGeneratorProps } from "./types";
 import { Button } from "@/components/ui/button";
-import { FileBarChart } from "lucide-react";
+import { FileBarChart, FileText } from "lucide-react";
 import { toast } from "@/hooks/use-toast";
 import { useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
@@ -12,6 +12,7 @@ import { CalculationResults } from "@/hooks/calculator/types";
 
 export const DocumentGenerator = ({ lead }: DocumentGeneratorProps) => {
   const [isLoading, setIsLoading] = useState(false);
+  const [isProposalLoading, setIsProposalLoading] = useState(false);
   
   const handleDownloadReport = async () => {
     try {
@@ -175,16 +176,76 @@ export const DocumentGenerator = ({ lead }: DocumentGeneratorProps) => {
     }
   };
   
+  const handleDownloadProposal = async () => {
+    try {
+      setIsProposalLoading(true);
+      console.log("---------- ADMIN PROPOSAL DOWNLOAD ATTEMPT ----------");
+      console.log("Generating proposal for lead ID:", lead.id);
+      
+      // Make a request to the proposal edge function
+      const response = await fetch(
+        `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/generate-proposal`,
+        {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            "Authorization": `Bearer ${import.meta.env.VITE_SUPABASE_ANON_KEY}`
+          },
+          body: JSON.stringify({ lead })
+        }
+      );
+      
+      if (!response.ok) {
+        const errorText = await response.text();
+        throw new Error(`Failed to generate proposal: ${errorText}`);
+      }
+      
+      const result = await response.json();
+      console.log("Proposal generated successfully:", result.message);
+      
+      toast({
+        title: "Proposal Sent",
+        description: "The proposal has been sent to the client's email.",
+      });
+      
+    } catch (error) {
+      console.error("Error generating proposal:", error);
+      toast({
+        title: "Proposal Generation Failed",
+        description: error instanceof Error 
+          ? error.message 
+          : "Failed to generate the proposal.",
+        variant: "destructive",
+      });
+    } finally {
+      setIsProposalLoading(false);
+      console.log("---------- ADMIN PROPOSAL DOWNLOAD ATTEMPT ENDED ----------");
+    }
+  };
+  
   return (
-    <Button
-      onClick={handleDownloadReport}
-      disabled={isLoading}
-      variant="outline"
-      size="sm"
-      className="flex items-center"
-    >
-      <FileBarChart className="h-4 w-4 mr-2" />
-      {isLoading ? "Downloading..." : "Download Report"}
-    </Button>
+    <div className="flex gap-2">
+      <Button
+        onClick={handleDownloadReport}
+        disabled={isLoading}
+        variant="outline"
+        size="sm"
+        className="flex items-center"
+      >
+        <FileBarChart className="h-4 w-4 mr-2" />
+        {isLoading ? "Downloading..." : "Download Report"}
+      </Button>
+      
+      <Button
+        onClick={handleDownloadProposal}
+        disabled={isProposalLoading}
+        variant="outline"
+        size="sm"
+        className="flex items-center"
+      >
+        <FileText className="h-4 w-4 mr-2" />
+        {isProposalLoading ? "Sending..." : "Send Proposal"}
+      </Button>
+    </div>
   );
 };
