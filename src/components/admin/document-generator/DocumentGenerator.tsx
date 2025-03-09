@@ -16,9 +16,9 @@ export const DocumentGenerator = ({ lead }: DocumentGeneratorProps) => {
     try {
       setIsLoading(true);
       console.log("---------- REPORT DOWNLOAD ATTEMPT ----------");
-      console.log("Using lead ID only:", lead.id);
+      console.log("Using lead ID:", lead.id);
       
-      // Only lookup by exact ID - no fallbacks
+      // STRICTLY only lookup by exact ID - no fallbacks
       const { data: existingReport, error } = await supabase
         .from('generated_reports')
         .select('*')
@@ -33,7 +33,7 @@ export const DocumentGenerator = ({ lead }: DocumentGeneratorProps) => {
         throw new Error("No report exists for this lead ID. Complete the calculator form first.");
       }
       
-      console.log("Found report by lead ID");
+      console.log("Found report by lead ID:", existingReport.id);
       
       // Use the shared utility function to download the report
       const success = await generateAndDownloadReport(lead);

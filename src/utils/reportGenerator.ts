@@ -32,7 +32,7 @@ export const generateAndDownloadReport = async (lead: Lead) => {
       throw new Error("Lead data is missing");
     }
 
-    // First check if there's a saved report in the database
+    // First check if there's a saved report in the database using ONLY the exact lead ID
     console.log('[SHARED REPORT] Checking for existing saved report for lead ID:', lead.id);
     const { data: existingReport, error: reportError } = await supabase
       .from('generated_reports')
@@ -46,7 +46,7 @@ export const generateAndDownloadReport = async (lead: Lead) => {
     
     // If we found a saved report, use that exact saved data
     if (existingReport) {
-      console.log('[SHARED REPORT] Found existing report, using saved data:', existingReport);
+      console.log('[SHARED REPORT] Found existing report with ID:', existingReport.id);
       
       // Safely cast JSON data to expected types with proper type assertions
       const calculatorInputs = existingReport.calculator_inputs as unknown as Record<string, any>;
@@ -231,9 +231,9 @@ export const generateAndDownloadReport = async (lead: Lead) => {
       aiType: aiTypeDisplay
     });
     
-    // Save report to database for future retrieval
+    // Save report to database using the lead ID as the exact identifier
     const reportData = {
-      id: lead.id, // Use lead ID as report ID for easy lookup
+      id: lead.id, // Use lead ID as report ID for exact lookup
       contact_name: lead.name,
       company_name: lead.company_name,
       email: lead.email,
@@ -243,19 +243,19 @@ export const generateAndDownloadReport = async (lead: Lead) => {
       report_date: new Date().toISOString()
     };
     
-    console.log('[SHARED REPORT] Saving report to database:', reportData);
+    console.log('[SHARED REPORT] Saving report to database with ID:', reportData.id);
     
-    // Save to database in background
-    supabase
+    // Save to database using upsert to ensure we don't duplicate
+    const { error } = await supabase
       .from('generated_reports')
-      .upsert([reportData as any])
-      .then(({ error }) => {
-        if (error) {
-          console.error('[SHARED REPORT] Error saving report to database:', error);
-        } else {
-          console.log('[SHARED REPORT] Report saved to database successfully');
-        }
-      });
+      .upsert([reportData as any]);
+      
+    if (error) {
+      console.error('[SHARED REPORT] Error saving report to database:', error);
+      throw new Error(`Failed to save report: ${error.message}`);
+    } else {
+      console.log('[SHARED REPORT] Report saved to database successfully with ID:', lead.id);
+    }
     
     // Save file with proper naming
     const safeCompanyName = getSafeFileName(lead);

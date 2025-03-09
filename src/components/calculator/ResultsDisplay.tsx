@@ -37,6 +37,7 @@ export const ResultsDisplay: React.FC<ResultsDisplayProps> = ({
   }, [inputs, results, pricingDetails]);
   
   // Create a Lead object from the leadData and calculator results
+  // Ensure ID is preserved for exact lookup later
   const leadForReport: Lead = {
     id: leadData.id || 'temp-id',
     name: leadData.name,
@@ -56,7 +57,7 @@ export const ResultsDisplay: React.FC<ResultsDisplayProps> = ({
 
   const handleDownloadReport = () => {
     try {
-      console.log("Downloading report with lead data:", leadForReport);
+      console.log("Downloading report with lead ID:", leadForReport.id);
       generateAndDownloadReport(leadForReport);
     } catch (error) {
       console.error("Error downloading report:", error);
