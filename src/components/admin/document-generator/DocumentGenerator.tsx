@@ -19,7 +19,7 @@ export const DocumentGenerator = ({ lead }: DocumentGeneratorProps) => {
       console.log("---------- ADMIN REPORT DOWNLOAD ATTEMPT ----------");
       console.log("Searching for report with lead ID:", lead.id);
       
-      // First try finding report by exact ID match
+      // First try finding report by exact ID match - this should work now that we've fixed the saving
       let { data: existingReport, error } = await supabase
         .from('generated_reports')
         .select('*')

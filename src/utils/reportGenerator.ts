@@ -123,57 +123,82 @@ export const generateAndDownloadReport = async (lead: Lead) => {
       aiType: aiTypeDisplay
     });
     
-    // ====== IMPORTANT: FIX FOR REPORT SAVING ======
-    // Only save report if we have a valid lead ID (not temp-id)
-    if (lead.id && lead.id !== 'temp-id') {
-      // Create a unique report ID that will be consistently used for this lead
-      // The issue might be that the lead ID in the database doesn't match what's being searched
-      // So we'll use the lead ID directly as the report ID
-      const reportData = {
-        id: lead.id, // Use lead ID as the primary key for exact lookup
-        contact_name: lead.name,
-        company_name: lead.company_name,
-        email: lead.email,
-        phone_number: lead.phone_number || null,
-        calculator_inputs: lead.calculator_inputs,
-        calculator_results: lead.calculator_results,
-        report_date: new Date().toISOString()
-      };
-      
-      console.log('[CALCULATOR REPORT] Saving report to database with ID:', reportData.id);
-      
-      // First, check if a report already exists for this lead
-      const { data: existingReport } = await supabase
-        .from('generated_reports')
-        .select('id')
-        .eq('id', lead.id)
-        .maybeSingle();
-
-      // If report already exists, update it; otherwise, insert new
-      let saveError;
-      if (existingReport) {
-        console.log('[CALCULATOR REPORT] Updating existing report with ID:', lead.id);
-        const { error } = await supabase
-          .from('generated_reports')
-          .update(reportData as any)
-          .eq('id', lead.id);
-        saveError = error;
+    // FIXED REPORT SAVING: Always save if we have a valid lead ID, and always use that exact ID
+    if (lead.id) {
+      // Skip temp IDs to avoid cluttering the database
+      if (lead.id === 'temp-id') {
+        console.log('[CALCULATOR REPORT] Skipping database save for temporary lead ID');
       } else {
-        console.log('[CALCULATOR REPORT] Inserting new report with ID:', lead.id);
-        const { error } = await supabase
-          .from('generated_reports')
-          .insert([reportData as any]);
-        saveError = error;
-      }
+        // Create the report data with the lead ID
+        const reportData = {
+          id: lead.id, // Use lead ID as the primary key
+          contact_name: lead.name,
+          company_name: lead.company_name,
+          email: lead.email,
+          phone_number: lead.phone_number || null,
+          calculator_inputs: lead.calculator_inputs,
+          calculator_results: lead.calculator_results,
+          report_date: new Date().toISOString()
+        };
         
-      if (saveError) {
-        console.error('[CALCULATOR REPORT] Error saving report to database:', saveError);
-        console.log('[CALCULATOR REPORT] Continuing with download anyway...');
-      } else {
-        console.log('[CALCULATOR REPORT] Report saved to database successfully with ID:', lead.id);
+        console.log('[CALCULATOR REPORT] Saving report to database with ID:', reportData.id);
+        
+        try {
+          // Check if a report already exists with this ID
+          const { data: existingReport, error: lookupError } = await supabase
+            .from('generated_reports')
+            .select('id')
+            .eq('id', lead.id)
+            .maybeSingle();
+            
+          if (lookupError) {
+            console.error('[CALCULATOR REPORT] Error checking for existing report:', lookupError);
+          }
+          
+          let saveError;
+          
+          // Update or insert based on whether the report exists
+          if (existingReport) {
+            console.log('[CALCULATOR REPORT] Updating existing report with ID:', lead.id);
+            const { error } = await supabase
+              .from('generated_reports')
+              .update(reportData)
+              .eq('id', lead.id);
+            saveError = error;
+          } else {
+            console.log('[CALCULATOR REPORT] Inserting new report with ID:', lead.id);
+            const { error } = await supabase
+              .from('generated_reports')
+              .insert([reportData], { upsert: true }); // Use upsert to force the ID
+            saveError = error;
+          }
+            
+          if (saveError) {
+            console.error('[CALCULATOR REPORT] Error saving report to database:', saveError);
+            console.log('[CALCULATOR REPORT] Attempting alternative save method...');
+            
+            // If the first save method fails, try an upsert operation as a fallback
+            const { error: upsertError } = await supabase
+              .from('generated_reports')
+              .upsert([reportData], { 
+                onConflict: 'id', 
+                ignoreDuplicates: false
+              });
+              
+            if (upsertError) {
+              console.error('[CALCULATOR REPORT] Alternative save method also failed:', upsertError);
+            } else {
+              console.log('[CALCULATOR REPORT] Report saved using alternative method with ID:', lead.id);
+            }
+          } else {
+            console.log('[CALCULATOR REPORT] Report saved to database successfully with ID:', lead.id);
+          }
+        } catch (dbError) {
+          console.error('[CALCULATOR REPORT] Database operation error:', dbError);
+        }
       }
     } else {
-      console.log('[CALCULATOR REPORT] Skipping database save for temporary lead ID:', lead.id);
+      console.warn('[CALCULATOR REPORT] Cannot save report - lead ID is missing');
     }
     
     // Save file with proper naming
