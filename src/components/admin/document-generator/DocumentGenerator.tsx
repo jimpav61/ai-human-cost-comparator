@@ -2,7 +2,7 @@
 import { Lead } from "@/types/leads";
 import { DocumentGeneratorProps } from "./types";
 import { Button } from "@/components/ui/button";
-import { FileBarChart } from "lucide-react";
+import { FileBarChart, Mail } from "lucide-react";
 import { toast } from "@/hooks/use-toast";
 import { useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
@@ -12,6 +12,7 @@ import { CalculationResults } from "@/hooks/calculator/types";
 
 export const DocumentGenerator = ({ lead }: DocumentGeneratorProps) => {
   const [isLoading, setIsLoading] = useState(false);
+  const [isEmailingProposal, setIsEmailingProposal] = useState(false);
   
   const handleDownloadReport = async () => {
     try {
@@ -155,16 +156,95 @@ export const DocumentGenerator = ({ lead }: DocumentGeneratorProps) => {
     }
   };
   
+  const handleEmailProposal = async () => {
+    try {
+      setIsEmailingProposal(true);
+      console.log("---------- ADMIN EMAIL PROPOSAL ATTEMPT ----------");
+      console.log("Emailing proposal for lead:", lead);
+      
+      // Call the edge function to generate and send the proposal
+      const response = await fetch("https://ujyhmchmjzlmsimtrtor.supabase.co/functions/v1/generate-proposal", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "Authorization": `Bearer ${supabase.auth.getSession().then(({ data }) => data.session?.access_token)}`
+        },
+        body: JSON.stringify({ 
+          lead: {
+            name: lead.name,
+            companyName: lead.company_name,
+            email: lead.email,
+            website: lead.website,
+            phoneNumber: lead.phone_number,
+            calculator_inputs: lead.calculator_inputs,
+            calculatorResults: lead.calculator_results,
+            industry: lead.industry,
+            company_name: lead.company_name
+          } 
+        })
+      });
+      
+      const result = await response.json();
+      
+      if (!response.ok) {
+        throw new Error(result.error || "Failed to send proposal email");
+      }
+      
+      console.log("Email proposal response:", result);
+      
+      // Update proposal_sent status in the leads table
+      const { error: updateError } = await supabase
+        .from('leads')
+        .update({ proposal_sent: true })
+        .eq('id', lead.id);
+        
+      if (updateError) {
+        console.warn("Could not update proposal_sent status:", updateError);
+      }
+      
+      toast({
+        title: "Proposal Sent",
+        description: `Proposal has been emailed to ${lead.email}`,
+      });
+      
+    } catch (error) {
+      console.error("Error sending proposal:", error);
+      toast({
+        title: "Proposal Sending Failed",
+        description: error instanceof Error 
+          ? error.message 
+          : "Could not send proposal email. Please try again.",
+        variant: "destructive",
+      });
+    } finally {
+      setIsEmailingProposal(false);
+      console.log("---------- ADMIN EMAIL PROPOSAL ATTEMPT ENDED ----------");
+    }
+  };
+  
   return (
-    <Button
-      onClick={handleDownloadReport}
-      disabled={isLoading}
-      variant="outline"
-      size="sm"
-      className="flex items-center"
-    >
-      <FileBarChart className="h-4 w-4 mr-2" />
-      {isLoading ? "Downloading..." : "Download Report"}
-    </Button>
+    <div className="flex gap-2">
+      <Button
+        onClick={handleDownloadReport}
+        disabled={isLoading}
+        variant="outline"
+        size="sm"
+        className="flex items-center"
+      >
+        <FileBarChart className="h-4 w-4 mr-2" />
+        {isLoading ? "Downloading..." : "Download Report"}
+      </Button>
+      
+      <Button
+        onClick={handleEmailProposal}
+        disabled={isEmailingProposal}
+        variant="outline"
+        size="sm"
+        className="flex items-center"
+      >
+        <Mail className="h-4 w-4 mr-2" />
+        {isEmailingProposal ? "Sending..." : "Email Proposal"}
+      </Button>
+    </div>
   );
 };
