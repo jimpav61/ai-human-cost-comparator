@@ -19,7 +19,7 @@ export const DocumentGenerator = ({ lead }: DocumentGeneratorProps) => {
       console.log("---------- ADMIN REPORT DOWNLOAD ATTEMPT ----------");
       console.log("Searching for report with lead ID:", lead.id);
       
-      // First try finding report by exact ID match - this should work now that we've fixed the saving
+      // First try finding report by exact ID match
       let { data: existingReport, error } = await supabase
         .from('generated_reports')
         .select('*')
@@ -29,18 +29,20 @@ export const DocumentGenerator = ({ lead }: DocumentGeneratorProps) => {
       // If not found by ID, try finding by email and company name as fallback
       if (!existingReport && !error) {
         console.log("No report found by lead ID, trying to find by email:", lead.email);
-        const { data: reportByEmail, error: emailError } = await supabase
+        const { data: reportsByEmail, error: emailError } = await supabase
           .from('generated_reports')
           .select('*')
           .eq('email', lead.email)
-          .eq('company_name', lead.company_name)
-          .maybeSingle();
+          .eq('company_name', lead.company_name);
           
         if (emailError) {
           console.error("Error in fallback query:", emailError);
-        } else if (reportByEmail) {
-          console.log("Found report by email and company name instead");
-          existingReport = reportByEmail;
+        } else if (reportsByEmail && reportsByEmail.length > 0) {
+          console.log(`Found ${reportsByEmail.length} reports by email and company name`);
+          // Use the most recent report if multiple exist
+          existingReport = reportsByEmail.sort((a, b) => 
+            new Date(b.report_date).getTime() - new Date(a.report_date).getTime()
+          )[0];
         }
       }
       
