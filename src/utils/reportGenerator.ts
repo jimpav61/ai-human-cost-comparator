@@ -123,30 +123,36 @@ export const generateAndDownloadReport = async (lead: Lead) => {
       aiType: aiTypeDisplay
     });
     
-    // Save report to database using the lead ID as the exact identifier
-    const reportData = {
-      id: lead.id, // Use lead ID as report ID for exact lookup
-      contact_name: lead.name,
-      company_name: lead.company_name,
-      email: lead.email,
-      phone_number: lead.phone_number || null,
-      calculator_inputs: lead.calculator_inputs,
-      calculator_results: lead.calculator_results,
-      report_date: new Date().toISOString()
-    };
-    
-    console.log('[CALCULATOR REPORT] Saving report to database with ID:', reportData.id);
-    
-    // Save to database using upsert 
-    const { error } = await supabase
-      .from('generated_reports')
-      .upsert([reportData as any]);
+    // For frontend reports, don't try to use temp-id for saving to database
+    // Only save report if the ID is a valid UUID
+    if (lead.id && lead.id !== 'temp-id') {
+      // Save report to database using the lead ID as the exact identifier
+      const reportData = {
+        id: lead.id, // Use lead ID as report ID for exact lookup
+        contact_name: lead.name,
+        company_name: lead.company_name,
+        email: lead.email,
+        phone_number: lead.phone_number || null,
+        calculator_inputs: lead.calculator_inputs,
+        calculator_results: lead.calculator_results,
+        report_date: new Date().toISOString()
+      };
       
-    if (error) {
-      console.error('[CALCULATOR REPORT] Error saving report to database:', error);
-      throw new Error(`Failed to save report: ${error.message}`);
+      console.log('[CALCULATOR REPORT] Saving report to database with ID:', reportData.id);
+      
+      // Save to database using upsert 
+      const { error } = await supabase
+        .from('generated_reports')
+        .upsert([reportData as any]);
+        
+      if (error) {
+        console.error('[CALCULATOR REPORT] Error saving report to database:', error);
+        console.log('[CALCULATOR REPORT] Continuing with download anyway...');
+      } else {
+        console.log('[CALCULATOR REPORT] Report saved to database successfully with ID:', lead.id);
+      }
     } else {
-      console.log('[CALCULATOR REPORT] Report saved to database successfully with ID:', lead.id);
+      console.log('[CALCULATOR REPORT] Skipping database save for temporary lead ID');
     }
     
     // Save file with proper naming

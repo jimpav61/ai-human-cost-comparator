@@ -7,10 +7,7 @@ import { toast } from "@/hooks/use-toast";
 import { useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { getSafeFileName } from "./hooks/report-generator/saveReport";
-import { JsPDFWithAutoTable } from "@/components/calculator/pdf/types";
 import { generatePDF } from "@/components/calculator/pdf";
-import { CalculationResults } from "@/hooks/calculator/types";
-import { SharedResults } from "@/components/calculator/shared/types";
 
 export const DocumentGenerator = ({ lead }: DocumentGeneratorProps) => {
   const [isLoading, setIsLoading] = useState(false);
@@ -42,19 +39,16 @@ export const DocumentGenerator = ({ lead }: DocumentGeneratorProps) => {
       // Report exists, generate PDF using the saved data
       console.log("Generating PDF from saved report data");
       
-      // Extract calculator data from the saved report and safely type cast
-      const calculatorResults = existingReport.calculator_results as Record<string, any>;
-      const calculatorInputs = existingReport.calculator_inputs as Record<string, any>;
+      // Extract calculator data from the saved report
+      const calculatorResults = existingReport.calculator_results;
+      const calculatorInputs = existingReport.calculator_inputs;
       
       console.log("Report calculator results:", calculatorResults);
       console.log("Report calculator inputs:", calculatorInputs);
       
-      // Format tier and AI type display names - safely access properties
-      const aiTier = typeof calculatorInputs === 'object' && calculatorInputs ? 
-                    (calculatorInputs.aiTier as string || 'growth') : 'growth';
-                    
-      const aiType = typeof calculatorInputs === 'object' && calculatorInputs ? 
-                   (calculatorInputs.aiType as string || 'chatbot') : 'chatbot';
+      // Format tier and AI type display names
+      const aiTier = calculatorInputs?.aiTier || 'growth';
+      const aiType = calculatorInputs?.aiType || 'chatbot';
       
       const tierName = aiTier === 'starter' ? 'Starter Plan' : 
                       aiTier === 'growth' ? 'Growth Plan' : 
@@ -66,36 +60,6 @@ export const DocumentGenerator = ({ lead }: DocumentGeneratorProps) => {
                             aiType === 'both' ? 'Text & Basic Voice' : 
                             aiType === 'both-premium' ? 'Text & Conversational Voice' : 'Text Only';
       
-      // Convert calculatorResults to the proper type for generatePDF
-      const typedResults: CalculationResults = {
-        aiCostMonthly: {
-          voice: Number(calculatorResults?.aiCostMonthly?.voice) || 0,
-          chatbot: Number(calculatorResults?.aiCostMonthly?.chatbot) || 0,
-          total: Number(calculatorResults?.aiCostMonthly?.total) || 0,
-          setupFee: Number(calculatorResults?.aiCostMonthly?.setupFee) || 0
-        },
-        basePriceMonthly: Number(calculatorResults?.basePriceMonthly) || 0,
-        humanCostMonthly: Number(calculatorResults?.humanCostMonthly) || 0,
-        monthlySavings: Number(calculatorResults?.monthlySavings) || 0,
-        yearlySavings: Number(calculatorResults?.yearlySavings) || 0,
-        savingsPercentage: Number(calculatorResults?.savingsPercentage) || 0,
-        breakEvenPoint: {
-          voice: Number(calculatorResults?.breakEvenPoint?.voice) || 0,
-          chatbot: Number(calculatorResults?.breakEvenPoint?.chatbot) || 0
-        },
-        humanHours: {
-          dailyPerEmployee: Number(calculatorResults?.humanHours?.dailyPerEmployee) || 0,
-          weeklyTotal: Number(calculatorResults?.humanHours?.weeklyTotal) || 0,
-          monthlyTotal: Number(calculatorResults?.humanHours?.monthlyTotal) || 0,
-          yearlyTotal: Number(calculatorResults?.humanHours?.yearlyTotal) || 0
-        },
-        annualPlan: Number(calculatorResults?.annualPlan) || 0
-      };
-      
-      // Safely get the call volume
-      const callVolume = typeof calculatorInputs === 'object' && calculatorInputs ? 
-                        Number(calculatorInputs.callVolume) || 0 : 0;
-      
       // Generate the PDF from the saved report data
       const doc = generatePDF({
         contactInfo: existingReport.contact_name || 'Valued Client',
@@ -104,8 +68,8 @@ export const DocumentGenerator = ({ lead }: DocumentGeneratorProps) => {
         phoneNumber: existingReport.phone_number || '',
         industry: lead.industry || 'Other',
         employeeCount: Number(lead.employee_count) || 5,
-        results: typedResults,
-        additionalVoiceMinutes: callVolume,
+        results: calculatorResults,
+        additionalVoiceMinutes: Number(calculatorInputs?.callVolume) || 0,
         includedVoiceMinutes: aiTier === 'starter' ? 0 : 600,
         businessSuggestions: [
           {
