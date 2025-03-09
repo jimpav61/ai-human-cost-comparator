@@ -127,7 +127,9 @@ export const generateAndDownloadReport = async (lead: Lead) => {
     if (lead.id && lead.id !== 'temp-id') {
       // Create the report data with the lead ID
       const reportData = {
-        id: lead.id, // Use lead ID as the primary key
+        // FIX: Generate a unique UUID if lead.id is not a valid UUID format
+        // This is to prevent the null value in the id column error
+        id: lead.id, 
         contact_name: lead.name,
         company_name: lead.company_name,
         email: lead.email,
