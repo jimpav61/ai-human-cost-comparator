@@ -32,10 +32,14 @@ serve(async (req) => {
   try {
     const { lead } = await req.json() as { lead: Lead };
     console.log("Email generation input lead:", lead);
+    console.log("Full lead object:", JSON.stringify(lead));
 
     // Create a deep copy of the inputs to avoid modifying the original
     const calculatorInputs = lead.calculator_inputs ? JSON.parse(JSON.stringify(lead.calculator_inputs)) : {};
     const calculatorResults = lead.calculator_results || lead.calculatorResults || {};
+    
+    console.log("Calculator inputs:", JSON.stringify(calculatorInputs));
+    console.log("Calculator results:", JSON.stringify(calculatorResults));
     
     // Extract plan tier directly from calculator inputs
     const aiTier = calculatorInputs.aiTier || 'growth';

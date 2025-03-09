@@ -22,9 +22,17 @@ export const CalculatorOptionsTab = ({
   calculationResults,
   safeFormatNumber
 }: CalculatorOptionsTabProps) => {
-  // Ensure we have a valid tier value
+  // Ensure we have a valid tier value and callVolume is a number
   const currentTier = calculatorInputs?.aiTier || 'starter';
   const currentAIType = calculatorInputs?.aiType || 'chatbot';
+  
+  // Ensure callVolume is a number
+  let currentCallVolume = calculatorInputs?.callVolume;
+  if (typeof currentCallVolume === 'string') {
+    currentCallVolume = parseInt(currentCallVolume, 10) || 0;
+  } else if (typeof currentCallVolume !== 'number') {
+    currentCallVolume = 0;
+  }
   
   // Handle changes to AI tier to ensure AI type stays consistent
   useEffect(() => {
@@ -80,7 +88,7 @@ export const CalculatorOptionsTab = ({
   const volumeOptions = Array.from({ length: 21 }, (_, i) => i * 50);
   
   // Calculate the additional voice cost
-  const callVolume = calculatorInputs?.callVolume || 0;
+  const callVolume = currentCallVolume || 0;
   const additionalVoiceCost = callVolume * 0.12;
   const includedVoiceMinutes = getIncludedVoiceMinutes();
   
@@ -117,6 +125,13 @@ export const CalculatorOptionsTab = ({
     
     // Update the AI type
     handleCalculatorInputChange('aiType', newType);
+  };
+  
+  // Handle call volume change - ensure it's stored as a number
+  const handleCallVolumeChange = (value: string) => {
+    const numericValue = parseInt(value, 10) || 0;
+    console.log(`Changing call volume from ${callVolume} to ${numericValue}`);
+    handleCalculatorInputChange('callVolume', numericValue);
   };
 
   return (
@@ -231,8 +246,8 @@ export const CalculatorOptionsTab = ({
           <div className="space-y-2">
             <Label htmlFor="callVolume" className="text-sm font-medium">Additional Voice Minutes</Label>
             <Select
-              value={(calculatorInputs?.callVolume || 0).toString()}
-              onValueChange={(value) => handleCalculatorInputChange('callVolume', Number(value))}
+              value={callVolume.toString()}
+              onValueChange={handleCallVolumeChange}
               disabled={currentTier === 'starter'}
             >
               <SelectTrigger className="w-full">

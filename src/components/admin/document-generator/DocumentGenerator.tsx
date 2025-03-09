@@ -173,6 +173,7 @@ export const DocumentGenerator = ({ lead }: DocumentGeneratorProps) => {
       setIsProposalLoading(true);
       console.log("---------- ADMIN PROPOSAL DOWNLOAD ATTEMPT ----------");
       console.log("Generating proposal for lead ID:", lead.id);
+      console.log("Complete lead object:", JSON.stringify(lead));
       
       // Make sure we have the proper SUPABASE_URL for the edge function
       const supabaseUrl = import.meta.env.VITE_SUPABASE_URL || "https://ujyhmchmjzlmsimtrtor.supabase.co";
@@ -182,46 +183,63 @@ export const DocumentGenerator = ({ lead }: DocumentGeneratorProps) => {
       const functionUrl = `${supabaseUrl}/functions/v1/generate-proposal`;
       console.log(`Using Supabase URL: ${functionUrl}`);
       
-      const response = await fetch(
-        functionUrl,
-        {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-            "Authorization": `Bearer ${supabaseAnonKey}`
-          },
-          body: JSON.stringify({ lead })
-        }
-      );
-      
-      if (!response.ok) {
-        const errorText = await response.text();
-        console.error("Error response from edge function:", errorText);
-        let errorMessage = "Failed to generate proposal";
+      // Ensure calculator_inputs exists and callVolume is a number
+      if (lead.calculator_inputs) {
+        // Make a deep copy to avoid reference issues
+        const sanitizedLead = JSON.parse(JSON.stringify(lead));
         
-        try {
-          // Try to parse as JSON
-          const errorJson = JSON.parse(errorText);
-          if (errorJson.error) {
-            errorMessage = errorJson.error;
+        // Check if callVolume exists in calculator_inputs and ensure it's a number
+        if (sanitizedLead.calculator_inputs.callVolume !== undefined) {
+          if (typeof sanitizedLead.calculator_inputs.callVolume === 'string') {
+            sanitizedLead.calculator_inputs.callVolume = parseInt(sanitizedLead.calculator_inputs.callVolume, 10) || 0;
           }
-        } catch (parseError) {
-          // If parsing fails, use the raw text (limited)
-          errorMessage = errorText.substring(0, 100);
         }
         
-        throw new Error(errorMessage);
+        console.log("Sanitized lead for proposal generation:", JSON.stringify(sanitizedLead));
+        
+        const response = await fetch(
+          functionUrl,
+          {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json",
+              "Authorization": `Bearer ${supabaseAnonKey}`
+            },
+            body: JSON.stringify({ lead: sanitizedLead })
+          }
+        );
+        
+        if (!response.ok) {
+          const errorText = await response.text();
+          console.error("Error response from edge function:", errorText);
+          let errorMessage = "Failed to generate proposal";
+          
+          try {
+            // Try to parse as JSON
+            const errorJson = JSON.parse(errorText);
+            if (errorJson.error) {
+              errorMessage = errorJson.error;
+            }
+          } catch (parseError) {
+            // If parsing fails, use the raw text (limited)
+            errorMessage = errorText.substring(0, 100);
+          }
+          
+          throw new Error(errorMessage);
+        }
+        
+        // Get the response as JSON
+        const result = await response.json();
+        console.log("Proposal generated successfully:", result.message);
+        
+        toast({
+          title: "Proposal Sent",
+          description: "The proposal has been sent to the client's email.",
+          duration: 1000,
+        });
+      } else {
+        throw new Error("Calculator inputs not found in lead data");
       }
-      
-      // Get the response as JSON
-      const result = await response.json();
-      console.log("Proposal generated successfully:", result.message);
-      
-      toast({
-        title: "Proposal Sent",
-        description: "The proposal has been sent to the client's email.",
-        duration: 1000,
-      });
       
     } catch (error) {
       console.error("Error generating proposal:", error);
