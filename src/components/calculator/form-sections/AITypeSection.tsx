@@ -1,4 +1,3 @@
-
 import React, { useEffect } from 'react';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { toast } from "@/components/ui/use-toast";
@@ -25,6 +24,7 @@ export const AITypeSection: React.FC<AITypeSectionProps> = ({
       toast({
         title: "AI Type Updated",
         description: "Starter Plan only supports text capabilities.",
+        duration: 1000,
       });
     }
     // If on premium plan and using basic voice features, upgrade to premium voice
@@ -35,6 +35,7 @@ export const AITypeSection: React.FC<AITypeSectionProps> = ({
         toast({
           title: "AI Type Enhanced",
           description: "Your voice capabilities have been upgraded to Conversational Voice with Premium Plan.",
+          duration: 1000,
         });
       } 
       else if (aiType === 'both') {
@@ -43,18 +44,32 @@ export const AITypeSection: React.FC<AITypeSectionProps> = ({
         toast({
           title: "AI Type Enhanced",
           description: "Your voice capabilities have been upgraded to Conversational Voice with Premium Plan.",
+          duration: 1000,
         });
       }
     }
     // If downgraded from premium and using premium features, downgrade features
-    else if (aiTier === 'growth' && (aiType === 'conversationalVoice' || aiType === 'both-premium')) {
-      const newType = aiType === 'conversationalVoice' ? 'voice' : 'both';
-      console.log('Downgrading from premium to growth, changing AI type from', aiType, 'to', newType);
-      handleAITypeChange(newType);
-      toast({
-        title: "AI Type Adjusted",
-        description: "Voice capabilities have been adjusted to match your Growth Plan.",
-      });
+    else if (aiTier === 'growth') {
+      // Crucial fix: ensure growth tier plan has appropriate AI type
+      if (aiType === 'chatbot') {
+        console.log('On growth plan with chatbot only, upgrading to both (text & basic voice)');
+        handleAITypeChange('both');
+        toast({
+          title: "AI Type Enhanced",
+          description: "Growth Plan includes both Text & Basic Voice capabilities.",
+          duration: 1000,
+        });
+      }
+      else if (aiType === 'conversationalVoice' || aiType === 'both-premium') {
+        const newType = aiType === 'conversationalVoice' ? 'voice' : 'both';
+        console.log('Downgrading from premium to growth, changing AI type from', aiType, 'to', newType);
+        handleAITypeChange(newType);
+        toast({
+          title: "AI Type Adjusted",
+          description: "Voice capabilities have been adjusted to match your Growth Plan.",
+          duration: 1000,
+        });
+      }
     }
   }, [aiTier, aiType, handleAITypeChange]);
   
@@ -68,6 +83,7 @@ export const AITypeSection: React.FC<AITypeSectionProps> = ({
       toast({
         title: "Plan Upgrade Required",
         description: "Conversational Voice requires Premium Plan. Upgrading your selection.",
+        duration: 1000,
       });
     }
     
@@ -77,6 +93,7 @@ export const AITypeSection: React.FC<AITypeSectionProps> = ({
       toast({
         title: "Plan Upgrade Required",
         description: "Voice capabilities require Growth Plan or higher. Upgrading your selection.",
+        duration: 1000,
       });
     }
     

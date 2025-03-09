@@ -49,6 +49,11 @@ export const CalculatorOptionsTab = ({
         console.log("CalculatorOptionsTab: Downgraded to growth, changing to basic voice features");
         handleCalculatorInputChange('aiType', 'both');
       }
+      // Important fix: Make sure growth plan has appropriate capabilities (at least both)
+      else if (currentAIType === 'chatbot') {
+        console.log("CalculatorOptionsTab: On growth plan, enhancing to text & basic voice");
+        handleCalculatorInputChange('aiType', 'both');
+      }
     }
     // If downgraded to starter, force chatbot
     else if (currentTier === 'starter') {
