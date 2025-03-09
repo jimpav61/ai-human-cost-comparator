@@ -19,14 +19,13 @@ const canGenerateReport = (lead: Lead): boolean => {
 };
 
 /**
- * Shared utility function that generates and downloads a PDF report
- * for a lead using the same generator regardless of whether it's called
- * from the frontend or admin panel
+ * Generate and save a new report from the calculator results
+ * This is only used from the frontend calculator
  */
 export const generateAndDownloadReport = async (lead: Lead) => {
   try {
-    console.log('[SHARED REPORT] Generating report for lead:', lead);
-    console.log('[SHARED REPORT] Lead ID:', lead.id);
+    console.log('[CALCULATOR REPORT] Generating report for lead:', lead);
+    console.log('[CALCULATOR REPORT] Lead ID:', lead.id);
     
     // Check if lead exists and has required data
     if (!lead || !lead.id) {
@@ -37,18 +36,6 @@ export const generateAndDownloadReport = async (lead: Lead) => {
       throw new Error("This lead has no calculator results. Please complete the calculator first.");
     }
 
-    // First check if there's a saved report in the database using ONLY the exact lead ID
-    console.log('[SHARED REPORT] Checking for existing saved report for lead ID:', lead.id);
-    const { data: existingReport, error: reportError } = await supabase
-      .from('generated_reports')
-      .select('*')
-      .eq('id', lead.id)
-      .maybeSingle();
-      
-    if (reportError) {
-      console.error('[SHARED REPORT] Error fetching existing report:', reportError);
-    }
-    
     // Create a safely typed CalculationResults object from the lead data
     const rawCalculatorResults = lead.calculator_results as unknown as Record<string, any>;
     const calculatorInputs = lead.calculator_inputs as unknown as Record<string, any>;
@@ -138,7 +125,7 @@ export const generateAndDownloadReport = async (lead: Lead) => {
     
     // Save report to database using the lead ID as the exact identifier
     const reportData = {
-      id: lead.id, // CRITICAL: Use lead ID as report ID for exact lookup
+      id: lead.id, // Use lead ID as report ID for exact lookup
       contact_name: lead.name,
       company_name: lead.company_name,
       email: lead.email,
@@ -148,18 +135,18 @@ export const generateAndDownloadReport = async (lead: Lead) => {
       report_date: new Date().toISOString()
     };
     
-    console.log('[SHARED REPORT] Saving report to database with ID:', reportData.id);
+    console.log('[CALCULATOR REPORT] Saving report to database with ID:', reportData.id);
     
-    // Save to database using upsert to ensure we don't duplicate
+    // Save to database using upsert 
     const { error } = await supabase
       .from('generated_reports')
       .upsert([reportData as any]);
       
     if (error) {
-      console.error('[SHARED REPORT] Error saving report to database:', error);
+      console.error('[CALCULATOR REPORT] Error saving report to database:', error);
       throw new Error(`Failed to save report: ${error.message}`);
     } else {
-      console.log('[SHARED REPORT] Report saved to database successfully with ID:', lead.id);
+      console.log('[CALCULATOR REPORT] Report saved to database successfully with ID:', lead.id);
     }
     
     // Save file with proper naming
@@ -168,7 +155,7 @@ export const generateAndDownloadReport = async (lead: Lead) => {
     
     return true;
   } catch (error) {
-    console.error('[SHARED REPORT] Report generation error:', error);
+    console.error('[CALCULATOR REPORT] Report generation error:', error);
     toast({
       title: "Error",
       description: `Failed to generate report: ${error instanceof Error ? error.message : 'Unknown error'}`,
