@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from "react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
@@ -33,6 +34,8 @@ export const EditReportDialog = ({ isOpen, onClose, lead, onSave }: EditReportDi
     if (leadCopy.calculator_results?.aiCostMonthly?.voice > 0) {
       // Calculate voice minutes from the voice cost (cost is $0.12 per minute)
       existingCallVolume = Math.ceil(leadCopy.calculator_results.aiCostMonthly.voice / 0.12);
+      // Round to nearest 100
+      existingCallVolume = Math.ceil(existingCallVolume / 100) * 100;
     }
     
     // Use the existing callVolume from calculator_inputs if it exists, otherwise use the calculated value
@@ -61,6 +64,8 @@ export const EditReportDialog = ({ isOpen, onClose, lead, onSave }: EditReportDi
       if (leadCopy.calculator_results?.aiCostMonthly?.voice > 0) {
         // Calculate voice minutes from the voice cost (cost is $0.12 per minute)
         existingCallVolume = Math.ceil(leadCopy.calculator_results.aiCostMonthly.voice / 0.12);
+        // Round to nearest 100
+        existingCallVolume = Math.ceil(existingCallVolume / 100) * 100;
       }
       
       // Use the existing callVolume from calculator_inputs if it exists, otherwise use the calculated value
@@ -75,7 +80,9 @@ export const EditReportDialog = ({ isOpen, onClose, lead, onSave }: EditReportDi
   
   // Handle changes to the voice minutes input
   const handleCallVolumeChange = (value: string) => {
-    const numValue = parseInt(value, 10) || 0;
+    // Parse as number and ensure it's a multiple of 100
+    let numValue = parseInt(value, 10) || 0;
+    numValue = Math.round(numValue / 100) * 100;
     
     setEditableLead(prev => ({
       ...prev,
@@ -240,6 +247,7 @@ export const EditReportDialog = ({ isOpen, onClose, lead, onSave }: EditReportDi
                   value={callVolume}
                   onChange={(e) => handleCallVolumeChange(e.target.value)}
                   min={0}
+                  step={100}
                   className="w-full"
                 />
                 <p className="text-xs text-gray-500 mt-1">
