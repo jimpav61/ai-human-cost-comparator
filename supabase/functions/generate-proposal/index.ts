@@ -123,6 +123,8 @@ function generateProfessionalProposal(lead) {
   const calculatorInputs = lead.calculator_inputs || {};
   const calculatorResults = lead.calculator_results || {};
   
+  console.log("Proposal generation calculator inputs:", JSON.stringify(calculatorInputs));
+  
   // Determine AI plan details
   const aiTier = (calculatorInputs.aiTier || '').toLowerCase();
   const tierName = aiTier === 'starter' ? 'Starter Plan' : 
@@ -151,16 +153,38 @@ function generateProfessionalProposal(lead) {
                               aiTier === 'growth' ? 600 : 
                               aiTier === 'premium' ? 600 : 600;
   
-  // Parse additional voice minutes from input data
+  // Parse additional voice minutes from input data - FIXED EXTRACTION
   let additionalVoiceMinutes = 0;
+  
+  // IMPORTANT: Enhanced logging and checking of call volume data
+  console.log("Original callVolume value:", calculatorInputs.callVolume);
+  console.log("Type of callVolume:", typeof calculatorInputs.callVolume);
+  
+  // Check all possible places where call volume could be stored
   if (calculatorInputs.callVolume !== undefined) {
+    // Direct property access
     if (typeof calculatorInputs.callVolume === 'string') {
       additionalVoiceMinutes = parseInt(calculatorInputs.callVolume, 10) || 0;
     } else if (typeof calculatorInputs.callVolume === 'number') {
       additionalVoiceMinutes = calculatorInputs.callVolume;
     }
+  } else if (typeof lead.calculator_inputs === 'string') {
+    // Try to parse from string if stored as JSON string
+    try {
+      const parsedInputs = JSON.parse(lead.calculator_inputs);
+      if (parsedInputs && parsedInputs.callVolume) {
+        if (typeof parsedInputs.callVolume === 'string') {
+          additionalVoiceMinutes = parseInt(parsedInputs.callVolume, 10) || 0;
+        } else if (typeof parsedInputs.callVolume === 'number') {
+          additionalVoiceMinutes = parsedInputs.callVolume;
+        }
+      }
+    } catch (e) {
+      console.error("Error parsing calculator_inputs:", e);
+    }
   }
-  console.log("Additional voice minutes from input:", additionalVoiceMinutes);
+  
+  console.log("Extracted additional voice minutes:", additionalVoiceMinutes);
   
   // Calculate voice cost - no extra minutes for starter tier
   const voiceCost = aiTier !== 'starter' && additionalVoiceMinutes > 0 ? additionalVoiceMinutes * 0.12 : 0;
@@ -752,3 +776,4 @@ startxref
     return new Intl.NumberFormat('en-US').format(value);
   }
 }
+
