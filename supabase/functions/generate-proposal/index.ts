@@ -154,13 +154,21 @@ function generateProfessionalProposal(lead) {
                               aiTier === 'growth' ? 600 : 
                               aiTier === 'premium' ? 1200 : 600;
   
-  // FIX: Ensure additional voice minutes are properly calculated
-  const additionalVoiceMinutes = Number(calculatorInputs.callVolume) || 0;
-  // Only calculate extra minutes if additionalVoiceMinutes is greater than included minutes
-  const extraVoiceMinutes = (aiTier !== 'starter' && additionalVoiceMinutes > includedVoiceMinutes) 
-    ? additionalVoiceMinutes - includedVoiceMinutes 
-    : 0;
-  const voiceCost = extraVoiceMinutes * 0.12;
+  // IMPORTANT FIX: Properly get additional voice minutes from input data
+  // Make sure to convert to number if it's a string
+  let additionalVoiceMinutes = 0;
+  if (calculatorInputs.callVolume !== undefined) {
+    // First ensure it's a number
+    if (typeof calculatorInputs.callVolume === 'string') {
+      additionalVoiceMinutes = parseInt(calculatorInputs.callVolume, 10) || 0;
+    } else if (typeof calculatorInputs.callVolume === 'number') {
+      additionalVoiceMinutes = calculatorInputs.callVolume;
+    }
+  }
+  console.log("Additional voice minutes from input:", additionalVoiceMinutes);
+  
+  // Calculate voice cost - no extra minutes for starter tier
+  const voiceCost = aiTier !== 'starter' && additionalVoiceMinutes > 0 ? additionalVoiceMinutes * 0.12 : 0;
   
   // Total monthly cost with any additional voice minutes
   const totalMonthlyCost = monthlyPrice + voiceCost;
@@ -182,7 +190,6 @@ function generateProfessionalProposal(lead) {
     monthlyPrice,
     includedVoiceMinutes,
     additionalVoiceMinutes,
-    extraVoiceMinutes,
     voiceCost,
     totalMonthlyCost,
     setupFee
@@ -426,12 +433,10 @@ ${brandOrange} rg
     pdfContent += `
 (\\267 Additional voice minutes needed: ${additionalVoiceMinutes} minutes) Tj
 0 -20 Td`;
-  }
-
-  // Add extra minutes cost if applicable
-  if (extraVoiceMinutes > 0) {
+    
+    // Add cost of additional minutes
     pdfContent += `
-(\\267 Extra minutes: ${extraVoiceMinutes} minutes at $0.12/minute = $${(extraVoiceMinutes * 0.12).toFixed(2)}/month) Tj
+(\\267 Extra minutes cost: $${(additionalVoiceMinutes * 0.12).toFixed(2)}/month) Tj
 0 -20 Td`;
   }
 
@@ -511,10 +516,8 @@ ${brandOrange} rg
 200 0 Td
 (${formatNumber(additionalVoiceMinutes)} minutes) Tj
 -200 -25 Td`;
-  }
-
-  // Add extra voice cost if applicable
-  if (extraVoiceMinutes > 0) {
+    
+    // Add voice cost section if there are additional minutes
     pdfContent += `
 (Voice Minutes Cost:) Tj
 200 0 Td
