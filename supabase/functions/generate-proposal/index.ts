@@ -120,8 +120,27 @@ function generateProfessionalProposal(lead) {
   const employeeCount = lead.employee_count || '10';
   
   // Get calculator data if available
-  const calculatorInputs = lead.calculator_inputs || {};
-  const calculatorResults = lead.calculator_results || {};
+  let calculatorInputs = lead.calculator_inputs || {};
+  let calculatorResults = lead.calculator_results || {};
+  
+  // Ensure we have objects, not strings
+  if (typeof calculatorInputs === 'string') {
+    try {
+      calculatorInputs = JSON.parse(calculatorInputs);
+    } catch (e) {
+      console.error("Error parsing calculator_inputs:", e);
+      calculatorInputs = {};
+    }
+  }
+  
+  if (typeof calculatorResults === 'string') {
+    try {
+      calculatorResults = JSON.parse(calculatorResults);
+    } catch (e) {
+      console.error("Error parsing calculator_results:", e);
+      calculatorResults = {};
+    }
+  }
   
   console.log("Proposal generation calculator inputs:", JSON.stringify(calculatorInputs));
   
@@ -153,36 +172,19 @@ function generateProfessionalProposal(lead) {
                               aiTier === 'growth' ? 600 : 
                               aiTier === 'premium' ? 600 : 600;
   
-  // IMPORTANT: Enhanced logging and checking of call volume data
-  console.log("Original callVolume value:", calculatorInputs.callVolume);
-  console.log("Type of callVolume:", typeof calculatorInputs.callVolume);
-  
-  // Check all possible places where call volume could be stored
+  // DIRECTLY access call volume without any complex logic or fallbacks
+  // Set additionalVoiceMinutes to 0 by default if not found
   let additionalVoiceMinutes = 0;
+  
+  // Check for callVolume in calculator inputs
   if (calculatorInputs.callVolume !== undefined) {
-    // Direct property access
-    if (typeof calculatorInputs.callVolume === 'string') {
-      additionalVoiceMinutes = parseInt(calculatorInputs.callVolume, 10) || 0;
-    } else if (typeof calculatorInputs.callVolume === 'number') {
-      additionalVoiceMinutes = calculatorInputs.callVolume;
-    }
-  } else if (typeof lead.calculator_inputs === 'string') {
-    // Try to parse from string if stored as JSON string
-    try {
-      const parsedInputs = JSON.parse(lead.calculator_inputs);
-      if (parsedInputs && parsedInputs.callVolume) {
-        if (typeof parsedInputs.callVolume === 'string') {
-          additionalVoiceMinutes = parseInt(parsedInputs.callVolume, 10) || 0;
-        } else if (typeof parsedInputs.callVolume === 'number') {
-          additionalVoiceMinutes = parsedInputs.callVolume;
-        }
-      }
-    } catch (e) {
-      console.error("Error parsing calculator_inputs:", e);
-    }
+    // Handle both string and number formats
+    additionalVoiceMinutes = typeof calculatorInputs.callVolume === 'string' 
+      ? parseInt(calculatorInputs.callVolume, 10) || 0
+      : calculatorInputs.callVolume || 0;
   }
   
-  console.log("Extracted additional voice minutes:", additionalVoiceMinutes);
+  console.log("Additional voice minutes for PDF:", additionalVoiceMinutes);
   
   // Calculate voice cost - no extra minutes for starter tier
   const voiceCost = aiTier !== 'starter' && additionalVoiceMinutes > 0 ? additionalVoiceMinutes * 0.12 : 0;
@@ -437,18 +439,14 @@ ${brandOrange} rg
   if (aiTier !== 'starter') {
     pdfContent += `
 (\\267 Includes ${includedVoiceMinutes} voice minutes per month) Tj
+0 -20 Td
+(\\267 Additional voice minutes requested: ${additionalVoiceMinutes} minutes) Tj
 0 -20 Td`;
     
-    // Add additional voice minutes info
+    // Add additional voice minutes cost info
     if (additionalVoiceMinutes > 0) {
       pdfContent += `
-(\\267 Additional voice minutes requested: ${additionalVoiceMinutes} minutes) Tj
-0 -20 Td
-(\\267 Extra minutes cost: $${(additionalVoiceMinutes * 0.12).toFixed(2)}/month) Tj
-0 -20 Td`;
-    } else {
-      pdfContent += `
-(\\267 No additional voice minutes requested (0 minutes)) Tj
+(\\267 Additional minutes cost: $${(additionalVoiceMinutes * 0.12).toFixed(2)}/month) Tj
 0 -20 Td`;
     }
   } else {
@@ -523,10 +521,7 @@ ${brandOrange} rg
 (Included Voice Minutes:) Tj
 200 0 Td
 (${formatNumber(includedVoiceMinutes)} minutes/month) Tj
--200 -25 Td`;
-    
-    // Add additional voice minutes section (even when 0)
-    pdfContent += `
+-200 -25 Td
 (Additional Voice Minutes:) Tj
 200 0 Td
 (${formatNumber(additionalVoiceMinutes)} minutes) Tj
