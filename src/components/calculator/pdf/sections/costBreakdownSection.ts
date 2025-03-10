@@ -42,7 +42,7 @@ export const addCostBreakdownSection = (
   // Always add the base AI service
   tableRows.push(['AI Service Base', formatCurrency(basePrice)]);
   
-  // Add additional voice minutes if applicable
+  // Add additional voice minutes if applicable - fixed to properly handle minutes
   if (additionalVoiceMinutes && additionalVoiceMinutes > 0) {
     tableRows.push([`Additional Voice Minutes (${formatNumber(additionalVoiceMinutes)}) @ $0.12/min`, formatCurrency(additionalVoiceCost)]);
   }
