@@ -2,32 +2,18 @@
 import { JsPDFWithAutoTable } from '../types';
 import { formatCurrency, formatNumber } from '@/utils/formatters';
 import autoTable from 'jspdf-autotable';
+import { CalculationResults } from '@/hooks/calculator/types';
 
 export const addCostBreakdownSection = (
   doc: JsPDFWithAutoTable, 
   yPosition: number,
-  basePriceMonthly?: number,
-  additionalVoiceMinutes?: number,
-  totalMonthlyCost?: number
+  results: CalculationResults
 ): number => {
   console.log("Cost Breakdown values for PDF:", {
-    basePriceMonthly,
-    additionalVoiceMinutes,
-    totalMonthlyCost
+    basePriceMonthly: results.basePriceMonthly,
+    voiceCost: results.aiCostMonthly.voice,
+    totalMonthlyCost: results.aiCostMonthly.total
   });
-  
-  // Ensure we have valid values
-  const basePrice = typeof basePriceMonthly === 'number' ? basePriceMonthly : 229;
-  
-  // Calculate additional voice cost - but only for minutes BEYOND the included amount
-  // For admin panel, we need to explicitly calculate this 
-  const additionalVoiceCost = 
-    (typeof additionalVoiceMinutes === 'number' && additionalVoiceMinutes > 0) ? 
-    additionalVoiceMinutes * 0.12 : 0;
-  
-  // Use total cost if provided, otherwise calculate it
-  const totalCost = typeof totalMonthlyCost === 'number' ? 
-    totalMonthlyCost : (basePrice + additionalVoiceCost);
   
   // Cost Breakdown Section
   doc.setFontSize(16);
@@ -40,15 +26,16 @@ export const addCostBreakdownSection = (
   const tableRows = [];
   
   // Always add the base AI service
-  tableRows.push(['AI Service Base', formatCurrency(basePrice)]);
+  tableRows.push(['AI Service Base', formatCurrency(results.basePriceMonthly)]);
   
-  // Add additional voice minutes if applicable - only show when there are actual minutes
-  if (additionalVoiceMinutes && additionalVoiceMinutes > 0) {
-    tableRows.push([`Additional Voice Minutes (${formatNumber(additionalVoiceMinutes)}) @ $0.12/min`, formatCurrency(additionalVoiceCost)]);
+  // Add voice cost if applicable - only show when there's an actual voice cost
+  if (results.aiCostMonthly.voice > 0) {
+    // Don't recalculate - display the pre-calculated voice cost
+    tableRows.push(['Voice AI Service', formatCurrency(results.aiCostMonthly.voice)]);
   }
   
-  // Add total
-  tableRows.push(['Monthly Total', formatCurrency(totalCost)]);
+  // Add total - use the pre-calculated total
+  tableRows.push(['Monthly Total', formatCurrency(results.aiCostMonthly.total)]);
   
   // Create the breakdown table with same styling as frontend
   autoTable(doc, {
@@ -56,10 +43,9 @@ export const addCostBreakdownSection = (
     head: [['Item', 'Monthly Cost']],
     body: tableRows,
     headStyles: {
-      // Fix: explicitly define RGB color as a tuple with fixed length
       fillColor: [246, 82, 40] as [number, number, number],
       textColor: [255, 255, 255] as [number, number, number],
-      fontStyle: 'bold' as 'bold' // Type assertion to fix the same FontStyle issue
+      fontStyle: 'bold' as 'bold'
     },
     bodyStyles: {
       textColor: [0, 0, 0] as [number, number, number]
@@ -71,7 +57,7 @@ export const addCostBreakdownSection = (
       fontSize: 11
     },
     columnStyles: {
-      0: { fontStyle: 'normal' as 'normal' }, // Add type assertion for fontStyle
+      0: { fontStyle: 'normal' as 'normal' },
       1: { halign: 'right' as 'right' }
     },
     margin: { left: 20, right: 20 }

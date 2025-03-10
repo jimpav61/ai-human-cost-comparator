@@ -65,33 +65,6 @@ export const generatePDF = (params: GeneratePDFParams): JsPDFWithAutoTable => {
     };
   }
   
-  // Calculate the additional voice cost for correct total cost
-  const additionalVoiceCost = 
-    validatedParams.additionalVoiceMinutes > 0 ? 
-    validatedParams.additionalVoiceMinutes * 0.12 : 0;
-  
-  // Determine base price from tier if not explicitly provided
-  const basePriceMonthly = 
-    validatedParams.results.basePriceMonthly || 
-    (validatedParams.tierName.toLowerCase().includes('starter') ? 99 : 
-     validatedParams.tierName.toLowerCase().includes('growth') ? 229 : 
-     validatedParams.tierName.toLowerCase().includes('premium') ? 429 : 229);
-  
-  validatedParams.results.basePriceMonthly = basePriceMonthly;
-  
-  // Update aiCostMonthly with additional voice and base price
-  validatedParams.results.aiCostMonthly.voice = additionalVoiceCost;
-  validatedParams.results.aiCostMonthly.chatbot = basePriceMonthly;
-  validatedParams.results.aiCostMonthly.total = basePriceMonthly + additionalVoiceCost;
-  
-  // Ensure setup fee is set
-  if (!validatedParams.results.aiCostMonthly.setupFee) {
-    validatedParams.results.aiCostMonthly.setupFee = 
-      validatedParams.tierName.toLowerCase().includes('starter') ? 499 : 
-      validatedParams.tierName.toLowerCase().includes('growth') ? 749 : 
-      validatedParams.tierName.toLowerCase().includes('premium') ? 999 : 749;
-  }
-  
   // Add header section with contact info
   let currentY = addHeaderSection(
     doc, 
@@ -117,14 +90,8 @@ export const generatePDF = (params: GeneratePDFParams): JsPDFWithAutoTable => {
   // Add cost summary table
   currentY = addCostSummarySection(doc, currentY, validatedParams.results);
 
-  // Add cost breakdown
-  currentY = addCostBreakdownSection(
-    doc, 
-    currentY, 
-    validatedParams.results.basePriceMonthly,
-    validatedParams.additionalVoiceMinutes,
-    validatedParams.results.aiCostMonthly?.total
-  );
+  // Add cost breakdown - pass the entire results object
+  currentY = addCostBreakdownSection(doc, currentY, validatedParams.results);
 
   // Add implementation recommendations
   currentY = addRecommendationsSection(doc, currentY, validatedParams.businessSuggestions);
