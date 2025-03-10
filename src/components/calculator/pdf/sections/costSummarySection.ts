@@ -5,51 +5,61 @@ import autoTable from 'jspdf-autotable';
 import { CalculationResults } from '@/hooks/useCalculator';
 
 export const addCostSummarySection = (
-  doc: JsPDFWithAutoTable, 
-  yPosition: number,
+  doc: JsPDFWithAutoTable,
+  startY: number,
   results: CalculationResults
 ): number => {
-  doc.setFontSize(14);
-  doc.setTextColor(0, 0, 0);
-  doc.text("Cost Summary", 20, yPosition);
+  const pageWidth = doc.internal.pageSize.width;
+  const margin = 20;
+  const effectiveWidth = pageWidth - 2 * margin;
   
-  // Ensure we have numeric values for all cost fields, using fallbacks if any are missing
-  const humanCostMonthly = typeof results.humanCostMonthly === 'number' ? results.humanCostMonthly : 15000;
-  const aiCostMonthlyTotal = typeof results.aiCostMonthly?.total === 'number' ? results.aiCostMonthly.total : 229;
-  const setupFee = typeof results.aiCostMonthly?.setupFee === 'number' ? results.aiCostMonthly.setupFee : 749; // Default to Growth plan setup fee
-  const monthlySavings = typeof results.monthlySavings === 'number' ? results.monthlySavings : (humanCostMonthly - aiCostMonthlyTotal);
-  const yearlySavings = typeof results.yearlySavings === 'number' ? results.yearlySavings : (monthlySavings * 12);
+  doc.setFontSize(16);
+  doc.setTextColor(255, 67, 42); // Brand red color for headers
+  doc.text('Cost Comparison and Savings', margin, startY);
   
-  console.log("Cost summary section with validated values:", {
-    humanCostMonthly,
-    aiCostMonthlyTotal,
-    setupFee,
-    monthlySavings,
-    yearlySavings
-  });
+  startY += 15;
   
-  const costData = [
-    ["Current Human Resources Cost", formatCurrency(humanCostMonthly), formatCurrency(humanCostMonthly * 12), "N/A"],
-    ["ChatSites.ai Solution (Your Cost)", formatCurrency(aiCostMonthlyTotal), formatCurrency(aiCostMonthlyTotal * 12), formatCurrency(setupFee)],
-    ["Potential Savings", formatCurrency(monthlySavings), formatCurrency(yearlySavings), "N/A"]
-  ];
-
+  // Set table styling
+  const tableStyles = {
+    theme: 'grid',
+    styles: {
+      fontSize: 11,
+      cellPadding: 5,
+      overflow: 'linebreak',
+      halign: 'left',
+      valign: 'middle'
+    },
+    headStyles: {
+      fillColor: [245, 245, 245],
+      textColor: [80, 80, 80],
+      fontStyle: 'bold'
+    },
+    columnStyles: {
+      0: { cellWidth: effectiveWidth * 0.6 },
+      1: { cellWidth: effectiveWidth * 0.4, halign: 'right' }
+    },
+    margin: { left: margin, right: margin },
+    startY: startY
+  };
+  
+  // Create formatted cost data
+  const monthlySavings = formatCurrency(results.monthlySavings);
+  const yearlySavings = formatCurrency(results.yearlySavings);
+  const savingsPercentage = `${Math.round(results.savingsPercentage)}%`;
+  
+  // Setup cost comparison table with two columns
   autoTable(doc, {
-    startY: yPosition + 5,
-    head: [["Category", "Monthly Cost", "Annual Cost", "One-Time Setup Fee"]],
-    body: costData,
-    styles: { fontSize: 11 },
-    bodyStyles: { textColor: [0, 0, 0] },
-    alternateRowStyles: { fillColor: [240, 240, 240] },
-    willDrawCell: function(data) {
-      // Highlight the AI Solution row with a green background - matching frontend
-      if (data.row.index === 1 && data.section === 'body') {
-        data.cell.styles.fillColor = [226, 240, 217];
-        data.cell.styles.fontStyle = 'bold';
-      }
-    }
+    ...tableStyles,
+    body: [
+      ['Current Estimated Monthly Cost:', formatCurrency(results.humanCostMonthly)],
+      ['AI Solution Monthly Cost:', formatCurrency(results.aiCostMonthly.total)],
+      ['Monthly Savings:', { content: monthlySavings, styles: { textColor: [255, 67, 42] } }],
+      ['Annual Savings:', { content: yearlySavings, styles: { textColor: [255, 67, 42] } }],
+      ['Savings Percentage:', { content: savingsPercentage, styles: { textColor: [255, 67, 42] } }]
+    ]
   });
-
-  // Return the position after the table
-  return (doc as any).lastAutoTable.finalY + 15;
+  
+  // Get the new Y position after the table is drawn
+  const finalY = (doc.lastAutoTable?.finalY || startY) + 15;
+  return finalY;
 };
