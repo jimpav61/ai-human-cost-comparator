@@ -137,6 +137,7 @@ function generateProfessionalProposal(lead) {
     console.log("Found calculator results in lead:", JSON.stringify(calculatorResults));
   }
   
+  // Enhanced parsing for calculator inputs and results
   // Handle case where they might be strings
   if (typeof calculatorInputs === 'string') {
     try {
@@ -193,16 +194,34 @@ function generateProfessionalProposal(lead) {
   // Get voice details - different for each tier
   const includedVoiceMinutes = aiTier === 'starter' ? 0 : 600;
   
-  // Get additional voice minutes directly from calculator inputs
-  // Default to 0 if not specified or on starter plan
+  // Improved call volume extraction with better type handling
   let additionalVoiceMinutes = 0;
   
-  if (aiTier !== 'starter' && calculatorInputs.callVolume !== undefined) {
-    // Convert string to number if needed and ensure it's valid
-    if (typeof calculatorInputs.callVolume === 'string') {
-      additionalVoiceMinutes = parseInt(calculatorInputs.callVolume, 10) || 0;
-    } else if (typeof calculatorInputs.callVolume === 'number') {
-      additionalVoiceMinutes = calculatorInputs.callVolume;
+  if (aiTier !== 'starter') {
+    // First check if callVolume exists as a direct property
+    if ('callVolume' in calculatorInputs) {
+      // Handle different types - ensure we have a number
+      if (typeof calculatorInputs.callVolume === 'string') {
+        additionalVoiceMinutes = parseInt(calculatorInputs.callVolume, 10) || 0;
+      } else if (typeof calculatorInputs.callVolume === 'number') {
+        additionalVoiceMinutes = calculatorInputs.callVolume;
+      }
+    }
+    
+    // If we couldn't find callVolume directly, try to parse nested properties
+    if (additionalVoiceMinutes === 0 && typeof calculatorInputs === 'object') {
+      // Check for nested properties that might contain callVolume
+      Object.keys(calculatorInputs).forEach(key => {
+        const value = calculatorInputs[key];
+        if (typeof value === 'object' && value && 'callVolume' in value) {
+          const callVol = value.callVolume;
+          if (typeof callVol === 'string') {
+            additionalVoiceMinutes = parseInt(callVol, 10) || 0;
+          } else if (typeof callVol === 'number') {
+            additionalVoiceMinutes = callVol;
+          }
+        }
+      });
     }
   }
   
@@ -216,7 +235,7 @@ function generateProfessionalProposal(lead) {
     ? additionalVoiceMinutes * voiceCostPerMinute 
     : 0;
   
-  // Total monthly cost
+  // Total monthly cost - ensure voice cost is included
   const totalMonthlyCost = monthlyPrice + voiceCost;
   
   // Extract financial values from calculatorResults or use defaults
@@ -543,58 +562,58 @@ ${brandOrange} rg
 0 -30 Td
 /F1 13 Tf
 (Monthly Base Price:) Tj
-200 0 Td
+190 0 Td
 ($${monthlyPrice.toFixed(2)}/month) Tj
--200 -25 Td
+-190 -25 Td
 (Setup and Onboarding Fee:) Tj
-200 0 Td
+190 0 Td
 ($${setupFee.toFixed(2)} one-time) Tj
--200 -25 Td`;
+-190 -25 Td`;
 
   // Handle voice minutes information clearly - different for starter vs other tiers
   if (aiTier === 'starter') {
     pdfContent += `
 (Voice Capabilities:) Tj
-200 0 Td
+190 0 Td
 (Not included in Starter Plan) Tj
--200 -25 Td`;
+-190 -25 Td`;
   } else {
     pdfContent += `
 (Included Voice Minutes:) Tj
-200 0 Td
+190 0 Td
 (${includedVoiceMinutes} minutes/month) Tj
--200 -25 Td`;
+-190 -25 Td`;
     
     // Explicit display of additional voice minutes with clear formatting
     if (additionalVoiceMinutes > 0) {
       pdfContent += `
 (Additional Voice Minutes:) Tj
-200 0 Td
+190 0 Td
 (${additionalVoiceMinutes} minutes @ $${voiceCostPerMinute.toFixed(2)}/minute) Tj
--200 -25 Td
+-190 -25 Td
 (Additional Voice Cost:) Tj
-200 0 Td
+190 0 Td
 ($${voiceCost.toFixed(2)}/month) Tj
--200 -25 Td`;
+-190 -25 Td`;
     } else {
       pdfContent += `
 (Additional Voice Minutes:) Tj
-200 0 Td
+190 0 Td
 (None requested) Tj
--200 -25 Td`;
+-190 -25 Td`;
     }
   }
 
   // Show total monthly cost with clear breakdown
   pdfContent += `
 (Total Monthly Investment:) Tj
-200 0 Td
+190 0 Td
 ($${totalMonthlyCost.toFixed(2)}/month) Tj
--200 -25 Td
+-190 -25 Td
 (Annual Investment:) Tj
-200 0 Td
+190 0 Td
 ($${(totalMonthlyCost * 10).toFixed(2)}/year (2 months free with annual plan)) Tj
--200 -45 Td
+-190 -45 Td
 
 /F2 18 Tf
 ${brandOrange} rg
@@ -603,31 +622,31 @@ ${brandOrange} rg
 0 -30 Td
 /F1 13 Tf
 (Current Estimated Monthly Cost:) Tj
-200 0 Td
+190 0 Td
 (${formatCurrency(humanCostMonthly)}/month) Tj
--200 -25 Td
+-190 -25 Td
 (AI Solution Monthly Cost:) Tj
-200 0 Td
+190 0 Td
 (${formatCurrency(totalMonthlyCost)}/month) Tj
--200 -25 Td
+-190 -25 Td
 (Monthly Savings:) Tj
-200 0 Td
+190 0 Td
 ${brandOrange} rg
 (${formatCurrency(monthlySavings)}/month) Tj
 0 0 0 rg
--200 -25 Td
+-190 -25 Td
 (Annual Savings:) Tj
-200 0 Td
+190 0 Td
 ${brandOrange} rg
 (${formatCurrency(yearlySavings)}/year) Tj
 0 0 0 rg
--200 -25 Td
+-190 -25 Td
 (Savings Percentage:) Tj
-200 0 Td
+190 0 Td
 ${brandOrange} rg
 (${savingsPercentage}%) Tj
 0 0 0 rg
--200 -45 Td
+-190 -45 Td
 
 /F2 18 Tf
 ${brandOrange} rg
