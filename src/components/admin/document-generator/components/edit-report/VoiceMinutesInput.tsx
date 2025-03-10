@@ -1,5 +1,5 @@
 
-import React from "react";
+import React, { useEffect } from "react";
 import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
 
@@ -12,8 +12,11 @@ export const VoiceMinutesInput = ({ value, onChange }: VoiceMinutesInputProps) =
   // Ensure we always have a numeric value
   const safeValue = typeof value === 'number' ? value : 0;
   
-  console.log("VoiceMinutesInput rendering with value:", safeValue);
-  
+  useEffect(() => {
+    console.log("VoiceMinutesInput mounted with value:", value);
+    console.log("Type of value:", typeof value);
+  }, [value]);
+
   return (
     <div className="grid grid-cols-4 items-center gap-4">
       <Label htmlFor="callVolume" className="col-span-1">
@@ -36,3 +39,4 @@ export const VoiceMinutesInput = ({ value, onChange }: VoiceMinutesInputProps) =
     </div>
   );
 };
+

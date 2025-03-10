@@ -1,12 +1,11 @@
+
 import { Lead } from "@/types/leads";
 import { CalculatorInputs } from "@/hooks/calculator/types";
 
-/**
- * Initializes the lead data for the report editor, ensuring all required fields exist
- * with proper default values and calculated values where necessary
- */
 export function initializeLeadData(lead: Lead): Lead {
   console.log("Initializing lead data for report editor:", lead);
+  console.log("Initial calculator_inputs:", lead.calculator_inputs);
+  
   const leadCopy: Lead = JSON.parse(JSON.stringify(lead));
   
   if (!leadCopy.calculator_inputs) {
@@ -17,11 +16,11 @@ export function initializeLeadData(lead: Lead): Lead {
   leadCopy.calculator_inputs.aiTier = leadCopy.calculator_inputs.aiTier || 'growth';
   leadCopy.calculator_inputs.aiType = leadCopy.calculator_inputs.aiType || 'both';
   
-  // Ensure callVolume is a number
+  // Ensure callVolume is a number and exists
   if (typeof leadCopy.calculator_inputs.callVolume === 'string') {
     leadCopy.calculator_inputs.callVolume = parseInt(leadCopy.calculator_inputs.callVolume, 10) || 0;
     console.log("Converted callVolume from string to number:", leadCopy.calculator_inputs.callVolume);
-  } else if (typeof leadCopy.calculator_inputs.callVolume !== 'number') {
+  } else if (leadCopy.calculator_inputs.callVolume === undefined || leadCopy.calculator_inputs.callVolume === null) {
     // If callVolume exists in results, try to extract it
     if (leadCopy.calculator_results?.aiCostMonthly?.voice > 0) {
       // Calculate voice minutes from the voice cost (cost is $0.12 per minute)
@@ -40,3 +39,4 @@ export function initializeLeadData(lead: Lead): Lead {
   console.log("Lead initialized with callVolume:", leadCopy.calculator_inputs.callVolume);
   return leadCopy;
 }
+

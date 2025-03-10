@@ -18,7 +18,7 @@ interface EditReportDialogProps {
 
 export const EditReportDialog = ({ isOpen, onClose, lead, onSave }: EditReportDialogProps) => {
   console.log("EditReportDialog rendering with lead:", lead);
-  console.log("Lead callVolume:", lead.calculator_inputs?.callVolume);
+  console.log("Initial callVolume:", lead.calculator_inputs?.callVolume);
   
   const {
     editableLead,
@@ -29,7 +29,7 @@ export const EditReportDialog = ({ isOpen, onClose, lead, onSave }: EditReportDi
   } = useEditReportState(lead, onSave, onClose);
   
   // Current values
-  const callVolume = editableLead.calculator_inputs?.callVolume || 0;
+  const callVolume = editableLead.calculator_inputs?.callVolume ?? 0;
   const aiTier = editableLead.calculator_inputs?.aiTier || 'growth';
   const aiType = editableLead.calculator_inputs?.aiType || 'both';
   
@@ -81,3 +81,4 @@ export const EditReportDialog = ({ isOpen, onClose, lead, onSave }: EditReportDi
     </Dialog>
   );
 };
+
