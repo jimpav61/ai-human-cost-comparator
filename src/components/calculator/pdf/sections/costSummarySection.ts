@@ -21,7 +21,6 @@ export const addCostSummarySection = (
   
   // Set table styling
   const tableStyles = {
-    theme: 'grid',
     styles: {
       fontSize: 11,
       cellPadding: 5,
