@@ -301,15 +301,15 @@ ${brandOrange} rg
 0 -25 Td
 /F1 12 Tf
 
-(• Reduction in operational costs by up to ${savingsPercentage}%) Tj
+(\\205 Reduction in operational costs by up to ${savingsPercentage}%) Tj
 0 -20 Td
-(• Estimated annual savings of $${formatNumber(yearlySavings)}) Tj
+(\\205 Estimated annual savings of $${formatNumber(yearlySavings)}) Tj
 0 -20 Td
-(• 24/7 customer service availability without additional staffing costs) Tj
+(\\205 24/7 customer service availability without additional staffing costs) Tj
 0 -20 Td
-(• Improved response times and consistency in customer communications) Tj
+(\\205 Improved response times and consistency in customer communications) Tj
 0 -20 Td
-(• Scalable solution that grows with your business needs) Tj
+(\\205 Scalable solution that grows with your business needs) Tj
 0 0 0 rg
 0 -40 Td
 /F2 16 Tf
@@ -368,17 +368,17 @@ ${brandOrange} rg
 0 -25 Td
 /F1 12 Tf
 
-(• Customized AI model trained on your business knowledge and processes) Tj
+(\\205 Customized AI model trained on your business knowledge and processes) Tj
 0 -20 Td
-(• Advanced natural language processing for accurate understanding of customer inquiries) Tj
+(\\205 Advanced natural language processing for accurate understanding of customer inquiries) Tj
 0 -20 Td
-(• ${aiTypeDisplay} interface for versatile customer engagement) Tj
+(\\205 ${aiTypeDisplay} interface for versatile customer engagement) Tj
 0 -20 Td
-(• Integration capabilities with your existing systems and workflows) Tj
+(\\205 Integration capabilities with your existing systems and workflows) Tj
 0 -20 Td
-(• Comprehensive analytics dashboard for performance monitoring) Tj
+(\\205 Comprehensive analytics dashboard for performance monitoring) Tj
 0 -20 Td
-(• Regular updates and continuous improvement of AI capabilities) Tj
+(\\205 Regular updates and continuous improvement of AI capabilities) Tj
 0 0 0 rg
 0 -40 Td
 /F2 16 Tf
@@ -387,21 +387,21 @@ ${brandOrange} rg
 0 0 0 rg
 0 -25 Td
 /F1 12 Tf
-(• ${tierName} AI Engine with ${aiTier === 'premium' ? 'advanced' : aiTier === 'growth' ? 'enhanced' : 'standard'} capabilities) Tj
+(\\205 ${tierName} AI Engine with ${aiTier === 'premium' ? 'advanced' : aiTier === 'growth' ? 'enhanced' : 'standard'} capabilities) Tj
 0 -20 Td
-(• ${aiTypeDisplay} Interface ${isVoiceEnabled ? 'with speech recognition and synthesis' : ''}) Tj
+(\\205 ${aiTypeDisplay} Interface ${isVoiceEnabled ? 'with speech recognition and synthesis' : ''}) Tj
 0 -20 Td
-${isVoiceEnabled ? `(• Includes ${includedVoiceMinutes} voice minutes per month)` : `(• Text-only capabilities)`} Tj
+${isVoiceEnabled ? `(\\205 Includes ${includedVoiceMinutes} voice minutes per month)` : `(\\205 Text-only capabilities)`} Tj
 0 -20 Td
-${additionalVoiceMinutes > 0 ? `(• Additional voice minutes needed: ${additionalVoiceMinutes} minutes)` : ``} Tj
+${additionalVoiceMinutes > 0 ? `(\\205 Additional voice minutes needed: ${additionalVoiceMinutes} minutes)` : ``} Tj
 0 -20 Td
-${extraVoiceMinutes > 0 ? `(• Extra minutes: ${extraVoiceMinutes} minutes at $0.12/minute = $${(extraVoiceMinutes * 0.12).toFixed(2)}/month)` : ``} Tj
+${extraVoiceMinutes > 0 ? `(\\205 Extra minutes: ${extraVoiceMinutes} minutes at $0.12/minute = $${(extraVoiceMinutes * 0.12).toFixed(2)}/month)` : ``} Tj
 0 -20 Td
-(• ${aiTier === 'premium' ? 'Unlimited' : '50,000+'} monthly text interactions) Tj
+(\\205 ${aiTier === 'premium' ? 'Unlimited' : '50,000+'} monthly text interactions) Tj
 0 -20 Td
-(• Secure cloud-based deployment with 99.9% uptime guarantee) Tj
+(\\205 Secure cloud-based deployment with 99.9% uptime guarantee) Tj
 0 -20 Td
-(• ${aiTier === 'premium' ? 'Priority' : 'Standard'} technical support and maintenance) Tj
+(\\205 ${aiTier === 'premium' ? 'Priority' : 'Standard'} technical support and maintenance) Tj
 0 -40 Td
 
 BT
@@ -412,15 +412,15 @@ ${brandOrange} rg
 0 0 0 rg
 0 -25 Td
 /F1 12 Tf
-(• Discovery and Planning: 1 week) Tj
+(\\205 Discovery and Planning: 1 week) Tj
 0 -20 Td
-(• Development and Customization: 2-3 weeks) Tj
+(\\205 Development and Customization: 2-3 weeks) Tj
 0 -20 Td
-(• Testing and Quality Assurance: 1 week) Tj
+(\\205 Testing and Quality Assurance: 1 week) Tj
 0 -20 Td
-(• Deployment and Integration: 1 week) Tj
+(\\205 Deployment and Integration: 1 week) Tj
 0 -20 Td
-(• Training and Knowledge Transfer: 1 week) Tj
+(\\205 Training and Knowledge Transfer: 1 week) Tj
 ET
 Q
 endstream
@@ -520,11 +520,11 @@ ${brandOrange} rg
 /F1 13 Tf
 (Based on the projected savings and implementation costs, your expected ROI timeline is:) Tj
 0 -30 Td
-(• Break-even Point: ${breakEvenPoint} months) Tj
+(\\205 Break-even Point: ${breakEvenPoint} months) Tj
 0 -25 Td
-(• First Year ROI: ${firstYearROI}%) Tj
+(\\205 First Year ROI: ${firstYearROI}%) Tj
 0 -25 Td
-(• Five-Year Total Savings: ${formatCurrency(fiveYearSavings)}) Tj
+(\\205 Five-Year Total Savings: ${formatCurrency(fiveYearSavings)}) Tj
 0 0 0 rg
 ET
 Q
@@ -555,41 +555,41 @@ ${brandOrange} rg
 (1. Discovery Workshop) Tj
 0 0 0 rg
 0 -20 Td
-(   • Detailed assessment of your current processes and requirements) Tj
+(   \\205 Detailed assessment of your current processes and requirements) Tj
 0 -20 Td
-(   • Identification of key integration points and customization needs) Tj
+(   \\205 Identification of key integration points and customization needs) Tj
 0 -20 Td
-(   • Development of implementation roadmap and timeline) Tj
+(   \\205 Development of implementation roadmap and timeline) Tj
 0 -30 Td
 ${brandOrange} rg
 (2. Development and Customization) Tj
 0 0 0 rg
 0 -20 Td
-(   • AI model training with your business-specific data) Tj
+(   \\205 AI model training with your business-specific data) Tj
 0 -20 Td
-(   • User interface customization aligned with your brand) Tj
+(   \\205 User interface customization aligned with your brand) Tj
 0 -20 Td
-(   • Integration with your existing systems and workflows) Tj
+(   \\205 Integration with your existing systems and workflows) Tj
 0 -30 Td
 ${brandOrange} rg
 (3. Testing and Deployment) Tj
 0 0 0 rg
 0 -20 Td
-(   • Comprehensive testing and quality assurance) Tj
+(   \\205 Comprehensive testing and quality assurance) Tj
 0 -20 Td
-(   • Phased deployment to minimize business disruption) Tj
+(   \\205 Phased deployment to minimize business disruption) Tj
 0 -20 Td
-(   • Performance monitoring and fine-tuning) Tj
+(   \\205 Performance monitoring and fine-tuning) Tj
 0 -30 Td
 ${brandOrange} rg
 (4. Training and Adoption) Tj
 0 0 0 rg
 0 -20 Td
-(   • User training and knowledge transfer) Tj
+(   \\205 User training and knowledge transfer) Tj
 0 -20 Td
-(   • Development of adoption strategy) Tj
+(   \\205 Development of adoption strategy) Tj
 0 -20 Td
-(   • Ongoing support and performance optimization) Tj
+(   \\205 Ongoing support and performance optimization) Tj
 
 0 -40 Td
 /F2 18 Tf
@@ -600,11 +600,11 @@ ${brandOrange} rg
 /F1 13 Tf
 (To proceed with implementing this AI solution for ${companyName}:) Tj
 0 -30 Td
-(• Schedule a demonstration of our ${tierName} solution) Tj
+(\\205 Schedule a demonstration of our ${tierName} solution) Tj
 0 -20 Td
-(• Finalize the proposal details and customization requirements) Tj
+(\\205 Finalize the proposal details and customization requirements) Tj
 0 -20 Td
-(• Sign agreement and schedule kickoff meeting) Tj
+(\\205 Sign agreement and schedule kickoff meeting) Tj
 0 0 0 rg
 0 -40 Td
 /F2 16 Tf
