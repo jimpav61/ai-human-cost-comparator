@@ -1,5 +1,5 @@
 
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -20,9 +20,33 @@ export const EditReportDialog = ({ isOpen, onClose, lead, onSave }: EditReportDi
   const [editableLead, setEditableLead] = useState<Lead>(() => JSON.parse(JSON.stringify(lead)));
   
   // Initialize calculator inputs if they don't exist
-  if (!editableLead.calculator_inputs) {
-    editableLead.calculator_inputs = {};
-  }
+  useEffect(() => {
+    if (isOpen) {
+      // Reset the editable lead whenever the dialog opens
+      const freshCopy = JSON.parse(JSON.stringify(lead));
+      
+      // Ensure calculator_inputs exists
+      if (!freshCopy.calculator_inputs) {
+        freshCopy.calculator_inputs = {};
+      }
+      
+      // Set default values if not present
+      if (!freshCopy.calculator_inputs.aiTier) {
+        freshCopy.calculator_inputs.aiTier = 'growth';
+      }
+      
+      if (!freshCopy.calculator_inputs.aiType) {
+        freshCopy.calculator_inputs.aiType = 'both';
+      }
+      
+      // Ensure callVolume exists and is a number
+      if (typeof freshCopy.calculator_inputs.callVolume !== 'number') {
+        freshCopy.calculator_inputs.callVolume = 0;
+      }
+      
+      setEditableLead(freshCopy);
+    }
+  }, [isOpen, lead]);
   
   // Handle changes to the voice minutes input
   const handleCallVolumeChange = (value: string) => {
@@ -181,15 +205,22 @@ export const EditReportDialog = ({ isOpen, onClose, lead, onSave }: EditReportDi
           
           {aiTier !== 'starter' && (aiType === 'voice' || aiType === 'conversationalVoice' || aiType === 'both' || aiType === 'both-premium') && (
             <div className="grid grid-cols-4 items-center gap-4">
-              <Label htmlFor="callVolume" className="col-span-1">Voice Minutes</Label>
-              <Input
-                id="callVolume"
-                type="number"
-                value={callVolume}
-                onChange={(e) => handleCallVolumeChange(e.target.value)}
-                min={0}
-                className="col-span-3"
-              />
+              <Label htmlFor="callVolume" className="col-span-1">
+                Additional Voice Minutes
+              </Label>
+              <div className="col-span-3">
+                <Input
+                  id="callVolume"
+                  type="number"
+                  value={callVolume}
+                  onChange={(e) => handleCallVolumeChange(e.target.value)}
+                  min={0}
+                  className="w-full"
+                />
+                <p className="text-xs text-gray-500 mt-1">
+                  Enter additional minutes beyond the 600 included with your plan
+                </p>
+              </div>
             </div>
           )}
         </div>
