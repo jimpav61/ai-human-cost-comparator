@@ -24,9 +24,9 @@ export const addCostSummarySection = (
     styles: {
       fontSize: 11,
       cellPadding: 5,
-      overflow: 'linebreak',
-      halign: 'left',
-      valign: 'middle'
+      overflow: 'linebreak' as 'linebreak',
+      halign: 'left' as 'left',
+      valign: 'middle' as 'middle'
     },
     headStyles: {
       fillColor: [245, 245, 245],
@@ -35,7 +35,7 @@ export const addCostSummarySection = (
     },
     columnStyles: {
       0: { cellWidth: effectiveWidth * 0.6 },
-      1: { cellWidth: effectiveWidth * 0.4, halign: 'right' }
+      1: { cellWidth: effectiveWidth * 0.4, halign: 'right' as 'right' }
     },
     margin: { left: margin, right: margin },
     startY: startY
