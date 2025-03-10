@@ -1,4 +1,3 @@
-
 import { Lead } from "@/types/leads";
 import { CalculatorInputs } from "@/hooks/calculator/types";
 
@@ -39,4 +38,3 @@ export function initializeLeadData(lead: Lead): Lead {
   console.log("Lead initialized with callVolume:", leadCopy.calculator_inputs.callVolume);
   return leadCopy;
 }
-

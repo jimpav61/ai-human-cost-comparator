@@ -39,4 +39,3 @@ export const VoiceMinutesInput = ({ value, onChange }: VoiceMinutesInputProps) =
     </div>
   );
 };
-

@@ -81,4 +81,3 @@ export const EditReportDialog = ({ isOpen, onClose, lead, onSave }: EditReportDi
     </Dialog>
   );
 };
-
