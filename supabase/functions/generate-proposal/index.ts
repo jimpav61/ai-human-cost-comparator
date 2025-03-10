@@ -189,7 +189,7 @@ function generateProfessionalProposal(lead) {
   });
   
   // Create an advanced multi-page PDF with proper sections and branding
-  const pdfContent = `
+  let pdfContent = `
 %PDF-1.7
 1 0 obj
 << /Type /Catalog
@@ -319,15 +319,15 @@ ${brandOrange} rg
 0 -25 Td
 /F1 12 Tf
 
-(• Reduction in operational costs by up to ${savingsPercentage}%) Tj
+(\\267 Reduction in operational costs by up to ${savingsPercentage}%) Tj
 0 -20 Td
-(• Estimated annual savings of $${formatNumber(yearlySavings)}) Tj
+(\\267 Estimated annual savings of $${formatNumber(yearlySavings)}) Tj
 0 -20 Td
-(• 24/7 customer service availability without additional staffing costs) Tj
+(\\267 24/7 customer service availability without additional staffing costs) Tj
 0 -20 Td
-(• Improved response times and consistency in customer communications) Tj
+(\\267 Improved response times and consistency in customer communications) Tj
 0 -20 Td
-(• Scalable solution that grows with your business needs) Tj
+(\\267 Scalable solution that grows with your business needs) Tj
 0 0 0 rg
 0 -40 Td
 /F2 16 Tf
@@ -386,17 +386,17 @@ ${brandOrange} rg
 0 -25 Td
 /F1 12 Tf
 
-(• Customized AI model trained on your business knowledge and processes) Tj
+(\\267 Customized AI model trained on your business knowledge and processes) Tj
 0 -20 Td
-(• Advanced natural language processing for accurate understanding of customer inquiries) Tj
+(\\267 Advanced natural language processing for accurate understanding of customer inquiries) Tj
 0 -20 Td
-(• ${aiTypeDisplay} interface for versatile customer engagement) Tj
+(\\267 ${aiTypeDisplay} interface for versatile customer engagement) Tj
 0 -20 Td
-(• Integration capabilities with your existing systems and workflows) Tj
+(\\267 Integration capabilities with your existing systems and workflows) Tj
 0 -20 Td
-(• Comprehensive analytics dashboard for performance monitoring) Tj
+(\\267 Comprehensive analytics dashboard for performance monitoring) Tj
 0 -20 Td
-(• Regular updates and continuous improvement of AI capabilities) Tj
+(\\267 Regular updates and continuous improvement of AI capabilities) Tj
 0 0 0 rg
 0 -40 Td
 /F2 16 Tf
@@ -405,21 +405,43 @@ ${brandOrange} rg
 0 0 0 rg
 0 -25 Td
 /F1 12 Tf
-(• ${tierName} AI Engine with ${aiTier === 'premium' ? 'advanced' : aiTier === 'growth' ? 'enhanced' : 'standard'} capabilities) Tj
+(\\267 ${tierName} AI Engine with ${aiTier === 'premium' ? 'advanced' : aiTier === 'growth' ? 'enhanced' : 'standard'} capabilities) Tj
 0 -20 Td
-(• ${aiTypeDisplay} Interface ${aiTier !== 'starter' ? 'with speech recognition and synthesis' : ''}) Tj
+(\\267 ${aiTypeDisplay} Interface ${aiTier !== 'starter' ? 'with speech recognition and synthesis' : ''}) Tj
+0 -20 Td`;
+
+  // Conditionally add voice minutes info based on tier
+  if (aiTier !== 'starter') {
+    pdfContent += `
+(\\267 Includes ${includedVoiceMinutes} voice minutes per month) Tj
+0 -20 Td`;
+  } else {
+    pdfContent += `
+(\\267 Text-only capabilities) Tj
+0 -20 Td`;
+  }
+
+  // Add additional voice minutes info if needed
+  if (additionalVoiceMinutes > 0 && aiTier !== 'starter') {
+    pdfContent += `
+(\\267 Additional voice minutes needed: ${additionalVoiceMinutes} minutes) Tj
+0 -20 Td`;
+  }
+
+  // Add extra minutes cost if applicable
+  if (extraVoiceMinutes > 0) {
+    pdfContent += `
+(\\267 Extra minutes: ${extraVoiceMinutes} minutes at $0.12/minute = $${(extraVoiceMinutes * 0.12).toFixed(2)}/month) Tj
+0 -20 Td`;
+  }
+
+  // Continue with the rest of the content
+  pdfContent += `
+(\\267 ${aiTier === 'premium' ? 'Unlimited' : '50,000+'} monthly text interactions) Tj
 0 -20 Td
-(• ${aiTier !== 'starter' ? 'Includes ' + includedVoiceMinutes + ' voice minutes per month' : 'Text-only capabilities'}) Tj
+(\\267 Secure cloud-based deployment with 99.9% uptime guarantee) Tj
 0 -20 Td
-${additionalVoiceMinutes > 0 && aiTier !== 'starter' ? '(• Additional voice minutes needed: ' + additionalVoiceMinutes + ' minutes)' : ''}
-0 -20 Td
-${extraVoiceMinutes > 0 ? '(• Extra minutes: ' + extraVoiceMinutes + ' minutes at $0.12/minute = $' + (extraVoiceMinutes * 0.12).toFixed(2) + '/month)' : ''}
-0 -20 Td
-(• ${aiTier === 'premium' ? 'Unlimited' : '50,000+'} monthly text interactions) Tj
-0 -20 Td
-(• Secure cloud-based deployment with 99.9% uptime guarantee) Tj
-0 -20 Td
-(• ${aiTier === 'premium' ? 'Priority' : 'Standard'} technical support and maintenance) Tj
+(\\267 ${aiTier === 'premium' ? 'Priority' : 'Standard'} technical support and maintenance) Tj
 0 -40 Td
 
 BT
@@ -430,15 +452,15 @@ ${brandOrange} rg
 0 0 0 rg
 0 -25 Td
 /F1 12 Tf
-(• Discovery and Planning: 1 week) Tj
+(\\267 Discovery and Planning: 1 week) Tj
 0 -20 Td
-(• Development and Customization: 2-3 weeks) Tj
+(\\267 Development and Customization: 2-3 weeks) Tj
 0 -20 Td
-(• Testing and Quality Assurance: 1 week) Tj
+(\\267 Testing and Quality Assurance: 1 week) Tj
 0 -20 Td
-(• Deployment and Integration: 1 week) Tj
+(\\267 Deployment and Integration: 1 week) Tj
 0 -20 Td
-(• Training and Knowledge Transfer: 1 week) Tj
+(\\267 Training and Knowledge Transfer: 1 week) Tj
 ET
 Q
 endstream
@@ -471,39 +493,37 @@ ${brandOrange} rg
 (Setup and Onboarding Fee:) Tj
 200 0 Td
 (${formatCurrency(setupFee)} one-time) Tj
--200 -25 Td
-`
-  
-  // Included Voice Minutes section (for non-starter plans)
-  const voiceMinutesSection = aiTier !== 'starter' ? 
-`(Included Voice Minutes:) Tj
+-200 -25 Td`;
+
+  // Add voice minutes info if not starter plan
+  if (aiTier !== 'starter') {
+    pdfContent += `
+(Included Voice Minutes:) Tj
 200 0 Td
 (${formatNumber(includedVoiceMinutes)} minutes/month) Tj
--200 -25 Td
-` : '';
+-200 -25 Td`;
+  }
 
-  // Additional voice minutes section (if any)
-  const additionalMinutesSection = additionalVoiceMinutes > 0 && aiTier !== 'starter' ?
-`(Additional Voice Minutes:) Tj
+  // Add additional voice minutes if applicable
+  if (additionalVoiceMinutes > 0 && aiTier !== 'starter') {
+    pdfContent += `
+(Additional Voice Minutes:) Tj
 200 0 Td
 (${formatNumber(additionalVoiceMinutes)} minutes) Tj
--200 -25 Td
-` : '';
+-200 -25 Td`;
+  }
 
-  // Voice minutes cost section (if any extra minutes)
-  const voiceCostSection = extraVoiceMinutes > 0 ?
-`(Voice Minutes Cost:) Tj
+  // Add extra voice cost if applicable
+  if (extraVoiceMinutes > 0) {
+    pdfContent += `
+(Voice Minutes Cost:) Tj
 200 0 Td
 (${formatCurrency(voiceCost)}/month) Tj
--200 -25 Td
-` : '';
+-200 -25 Td`;
+  }
 
-  // Combine the financial impact page content
-  const financialImpactContent = pdfContent + 
-    voiceMinutesSection +
-    additionalMinutesSection + 
-    voiceCostSection +
-`
+  // Continue with the rest of the financial section
+  pdfContent += `
 (Total Monthly Investment:) Tj
 200 0 Td
 (${formatCurrency(totalMonthlyCost)}/month) Tj
@@ -554,11 +574,11 @@ ${brandOrange} rg
 /F1 13 Tf
 (Based on the projected savings and implementation costs, your expected ROI timeline is:) Tj
 0 -30 Td
-(• Break-even Point: ${breakEvenPoint} months) Tj
+(\\267 Break-even Point: ${breakEvenPoint} months) Tj
 0 -25 Td
-(• First Year ROI: ${firstYearROI}%) Tj
+(\\267 First Year ROI: ${firstYearROI}%) Tj
 0 -25 Td
-(• Five-Year Total Savings: ${formatCurrency(fiveYearSavings)}) Tj
+(\\267 Five-Year Total Savings: ${formatCurrency(fiveYearSavings)}) Tj
 0 0 0 rg
 ET
 Q
@@ -589,41 +609,41 @@ ${brandOrange} rg
 (1. Discovery Workshop) Tj
 0 0 0 rg
 0 -20 Td
-(   • Detailed assessment of your current processes and requirements) Tj
+(   \\267 Detailed assessment of your current processes and requirements) Tj
 0 -20 Td
-(   • Identification of key integration points and customization needs) Tj
+(   \\267 Identification of key integration points and customization needs) Tj
 0 -20 Td
-(   • Development of implementation roadmap and timeline) Tj
+(   \\267 Development of implementation roadmap and timeline) Tj
 0 -30 Td
 ${brandOrange} rg
 (2. Development and Customization) Tj
 0 0 0 rg
 0 -20 Td
-(   • AI model training with your business-specific data) Tj
+(   \\267 AI model training with your business-specific data) Tj
 0 -20 Td
-(   • User interface customization aligned with your brand) Tj
+(   \\267 User interface customization aligned with your brand) Tj
 0 -20 Td
-(   • Integration with your existing systems and workflows) Tj
+(   \\267 Integration with your existing systems and workflows) Tj
 0 -30 Td
 ${brandOrange} rg
 (3. Testing and Deployment) Tj
 0 0 0 rg
 0 -20 Td
-(   • Comprehensive testing and quality assurance) Tj
+(   \\267 Comprehensive testing and quality assurance) Tj
 0 -20 Td
-(   • Phased deployment to minimize business disruption) Tj
+(   \\267 Phased deployment to minimize business disruption) Tj
 0 -20 Td
-(   • Performance monitoring and fine-tuning) Tj
+(   \\267 Performance monitoring and fine-tuning) Tj
 0 -30 Td
 ${brandOrange} rg
 (4. Training and Adoption) Tj
 0 0 0 rg
 0 -20 Td
-(   • User training and knowledge transfer) Tj
+(   \\267 User training and knowledge transfer) Tj
 0 -20 Td
-(   • Development of adoption strategy) Tj
+(   \\267 Development of adoption strategy) Tj
 0 -20 Td
-(   • Ongoing support and performance optimization) Tj
+(   \\267 Ongoing support and performance optimization) Tj
 
 0 -40 Td
 /F2 18 Tf
@@ -634,11 +654,11 @@ ${brandOrange} rg
 /F1 13 Tf
 (To proceed with implementing this AI solution for ${companyName}:) Tj
 0 -30 Td
-(• Schedule a demonstration of our ${tierName} solution) Tj
+(\\267 Schedule a demonstration of our ${tierName} solution) Tj
 0 -20 Td
-(• Finalize the proposal details and customization requirements) Tj
+(\\267 Finalize the proposal details and customization requirements) Tj
 0 -20 Td
-(• Sign agreement and schedule kickoff meeting) Tj
+(\\267 Sign agreement and schedule kickoff meeting) Tj
 0 0 0 rg
 0 -40 Td
 /F2 16 Tf
@@ -723,7 +743,7 @@ startxref
   `;
   
   // Return the complete PDF
-  return financialImpactContent;
+  return pdfContent;
   
   // Helper function to format currency
   function formatCurrency(value) {
