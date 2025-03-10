@@ -13,18 +13,18 @@ interface AdminDashboardProps {
 
 export const AdminDashboard = ({ leads, isLoading }: AdminDashboardProps) => {
   return (
-    <div className="min-h-screen bg-gray-50">
+    <div className="min-h-screen bg-gray-50 w-full">
       <AdminHeader isLoading={isLoading} />
       
-      <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+      <main className="max-w-full lg:max-w-7xl mx-auto px-2 sm:px-4 lg:px-6 py-4 sm:py-6 lg:py-8 overflow-x-hidden">
         <Tabs defaultValue="leads" className="w-full">
-          <TabsList className="mb-6">
-            <TabsTrigger value="leads">Leads Management</TabsTrigger>
-            <TabsTrigger value="pricing">Pricing Configuration</TabsTrigger>
-            <TabsTrigger value="import">Import Leads</TabsTrigger>
+          <TabsList className="mb-4 sm:mb-6 w-full flex overflow-x-auto no-scrollbar">
+            <TabsTrigger value="leads" className="flex-1">Leads Management</TabsTrigger>
+            <TabsTrigger value="pricing" className="flex-1">Pricing Configuration</TabsTrigger>
+            <TabsTrigger value="import" className="flex-1">Import Leads</TabsTrigger>
           </TabsList>
           
-          <TabsContent value="leads" className="space-y-8">
+          <TabsContent value="leads" className="space-y-4 sm:space-y-6 lg:space-y-8 overflow-x-auto">
             <LeadsTable leads={leads} />
           </TabsContent>
           

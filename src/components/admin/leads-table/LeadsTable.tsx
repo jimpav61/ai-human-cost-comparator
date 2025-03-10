@@ -21,10 +21,12 @@ export const LeadsTable = ({ leads, onLeadUpdated }: LeadsTableProps) => {
   } = useLeadEditing(onLeadUpdated);
 
   return (
-    <div className="bg-white rounded-lg shadow overflow-hidden">
+    <div className="bg-white rounded-lg shadow overflow-hidden w-full">
       <TableHeader leads={leads} />
-      <DesktopLeadsTable leads={leads} onEdit={handleOpenEditDialog} />
-      <MobileLeadsView leads={leads} onEdit={handleOpenEditDialog} />
+      <div className="overflow-x-auto">
+        <DesktopLeadsTable leads={leads} onEdit={handleOpenEditDialog} />
+        <MobileLeadsView leads={leads} onEdit={handleOpenEditDialog} />
+      </div>
 
       {/* Edit Lead Dialog - Render only when a lead is selected */}
       {editingLead && (

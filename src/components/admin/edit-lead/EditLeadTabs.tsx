@@ -28,8 +28,8 @@ export const EditLeadTabs = ({
   };
 
   return (
-    <Tabs defaultValue="basic">
-      <TabsList className="grid grid-cols-2">
+    <Tabs defaultValue="basic" className="w-full">
+      <TabsList className="grid grid-cols-2 w-full mb-2">
         <TabsTrigger value="basic">Basic Information</TabsTrigger>
         <TabsTrigger value="calculator">Calculator Options</TabsTrigger>
       </TabsList>
