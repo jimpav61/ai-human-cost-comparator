@@ -1,4 +1,3 @@
-
 import { serve } from "https://deno.land/std@0.177.0/http/server.ts";
 import { corsHeaders } from "../_shared/cors.ts";
 
@@ -129,10 +128,7 @@ function generateProfessionalProposal(lead) {
                   aiTier === 'growth' ? 'Growth Plan' : 
                   aiTier === 'premium' ? 'Premium Plan' : 'Growth Plan';
   
-  // CRITICAL FIX: Always show correct AI type based on tier
-  // Starter Plan is always Text Only
-  // Growth Plan is always "Voice Enabled"
-  // Premium Plan is always "Voice Enabled"
+  // Set AI type display based on tier
   const aiTypeDisplay = aiTier === 'starter' ? 'Text Only' : 'Voice Enabled';
   
   const monthlyPrice = aiTier === 'starter' ? 99 : 
@@ -154,11 +150,9 @@ function generateProfessionalProposal(lead) {
                               aiTier === 'growth' ? 600 : 
                               aiTier === 'premium' ? 1200 : 600;
   
-  // IMPORTANT FIX: Properly get additional voice minutes from input data
-  // Make sure to convert to number if it's a string
+  // Parse additional voice minutes from input data
   let additionalVoiceMinutes = 0;
   if (calculatorInputs.callVolume !== undefined) {
-    // First ensure it's a number
     if (typeof calculatorInputs.callVolume === 'string') {
       additionalVoiceMinutes = parseInt(calculatorInputs.callVolume, 10) || 0;
     } else if (typeof calculatorInputs.callVolume === 'number') {
@@ -178,10 +172,10 @@ function generateProfessionalProposal(lead) {
   const firstYearROI = Math.round((yearlySavings - setupFee) / (totalMonthlyCost * 12 + setupFee) * 100);
   const fiveYearSavings = yearlySavings * 5 - (totalMonthlyCost * 12 * 5 + setupFee);
   
-  // Brand Colors - Use correct brand orange
-  const brandOrange = "0.965 0.322 0.157"; // RGB: 246, 82, 40 (#f65228)
-  const brandBlack = "0 0 0"; // Black for text on light backgrounds
-  const brandWhite = "1 1 1"; // White for text on dark backgrounds
+  // Brand Colors
+  const brandOrange = "0.965 0.322 0.157";
+  const brandBlack = "0 0 0";
+  const brandWhite = "1 1 1";
   
   // Log values for debugging
   console.log("PDF Generation values:", {
@@ -195,7 +189,7 @@ function generateProfessionalProposal(lead) {
     setupFee
   });
   
-  // Create an advanced multi-page PDF with proper sections and branding
+  // Create PDF content
   let pdfContent = `
 %PDF-1.7
 1 0 obj
@@ -417,30 +411,16 @@ ${brandOrange} rg
 (\\267 ${aiTypeDisplay} Interface ${aiTier !== 'starter' ? 'with speech recognition and synthesis' : ''}) Tj
 0 -20 Td`;
 
-  // Conditionally add voice minutes info based on tier
-  if (aiTier !== 'starter') {
-    pdfContent += `
-(\\267 Includes ${includedVoiceMinutes} voice minutes per month) Tj
-0 -20 Td`;
-  } else {
-    pdfContent += `
-(\\267 Text-only capabilities) Tj
-0 -20 Td`;
-  }
-
-  // Add additional voice minutes info if needed
-  if (additionalVoiceMinutes > 0 && aiTier !== 'starter') {
+  // Add voice minutes info if applicable
+  if (aiTier !== 'starter' && additionalVoiceMinutes > 0) {
     pdfContent += `
 (\\267 Additional voice minutes needed: ${additionalVoiceMinutes} minutes) Tj
-0 -20 Td`;
-    
-    // Add cost of additional minutes
-    pdfContent += `
+0 -20 Td
 (\\267 Extra minutes cost: $${(additionalVoiceMinutes * 0.12).toFixed(2)}/month) Tj
 0 -20 Td`;
   }
 
-  // Continue with the rest of the content
+  // Continue with standard content
   pdfContent += `
 (\\267 ${aiTier === 'premium' ? 'Unlimited' : '50,000+'} monthly text interactions) Tj
 0 -20 Td
@@ -500,32 +480,19 @@ ${brandOrange} rg
 (${formatCurrency(setupFee)} one-time) Tj
 -200 -25 Td`;
 
-  // Add voice minutes info if not starter plan
-  if (aiTier !== 'starter') {
-    pdfContent += `
-(Included Voice Minutes:) Tj
-200 0 Td
-(${formatNumber(includedVoiceMinutes)} minutes/month) Tj
--200 -25 Td`;
-  }
-
-  // Add additional voice minutes if applicable
-  if (additionalVoiceMinutes > 0 && aiTier !== 'starter') {
+  // Add voice minutes to financial section if applicable
+  if (aiTier !== 'starter' && additionalVoiceMinutes > 0) {
     pdfContent += `
 (Additional Voice Minutes:) Tj
 200 0 Td
 (${formatNumber(additionalVoiceMinutes)} minutes) Tj
--200 -25 Td`;
-    
-    // Add voice cost section if there are additional minutes
-    pdfContent += `
+-200 -25 Td
 (Voice Minutes Cost:) Tj
 200 0 Td
 (${formatCurrency(voiceCost)}/month) Tj
 -200 -25 Td`;
   }
 
-  // Continue with the rest of the financial section
   pdfContent += `
 (Total Monthly Investment:) Tj
 200 0 Td
@@ -745,10 +712,8 @@ startxref
 %%EOF
   `;
   
-  // Return the complete PDF
   return pdfContent;
-  
-  // Helper function to format currency
+
   function formatCurrency(value) {
     return new Intl.NumberFormat('en-US', {
       style: 'currency',
@@ -757,7 +722,6 @@ startxref
     }).format(value);
   }
   
-  // Helper function to format numbers with commas
   function formatNumber(value) {
     return new Intl.NumberFormat('en-US').format(value);
   }
