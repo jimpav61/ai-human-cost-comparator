@@ -1,3 +1,4 @@
+
 import { Lead } from "@/types/leads";
 import { DocumentGeneratorProps } from "./types";
 import { Button } from "@/components/ui/button";
@@ -358,16 +359,16 @@ export const DocumentGenerator = ({ lead }: DocumentGeneratorProps) => {
   };
   
   return (
-    <div className="flex gap-2">
+    <div className="flex flex-wrap gap-2 justify-end">
       <Button
         onClick={handleDownloadReport}
         disabled={isLoading}
         variant="outline"
         size="sm"
-        className="flex items-center"
+        className="whitespace-nowrap"
       >
-        <FileBarChart className="h-4 w-4 mr-2" />
-        {isLoading ? "Downloading..." : "Download Report"}
+        <FileBarChart className="h-4 w-4 mr-1" />
+        <span>{isLoading ? "Downloading..." : "Report"}</span>
       </Button>
       
       <Button
@@ -375,10 +376,10 @@ export const DocumentGenerator = ({ lead }: DocumentGeneratorProps) => {
         disabled={isPreviewLoading}
         variant="outline"
         size="sm"
-        className="flex items-center"
+        className="whitespace-nowrap"
       >
-        <Eye className="h-4 w-4 mr-2" />
-        {isPreviewLoading ? "Previewing..." : "Preview Proposal"}
+        <Eye className="h-4 w-4 mr-1" />
+        <span>{isPreviewLoading ? "Loading..." : "Preview"}</span>
       </Button>
       
       <Button
@@ -386,10 +387,10 @@ export const DocumentGenerator = ({ lead }: DocumentGeneratorProps) => {
         disabled={isProposalLoading}
         variant="outline"
         size="sm"
-        className="flex items-center"
+        className="whitespace-nowrap"
       >
-        <FileText className="h-4 w-4 mr-2" />
-        {isProposalLoading ? "Sending..." : "Send Proposal"}
+        <FileText className="h-4 w-4 mr-1" />
+        <span>{isProposalLoading ? "Sending..." : "Send"}</span>
       </Button>
     </div>
   );

@@ -32,7 +32,7 @@ export const DesktopLeadsTable = ({ leads, onEdit }: DesktopLeadsTableProps) => 
             <TableHead className="whitespace-nowrap">Size</TableHead>
             <TableHead className="whitespace-nowrap">Contact Info</TableHead>
             <TableHead className="whitespace-nowrap">Created</TableHead>
-            <TableHead className="text-right whitespace-nowrap">Actions</TableHead>
+            <TableHead className="whitespace-nowrap text-right">Actions</TableHead>
           </TableRow>
         </TableHeader>
         <TableBody>
@@ -56,17 +56,18 @@ export const DesktopLeadsTable = ({ leads, onEdit }: DesktopLeadsTableProps) => 
               <TableCell className="whitespace-nowrap">
                 <DateDisplay dateString={lead.created_at} />
               </TableCell>
-              <TableCell className="space-x-2 text-right whitespace-nowrap">
-                <Button
-                  size="sm"
-                  variant="outline"
-                  onClick={() => onEdit(lead)}
-                  className="mr-2"
-                >
-                  <Pencil className="h-4 w-4 mr-1" />
-                  Edit
-                </Button>
-                <DocumentGenerator lead={lead} />
+              <TableCell className="text-right" style={{ minWidth: "320px" }}>
+                <div className="flex justify-end space-x-2">
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    onClick={() => onEdit(lead)}
+                  >
+                    <Pencil className="h-4 w-4 mr-1" />
+                    Edit
+                  </Button>
+                  <DocumentGenerator lead={lead} />
+                </div>
               </TableCell>
             </TableRow>
           ))}
