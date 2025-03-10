@@ -130,9 +130,7 @@ function generateProfessionalProposal(lead) {
                   aiTier === 'premium' ? 'Premium Plan' : 'Growth Plan';
   
   const aiType = (calculatorInputs.aiType || '').toLowerCase();
-  const aiTypeDisplay = aiType.includes('voice') ? 'Voice Enabled' : 
-                      aiTier === 'starter' ? 'Text Only' :
-                      'Voice Enabled'; // Growth and Premium always have voice capabilities
+  const aiTypeDisplay = aiType.includes('voice') || aiTier === 'growth' || aiTier === 'premium' ? 'Voice Enabled' : 'Text Only';
   
   const monthlyPrice = aiTier === 'starter' ? 99 : 
                       aiTier === 'growth' ? 229 :
@@ -153,9 +151,10 @@ function generateProfessionalProposal(lead) {
                               aiTier === 'growth' ? 600 : 
                               aiTier === 'premium' ? 1200 : 600;
   
-  const additionalVoiceMinutes = calculatorInputs.callVolume || 0;
-  const voiceCost = additionalVoiceMinutes > includedVoiceMinutes ? 
-                   (additionalVoiceMinutes - includedVoiceMinutes) * 0.12 : 0;
+  const additionalVoiceMinutes = Number(calculatorInputs.callVolume) || 0;
+  const extraVoiceMinutes = additionalVoiceMinutes > includedVoiceMinutes ? 
+                          (additionalVoiceMinutes - includedVoiceMinutes) : 0;
+  const voiceCost = extraVoiceMinutes * 0.12;
   
   // Total monthly cost with any additional voice minutes
   const totalMonthlyCost = monthlyPrice + voiceCost;
@@ -165,12 +164,11 @@ function generateProfessionalProposal(lead) {
   const firstYearROI = Math.round((yearlySavings - setupFee) / (totalMonthlyCost * 12 + setupFee) * 100);
   const fiveYearSavings = yearlySavings * 5 - (totalMonthlyCost * 12 * 5 + setupFee);
   
-  // Colors for branding (using brand colors)
-  const brandBlue = "0.13 0.59 0.95"; // RGB: 33, 150, 243
-  const brandGreen = "0.20 0.80 0.46"; // RGB: 51, 204, 118
-  const brandPurple = "0.35 0.20 0.65"; // RGB: 89, 51, 166
-  const brandLightBlue = "0.53 0.81 0.98"; // RGB: 135, 206, 250
-  const brandLightGreen = "0.76 0.9 0.78"; // RGB: 194, 230, 200
+  // Brand Colors (using updated brand colors)
+  const brandOrange = "0.965 0.322 0.157"; // RGB: 246, 82, 40 (#f65228)
+  const brandBlue = "0.13 0.59 0.95"; // Light blue for secondary color
+  const brandLightBlue = "0.53 0.81 0.98"; // Softer blue for backgrounds
+  const brandLightGreen = "0.76 0.9 0.78"; // Light green for alternate sections
   
   // Create an advanced multi-page PDF with proper sections and branding
   const pdfContent = `
@@ -263,7 +261,7 @@ endobj
 << /Length 3300 >>
 stream
 q
-${brandPurple} rg
+${brandOrange} rg
 0 792 612 -70 re f
 0 0 0 rg
 BT
@@ -277,7 +275,7 @@ BT
 (Prepared exclusively for ${companyName}) Tj
 /F2 18 Tf
 0 -50 Td
-${brandPurple} rg
+${brandOrange} rg
 (EXECUTIVE SUMMARY) Tj
 0 0 0 rg
 0 -25 Td
@@ -297,7 +295,7 @@ ${brandPurple} rg
 (providing significant cost savings and operational benefits.) Tj
 0 -40 Td
 /F2 16 Tf
-${brandBlue} rg
+${brandOrange} rg
 (KEY BENEFITS) Tj
 0 0 0 rg
 0 -25 Td
@@ -315,7 +313,7 @@ ${brandBlue} rg
 0 0 0 rg
 0 -40 Td
 /F2 16 Tf
-${brandBlue} rg
+${brandOrange} rg
 (CONTACT INFORMATION) Tj
 0 0 0 rg
 0 -25 Td
@@ -336,7 +334,7 @@ Q
 BT
 /F2 14 Tf
 82 110 Td
-${brandPurple} rg
+${brandOrange} rg
 (Selected Plan: ${tierName} - ${aiTypeDisplay}) Tj
 0 0 0 rg
 ET
@@ -348,7 +346,7 @@ endobj
 << /Length 3500 >>
 stream
 q
-${brandPurple} rg
+${brandOrange} rg
 0 792 612 -70 re f
 0 0 0 rg
 BT
@@ -359,7 +357,7 @@ BT
 0 0 0 rg
 0 -45 Td
 /F2 18 Tf
-${brandBlue} rg
+${brandOrange} rg
 (${tierName} - ${aiTypeDisplay}) Tj
 0 0 0 rg
 0 -30 Td
@@ -369,7 +367,7 @@ ${brandBlue} rg
 (${aiTypeDisplay} capabilities as the optimal solution for ${companyName}.) Tj
 0 -40 Td
 /F2 16 Tf
-${brandBlue} rg
+${brandOrange} rg
 (Solution Features:) Tj
 0 0 0 rg
 0 -25 Td
@@ -389,7 +387,7 @@ ${brandBlue} rg
 0 0 0 rg
 0 -40 Td
 /F2 16 Tf
-${brandBlue} rg
+${brandOrange} rg
 (Technical Specifications:) Tj
 0 0 0 rg
 0 -25 Td
@@ -400,7 +398,9 @@ ${brandBlue} rg
 0 -20 Td
 ${aiTier !== 'starter' ? `(• Includes ${includedVoiceMinutes} voice minutes per month)` : `(• Text-only capabilities)`} Tj
 0 -20 Td
-${additionalVoiceMinutes > 0 ? `(• Additional ${additionalVoiceMinutes} voice minutes at $0.12/minute)` : ``} Tj
+${additionalVoiceMinutes > 0 ? `(• Additional voice minutes needed: ${additionalVoiceMinutes} minutes)` : ``} Tj
+0 -20 Td
+${extraVoiceMinutes > 0 ? `(• Extra minutes beyond plan: ${extraVoiceMinutes} minutes at $0.12/minute = $${(extraVoiceMinutes * 0.12).toFixed(2)}/month)` : ``} Tj
 0 -20 Td
 (• ${aiTier === 'premium' ? 'Unlimited' : '50,000+'} monthly text interactions) Tj
 0 -20 Td
@@ -417,7 +417,7 @@ Q
 BT
 /F2 16 Tf
 82 185 Td
-${brandBlue} rg
+${brandOrange} rg
 (Implementation Timeline:) Tj
 0 0 0 rg
 0 -25 Td
@@ -440,7 +440,7 @@ endobj
 << /Length 3500 >>
 stream
 q
-${brandPurple} rg
+${brandOrange} rg
 0 792 612 -70 re f
 0 0 0 rg
 BT
@@ -451,7 +451,7 @@ BT
 0 0 0 rg
 0 -45 Td
 /F2 18 Tf
-${brandBlue} rg
+${brandOrange} rg
 (Investment Details) Tj
 0 0 0 rg
 0 -30 Td
@@ -467,13 +467,18 @@ ${brandBlue} rg
 
 ${includedVoiceMinutes > 0 ? `(Included Voice Minutes:)` : ``} Tj
 ${includedVoiceMinutes > 0 ? `200 0 Td` : ``} Tj
-${includedVoiceMinutes > 0 ? `(${formatNumber(includedVoiceMinutes)} minutes)` : ``} Tj
+${includedVoiceMinutes > 0 ? `(${formatNumber(includedVoiceMinutes)} minutes/month)` : ``} Tj
 ${includedVoiceMinutes > 0 ? `-200 -25 Td` : ``} Tj
 
-${additionalVoiceMinutes > 0 ? `(Additional Voice Minutes:)` : ``} Tj
+${additionalVoiceMinutes > 0 ? `(Additional Voice Minutes Needed:)` : ``} Tj
 ${additionalVoiceMinutes > 0 ? `200 0 Td` : ``} Tj
-${additionalVoiceMinutes > 0 ? `(${formatNumber(additionalVoiceMinutes)} minutes @ $0.12 = ${formatCurrency(voiceCost)}/month)` : ``} Tj
+${additionalVoiceMinutes > 0 ? `(${formatNumber(additionalVoiceMinutes)} minutes)` : ``} Tj
 ${additionalVoiceMinutes > 0 ? `-200 -25 Td` : ``} Tj
+
+${extraVoiceMinutes > 0 ? `(Extra Voice Minutes Cost:)` : ``} Tj
+${extraVoiceMinutes > 0 ? `200 0 Td` : ``} Tj
+${extraVoiceMinutes > 0 ? `(${formatNumber(extraVoiceMinutes)} minutes @ $0.12 = ${formatCurrency(voiceCost)}/month)` : ``} Tj
+${extraVoiceMinutes > 0 ? `-200 -25 Td` : ``} Tj
 
 (Total Monthly Investment:) Tj
 200 0 Td
@@ -491,7 +496,7 @@ Q
 BT
 -200 -45 Td
 /F2 18 Tf
-${brandBlue} rg
+${brandOrange} rg
 (Cost Comparison and Savings) Tj
 0 0 0 rg
 0 -30 Td
@@ -530,7 +535,7 @@ Q
 
 BT
 /F2 18 Tf
-${brandBlue} rg
+${brandOrange} rg
 (Return on Investment) Tj
 0 0 0 rg
 0 -30 Td
@@ -553,7 +558,7 @@ endobj
 << /Length 3000 >>
 stream
 q
-${brandPurple} rg
+${brandOrange} rg
 0 792 612 -70 re f
 0 0 0 rg
 BT
@@ -564,7 +569,7 @@ BT
 0 0 0 rg
 0 -45 Td
 /F2 18 Tf
-${brandBlue} rg
+${brandOrange} rg
 (Implementation Process) Tj
 0 0 0 rg
 0 -30 Td
@@ -617,7 +622,7 @@ Q
 BT
 0 -40 Td
 /F2 18 Tf
-${brandBlue} rg
+${brandOrange} rg
 (Next Steps) Tj
 0 0 0 rg
 0 -30 Td
@@ -633,7 +638,7 @@ ${brandBlue} rg
 0 0 0 rg
 0 -40 Td
 /F2 16 Tf
-${brandPurple} rg
+${brandOrange} rg
 (For questions or to move forward, please contact us at:) Tj
 0 0 0 rg
 0 -30 Td
