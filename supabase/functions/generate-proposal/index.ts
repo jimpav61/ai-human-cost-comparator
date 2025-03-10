@@ -521,7 +521,6 @@ ${brandOrange} rg
 /F1 13 Tf
 (Based on the projected savings and implementation costs, your expected ROI timeline is:) Tj
 0 -30 Td
-${brandOrange} rg
 (• Break-even Point: ${breakEvenPoint} months) Tj
 0 -25 Td
 (• First Year ROI: ${firstYearROI}%) Tj
@@ -593,7 +592,6 @@ ${brandOrange} rg
 0 -20 Td
 (   • Ongoing support and performance optimization) Tj
 
-BT
 0 -40 Td
 /F2 18 Tf
 ${brandOrange} rg
@@ -603,12 +601,11 @@ ${brandOrange} rg
 /F1 13 Tf
 (To proceed with implementing this AI solution for ${companyName}:) Tj
 0 -30 Td
-${brandOrange} rg
-(1. Schedule a demonstration of our ${tierName} solution) Tj
+(• Schedule a demonstration of our ${tierName} solution) Tj
 0 -20 Td
-(2. Finalize the proposal details and customization requirements) Tj
+(• Finalize the proposal details and customization requirements) Tj
 0 -20 Td
-(3. Sign agreement and schedule kickoff meeting) Tj
+(• Sign agreement and schedule kickoff meeting) Tj
 0 0 0 rg
 0 -40 Td
 /F2 16 Tf
