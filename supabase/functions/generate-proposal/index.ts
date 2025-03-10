@@ -175,6 +175,19 @@ function generateProfessionalProposal(lead) {
   const brandBlack = "0 0 0"; // Black for text on light backgrounds
   const brandWhite = "1 1 1"; // White for text on dark backgrounds
   
+  // Log values for debugging
+  console.log("PDF Generation values:", {
+    tierName,
+    aiTypeDisplay,
+    monthlyPrice,
+    includedVoiceMinutes,
+    additionalVoiceMinutes,
+    extraVoiceMinutes,
+    voiceCost,
+    totalMonthlyCost,
+    setupFee
+  });
+  
   // Create an advanced multi-page PDF with proper sections and branding
   const pdfContent = `
 %PDF-1.7
@@ -396,13 +409,11 @@ ${brandOrange} rg
 0 -20 Td
 (• ${aiTypeDisplay} Interface ${aiTier !== 'starter' ? 'with speech recognition and synthesis' : ''}) Tj
 0 -20 Td
-${aiTier !== 'starter' ? `(• Includes ${includedVoiceMinutes} voice minutes per month)` : `(• Text-only capabilities)`} Tj
-${additionalVoiceMinutes > 0 && aiTier !== 'starter' ? `
+(• ${aiTier !== 'starter' ? 'Includes ' + includedVoiceMinutes + ' voice minutes per month' : 'Text-only capabilities'}) Tj
 0 -20 Td
-(• Additional voice minutes needed: ${additionalVoiceMinutes} minutes)` : ``}
-${extraVoiceMinutes > 0 ? `
+${additionalVoiceMinutes > 0 && aiTier !== 'starter' ? '(• Additional voice minutes needed: ' + additionalVoiceMinutes + ' minutes)' : ''}
 0 -20 Td
-(• Extra minutes: ${extraVoiceMinutes} minutes at $0.12/minute = $${(extraVoiceMinutes * 0.12).toFixed(2)}/month)` : ``}
+${extraVoiceMinutes > 0 ? '(• Extra minutes: ' + extraVoiceMinutes + ' minutes at $0.12/minute = $' + (extraVoiceMinutes * 0.12).toFixed(2) + '/month)' : ''}
 0 -20 Td
 (• ${aiTier === 'premium' ? 'Unlimited' : '50,000+'} monthly text interactions) Tj
 0 -20 Td
@@ -461,22 +472,38 @@ ${brandOrange} rg
 200 0 Td
 (${formatCurrency(setupFee)} one-time) Tj
 -200 -25 Td
-
-${aiTier !== 'starter' ? `(Included Voice Minutes:)
+`
+  
+  // Included Voice Minutes section (for non-starter plans)
+  const voiceMinutesSection = aiTier !== 'starter' ? 
+`(Included Voice Minutes:) Tj
 200 0 Td
-(${formatNumber(includedVoiceMinutes)} minutes/month)
--200 -25 Td` : ``}
+(${formatNumber(includedVoiceMinutes)} minutes/month) Tj
+-200 -25 Td
+` : '';
 
-${additionalVoiceMinutes > 0 && aiTier !== 'starter' ? `(Additional Voice Minutes:)
+  // Additional voice minutes section (if any)
+  const additionalMinutesSection = additionalVoiceMinutes > 0 && aiTier !== 'starter' ?
+`(Additional Voice Minutes:) Tj
 200 0 Td
-(${formatNumber(additionalVoiceMinutes)} minutes)
--200 -25 Td` : ``}
+(${formatNumber(additionalVoiceMinutes)} minutes) Tj
+-200 -25 Td
+` : '';
 
-${extraVoiceMinutes > 0 ? `(Voice Minutes Cost:)
+  // Voice minutes cost section (if any extra minutes)
+  const voiceCostSection = extraVoiceMinutes > 0 ?
+`(Voice Minutes Cost:) Tj
 200 0 Td
-(${formatCurrency(voiceCost)}/month)
--200 -25 Td` : ``}
+(${formatCurrency(voiceCost)}/month) Tj
+-200 -25 Td
+` : '';
 
+  // Combine the financial impact page content
+  const financialImpactContent = pdfContent + 
+    voiceMinutesSection +
+    additionalMinutesSection + 
+    voiceCostSection +
+`
 (Total Monthly Investment:) Tj
 200 0 Td
 (${formatCurrency(totalMonthlyCost)}/month) Tj
@@ -695,6 +722,9 @@ startxref
 %%EOF
   `;
   
+  // Return the complete PDF
+  return financialImpactContent;
+  
   // Helper function to format currency
   function formatCurrency(value) {
     return new Intl.NumberFormat('en-US', {
@@ -708,7 +738,4 @@ startxref
   function formatNumber(value) {
     return new Intl.NumberFormat('en-US').format(value);
   }
-  
-  return pdfContent;
 }
-
