@@ -42,7 +42,7 @@ export const addCostBreakdownSection = (
   // Always add the base AI service
   tableRows.push(['AI Service Base', formatCurrency(basePrice)]);
   
-  // Add additional voice minutes if applicable - fixed to properly handle minutes
+  // Add additional voice minutes if applicable - only show when there are actual minutes
   if (additionalVoiceMinutes && additionalVoiceMinutes > 0) {
     tableRows.push([`Additional Voice Minutes (${formatNumber(additionalVoiceMinutes)}) @ $0.12/min`, formatCurrency(additionalVoiceCost)]);
   }
@@ -58,7 +58,7 @@ export const addCostBreakdownSection = (
     headStyles: {
       fillColor: [246, 82, 40],
       textColor: [255, 255, 255],
-      fontStyle: 'bold'
+      fontStyle: 'bold' as 'bold' // Type assertion to fix the same FontStyle issue
     },
     bodyStyles: {
       textColor: [0, 0, 0]
@@ -70,8 +70,8 @@ export const addCostBreakdownSection = (
       fontSize: 11
     },
     columnStyles: {
-      0: { fontStyle: 'normal' },
-      1: { halign: 'right' }
+      0: { fontStyle: 'normal' as 'normal' }, // Add type assertion for fontStyle
+      1: { halign: 'right' as 'right' }
     },
     margin: { left: 20, right: 20 }
   });

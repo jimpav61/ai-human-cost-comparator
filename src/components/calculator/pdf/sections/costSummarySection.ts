@@ -31,7 +31,7 @@ export const addCostSummarySection = (
     headStyles: {
       fillColor: [245, 245, 245],
       textColor: [80, 80, 80],
-      fontStyle: 'bold'
+      fontStyle: 'bold' as 'bold' // Fix: use 'bold' as const to match FontStyle type
     },
     columnStyles: {
       0: { cellWidth: effectiveWidth * 0.6 },
