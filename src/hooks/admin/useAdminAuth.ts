@@ -1,9 +1,10 @@
+
 import { useState, useEffect, useCallback } from "react";
 import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "@/components/ui/use-toast";
 import { Lead } from "@/types/leads";
-import { fromJson } from "@/hooks/calculator/supabase-types";
+import { fromJson, getDefaultCalculatorInputs, getDefaultCalculationResults } from "@/hooks/calculator/supabase-types";
 
 export function useAdminAuth() {
   const [session, setSession] = useState<any>(null);
@@ -68,11 +69,17 @@ export function useAdminAuth() {
           console.error("Leads fetch error:", leadsError);
           setAuthError(leadsError.message);
         } else {
-          const typedLeads = (leadsData || []).map(lead => ({
-            ...lead,
-            calculator_inputs: fromJson(lead.calculator_inputs),
-            calculator_results: fromJson(lead.calculator_results)
-          } as Lead));
+          // Properly convert JSON types to our expected types
+          const typedLeads = (leadsData || []).map(lead => {
+            const calculatorInputs = fromJson<typeof getDefaultCalculatorInputs>(lead.calculator_inputs) || getDefaultCalculatorInputs();
+            const calculatorResults = fromJson<typeof getDefaultCalculationResults>(lead.calculator_results) || getDefaultCalculationResults();
+            
+            return {
+              ...lead,
+              calculator_inputs: calculatorInputs,
+              calculator_results: calculatorResults
+            } as Lead;
+          });
           
           setLeads(typedLeads);
         }
@@ -133,11 +140,17 @@ export function useAdminAuth() {
               console.error('Leads fetch error:', leadsError);
               setAuthError(leadsError.message);
             } else {
-              const typedLeads = (leadsData || []).map(lead => ({
-                ...lead,
-                calculator_inputs: fromJson(lead.calculator_inputs),
-                calculator_results: fromJson(lead.calculator_results)
-              } as Lead));
+              // Properly convert JSON types to our expected types
+              const typedLeads = (leadsData || []).map(lead => {
+                const calculatorInputs = fromJson<typeof getDefaultCalculatorInputs>(lead.calculator_inputs) || getDefaultCalculatorInputs();
+                const calculatorResults = fromJson<typeof getDefaultCalculationResults>(lead.calculator_results) || getDefaultCalculationResults();
+                
+                return {
+                  ...lead,
+                  calculator_inputs: calculatorInputs,
+                  calculator_results: calculatorResults
+                } as Lead;
+              });
               
               setLeads(typedLeads);
             }

@@ -11,9 +11,10 @@ export interface JsPDFWithAutoTable extends jsPDF {
 }
 
 // Define a shared results type that both PDF and proposal generation can use
-export interface SharedResults extends CalculationResults {
-  tierKey?: string;
-  aiType?: string;
+// Using the explicit type for tierKey to match CalculationResults
+export interface SharedResults extends Omit<CalculationResults, 'tierKey'> {
+  tierKey?: "starter" | "growth" | "premium";
+  aiType?: "voice" | "chatbot" | "both" | "conversationalVoice" | "both-premium";
   includedVoiceMinutes?: number;
   [key: string]: any;
 }

@@ -64,7 +64,9 @@ export const generateAndDownloadReport = async (lead: Lead) => {
         monthlyTotal: Number(rawCalculatorResults?.humanHours?.monthlyTotal) || 0,
         yearlyTotal: Number(rawCalculatorResults?.humanHours?.yearlyTotal) || 0
       },
-      annualPlan: Number(rawCalculatorResults?.annualPlan) || 0
+      annualPlan: Number(rawCalculatorResults?.annualPlan) || 0,
+      tierKey: (rawCalculatorResults?.tierKey || calculatorInputs?.aiTier || 'growth') as "starter" | "growth" | "premium",
+      aiType: rawCalculatorResults?.aiType || calculatorInputs?.aiType || 'chatbot'
     };
     
     // Format tier and AI type display names
@@ -131,6 +133,7 @@ export const generateAndDownloadReport = async (lead: Lead) => {
     // Only save if we have a valid report ID
     if (reportId) {
       // Create the report data with the generated UUID
+      // Use toJson to properly convert the complex objects to Json
       const reportData = {
         id: reportId, 
         contact_name: lead.name,

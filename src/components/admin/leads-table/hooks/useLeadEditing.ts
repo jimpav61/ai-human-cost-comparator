@@ -3,7 +3,7 @@ import { Lead } from "@/types/leads";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "@/hooks/use-toast";
 import { CalculatorInputs, CalculationResults } from "@/hooks/calculator/types";
-import { toJson } from "@/hooks/calculator/supabase-types";
+import { toJson, fromJson, getDefaultCalculatorInputs, getDefaultCalculationResults } from "@/hooks/calculator/supabase-types";
 
 export function useLeadEditing(onLeadUpdated?: () => void) {
   const [editingLead, setEditingLead] = useState<Lead | null>(null);
@@ -17,36 +17,11 @@ export function useLeadEditing(onLeadUpdated?: () => void) {
     
     // Default calculator_inputs and results if they don't exist
     if (!preparedLead.calculator_inputs || typeof preparedLead.calculator_inputs !== 'object') {
-      preparedLead.calculator_inputs = {
-        aiType: 'both',
-        aiTier: 'growth',
-        role: 'customerService',
-        numEmployees: 5,
-        callVolume: 0,
-        avgCallDuration: 5,
-        chatVolume: 0,
-        avgChatLength: 3,
-        avgChatResolutionTime: 10
-      } as CalculatorInputs;
+      preparedLead.calculator_inputs = getDefaultCalculatorInputs();
     }
     
     if (!preparedLead.calculator_results || typeof preparedLead.calculator_results !== 'object') {
-      preparedLead.calculator_results = {
-        aiCostMonthly: { voice: 0, chatbot: 0, total: 0, setupFee: 0 },
-        basePriceMonthly: 0,
-        humanCostMonthly: 0,
-        monthlySavings: 0,
-        yearlySavings: 0,
-        savingsPercentage: 0,
-        breakEvenPoint: { voice: 0, chatbot: 0 },
-        humanHours: {
-          dailyPerEmployee: 0,
-          weeklyTotal: 0,
-          monthlyTotal: 0,
-          yearlyTotal: 0
-        },
-        annualPlan: 0
-      } as CalculationResults;
+      preparedLead.calculator_results = getDefaultCalculationResults();
     }
     
     // Before setting the editing lead, ensure callVolume is properly extracted from calculator_inputs
@@ -161,7 +136,7 @@ export function useLeadEditing(onLeadUpdated?: () => void) {
         }
       }
       
-      // Update the lead in the database
+      // Update the lead in the database - use toJson to properly convert types
       const { error } = await supabase
         .from('leads')
         .update({

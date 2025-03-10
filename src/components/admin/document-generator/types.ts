@@ -18,6 +18,7 @@ export interface UseDownloadStateReturn {
 }
 
 // Adding SharedResults type for proposal generator compatibility
+// Make sure tierKey uses the same type as in CalculationResults
 export interface SharedResults {
   aiCostMonthly: {
     voice: number;
@@ -41,6 +42,6 @@ export interface SharedResults {
     yearlyTotal: number;
   };
   annualPlan: number;
-  tierKey?: string;
-  aiType?: string;
+  tierKey?: "starter" | "growth" | "premium";
+  aiType?: "voice" | "chatbot" | "both" | "conversationalVoice" | "both-premium";
 }
