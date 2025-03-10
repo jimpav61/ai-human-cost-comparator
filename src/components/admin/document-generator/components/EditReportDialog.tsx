@@ -17,34 +17,56 @@ interface EditReportDialogProps {
 
 export const EditReportDialog = ({ isOpen, onClose, lead, onSave }: EditReportDialogProps) => {
   // Create a deep copy of the lead to avoid reference issues
-  const [editableLead, setEditableLead] = useState<Lead>(() => JSON.parse(JSON.stringify(lead)));
+  const [editableLead, setEditableLead] = useState<Lead>(() => {
+    const leadCopy = JSON.parse(JSON.stringify(lead));
+    
+    // Ensure calculator_inputs exists and has default values if missing
+    if (!leadCopy.calculator_inputs) {
+      leadCopy.calculator_inputs = {};
+    }
+    
+    if (!leadCopy.calculator_inputs.aiTier) {
+      leadCopy.calculator_inputs.aiTier = 'growth';
+    }
+    
+    if (!leadCopy.calculator_inputs.aiType) {
+      leadCopy.calculator_inputs.aiType = 'both';
+    }
+    
+    // Ensure callVolume exists and is a number
+    if (typeof leadCopy.calculator_inputs.callVolume !== 'number') {
+      leadCopy.calculator_inputs.callVolume = 0;
+    }
+    
+    return leadCopy;
+  });
   
-  // Initialize calculator inputs if they don't exist
+  // Ensure dialog always shows the latest lead data when opened
   useEffect(() => {
     if (isOpen) {
-      // Reset the editable lead whenever the dialog opens
-      const freshCopy = JSON.parse(JSON.stringify(lead));
+      const leadCopy = JSON.parse(JSON.stringify(lead));
       
       // Ensure calculator_inputs exists
-      if (!freshCopy.calculator_inputs) {
-        freshCopy.calculator_inputs = {};
+      if (!leadCopy.calculator_inputs) {
+        leadCopy.calculator_inputs = {};
       }
       
-      // Set default values if not present
-      if (!freshCopy.calculator_inputs.aiTier) {
-        freshCopy.calculator_inputs.aiTier = 'growth';
+      // Make sure all necessary properties exist
+      if (!leadCopy.calculator_inputs.aiTier) {
+        leadCopy.calculator_inputs.aiTier = 'growth';
       }
       
-      if (!freshCopy.calculator_inputs.aiType) {
-        freshCopy.calculator_inputs.aiType = 'both';
+      if (!leadCopy.calculator_inputs.aiType) {
+        leadCopy.calculator_inputs.aiType = 'both';
       }
       
       // Ensure callVolume exists and is a number
-      if (typeof freshCopy.calculator_inputs.callVolume !== 'number') {
-        freshCopy.calculator_inputs.callVolume = 0;
+      if (typeof leadCopy.calculator_inputs.callVolume !== 'number') {
+        leadCopy.calculator_inputs.callVolume = 0;
       }
       
-      setEditableLead(freshCopy);
+      console.log("Setting editable lead with callVolume:", leadCopy.calculator_inputs.callVolume);
+      setEditableLead(leadCopy);
     }
   }, [isOpen, lead]);
   
