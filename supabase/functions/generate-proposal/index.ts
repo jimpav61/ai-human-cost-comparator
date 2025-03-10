@@ -1,3 +1,4 @@
+
 import { serve } from "https://deno.land/std@0.177.0/http/server.ts";
 import { corsHeaders } from "../_shared/cors.ts";
 
@@ -169,8 +170,7 @@ function generateProfessionalProposal(lead) {
   // Get voice details if applicable
   const includedVoiceMinutes = aiTier === 'starter' ? 0 : 600;
   
-  // DIRECTLY access call volume without any complex logic or fallbacks
-  // Always initialize additionalVoiceMinutes as 0
+  // Get additional voice minutes directly from inputs
   let additionalVoiceMinutes = 0;
   
   // Check for callVolume in calculator inputs and ensure it's a number
@@ -182,8 +182,11 @@ function generateProfessionalProposal(lead) {
   
   console.log("Additional voice minutes for PDF:", additionalVoiceMinutes);
   
-  // Calculate voice cost - even for zero minutes to ensure consistent display
-  const voiceCost = aiTier !== 'starter' && additionalVoiceMinutes >= 0 ? additionalVoiceMinutes * 0.12 : 0;
+  // Calculate voice cost
+  const voiceCostPerMinute = 0.12;
+  const voiceCost = aiTier !== 'starter' && additionalVoiceMinutes > 0 
+    ? additionalVoiceMinutes * voiceCostPerMinute 
+    : 0;
   
   // Total monthly cost
   const totalMonthlyCost = monthlyPrice + voiceCost;
@@ -431,12 +434,29 @@ ${brandOrange} rg
 (\\267 ${aiTypeDisplay} Interface ${aiTier !== 'starter' ? 'with speech recognition and synthesis' : ''}) Tj
 0 -20 Td`;
 
-  // Always include voice minutes info regardless of the plan
-  pdfContent += `
-(\\267 ${includedVoiceMinutes > 0 ? `Includes ${includedVoiceMinutes} voice minutes per month` : 'No included voice minutes'}) Tj
-0 -20 Td
-(\\267 Additional voice minutes: ${additionalVoiceMinutes} minutes ($${voiceCost.toFixed(2)}/month)) Tj
+  // Add voice information - handle both starter and non-starter tiers
+  if (aiTier === 'starter') {
+    pdfContent += `
+(\\267 No voice capabilities included in this tier) Tj
 0 -20 Td`;
+  } else {
+    pdfContent += `
+(\\267 Includes ${includedVoiceMinutes} voice minutes per month as part of base plan) Tj
+0 -20 Td`;
+    
+    // Always show additional voice minutes information
+    if (additionalVoiceMinutes > 0) {
+      pdfContent += `
+(\\267 ${additionalVoiceMinutes} additional voice minutes at $${voiceCostPerMinute.toFixed(2)}/minute) Tj
+0 -20 Td
+(\\267 Additional voice cost: $${voiceCost.toFixed(2)}/month) Tj
+0 -20 Td`;
+    } else {
+      pdfContent += `
+(\\267 No additional voice minutes requested) Tj
+0 -20 Td`;
+    }
+  }
 
   // Continue with standard content
   pdfContent += `
@@ -489,7 +509,7 @@ ${brandOrange} rg
 0 0 0 rg
 0 -30 Td
 /F1 13 Tf
-(Monthly Investment:) Tj
+(Monthly Base Price:) Tj
 200 0 Td
 ($${monthlyPrice.toFixed(2)}/month) Tj
 -200 -25 Td
@@ -498,16 +518,38 @@ ${brandOrange} rg
 ($${setupFee.toFixed(2)} one-time) Tj
 -200 -25 Td`;
 
-  // Always show voice minutes information with consistent formatting
-  pdfContent += `
+  // Handle voice minutes information - different for starter vs other tiers
+  if (aiTier === 'starter') {
+    pdfContent += `
+(Voice Capabilities:) Tj
+200 0 Td
+(Not included in Starter Plan) Tj
+-200 -25 Td`;
+  } else {
+    pdfContent += `
 (Included Voice Minutes:) Tj
 200 0 Td
 (${includedVoiceMinutes} minutes/month) Tj
--200 -25 Td
+-200 -25 Td`;
+    
+    if (additionalVoiceMinutes > 0) {
+      pdfContent += `
 (Additional Voice Minutes:) Tj
 200 0 Td
-(${additionalVoiceMinutes} minutes ($${voiceCost.toFixed(2)}/month)) Tj
+(${additionalVoiceMinutes} minutes @ $${voiceCostPerMinute.toFixed(2)}/minute) Tj
+-200 -25 Td
+(Additional Voice Cost:) Tj
+200 0 Td
+($${voiceCost.toFixed(2)}/month) Tj
 -200 -25 Td`;
+    } else {
+      pdfContent += `
+(Additional Voice Minutes:) Tj
+200 0 Td
+(None requested) Tj
+-200 -25 Td`;
+    }
+  }
 
   pdfContent += `
 (Total Monthly Investment:) Tj
