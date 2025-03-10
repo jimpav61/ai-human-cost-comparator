@@ -1,6 +1,6 @@
 
 import { JsPDFWithAutoTable } from '../types';
-import { formatCurrency, formatNumber } from '@/utils/formatters';
+import { formatCurrency } from '@/utils/formatters';
 import autoTable from 'jspdf-autotable';
 import { CalculationResults } from '@/hooks/calculator/types';
 
