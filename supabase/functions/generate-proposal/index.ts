@@ -1,3 +1,4 @@
+
 import { serve } from "https://deno.land/std@0.177.0/http/server.ts";
 import { corsHeaders } from "../_shared/cors.ts";
 
@@ -183,10 +184,17 @@ function generateProfessionalProposal(lead) {
   // Total monthly cost
   const totalMonthlyCost = monthlyPrice + voiceCost;
   
-  // Calculate ROI details
-  const breakEvenPoint = Math.ceil(setupFee / monthlySavings);
-  const firstYearROI = Math.round((yearlySavings - setupFee) / (totalMonthlyCost * 12 + setupFee) * 100);
-  const fiveYearSavings = yearlySavings * 5 - (totalMonthlyCost * 12 * 5 + setupFee);
+  // Extract financial values from calculatorResults or use defaults
+  const humanCostMonthly = calculatorResults.humanCostMonthly || 15000;
+  const monthlySavings = calculatorResults.monthlySavings || (humanCostMonthly - totalMonthlyCost);
+  const yearlySavings = calculatorResults.yearlySavings || (monthlySavings * 12);
+  const savingsPercentage = calculatorResults.savingsPercentage || 
+                          (humanCostMonthly > 0 ? Math.round((monthlySavings / humanCostMonthly) * 100) : 80);
+  
+  // Calculate ROI details with defaults if missing
+  const breakEvenPoint = Math.ceil(setupFee / (monthlySavings || 1000));
+  const firstYearROI = Math.round(((yearlySavings || 12000) - setupFee) / (totalMonthlyCost * 12 + setupFee) * 100);
+  const fiveYearSavings = (yearlySavings || 12000) * 5 - (totalMonthlyCost * 12 * 5 + setupFee);
   
   // Brand Colors
   const brandOrange = "0.965 0.322 0.157";
