@@ -169,10 +169,8 @@ function generateProfessionalProposal(lead) {
   // Brand Colors - Use correct brand orange
   const brandOrange = "0.965 0.322 0.157"; // RGB: 246, 82, 40 (#f65228)
   const brandDarkOrange = "0.757 0.149 0.031"; // Darker orange for secondary elements
-  const brandLightOrange = "0.996 0.8 0.722"; // Light orange for backgrounds
-  const brandWhite = "1 1 1"; // White for text on dark backgrounds
   const brandBlack = "0 0 0"; // Black for text on light backgrounds
-  const brandGray = "0.95 0.95 0.95"; // Light gray for alternate sections
+  const brandWhite = "1 1 1"; // White for text on dark backgrounds
   
   // Create an advanced multi-page PDF with proper sections and branding
   const pdfContent = `
@@ -330,14 +328,9 @@ ${brandOrange} rg
 0 -20 Td
 (${phoneNumber}) Tj
 
-q
-${brandLightOrange} rg
-72 125 468 -50 re f
-Q
-
 BT
 /F2 14 Tf
-82 110 Td
+72 110 Td
 ${brandOrange} rg
 (Selected Plan: ${tierName} - ${aiTypeDisplay}) Tj
 0 0 0 rg
@@ -413,14 +406,9 @@ ${extraVoiceMinutes > 0 ? `(• Extra minutes beyond plan: ${extraVoiceMinutes} 
 (• ${aiTier === 'premium' ? 'Priority' : 'Standard'} technical support and maintenance) Tj
 0 -40 Td
 
-q
-${brandLightOrange} rg
-72 200 468 -150 re f
-Q
-
 BT
 /F2 16 Tf
-82 185 Td
+72 185 Td
 ${brandOrange} rg
 (Implementation Timeline:) Tj
 0 0 0 rg
@@ -492,11 +480,6 @@ ${extraVoiceMinutes > 0 ? `-200 -25 Td` : ``} Tj
 200 0 Td
 (${formatCurrency(totalMonthlyCost * 10)}/year (2 months free with annual plan)) Tj
 
-q
-${brandLightOrange} rg
-72 500 468 -120 re f
-Q
-
 BT
 -200 -45 Td
 /F2 18 Tf
@@ -515,27 +498,22 @@ ${brandOrange} rg
 -200 -25 Td
 (Monthly Savings:) Tj
 200 0 Td
-${brandDarkOrange} rg
+${brandOrange} rg
 (${formatCurrency(monthlySavings)}/month) Tj
 0 0 0 rg
 -200 -25 Td
 (Annual Savings:) Tj
 200 0 Td
-${brandDarkOrange} rg
+${brandOrange} rg
 (${formatCurrency(yearlySavings)}/year) Tj
 0 0 0 rg
 -200 -25 Td
 (Savings Percentage:) Tj
 200 0 Td
-${brandDarkOrange} rg
+${brandOrange} rg
 (${savingsPercentage}%) Tj
 0 0 0 rg
 -200 -45 Td
-
-q
-${brandLightOrange} rg
-72 300 468 -180 re f
-Q
 
 BT
 /F2 18 Tf
@@ -546,7 +524,7 @@ ${brandOrange} rg
 /F1 13 Tf
 (Based on the projected savings and implementation costs, your expected ROI timeline is:) Tj
 0 -30 Td
-${brandDarkOrange} rg
+${brandOrange} rg
 (• Break-even Point: ${breakEvenPoint} months) Tj
 0 -25 Td
 (• First Year ROI: ${firstYearROI}%) Tj
@@ -578,7 +556,7 @@ ${brandOrange} rg
 0 0 0 rg
 0 -30 Td
 /F1 13 Tf
-${brandDarkOrange} rg
+${brandOrange} rg
 (1. Discovery Workshop) Tj
 0 0 0 rg
 0 -20 Td
@@ -588,7 +566,7 @@ ${brandDarkOrange} rg
 0 -20 Td
 (   • Development of implementation roadmap and timeline) Tj
 0 -30 Td
-${brandDarkOrange} rg
+${brandOrange} rg
 (2. Development and Customization) Tj
 0 0 0 rg
 0 -20 Td
@@ -598,7 +576,7 @@ ${brandDarkOrange} rg
 0 -20 Td
 (   • Integration with your existing systems and workflows) Tj
 0 -30 Td
-${brandDarkOrange} rg
+${brandOrange} rg
 (3. Testing and Deployment) Tj
 0 0 0 rg
 0 -20 Td
@@ -608,7 +586,7 @@ ${brandDarkOrange} rg
 0 -20 Td
 (   • Performance monitoring and fine-tuning) Tj
 0 -30 Td
-${brandDarkOrange} rg
+${brandOrange} rg
 (4. Training and Adoption) Tj
 0 0 0 rg
 0 -20 Td
@@ -617,11 +595,6 @@ ${brandDarkOrange} rg
 (   • Development of adoption strategy) Tj
 0 -20 Td
 (   • Ongoing support and performance optimization) Tj
-
-q
-${brandLightOrange} rg
-72 260 468 -150 re f
-Q
 
 BT
 0 -40 Td
@@ -633,7 +606,7 @@ ${brandOrange} rg
 /F1 13 Tf
 (To proceed with implementing this AI solution for ${companyName}:) Tj
 0 -30 Td
-${brandDarkOrange} rg
+${brandOrange} rg
 (1. Schedule a demonstration of our ${tierName} solution) Tj
 0 -20 Td
 (2. Finalize the proposal details and customization requirements) Tj
