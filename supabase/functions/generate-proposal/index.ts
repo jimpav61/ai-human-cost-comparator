@@ -154,8 +154,7 @@ function generateProfessionalProposal(lead) {
   
   // Ensure additional voice minutes are properly calculated
   const additionalVoiceMinutes = Number(calculatorInputs.callVolume) || 0;
-  const extraVoiceMinutes = additionalVoiceMinutes > includedVoiceMinutes ? 
-                          (additionalVoiceMinutes - includedVoiceMinutes) : 0;
+  const extraVoiceMinutes = additionalVoiceMinutes > 0 ? additionalVoiceMinutes : 0;
   const voiceCost = extraVoiceMinutes * 0.12;
   
   // Total monthly cost with any additional voice minutes
@@ -396,7 +395,7 @@ ${isVoiceEnabled ? `(• Includes ${includedVoiceMinutes} voice minutes per mont
 0 -20 Td
 ${additionalVoiceMinutes > 0 ? `(• Additional voice minutes needed: ${additionalVoiceMinutes} minutes)` : ``} Tj
 0 -20 Td
-${extraVoiceMinutes > 0 ? `(• Extra minutes beyond plan: ${extraVoiceMinutes} minutes at $0.12/minute = $${(extraVoiceMinutes * 0.12).toFixed(2)}/month)` : ``} Tj
+${extraVoiceMinutes > 0 ? `(• Extra minutes: ${extraVoiceMinutes} minutes at $0.12/minute = $${(extraVoiceMinutes * 0.12).toFixed(2)}/month)` : ``} Tj
 0 -20 Td
 (• ${aiTier === 'premium' ? 'Unlimited' : '50,000+'} monthly text interactions) Tj
 0 -20 Td
@@ -461,14 +460,14 @@ ${includedVoiceMinutes > 0 ? `200 0 Td` : ``} Tj
 ${includedVoiceMinutes > 0 ? `(${formatNumber(includedVoiceMinutes)} minutes/month)` : ``} Tj
 ${includedVoiceMinutes > 0 ? `-200 -25 Td` : ``} Tj
 
-${additionalVoiceMinutes > 0 ? `(Additional Voice Minutes Needed:)` : ``} Tj
+${additionalVoiceMinutes > 0 ? `(Additional Voice Minutes:)` : ``} Tj
 ${additionalVoiceMinutes > 0 ? `200 0 Td` : ``} Tj
 ${additionalVoiceMinutes > 0 ? `(${formatNumber(additionalVoiceMinutes)} minutes)` : ``} Tj
 ${additionalVoiceMinutes > 0 ? `-200 -25 Td` : ``} Tj
 
-${extraVoiceMinutes > 0 ? `(Extra Voice Minutes Cost:)` : ``} Tj
+${extraVoiceMinutes > 0 ? `(Voice Minutes Cost:)` : ``} Tj
 ${extraVoiceMinutes > 0 ? `200 0 Td` : ``} Tj
-${extraVoiceMinutes > 0 ? `(${formatNumber(extraVoiceMinutes)} minutes @ $0.12 = ${formatCurrency(voiceCost)}/month)` : ``} Tj
+${extraVoiceMinutes > 0 ? `(${formatCurrency(voiceCost)}/month)` : ``} Tj
 ${extraVoiceMinutes > 0 ? `-200 -25 Td` : ``} Tj
 
 (Total Monthly Investment:) Tj
