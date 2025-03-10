@@ -8,6 +8,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { BusinessSuggestionsAndPlacements } from './calculator/BusinessSuggestionsAndPlacements';
 import type { LeadData } from './calculator/types';
 import type { Json } from '@/integrations/supabase/types';
+import { toJson } from '@/hooks/calculator/supabase-types';
 
 interface AIVsHumanCalculatorProps {
   leadData: LeadData;
@@ -81,8 +82,8 @@ export const AIVsHumanCalculator: React.FC<AIVsHumanCalculatorProps> = ({ leadDa
         company_name: leadData.companyName,
         email: leadData.email,
         phone_number: leadData.phoneNumber || null,
-        calculator_inputs: calculatorInputs as Json,
-        calculator_results: calculationResults as Json,
+        calculator_inputs: toJson(calculatorInputs),
+        calculator_results: toJson(calculationResults),
         report_date: new Date().toISOString()
       };
       
