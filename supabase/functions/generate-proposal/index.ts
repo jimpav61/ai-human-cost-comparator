@@ -156,7 +156,10 @@ function generateProfessionalProposal(lead) {
   
   // FIX: Ensure additional voice minutes are properly calculated
   const additionalVoiceMinutes = Number(calculatorInputs.callVolume) || 0;
-  const extraVoiceMinutes = additionalVoiceMinutes > 0 ? additionalVoiceMinutes : 0;
+  // Only calculate extra minutes if additionalVoiceMinutes is greater than 0
+  const extraVoiceMinutes = (aiTier !== 'starter' && additionalVoiceMinutes > includedVoiceMinutes) 
+    ? additionalVoiceMinutes - includedVoiceMinutes 
+    : 0;
   const voiceCost = extraVoiceMinutes * 0.12;
   
   // Total monthly cost with any additional voice minutes
@@ -394,10 +397,11 @@ ${brandOrange} rg
 (\\225 ${aiTypeDisplay} Interface ${aiTier !== 'starter' ? 'with speech recognition and synthesis' : ''}) Tj
 0 -20 Td
 ${aiTier !== 'starter' ? `(\\225 Includes ${includedVoiceMinutes} voice minutes per month)` : `(\\225 Text-only capabilities)`} Tj
+${extraVoiceMinutes > 0 ? `
 0 -20 Td
-${additionalVoiceMinutes > 0 ? `(\\225 Additional voice minutes needed: ${additionalVoiceMinutes} minutes)` : ``} Tj
+(\\225 Additional voice minutes needed: ${additionalVoiceMinutes} minutes)
 0 -20 Td
-${extraVoiceMinutes > 0 ? `(\\225 Extra minutes: ${extraVoiceMinutes} minutes at $0.12/minute = $${(extraVoiceMinutes * 0.12).toFixed(2)}/month)` : ``} Tj
+(\\225 Extra minutes: ${extraVoiceMinutes} minutes at $0.12/minute = $${(extraVoiceMinutes * 0.12).toFixed(2)}/month)` : ``}
 0 -20 Td
 (\\225 ${aiTier === 'premium' ? 'Unlimited' : '50,000+'} monthly text interactions) Tj
 0 -20 Td
@@ -464,7 +468,7 @@ ${includedVoiceMinutes > 0 ? `-200 -25 Td` : ``} Tj
 
 ${extraVoiceMinutes > 0 ? `(Additional Voice Minutes:)` : ``} Tj
 ${extraVoiceMinutes > 0 ? `200 0 Td` : ``} Tj
-${extraVoiceMinutes > 0 ? `(${formatNumber(extraVoiceMinutes)} minutes)` : ``} Tj
+${extraVoiceMinutes > 0 ? `(${formatNumber(additionalVoiceMinutes)} minutes)` : ``} Tj
 ${extraVoiceMinutes > 0 ? `-200 -25 Td` : ``} Tj
 
 ${extraVoiceMinutes > 0 ? `(Voice Minutes Cost:)` : ``} Tj
