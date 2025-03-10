@@ -119,14 +119,29 @@ function generateProfessionalProposal(lead) {
   const industry = lead.industry || 'Technology';
   const employeeCount = lead.employee_count || '10';
   
-  // Get calculator data if available
-  let calculatorInputs = lead.calculator_inputs || {};
-  let calculatorResults = lead.calculator_results || {};
+  // Log complete lead data for debugging
+  console.log("Full lead data for proposal generation:", JSON.stringify(lead));
   
-  // Ensure we have objects, not strings
+  // Get calculator data if available
+  let calculatorInputs = {};
+  let calculatorResults = {};
+  
+  // First try to access calculator_inputs/results directly
+  if (lead.calculator_inputs) {
+    calculatorInputs = lead.calculator_inputs;
+    console.log("Found calculator inputs in lead:", JSON.stringify(calculatorInputs));
+  }
+  
+  if (lead.calculator_results) {
+    calculatorResults = lead.calculator_results;
+    console.log("Found calculator results in lead:", JSON.stringify(calculatorResults));
+  }
+  
+  // Handle case where they might be strings
   if (typeof calculatorInputs === 'string') {
     try {
       calculatorInputs = JSON.parse(calculatorInputs);
+      console.log("Parsed calculator_inputs from string:", JSON.stringify(calculatorInputs));
     } catch (e) {
       console.error("Error parsing calculator_inputs:", e);
       calculatorInputs = {};
@@ -136,23 +151,37 @@ function generateProfessionalProposal(lead) {
   if (typeof calculatorResults === 'string') {
     try {
       calculatorResults = JSON.parse(calculatorResults);
+      console.log("Parsed calculator_results from string:", JSON.stringify(calculatorResults));
     } catch (e) {
       console.error("Error parsing calculator_results:", e);
       calculatorResults = {};
     }
   }
   
-  console.log("Proposal generation calculator inputs:", JSON.stringify(calculatorInputs));
+  // Determine AI plan details from inputs
+  // Default to growth plan if no tier is specified
+  const aiTier = (calculatorInputs.aiTier || 'growth').toLowerCase();
   
-  // Determine AI plan details
-  const aiTier = (calculatorInputs.aiTier || '').toLowerCase();
+  // Get display names based on tier
   const tierName = aiTier === 'starter' ? 'Starter Plan' : 
                   aiTier === 'growth' ? 'Growth Plan' : 
                   aiTier === 'premium' ? 'Premium Plan' : 'Growth Plan';
   
-  // Set AI type display based on tier
-  const aiTypeDisplay = aiTier === 'starter' ? 'Text Only' : 'Voice Enabled';
+  // Set AI type display based on tier and type
+  let aiTypeDisplay = 'Text Only';
+  if (calculatorInputs.aiType) {
+    const aiType = calculatorInputs.aiType;
+    aiTypeDisplay = aiType === 'chatbot' ? 'Text Only' : 
+                    aiType === 'voice' ? 'Basic Voice' : 
+                    aiType === 'conversationalVoice' ? 'Conversational Voice' : 
+                    aiType === 'both' ? 'Text & Basic Voice' : 
+                    aiType === 'both-premium' ? 'Text & Conversational Voice' : 'Text Only';
+  } else if (aiTier !== 'starter') {
+    // If no AI type specified but not on starter, default to voice capability
+    aiTypeDisplay = 'Text & Basic Voice';
+  }
   
+  // Get price details based on tier
   const monthlyPrice = aiTier === 'starter' ? 99 : 
                       aiTier === 'growth' ? 229 :
                       aiTier === 'premium' ? 429 : 229;
@@ -161,21 +190,27 @@ function generateProfessionalProposal(lead) {
                   aiTier === 'growth' ? 749 :
                   aiTier === 'premium' ? 999 : 749;
   
-  // Get voice details if applicable
+  // Get voice details - different for each tier
   const includedVoiceMinutes = aiTier === 'starter' ? 0 : 600;
   
   // Get additional voice minutes directly from calculator inputs
+  // Default to 0 if not specified or on starter plan
   let additionalVoiceMinutes = 0;
-  if (calculatorInputs.callVolume !== undefined) {
-    // Convert string to number if needed
-    additionalVoiceMinutes = typeof calculatorInputs.callVolume === 'string' 
-      ? parseInt(calculatorInputs.callVolume, 10) || 0
-      : calculatorInputs.callVolume || 0;
+  
+  if (aiTier !== 'starter' && calculatorInputs.callVolume !== undefined) {
+    // Convert string to number if needed and ensure it's valid
+    if (typeof calculatorInputs.callVolume === 'string') {
+      additionalVoiceMinutes = parseInt(calculatorInputs.callVolume, 10) || 0;
+    } else if (typeof calculatorInputs.callVolume === 'number') {
+      additionalVoiceMinutes = calculatorInputs.callVolume;
+    }
   }
   
-  console.log("Additional voice minutes for PDF:", additionalVoiceMinutes);
+  // Log voice minutes for debugging
+  console.log("Proposal generation - included voice minutes:", includedVoiceMinutes);
+  console.log("Proposal generation - additional voice minutes:", additionalVoiceMinutes);
   
-  // Calculate voice cost with clear rate
+  // Calculate voice cost with clear rate (12 cents per minute)
   const voiceCostPerMinute = 0.12;
   const voiceCost = aiTier !== 'starter' && additionalVoiceMinutes > 0 
     ? additionalVoiceMinutes * voiceCostPerMinute 
@@ -196,11 +231,6 @@ function generateProfessionalProposal(lead) {
   const firstYearROI = Math.round(((yearlySavings || 12000) - setupFee) / (totalMonthlyCost * 12 + setupFee) * 100);
   const fiveYearSavings = (yearlySavings || 12000) * 5 - (totalMonthlyCost * 12 * 5 + setupFee);
   
-  // Brand Colors
-  const brandOrange = "0.965 0.322 0.157";
-  const brandBlack = "0 0 0";
-  const brandWhite = "1 1 1";
-  
   // Log values for debugging
   console.log("PDF Generation values:", {
     tierName,
@@ -210,8 +240,17 @@ function generateProfessionalProposal(lead) {
     additionalVoiceMinutes,
     voiceCost,
     totalMonthlyCost,
-    setupFee
+    setupFee,
+    humanCostMonthly,
+    monthlySavings,
+    yearlySavings,
+    savingsPercentage
   });
+  
+  // Brand Colors
+  const brandOrange = "0.965 0.322 0.157";
+  const brandBlack = "0 0 0";
+  const brandWhite = "1 1 1";
   
   // Create PDF content
   let pdfContent = `
