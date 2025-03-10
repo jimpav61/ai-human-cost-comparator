@@ -1,4 +1,3 @@
-
 import { serve } from "https://deno.land/std@0.177.0/http/server.ts";
 import { corsHeaders } from "../_shared/cors.ts";
 
@@ -168,17 +167,14 @@ function generateProfessionalProposal(lead) {
   const savingsPercentage = calculatorResults.savingsPercentage || Math.round((monthlySavings / humanCostMonthly) * 100);
   
   // Get voice details if applicable
-  const includedVoiceMinutes = aiTier === 'starter' ? 0 : 
-                              aiTier === 'growth' ? 600 : 
-                              aiTier === 'premium' ? 600 : 600;
+  const includedVoiceMinutes = aiTier === 'starter' ? 0 : 600;
   
   // DIRECTLY access call volume without any complex logic or fallbacks
-  // Set additionalVoiceMinutes to 0 by default if not found
+  // Always initialize additionalVoiceMinutes as 0
   let additionalVoiceMinutes = 0;
   
-  // Check for callVolume in calculator inputs
+  // Check for callVolume in calculator inputs and ensure it's a number
   if (calculatorInputs.callVolume !== undefined) {
-    // Handle both string and number formats
     additionalVoiceMinutes = typeof calculatorInputs.callVolume === 'string' 
       ? parseInt(calculatorInputs.callVolume, 10) || 0
       : calculatorInputs.callVolume || 0;
@@ -186,8 +182,8 @@ function generateProfessionalProposal(lead) {
   
   console.log("Additional voice minutes for PDF:", additionalVoiceMinutes);
   
-  // Calculate voice cost - no extra minutes for starter tier
-  const voiceCost = aiTier !== 'starter' && additionalVoiceMinutes > 0 ? additionalVoiceMinutes * 0.12 : 0;
+  // Calculate voice cost - even for zero minutes to ensure consistent display
+  const voiceCost = aiTier !== 'starter' && additionalVoiceMinutes >= 0 ? additionalVoiceMinutes * 0.12 : 0;
   
   // Total monthly cost
   const totalMonthlyCost = monthlyPrice + voiceCost;
@@ -435,25 +431,12 @@ ${brandOrange} rg
 (\\267 ${aiTypeDisplay} Interface ${aiTier !== 'starter' ? 'with speech recognition and synthesis' : ''}) Tj
 0 -20 Td`;
 
-  // Always add voice minutes info for Growth and Premium plans
-  if (aiTier !== 'starter') {
-    pdfContent += `
-(\\267 Includes ${includedVoiceMinutes} voice minutes per month) Tj
+  // Always include voice minutes info regardless of the plan
+  pdfContent += `
+(\\267 ${includedVoiceMinutes > 0 ? `Includes ${includedVoiceMinutes} voice minutes per month` : 'No included voice minutes'}) Tj
 0 -20 Td
-(\\267 Additional voice minutes requested: ${additionalVoiceMinutes} minutes) Tj
+(\\267 Additional voice minutes: ${additionalVoiceMinutes} minutes ($${voiceCost.toFixed(2)}/month)) Tj
 0 -20 Td`;
-    
-    // Add additional voice minutes cost info
-    if (additionalVoiceMinutes > 0) {
-      pdfContent += `
-(\\267 Additional minutes cost: $${(additionalVoiceMinutes * 0.12).toFixed(2)}/month) Tj
-0 -20 Td`;
-    }
-  } else {
-    pdfContent += `
-(\\267 Text-only capabilities) Tj
-0 -20 Td`;
-  }
 
   // Continue with standard content
   pdfContent += `
@@ -508,41 +491,32 @@ ${brandOrange} rg
 /F1 13 Tf
 (Monthly Investment:) Tj
 200 0 Td
-(${formatCurrency(monthlyPrice)}/month) Tj
+($${monthlyPrice.toFixed(2)}/month) Tj
 -200 -25 Td
 (Setup and Onboarding Fee:) Tj
 200 0 Td
-(${formatCurrency(setupFee)} one-time) Tj
+($${setupFee.toFixed(2)} one-time) Tj
 -200 -25 Td`;
 
-  // Always include voice minutes info for Growth and Premium plans
-  if (aiTier !== 'starter') {
-    pdfContent += `
+  // Always show voice minutes information with consistent formatting
+  pdfContent += `
 (Included Voice Minutes:) Tj
 200 0 Td
-(${formatNumber(includedVoiceMinutes)} minutes/month) Tj
+(${includedVoiceMinutes} minutes/month) Tj
 -200 -25 Td
 (Additional Voice Minutes:) Tj
 200 0 Td
-(${formatNumber(additionalVoiceMinutes)} minutes) Tj
+(${additionalVoiceMinutes} minutes ($${voiceCost.toFixed(2)}/month)) Tj
 -200 -25 Td`;
-    
-    // Always show voice cost (will be $0.00 if no additional minutes)
-    pdfContent += `
-(Voice Minutes Cost:) Tj
-200 0 Td
-(${formatCurrency(voiceCost)}/month) Tj
--200 -25 Td`;
-  }
 
   pdfContent += `
 (Total Monthly Investment:) Tj
 200 0 Td
-(${formatCurrency(totalMonthlyCost)}/month) Tj
+($${totalMonthlyCost.toFixed(2)}/month) Tj
 -200 -25 Td
 (Annual Investment:) Tj
 200 0 Td
-(${formatCurrency(totalMonthlyCost * 10)}/year (2 months free with annual plan)) Tj
+($${(totalMonthlyCost * 10).toFixed(2)}/year (2 months free with annual plan)) Tj
 -200 -45 Td
 
 /F2 18 Tf
@@ -768,4 +742,3 @@ startxref
     return new Intl.NumberFormat('en-US').format(value);
   }
 }
-
