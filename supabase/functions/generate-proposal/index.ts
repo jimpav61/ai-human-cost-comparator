@@ -1,4 +1,3 @@
-
 import { serve } from "https://deno.land/std@0.177.0/http/server.ts";
 import { corsHeaders } from "../_shared/cors.ts";
 
@@ -161,17 +160,10 @@ function generateProfessionalProposal(lead) {
                   aiTier === 'growth' ? 749 :
                   aiTier === 'premium' ? 999 : 749;
   
-  // Get other financial metrics
-  const humanCostMonthly = calculatorResults.humanCostMonthly || 15000;
-  const monthlySavings = calculatorResults.monthlySavings || (humanCostMonthly - monthlyPrice);
-  const yearlySavings = calculatorResults.yearlySavings || (monthlySavings * 12);
-  const savingsPercentage = calculatorResults.savingsPercentage || Math.round((monthlySavings / humanCostMonthly) * 100);
-  
   // Get voice details if applicable
   const includedVoiceMinutes = aiTier === 'starter' ? 0 : 600;
   
   // Get additional voice minutes directly from calculator inputs
-  // This is the important part that was missing or incorrect in previous attempts
   let additionalVoiceMinutes = 0;
   if (calculatorInputs.callVolume !== undefined) {
     // Convert string to number if needed
@@ -330,12 +322,6 @@ ${brandOrange} rg
 (specialize in developing cutting-edge conversational AI solutions that drive operational efficiency and) Tj
 0 -20 Td
 (enhance customer experiences across industries.) Tj
-0 -30 Td
-(Based on our analysis of your requirements in the ${industry} industry with approximately ${employeeCount}) Tj
-0 -20 Td
-(employees, we have developed a custom AI solution proposal that addresses your specific needs while) Tj
-0 -20 Td
-(providing significant cost savings and operational benefits.) Tj
 0 -40 Td
 /F2 16 Tf
 ${brandOrange} rg
