@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from "react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
@@ -20,20 +19,16 @@ export const EditReportDialog = ({ isOpen, onClose, lead, onSave }: EditReportDi
   const [editableLead, setEditableLead] = useState<Lead>(() => {
     const leadCopy = JSON.parse(JSON.stringify(lead));
     
-    // Ensure calculator_inputs exists and has default values if missing
+    // Initialize calculator_inputs with existing values or defaults
     if (!leadCopy.calculator_inputs) {
       leadCopy.calculator_inputs = {};
     }
     
-    if (!leadCopy.calculator_inputs.aiTier) {
-      leadCopy.calculator_inputs.aiTier = 'growth';
-    }
+    // Keep existing values or set defaults if missing
+    leadCopy.calculator_inputs.aiTier = leadCopy.calculator_inputs.aiTier || 'growth';
+    leadCopy.calculator_inputs.aiType = leadCopy.calculator_inputs.aiType || 'both';
     
-    if (!leadCopy.calculator_inputs.aiType) {
-      leadCopy.calculator_inputs.aiType = 'both';
-    }
-    
-    // Ensure callVolume exists and is a number
+    // Important: Keep the existing callVolume if it exists
     if (typeof leadCopy.calculator_inputs.callVolume !== 'number') {
       leadCopy.calculator_inputs.callVolume = 0;
     }
