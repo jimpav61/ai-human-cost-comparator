@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from "react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
@@ -27,14 +28,22 @@ export const EditReportDialog = ({ isOpen, onClose, lead, onSave }: EditReportDi
     leadCopy.calculator_inputs.aiTier = leadCopy.calculator_inputs.aiTier || 'growth';
     leadCopy.calculator_inputs.aiType = leadCopy.calculator_inputs.aiType || 'both';
     
-    // Get the existing callVolume from calculator_results if not already in calculator_inputs
-    if (typeof leadCopy.calculator_inputs.callVolume !== 'number' && leadCopy.calculator_results?.aiCostMonthly?.voice > 0) {
+    // Calculate callVolume from either existing calculator_inputs or from calculator_results
+    if (typeof leadCopy.calculator_inputs.callVolume === 'number') {
+      console.log("Using existing callVolume from inputs:", leadCopy.calculator_inputs.callVolume);
+    } 
+    else if (leadCopy.calculator_results?.aiCostMonthly?.voice > 0) {
       // Calculate voice minutes from the voice cost (cost is $0.12 per minute)
-      const existingCallVolume = Math.ceil(leadCopy.calculator_results.aiCostMonthly.voice / 0.12);
+      const voiceCost = leadCopy.calculator_results.aiCostMonthly.voice;
+      const existingCallVolume = Math.round(voiceCost / 0.12);
+      
       // Round to nearest 100
-      leadCopy.calculator_inputs.callVolume = Math.ceil(existingCallVolume / 100) * 100;
-    } else if (typeof leadCopy.calculator_inputs.callVolume !== 'number') {
+      leadCopy.calculator_inputs.callVolume = Math.round(existingCallVolume / 100) * 100;
+      console.log("Calculated callVolume from voice cost:", voiceCost, "->", leadCopy.calculator_inputs.callVolume);
+    } 
+    else {
       leadCopy.calculator_inputs.callVolume = 0;
+      console.log("No existing callVolume, defaulting to 0");
     }
     
     return leadCopy;
@@ -53,14 +62,22 @@ export const EditReportDialog = ({ isOpen, onClose, lead, onSave }: EditReportDi
       leadCopy.calculator_inputs.aiTier = leadCopy.calculator_inputs.aiTier || 'growth';
       leadCopy.calculator_inputs.aiType = leadCopy.calculator_inputs.aiType || 'both';
       
-      // Get the existing callVolume from calculator_results if not already in calculator_inputs
-      if (typeof leadCopy.calculator_inputs.callVolume !== 'number' && leadCopy.calculator_results?.aiCostMonthly?.voice > 0) {
+      // Calculate callVolume from either existing calculator_inputs or from calculator_results
+      if (typeof leadCopy.calculator_inputs.callVolume === 'number') {
+        console.log("useEffect: Using existing callVolume from inputs:", leadCopy.calculator_inputs.callVolume);
+      } 
+      else if (leadCopy.calculator_results?.aiCostMonthly?.voice > 0) {
         // Calculate voice minutes from the voice cost (cost is $0.12 per minute)
-        const existingCallVolume = Math.ceil(leadCopy.calculator_results.aiCostMonthly.voice / 0.12);
+        const voiceCost = leadCopy.calculator_results.aiCostMonthly.voice;
+        const existingCallVolume = Math.round(voiceCost / 0.12);
+        
         // Round to nearest 100
-        leadCopy.calculator_inputs.callVolume = Math.ceil(existingCallVolume / 100) * 100;
-      } else if (typeof leadCopy.calculator_inputs.callVolume !== 'number') {
+        leadCopy.calculator_inputs.callVolume = Math.round(existingCallVolume / 100) * 100;
+        console.log("useEffect: Calculated callVolume from voice cost:", voiceCost, "->", leadCopy.calculator_inputs.callVolume);
+      } 
+      else {
         leadCopy.calculator_inputs.callVolume = 0;
+        console.log("useEffect: No existing callVolume, defaulting to 0");
       }
       
       console.log("Setting editable lead with callVolume:", leadCopy.calculator_inputs.callVolume);
