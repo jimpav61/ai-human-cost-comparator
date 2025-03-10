@@ -1,9 +1,9 @@
-
 import { useState, useEffect, useCallback } from "react";
 import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "@/components/ui/use-toast";
 import { Lead } from "@/types/leads";
+import { fromJson } from "@/hooks/calculator/supabase-types";
 
 export function useAdminAuth() {
   const [session, setSession] = useState<any>(null);
@@ -19,7 +19,6 @@ export function useAdminAuth() {
     let timeoutId: number;
     
     try {
-      // Set a timeout to detect if auth check is taking too long
       timeoutId = window.setTimeout(() => {
         console.log("Auth check taking too long");
         setLoadingTimeout(true);
@@ -28,7 +27,6 @@ export function useAdminAuth() {
       console.log("Admin page: Checking authentication");
       const { data, error } = await supabase.auth.getSession();
       
-      // Clear the timeout since we got a response
       window.clearTimeout(timeoutId);
       
       if (error) {
@@ -47,7 +45,6 @@ export function useAdminAuth() {
         return;
       }
       
-      // Check if user has admin role
       const { data: userData, error: userError } = await supabase
         .rpc('has_role', { role_to_check: 'admin' });
         
@@ -62,7 +59,6 @@ export function useAdminAuth() {
       setIsAdmin(userData === true);
       
       if (userData) {
-        // Fetch leads data
         const { data: leadsData, error: leadsError } = await supabase
           .from('leads')
           .select('*')
@@ -72,7 +68,13 @@ export function useAdminAuth() {
           console.error("Leads fetch error:", leadsError);
           setAuthError(leadsError.message);
         } else {
-          setLeads(leadsData as Lead[] || []);
+          const typedLeads = (leadsData || []).map(lead => ({
+            ...lead,
+            calculator_inputs: fromJson(lead.calculator_inputs),
+            calculator_results: fromJson(lead.calculator_results)
+          } as Lead));
+          
+          setLeads(typedLeads);
         }
       }
     } catch (error: any) {
@@ -84,17 +86,14 @@ export function useAdminAuth() {
         variant: "destructive",
       });
     } finally {
-      // Make sure to clear the timeout and set loading to false
       window.clearTimeout(timeoutId);
       setIsLoading(false);
     }
   }, [navigate]);
 
   useEffect(() => {
-    // Initial auth check
     checkAuth();
     
-    // Set up auth state change listener
     const { data: authListener } = supabase.auth.onAuthStateChange(
       async (event, session) => {
         console.log("Admin page: Auth state changed:", event);
@@ -134,7 +133,13 @@ export function useAdminAuth() {
               console.error('Leads fetch error:', leadsError);
               setAuthError(leadsError.message);
             } else {
-              setLeads(leadsData as Lead[] || []);
+              const typedLeads = (leadsData || []).map(lead => ({
+                ...lead,
+                calculator_inputs: fromJson(lead.calculator_inputs),
+                calculator_results: fromJson(lead.calculator_results)
+              } as Lead));
+              
+              setLeads(typedLeads);
             }
           }
         } catch (error: any) {
@@ -147,7 +152,6 @@ export function useAdminAuth() {
     );
     
     return () => {
-      // Clean up the auth listener
       authListener.subscription.unsubscribe();
     };
   }, [checkAuth]);

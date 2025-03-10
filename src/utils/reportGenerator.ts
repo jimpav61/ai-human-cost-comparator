@@ -5,6 +5,7 @@ import { getSafeFileName } from "@/components/admin/document-generator/hooks/rep
 import { toast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 import { CalculationResults } from "@/hooks/calculator/types";
+import { toJson } from "@/hooks/calculator/supabase-types";
 
 /**
  * Checks if a lead has calculator results and can generate a report
@@ -136,8 +137,8 @@ export const generateAndDownloadReport = async (lead: Lead) => {
         company_name: lead.company_name,
         email: lead.email,
         phone_number: lead.phone_number || null,
-        calculator_inputs: lead.calculator_inputs,
-        calculator_results: lead.calculator_results,
+        calculator_inputs: toJson(lead.calculator_inputs),
+        calculator_results: toJson(lead.calculator_results),
         report_date: new Date().toISOString()
       };
       

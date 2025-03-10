@@ -10,6 +10,7 @@ import { getSafeFileName } from "./hooks/report-generator/saveReport";
 import { generatePDF } from "@/components/calculator/pdf";
 import { CalculationResults } from "@/hooks/calculator/types";
 import { EditReportDialog } from "./components/EditReportDialog";
+import { toJson } from "@/hooks/calculator/supabase-types";
 
 export const DocumentGenerator = ({ lead }: DocumentGeneratorProps) => {
   const [isLoading, setIsLoading] = useState(false);
@@ -27,11 +28,11 @@ export const DocumentGenerator = ({ lead }: DocumentGeneratorProps) => {
   
   const handleSaveReportSettings = async (updatedLead: Lead) => {
     try {
-      // Update the lead in the database
+      // Update the lead in the database - using toJson to convert the type
       const { error } = await supabase
         .from('leads')
         .update({
-          calculator_inputs: updatedLead.calculator_inputs
+          calculator_inputs: toJson(updatedLead.calculator_inputs)
         })
         .eq('id', updatedLead.id);
       

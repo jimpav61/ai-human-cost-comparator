@@ -36,6 +36,9 @@ export interface CalculationResults {
     yearlyTotal: number;
   };
   annualPlan: number;
+  // Adding these properties for proposal generator compatibility
+  tierKey?: 'starter' | 'growth' | 'premium';
+  aiType?: 'voice' | 'chatbot' | 'both' | 'conversationalVoice' | 'both-premium';
 }
 
 export type CalculatorState = CalculationResults;
