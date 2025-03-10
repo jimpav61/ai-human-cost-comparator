@@ -1,4 +1,3 @@
-
 import { serve } from "https://deno.land/std@0.177.0/http/server.ts";
 import { corsHeaders } from "../_shared/cors.ts";
 
@@ -153,14 +152,12 @@ function generateProfessionalProposal(lead) {
                               aiTier === 'growth' ? 600 : 
                               aiTier === 'premium' ? 600 : 600;
   
-  // Parse additional voice minutes from input data - FIXED EXTRACTION
-  let additionalVoiceMinutes = 0;
-  
   // IMPORTANT: Enhanced logging and checking of call volume data
   console.log("Original callVolume value:", calculatorInputs.callVolume);
   console.log("Type of callVolume:", typeof calculatorInputs.callVolume);
   
   // Check all possible places where call volume could be stored
+  let additionalVoiceMinutes = 0;
   if (calculatorInputs.callVolume !== undefined) {
     // Direct property access
     if (typeof calculatorInputs.callVolume === 'string') {
@@ -189,7 +186,7 @@ function generateProfessionalProposal(lead) {
   // Calculate voice cost - no extra minutes for starter tier
   const voiceCost = aiTier !== 'starter' && additionalVoiceMinutes > 0 ? additionalVoiceMinutes * 0.12 : 0;
   
-  // Total monthly cost with any additional voice minutes
+  // Total monthly cost
   const totalMonthlyCost = monthlyPrice + voiceCost;
   
   // Calculate ROI details
@@ -411,7 +408,6 @@ ${brandOrange} rg
 0 0 0 rg
 0 -25 Td
 /F1 12 Tf
-
 (\\267 Customized AI model trained on your business knowledge and processes) Tj
 0 -20 Td
 (\\267 Advanced natural language processing for accurate understanding of customer inquiries) Tj
