@@ -168,7 +168,6 @@ function generateProfessionalProposal(lead) {
   
   // Brand Colors - Use correct brand orange
   const brandOrange = "0.965 0.322 0.157"; // RGB: 246, 82, 40 (#f65228)
-  const brandDarkOrange = "0.757 0.149 0.031"; // Darker orange for secondary elements
   const brandBlack = "0 0 0"; // Black for text on light backgrounds
   const brandWhite = "1 1 1"; // White for text on dark backgrounds
   
@@ -429,7 +428,7 @@ endstream
 endobj
 
 22 0 obj
-<< /Length 3500 >>
+<< /Length 3700 >>
 stream
 q
 ${brandOrange} rg
@@ -479,9 +478,8 @@ ${extraVoiceMinutes > 0 ? `-200 -25 Td` : ``} Tj
 (Annual Investment:) Tj
 200 0 Td
 (${formatCurrency(totalMonthlyCost * 10)}/year (2 months free with annual plan)) Tj
-
-BT
 -200 -45 Td
+
 /F2 18 Tf
 ${brandOrange} rg
 (Cost Comparison and Savings) Tj
@@ -515,7 +513,6 @@ ${brandOrange} rg
 0 0 0 rg
 -200 -45 Td
 
-BT
 /F2 18 Tf
 ${brandOrange} rg
 (Return on Investment) Tj
@@ -676,22 +673,22 @@ xref
 0000001271 00000 n
 0000004625 00000 n
 0000008179 00000 n
-0000011733 00000 n
+0000011933 00000 n
 0000000000 65535 f
 0000000000 65535 f
 0000000000 65535 f
 0000000000 65535 f
 0000000000 65535 f
 0000000000 65535 f
-0000014787 00000 n
-0000014851 00000 n
-0000014915 00000 n
+0000014987 00000 n
+0000015051 00000 n
+0000015115 00000 n
 trailer
 << /Size 33
    /Root 1 0 R
 >>
 startxref
-14979
+15179
 %%EOF
   `;
   
