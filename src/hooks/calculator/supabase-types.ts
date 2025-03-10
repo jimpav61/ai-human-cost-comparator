@@ -5,17 +5,40 @@ import type { CalculatorInputs, CalculationResults } from './types';
 // Helper function to safely cast our calculator types to Json for Supabase
 export const toJson = <T>(data: T): Json => {
   if (!data) return null;
-  // Ensure we're passing a proper object that can be converted to JSON
-  return data as unknown as Json;
+  
+  try {
+    // For objects that may contain special types, convert to plain JSON
+    const serialized = JSON.parse(JSON.stringify(data));
+    return serialized as Json;
+  } catch (e) {
+    console.error('Failed to convert data to JSON:', e);
+    return null;
+  }
 };
 
-// Helper function to cast Json back to our calculator types
+// Helper function to cast Json back to our calculator types with proper type safety
 export const fromJson = <T>(json: Json): T => {
   if (!json) {
     // Return an empty object cast to the expected type if null
     return {} as T;
   }
-  return json as unknown as T;
+  
+  try {
+    // If it's already an object, just return it with the expected type
+    if (typeof json === 'object' && json !== null) {
+      return json as unknown as T;
+    }
+    
+    // If it's a string, try to parse it
+    if (typeof json === 'string') {
+      return JSON.parse(json) as T;
+    }
+    
+    return {} as T;
+  } catch (e) {
+    console.error('Failed to convert JSON to object:', e);
+    return {} as T;
+  }
 };
 
 // Helper to ensure a default for CalculatorInputs when none exists

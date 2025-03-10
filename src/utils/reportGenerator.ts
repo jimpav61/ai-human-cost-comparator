@@ -132,16 +132,19 @@ export const generateAndDownloadReport = async (lead: Lead) => {
     
     // Only save if we have a valid report ID
     if (reportId) {
+      // Convert complex objects to JSON-compatible format
+      const jsonInputs = toJson(lead.calculator_inputs);
+      const jsonResults = toJson(lead.calculator_results);
+      
       // Create the report data with the generated UUID
-      // Use toJson to properly convert the complex objects to Json
       const reportData = {
         id: reportId, 
         contact_name: lead.name,
         company_name: lead.company_name,
         email: lead.email,
         phone_number: lead.phone_number || null,
-        calculator_inputs: toJson(lead.calculator_inputs),
-        calculator_results: toJson(lead.calculator_results),
+        calculator_inputs: jsonInputs,
+        calculator_results: jsonResults,
         report_date: new Date().toISOString()
       };
       

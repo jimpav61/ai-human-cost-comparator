@@ -56,10 +56,17 @@ export const processLeadData = (lead: Lead): ProcessedLeadData => {
   if (lead.calculator_results) {
     console.log("Using lead's existing calculator results:", lead.calculator_results);
     
-    // Safety check: ensure aiCostMonthly exists and has required properties
+    // Initialize a safe result object with the lead's calculator_results
     const safeResults = {
       ...lead.calculator_results,
-      aiCostMonthly: lead.calculator_results.aiCostMonthly || {}
+      // Ensure aiCostMonthly exists with all required properties
+      aiCostMonthly: {
+        voice: 0,
+        chatbot: 0,
+        total: 0,
+        setupFee: 0,
+        ...((lead.calculator_results.aiCostMonthly || {}) as any)
+      }
     };
     
     // Ensure setupFee exists (this is the property causing the error)

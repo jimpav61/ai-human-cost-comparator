@@ -44,4 +44,6 @@ export interface SharedResults {
   annualPlan: number;
   tierKey?: "starter" | "growth" | "premium";
   aiType?: "voice" | "chatbot" | "both" | "conversationalVoice" | "both-premium";
+  includedVoiceMinutes?: number;
+  [key: string]: any; // Allow additional properties
 }

@@ -8,6 +8,22 @@ import { addCostBreakdownSection } from './sections/costBreakdownSection';
 import { addRecommendationsSection } from './sections/recommendationsSection';
 import { addAIPlacementsSection } from './sections/aiPlacementsSection';
 import { addContactSection } from './sections/contactSection';
+import { SharedResults } from '../shared/types';
+
+// Helper function to ensure we get a valid CalculationResults object 
+// regardless of whether we received CalculationResults or SharedResults
+function ensureCalculationResults(results: CalculationResults | SharedResults): CalculationResults {
+  // Create a safe copy to avoid mutation
+  const safeResults = {
+    ...results,
+    // Ensure tierKey is a valid value
+    tierKey: (results.tierKey || 'growth') as "starter" | "growth" | "premium",
+    // Ensure aiType is a valid value
+    aiType: results.aiType || 'chatbot',
+  };
+  
+  return safeResults as CalculationResults;
+}
 
 export const generatePDF = (params: GeneratePDFParams): JsPDFWithAutoTable => {
   const doc = new jsPDF() as JsPDFWithAutoTable;
@@ -23,30 +39,7 @@ export const generatePDF = (params: GeneratePDFParams): JsPDFWithAutoTable => {
     phoneNumber: params.phoneNumber || "",
     industry: params.industry || "Other",
     employeeCount: params.employeeCount || 5,
-    results: params.results || {
-      humanCostMonthly: 15000,
-      aiCostMonthly: {
-        voice: 0,
-        chatbot: 229,
-        total: 229,
-        setupFee: 749
-      },
-      basePriceMonthly: 229,
-      monthlySavings: 14771,
-      yearlySavings: 177252,
-      savingsPercentage: 98,
-      breakEvenPoint: {
-        voice: 0,
-        chatbot: 0
-      },
-      humanHours: {
-        dailyPerEmployee: 8,
-        weeklyTotal: 160,
-        monthlyTotal: 693,
-        yearlyTotal: 8320
-      },
-      annualPlan: 2149
-    } as CalculationResults,
+    results: ensureCalculationResults(params.results),
     additionalVoiceMinutes: typeof params.additionalVoiceMinutes === 'number' ? params.additionalVoiceMinutes : 0,
     includedVoiceMinutes: typeof params.includedVoiceMinutes === 'number' ? params.includedVoiceMinutes : 600,
     tierName: params.tierName || "Growth Plan",
