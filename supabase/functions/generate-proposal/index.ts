@@ -1,3 +1,4 @@
+
 import { serve } from "https://deno.land/std@0.177.0/http/server.ts";
 import { corsHeaders } from "../_shared/cors.ts";
 
@@ -148,7 +149,7 @@ function generateProfessionalProposal(lead) {
   // Get voice details if applicable
   const includedVoiceMinutes = aiTier === 'starter' ? 0 : 
                               aiTier === 'growth' ? 600 : 
-                              aiTier === 'premium' ? 1200 : 600;
+                              aiTier === 'premium' ? 600 : 600;
   
   // Parse additional voice minutes from input data
   let additionalVoiceMinutes = 0;
@@ -411,12 +412,27 @@ ${brandOrange} rg
 (\\267 ${aiTypeDisplay} Interface ${aiTier !== 'starter' ? 'with speech recognition and synthesis' : ''}) Tj
 0 -20 Td`;
 
-  // Add voice minutes info if applicable
-  if (aiTier !== 'starter' && additionalVoiceMinutes > 0) {
+  // Always add voice minutes info for Growth and Premium plans
+  if (aiTier !== 'starter') {
     pdfContent += `
-(\\267 Additional voice minutes needed: ${additionalVoiceMinutes} minutes) Tj
+(\\267 Includes ${includedVoiceMinutes} voice minutes per month) Tj
+0 -20 Td`;
+    
+    // Add additional voice minutes info
+    if (additionalVoiceMinutes > 0) {
+      pdfContent += `
+(\\267 Additional voice minutes requested: ${additionalVoiceMinutes} minutes) Tj
 0 -20 Td
 (\\267 Extra minutes cost: $${(additionalVoiceMinutes * 0.12).toFixed(2)}/month) Tj
+0 -20 Td`;
+    } else {
+      pdfContent += `
+(\\267 No additional voice minutes requested (0 minutes)) Tj
+0 -20 Td`;
+    }
+  } else {
+    pdfContent += `
+(\\267 Text-only capabilities) Tj
 0 -20 Td`;
   }
 
@@ -480,13 +496,23 @@ ${brandOrange} rg
 (${formatCurrency(setupFee)} one-time) Tj
 -200 -25 Td`;
 
-  // Add voice minutes to financial section if applicable
-  if (aiTier !== 'starter' && additionalVoiceMinutes > 0) {
+  // Always include voice minutes info for Growth and Premium plans
+  if (aiTier !== 'starter') {
+    pdfContent += `
+(Included Voice Minutes:) Tj
+200 0 Td
+(${formatNumber(includedVoiceMinutes)} minutes/month) Tj
+-200 -25 Td`;
+    
+    // Add additional voice minutes section (even when 0)
     pdfContent += `
 (Additional Voice Minutes:) Tj
 200 0 Td
 (${formatNumber(additionalVoiceMinutes)} minutes) Tj
--200 -25 Td
+-200 -25 Td`;
+    
+    // Always show voice cost (will be $0.00 if no additional minutes)
+    pdfContent += `
 (Voice Minutes Cost:) Tj
 200 0 Td
 (${formatCurrency(voiceCost)}/month) Tj
