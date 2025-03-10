@@ -7,6 +7,7 @@ import { PlanSelector } from "./edit-report/PlanSelector";
 import { AITypeSelector } from "./edit-report/AITypeSelector";
 import { VoiceMinutesInput } from "./edit-report/VoiceMinutesInput";
 import { useEditReportState } from "../hooks/useEditReportState";
+import { CalculatorInputs } from "@/hooks/calculator/types";
 
 interface EditReportDialogProps {
   isOpen: boolean;

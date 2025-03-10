@@ -2,11 +2,12 @@
 import React from "react";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { CalculatorInputs } from "@/hooks/calculator/types";
 
 interface AITypeSelectorProps {
-  value: string;
+  value: CalculatorInputs['aiType'];
   onChange: (value: string) => void;
-  tier: string;
+  tier: CalculatorInputs['aiTier'];
 }
 
 export const AITypeSelector = ({ value, onChange, tier }: AITypeSelectorProps) => {

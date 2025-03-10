@@ -3,6 +3,7 @@ import { useState, useEffect } from "react";
 import { Lead } from "@/types/leads";
 import { toast } from "@/hooks/use-toast";
 import { initializeLeadData } from "../utils/leadDataInitializer";
+import { CalculatorInputs } from "@/hooks/calculator/types";
 
 export const useEditReportState = (lead: Lead, onSave: (updatedLead: Lead) => void, onClose: () => void) => {
   // Create a deep copy of the lead to avoid reference issues
@@ -24,7 +25,7 @@ export const useEditReportState = (lead: Lead, onSave: (updatedLead: Lead) => vo
     setEditableLead(prev => ({
       ...prev,
       calculator_inputs: {
-        ...(prev.calculator_inputs || {}),
+        ...prev.calculator_inputs,
         callVolume: numValue
       }
     }));
@@ -32,22 +33,34 @@ export const useEditReportState = (lead: Lead, onSave: (updatedLead: Lead) => vo
   
   // Handle changes to the AI tier
   const handleAITierChange = (value: string) => {
+    if (value !== 'starter' && value !== 'growth' && value !== 'premium') {
+      console.error("Invalid AI tier value:", value);
+      return;
+    }
+    
     setEditableLead(prev => ({
       ...prev,
       calculator_inputs: {
-        ...(prev.calculator_inputs || {}),
-        aiTier: value
+        ...prev.calculator_inputs,
+        aiTier: value as CalculatorInputs['aiTier']
       }
     }));
   };
   
   // Handle changes to the AI type
   const handleAITypeChange = (value: string) => {
+    // Validate the AI type value
+    const validAITypes = ['chatbot', 'voice', 'both', 'conversationalVoice', 'both-premium'];
+    if (!validAITypes.includes(value)) {
+      console.error("Invalid AI type value:", value);
+      return;
+    }
+    
     setEditableLead(prev => ({
       ...prev,
       calculator_inputs: {
-        ...(prev.calculator_inputs || {}),
-        aiType: value
+        ...prev.calculator_inputs,
+        aiType: value as CalculatorInputs['aiType']
       }
     }));
   };
@@ -65,7 +78,7 @@ export const useEditReportState = (lead: Lead, onSave: (updatedLead: Lead) => vo
         // Force chatbot for starter tier
         updatedLead.calculator_inputs = {
           ...updatedLead.calculator_inputs,
-          aiType: 'chatbot',
+          aiType: 'chatbot' as const,
           callVolume: 0
         };
         toast({
@@ -77,12 +90,12 @@ export const useEditReportState = (lead: Lead, onSave: (updatedLead: Lead) => vo
         if (aiType === 'voice') {
           updatedLead.calculator_inputs = {
             ...updatedLead.calculator_inputs,
-            aiType: 'conversationalVoice'
+            aiType: 'conversationalVoice' as const
           };
         } else if (aiType === 'both') {
           updatedLead.calculator_inputs = {
             ...updatedLead.calculator_inputs,
-            aiType: 'both-premium'
+            aiType: 'both-premium' as const
           };
         }
       } else if (aiTier === 'growth') {
@@ -90,12 +103,12 @@ export const useEditReportState = (lead: Lead, onSave: (updatedLead: Lead) => vo
         if (aiType === 'conversationalVoice') {
           updatedLead.calculator_inputs = {
             ...updatedLead.calculator_inputs,
-            aiType: 'voice'
+            aiType: 'voice' as const
           };
         } else if (aiType === 'both-premium') {
           updatedLead.calculator_inputs = {
             ...updatedLead.calculator_inputs,
-            aiType: 'both'
+            aiType: 'both' as const
           };
         }
       }

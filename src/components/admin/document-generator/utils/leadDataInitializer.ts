@@ -1,14 +1,15 @@
 import { Lead } from "@/types/leads";
+import { CalculatorInputs } from "@/hooks/calculator/types";
 
 /**
  * Initializes the lead data for the report editor, ensuring all required fields exist
  * with proper default values and calculated values where necessary
  */
 export function initializeLeadData(lead: Lead): Lead {
-  const leadCopy = JSON.parse(JSON.stringify(lead));
+  const leadCopy: Lead = JSON.parse(JSON.stringify(lead));
   
   if (!leadCopy.calculator_inputs) {
-    leadCopy.calculator_inputs = {};
+    leadCopy.calculator_inputs = {} as CalculatorInputs;
   }
   
   // Keep existing values or set defaults
