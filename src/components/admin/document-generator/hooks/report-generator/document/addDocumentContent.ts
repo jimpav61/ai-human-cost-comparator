@@ -40,12 +40,11 @@ export const addDocumentContent = (doc: JsPDFWithAutoTable, data: ProcessedLeadD
   currentY = addCostSummarySection(doc, currentY, data.results);
 
   // Always add the cost breakdown section to match frontend
+  // Pass the entire results object instead of individual values
   currentY = addCostBreakdownSection(
     doc, 
     currentY, 
-    data.results.basePriceMonthly,
-    data.additionalVoiceMinutes,
-    data.results.aiCostMonthly.total
+    data.results
   );
 
   // Add implementation recommendations
