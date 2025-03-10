@@ -30,7 +30,6 @@ export const addCostBreakdownSection = (
   
   // Add voice cost if applicable - only show when there's an actual voice cost
   if (results.aiCostMonthly.voice > 0) {
-    // Don't recalculate - display the pre-calculated voice cost
     tableRows.push(['Voice AI Service', formatCurrency(results.aiCostMonthly.voice)]);
   }
   
