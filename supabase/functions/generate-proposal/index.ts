@@ -123,14 +123,15 @@ function generateProfessionalProposal(lead) {
   const calculatorInputs = lead.calculator_inputs || {};
   const calculatorResults = lead.calculator_results || {};
   
-  // Determine AI plan details
+  // Determine AI plan details - Ensure Growth Plan shows as Voice Enabled
   const aiTier = (calculatorInputs.aiTier || '').toLowerCase();
   const tierName = aiTier === 'starter' ? 'Starter Plan' : 
                   aiTier === 'growth' ? 'Growth Plan' : 
                   aiTier === 'premium' ? 'Premium Plan' : 'Growth Plan';
   
-  const aiType = (calculatorInputs.aiType || '').toLowerCase();
-  const aiTypeDisplay = aiType.includes('voice') || aiTier === 'growth' || aiTier === 'premium' ? 'Voice Enabled' : 'Text Only';
+  // Always show Growth and Premium plans as Voice Enabled
+  const isVoiceEnabled = aiTier === 'growth' || aiTier === 'premium';
+  const aiTypeDisplay = isVoiceEnabled ? 'Voice Enabled' : 'Text Only';
   
   const monthlyPrice = aiTier === 'starter' ? 99 : 
                       aiTier === 'growth' ? 229 :
@@ -151,6 +152,7 @@ function generateProfessionalProposal(lead) {
                               aiTier === 'growth' ? 600 : 
                               aiTier === 'premium' ? 1200 : 600;
   
+  // Ensure additional voice minutes are properly calculated
   const additionalVoiceMinutes = Number(calculatorInputs.callVolume) || 0;
   const extraVoiceMinutes = additionalVoiceMinutes > includedVoiceMinutes ? 
                           (additionalVoiceMinutes - includedVoiceMinutes) : 0;
@@ -164,11 +166,13 @@ function generateProfessionalProposal(lead) {
   const firstYearROI = Math.round((yearlySavings - setupFee) / (totalMonthlyCost * 12 + setupFee) * 100);
   const fiveYearSavings = yearlySavings * 5 - (totalMonthlyCost * 12 * 5 + setupFee);
   
-  // Brand Colors (using updated brand colors)
+  // Brand Colors - Use correct brand orange
   const brandOrange = "0.965 0.322 0.157"; // RGB: 246, 82, 40 (#f65228)
-  const brandBlue = "0.13 0.59 0.95"; // Light blue for secondary color
-  const brandLightBlue = "0.53 0.81 0.98"; // Softer blue for backgrounds
-  const brandLightGreen = "0.76 0.9 0.78"; // Light green for alternate sections
+  const brandDarkOrange = "0.757 0.149 0.031"; // Darker orange for secondary elements
+  const brandLightOrange = "0.996 0.8 0.722"; // Light orange for backgrounds
+  const brandWhite = "1 1 1"; // White for text on dark backgrounds
+  const brandBlack = "0 0 0"; // Black for text on light backgrounds
+  const brandGray = "0.95 0.95 0.95"; // Light gray for alternate sections
   
   // Create an advanced multi-page PDF with proper sections and branding
   const pdfContent = `
@@ -300,7 +304,7 @@ ${brandOrange} rg
 0 0 0 rg
 0 -25 Td
 /F1 12 Tf
-0.2 0.6 0.3 rg
+
 (• Reduction in operational costs by up to ${savingsPercentage}%) Tj
 0 -20 Td
 (• Estimated annual savings of $${formatNumber(yearlySavings)}) Tj
@@ -327,7 +331,7 @@ ${brandOrange} rg
 (${phoneNumber}) Tj
 
 q
-${brandLightBlue} rg
+${brandLightOrange} rg
 72 125 468 -50 re f
 Q
 
@@ -372,7 +376,7 @@ ${brandOrange} rg
 0 0 0 rg
 0 -25 Td
 /F1 12 Tf
-0.2 0.6 0.3 rg
+
 (• Customized AI model trained on your business knowledge and processes) Tj
 0 -20 Td
 (• Advanced natural language processing for accurate understanding of customer inquiries) Tj
@@ -394,9 +398,9 @@ ${brandOrange} rg
 /F1 12 Tf
 (• ${tierName} AI Engine with ${aiTier === 'premium' ? 'advanced' : aiTier === 'growth' ? 'enhanced' : 'standard'} capabilities) Tj
 0 -20 Td
-(• ${aiTypeDisplay} Interface ${aiType.includes('voice') ? 'with speech recognition and synthesis' : ''}) Tj
+(• ${aiTypeDisplay} Interface ${isVoiceEnabled ? 'with speech recognition and synthesis' : ''}) Tj
 0 -20 Td
-${aiTier !== 'starter' ? `(• Includes ${includedVoiceMinutes} voice minutes per month)` : `(• Text-only capabilities)`} Tj
+${isVoiceEnabled ? `(• Includes ${includedVoiceMinutes} voice minutes per month)` : `(• Text-only capabilities)`} Tj
 0 -20 Td
 ${additionalVoiceMinutes > 0 ? `(• Additional voice minutes needed: ${additionalVoiceMinutes} minutes)` : ``} Tj
 0 -20 Td
@@ -410,7 +414,7 @@ ${extraVoiceMinutes > 0 ? `(• Extra minutes beyond plan: ${extraVoiceMinutes} 
 0 -40 Td
 
 q
-${brandLightGreen} rg
+${brandLightOrange} rg
 72 200 468 -150 re f
 Q
 
@@ -489,7 +493,7 @@ ${extraVoiceMinutes > 0 ? `-200 -25 Td` : ``} Tj
 (${formatCurrency(totalMonthlyCost * 10)}/year (2 months free with annual plan)) Tj
 
 q
-${brandLightBlue} rg
+${brandLightOrange} rg
 72 500 468 -120 re f
 Q
 
@@ -511,25 +515,25 @@ ${brandOrange} rg
 -200 -25 Td
 (Monthly Savings:) Tj
 200 0 Td
-0.2 0.6 0.3 rg
+${brandDarkOrange} rg
 (${formatCurrency(monthlySavings)}/month) Tj
 0 0 0 rg
 -200 -25 Td
 (Annual Savings:) Tj
 200 0 Td
-0.2 0.6 0.3 rg
+${brandDarkOrange} rg
 (${formatCurrency(yearlySavings)}/year) Tj
 0 0 0 rg
 -200 -25 Td
 (Savings Percentage:) Tj
 200 0 Td
-0.2 0.6 0.3 rg
+${brandDarkOrange} rg
 (${savingsPercentage}%) Tj
 0 0 0 rg
 -200 -45 Td
 
 q
-${brandLightGreen} rg
+${brandLightOrange} rg
 72 300 468 -180 re f
 Q
 
@@ -542,7 +546,7 @@ ${brandOrange} rg
 /F1 13 Tf
 (Based on the projected savings and implementation costs, your expected ROI timeline is:) Tj
 0 -30 Td
-0.2 0.6 0.3 rg
+${brandDarkOrange} rg
 (• Break-even Point: ${breakEvenPoint} months) Tj
 0 -25 Td
 (• First Year ROI: ${firstYearROI}%) Tj
@@ -574,7 +578,7 @@ ${brandOrange} rg
 0 0 0 rg
 0 -30 Td
 /F1 13 Tf
-0.2 0.6 0.3 rg
+${brandDarkOrange} rg
 (1. Discovery Workshop) Tj
 0 0 0 rg
 0 -20 Td
@@ -584,7 +588,7 @@ ${brandOrange} rg
 0 -20 Td
 (   • Development of implementation roadmap and timeline) Tj
 0 -30 Td
-0.2 0.6 0.3 rg
+${brandDarkOrange} rg
 (2. Development and Customization) Tj
 0 0 0 rg
 0 -20 Td
@@ -594,7 +598,7 @@ ${brandOrange} rg
 0 -20 Td
 (   • Integration with your existing systems and workflows) Tj
 0 -30 Td
-0.2 0.6 0.3 rg
+${brandDarkOrange} rg
 (3. Testing and Deployment) Tj
 0 0 0 rg
 0 -20 Td
@@ -604,7 +608,7 @@ ${brandOrange} rg
 0 -20 Td
 (   • Performance monitoring and fine-tuning) Tj
 0 -30 Td
-0.2 0.6 0.3 rg
+${brandDarkOrange} rg
 (4. Training and Adoption) Tj
 0 0 0 rg
 0 -20 Td
@@ -615,7 +619,7 @@ ${brandOrange} rg
 (   • Ongoing support and performance optimization) Tj
 
 q
-${brandLightBlue} rg
+${brandLightOrange} rg
 72 260 468 -150 re f
 Q
 
@@ -629,7 +633,7 @@ ${brandOrange} rg
 /F1 13 Tf
 (To proceed with implementing this AI solution for ${companyName}:) Tj
 0 -30 Td
-0.2 0.6 0.3 rg
+${brandDarkOrange} rg
 (1. Schedule a demonstration of our ${tierName} solution) Tj
 0 -20 Td
 (2. Finalize the proposal details and customization requirements) Tj
