@@ -28,37 +28,45 @@ export const EditReportDialog = ({ isOpen, onClose, lead, onSave }: EditReportDi
     leadCopy.calculator_inputs.aiTier = leadCopy.calculator_inputs.aiTier || 'growth';
     leadCopy.calculator_inputs.aiType = leadCopy.calculator_inputs.aiType || 'both';
     
-    // Important: Keep the existing callVolume if it exists
-    if (typeof leadCopy.calculator_inputs.callVolume !== 'number') {
-      leadCopy.calculator_inputs.callVolume = 0;
+    // Get the existing callVolume from calculator_results if it exists
+    let existingCallVolume = 0;
+    if (leadCopy.calculator_results?.aiCostMonthly?.voice > 0) {
+      // Calculate voice minutes from the voice cost (cost is $0.12 per minute)
+      existingCallVolume = Math.ceil(leadCopy.calculator_results.aiCostMonthly.voice / 0.12);
     }
+    
+    // Use the existing callVolume from calculator_inputs if it exists, otherwise use the calculated value
+    leadCopy.calculator_inputs.callVolume = typeof leadCopy.calculator_inputs.callVolume === 'number' 
+      ? leadCopy.calculator_inputs.callVolume 
+      : existingCallVolume;
     
     return leadCopy;
   });
-  
+
   // Ensure dialog always shows the latest lead data when opened
   useEffect(() => {
     if (isOpen) {
       const leadCopy = JSON.parse(JSON.stringify(lead));
       
-      // Ensure calculator_inputs exists
       if (!leadCopy.calculator_inputs) {
         leadCopy.calculator_inputs = {};
       }
       
-      // Make sure all necessary properties exist
-      if (!leadCopy.calculator_inputs.aiTier) {
-        leadCopy.calculator_inputs.aiTier = 'growth';
+      // Keep existing values or set defaults
+      leadCopy.calculator_inputs.aiTier = leadCopy.calculator_inputs.aiTier || 'growth';
+      leadCopy.calculator_inputs.aiType = leadCopy.calculator_inputs.aiType || 'both';
+      
+      // Get the existing callVolume from calculator_results if it exists
+      let existingCallVolume = 0;
+      if (leadCopy.calculator_results?.aiCostMonthly?.voice > 0) {
+        // Calculate voice minutes from the voice cost (cost is $0.12 per minute)
+        existingCallVolume = Math.ceil(leadCopy.calculator_results.aiCostMonthly.voice / 0.12);
       }
       
-      if (!leadCopy.calculator_inputs.aiType) {
-        leadCopy.calculator_inputs.aiType = 'both';
-      }
-      
-      // Ensure callVolume exists and is a number
-      if (typeof leadCopy.calculator_inputs.callVolume !== 'number') {
-        leadCopy.calculator_inputs.callVolume = 0;
-      }
+      // Use the existing callVolume from calculator_inputs if it exists, otherwise use the calculated value
+      leadCopy.calculator_inputs.callVolume = typeof leadCopy.calculator_inputs.callVolume === 'number'
+        ? leadCopy.calculator_inputs.callVolume
+        : existingCallVolume;
       
       console.log("Setting editable lead with callVolume:", leadCopy.calculator_inputs.callVolume);
       setEditableLead(leadCopy);
