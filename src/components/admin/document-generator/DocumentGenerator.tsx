@@ -1,8 +1,7 @@
-
 import { Lead } from "@/types/leads";
 import { DocumentGeneratorProps } from "./types";
 import { Button } from "@/components/ui/button";
-import { FileBarChart, FileText } from "lucide-react";
+import { FileBarChart, FileText, Eye } from "lucide-react";
 import { toast } from "@/hooks/use-toast";
 import { useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
@@ -13,6 +12,7 @@ import { CalculationResults } from "@/hooks/calculator/types";
 export const DocumentGenerator = ({ lead }: DocumentGeneratorProps) => {
   const [isLoading, setIsLoading] = useState(false);
   const [isProposalLoading, setIsProposalLoading] = useState(false);
+  const [isPreviewLoading, setIsPreviewLoading] = useState(false);
   
   const handleDownloadReport = async () => {
     try {
@@ -168,6 +168,106 @@ export const DocumentGenerator = ({ lead }: DocumentGeneratorProps) => {
     }
   };
   
+  const handlePreviewProposal = async () => {
+    try {
+      setIsPreviewLoading(true);
+      console.log("---------- ADMIN PROPOSAL PREVIEW ATTEMPT ----------");
+      console.log("Generating proposal preview for lead ID:", lead.id);
+      
+      // Make sure we have the proper SUPABASE_URL for the edge function
+      const supabaseUrl = import.meta.env.VITE_SUPABASE_URL || "https://ujyhmchmjzlmsimtrtor.supabase.co";
+      const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY;
+      
+      // Log the URL we're using for debugging
+      const functionUrl = `${supabaseUrl}/functions/v1/generate-proposal?preview=true`;
+      console.log(`Using Supabase URL for preview: ${functionUrl}`);
+      
+      // Ensure calculator_inputs exists and callVolume is a number
+      if (lead.calculator_inputs) {
+        // Make a deep copy to avoid reference issues
+        const sanitizedLead = JSON.parse(JSON.stringify(lead));
+        
+        // Check if callVolume exists in calculator_inputs and ensure it's a number
+        if (sanitizedLead.calculator_inputs.callVolume !== undefined) {
+          if (typeof sanitizedLead.calculator_inputs.callVolume === 'string') {
+            sanitizedLead.calculator_inputs.callVolume = parseInt(sanitizedLead.calculator_inputs.callVolume, 10) || 0;
+          }
+        }
+        
+        console.log("Sanitized lead for proposal preview:", JSON.stringify(sanitizedLead));
+        
+        const response = await fetch(
+          functionUrl,
+          {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json",
+              "Authorization": `Bearer ${supabaseAnonKey}`
+            },
+            body: JSON.stringify({ lead: sanitizedLead, preview: true })
+          }
+        );
+        
+        if (!response.ok) {
+          const errorText = await response.text();
+          console.error("Error response from edge function:", errorText);
+          let errorMessage = "Failed to generate proposal preview";
+          
+          try {
+            // Try to parse as JSON
+            const errorJson = JSON.parse(errorText);
+            if (errorJson.error) {
+              errorMessage = errorJson.error;
+            }
+          } catch (parseError) {
+            // If parsing fails, use the raw text (limited)
+            errorMessage = errorText.substring(0, 100);
+          }
+          
+          throw new Error(errorMessage);
+        }
+        
+        // Get the response as blob for PDF download
+        const blob = await response.blob();
+        
+        // Create a URL for the blob
+        const url = window.URL.createObjectURL(blob);
+        
+        // Create a link element and trigger download
+        const link = document.createElement('a');
+        const safeCompanyName = getSafeFileName(lead);
+        link.href = url;
+        link.download = `${safeCompanyName}-ChatSites-Proposal-Preview.pdf`;
+        link.click();
+        
+        // Clean up
+        window.URL.revokeObjectURL(url);
+        
+        toast({
+          title: "Proposal Preview Downloaded",
+          description: "You can now review the proposal before sending it.",
+          duration: 1000,
+        });
+      } else {
+        throw new Error("Calculator inputs not found in lead data");
+      }
+      
+    } catch (error) {
+      console.error("Error generating proposal preview:", error);
+      toast({
+        title: "Proposal Preview Failed",
+        description: error instanceof Error 
+          ? error.message 
+          : "Failed to generate the proposal preview.",
+        variant: "destructive",
+        duration: 3000,
+      });
+    } finally {
+      setIsPreviewLoading(false);
+      console.log("---------- ADMIN PROPOSAL PREVIEW ATTEMPT ENDED ----------");
+    }
+  };
+  
   const handleDownloadProposal = async () => {
     try {
       setIsProposalLoading(true);
@@ -268,6 +368,17 @@ export const DocumentGenerator = ({ lead }: DocumentGeneratorProps) => {
       >
         <FileBarChart className="h-4 w-4 mr-2" />
         {isLoading ? "Downloading..." : "Download Report"}
+      </Button>
+      
+      <Button
+        onClick={handlePreviewProposal}
+        disabled={isPreviewLoading}
+        variant="outline"
+        size="sm"
+        className="flex items-center"
+      >
+        <Eye className="h-4 w-4 mr-2" />
+        {isPreviewLoading ? "Previewing..." : "Preview Proposal"}
       </Button>
       
       <Button
