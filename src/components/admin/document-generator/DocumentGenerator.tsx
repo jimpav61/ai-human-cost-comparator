@@ -2,18 +2,58 @@
 import { Lead } from "@/types/leads";
 import { DocumentGeneratorProps } from "./types";
 import { Button } from "@/components/ui/button";
-import { FileBarChart, FileText, Eye } from "lucide-react";
+import { FileBarChart, FileText, Eye, Edit } from "lucide-react";
 import { toast } from "@/hooks/use-toast";
 import { useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { getSafeFileName } from "./hooks/report-generator/saveReport";
 import { generatePDF } from "@/components/calculator/pdf";
 import { CalculationResults } from "@/hooks/calculator/types";
+import { EditReportDialog } from "./components/EditReportDialog";
 
 export const DocumentGenerator = ({ lead }: DocumentGeneratorProps) => {
   const [isLoading, setIsLoading] = useState(false);
   const [isProposalLoading, setIsProposalLoading] = useState(false);
   const [isPreviewLoading, setIsPreviewLoading] = useState(false);
+  const [isEditReportDialogOpen, setIsEditReportDialogOpen] = useState(false);
+  
+  const handleOpenEditReportDialog = () => {
+    setIsEditReportDialogOpen(true);
+  };
+  
+  const handleCloseEditReportDialog = () => {
+    setIsEditReportDialogOpen(false);
+  };
+  
+  const handleSaveReportSettings = async (updatedLead: Lead) => {
+    try {
+      // Update the lead in the database
+      const { error } = await supabase
+        .from('leads')
+        .update({
+          calculator_inputs: updatedLead.calculator_inputs
+        })
+        .eq('id', updatedLead.id);
+      
+      if (error) throw error;
+      
+      // Update the local lead state with the new values
+      Object.assign(lead, updatedLead);
+      
+      toast({
+        title: "Success",
+        description: "Report settings updated successfully",
+        variant: "default",
+      });
+    } catch (error) {
+      console.error("Error updating report settings:", error);
+      toast({
+        title: "Error",
+        description: `Failed to update report settings: ${error instanceof Error ? error.message : 'Unknown error'}`,
+        variant: "destructive",
+      });
+    }
+  };
   
   const handleDownloadReport = async () => {
     try {
@@ -361,6 +401,17 @@ export const DocumentGenerator = ({ lead }: DocumentGeneratorProps) => {
   return (
     <div className="flex flex-wrap gap-2 justify-end">
       <Button
+        onClick={handleOpenEditReportDialog}
+        disabled={isLoading}
+        variant="outline"
+        size="sm"
+        className="whitespace-nowrap"
+      >
+        <Edit className="h-4 w-4 mr-1" />
+        <span>Edit Report</span>
+      </Button>
+      
+      <Button
         onClick={handleDownloadReport}
         disabled={isLoading}
         variant="outline"
@@ -392,6 +443,15 @@ export const DocumentGenerator = ({ lead }: DocumentGeneratorProps) => {
         <FileText className="h-4 w-4 mr-1" />
         <span>{isProposalLoading ? "Sending..." : "Send"}</span>
       </Button>
+      
+      {isEditReportDialogOpen && (
+        <EditReportDialog
+          isOpen={isEditReportDialogOpen}
+          onClose={handleCloseEditReportDialog}
+          lead={lead}
+          onSave={handleSaveReportSettings}
+        />
+      )}
     </div>
   );
 };
