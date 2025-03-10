@@ -56,15 +56,16 @@ export const addCostBreakdownSection = (
     head: [['Item', 'Monthly Cost']],
     body: tableRows,
     headStyles: {
-      fillColor: [246, 82, 40],
-      textColor: [255, 255, 255],
+      // Fix: explicitly define RGB color as a tuple with fixed length
+      fillColor: [246, 82, 40] as [number, number, number],
+      textColor: [255, 255, 255] as [number, number, number],
       fontStyle: 'bold' as 'bold' // Type assertion to fix the same FontStyle issue
     },
     bodyStyles: {
-      textColor: [0, 0, 0]
+      textColor: [0, 0, 0] as [number, number, number]
     },
     alternateRowStyles: {
-      fillColor: [245, 245, 245]
+      fillColor: [245, 245, 245] as [number, number, number]
     },
     styles: {
       fontSize: 11

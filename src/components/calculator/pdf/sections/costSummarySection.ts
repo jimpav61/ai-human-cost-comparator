@@ -29,8 +29,9 @@ export const addCostSummarySection = (
       valign: 'middle' as 'middle'
     },
     headStyles: {
-      fillColor: [245, 245, 245],
-      textColor: [80, 80, 80],
+      // Fix: explicitly define RGB color as a tuple with fixed length
+      fillColor: [245, 245, 245] as [number, number, number],
+      textColor: [80, 80, 80] as [number, number, number],
       fontStyle: 'bold' as 'bold' // Fix: use 'bold' as const to match FontStyle type
     },
     columnStyles: {
@@ -52,9 +53,9 @@ export const addCostSummarySection = (
     body: [
       ['Current Estimated Monthly Cost:', formatCurrency(results.humanCostMonthly)],
       ['AI Solution Monthly Cost:', formatCurrency(results.aiCostMonthly.total)],
-      ['Monthly Savings:', { content: monthlySavings, styles: { textColor: [255, 67, 42] } }],
-      ['Annual Savings:', { content: yearlySavings, styles: { textColor: [255, 67, 42] } }],
-      ['Savings Percentage:', { content: savingsPercentage, styles: { textColor: [255, 67, 42] } }]
+      ['Monthly Savings:', { content: monthlySavings, styles: { textColor: [255, 67, 42] as [number, number, number] } }],
+      ['Annual Savings:', { content: yearlySavings, styles: { textColor: [255, 67, 42] as [number, number, number] } }],
+      ['Savings Percentage:', { content: savingsPercentage, styles: { textColor: [255, 67, 42] as [number, number, number] } }]
     ]
   });
   
