@@ -4,6 +4,8 @@ import { toast } from "@/hooks/use-toast";
 import { useDownloadState } from "./useDownloadState";
 import { generateProposal } from "@/components/calculator/proposal/generateProposal";
 import { saveProposalPDF } from "./proposal-generator/saveProposal";
+import { ensureCompleteCalculatorResults } from "@/hooks/calculator/supabase-types";
+import { ensureCompleteResults } from "@/components/calculator/shared/types";
 
 interface UseProposalGeneratorProps {
   lead: Lead;
@@ -118,31 +120,36 @@ export const useProposalGenerator = ({ lead }: UseProposalGeneratorProps) => {
       
       // Extract calculator results from lead - ensure it's an object
       // Use spread to create a copy to avoid modifying the original
-      const calculatorResults = {...(lead.calculator_results || {})};
+      const partialResults = {...(lead.calculator_results || {})};
       
       // CRUCIAL FIX: Update the calculator results with the current calculations
       // to ensure the PDF generator has the correct values
-      calculatorResults.aiCostMonthly = {
-        voice: additionalVoiceCost,
-        chatbot: basePriceMonthly,
-        total: totalMonthlyCost,
-        setupFee: calculatorResults.aiCostMonthly?.setupFee || 
-          (aiTier === 'starter' ? 499 : aiTier === 'growth' ? 749 : 999)
+      const updatedResults = {
+        ...partialResults,
+        aiCostMonthly: {
+          voice: additionalVoiceCost,
+          chatbot: basePriceMonthly,
+          total: totalMonthlyCost,
+          setupFee: partialResults.aiCostMonthly?.setupFee || 
+            (aiTier === 'starter' ? 499 : aiTier === 'growth' ? 749 : 999)
+        },
+        basePriceMonthly: basePriceMonthly,
+        tierKey: aiTier as "starter" | "growth" | "premium",
+        aiType: aiTypeValue as "voice" | "chatbot" | "both" | "conversationalVoice" | "both-premium"
       };
       
-      calculatorResults.basePriceMonthly = basePriceMonthly;
-      calculatorResults.tierKey = aiTier;
-      calculatorResults.aiType = aiTypeValue;
-      
       // Human cost monthly fallback
-      const humanCostMonthly = calculatorResults.humanCostMonthly || 15000;
+      const humanCostMonthly = updatedResults.humanCostMonthly || 15000;
       
       // Recalculate savings with the current total cost
-      calculatorResults.monthlySavings = humanCostMonthly - totalMonthlyCost;
-      calculatorResults.yearlySavings = calculatorResults.monthlySavings * 12;
-      calculatorResults.savingsPercentage = (calculatorResults.monthlySavings / humanCostMonthly) * 100;
+      updatedResults.monthlySavings = humanCostMonthly - totalMonthlyCost;
+      updatedResults.yearlySavings = updatedResults.monthlySavings * 12;
+      updatedResults.savingsPercentage = (updatedResults.monthlySavings / humanCostMonthly) * 100;
       
-      console.log("Final results being passed to generateProposal:", calculatorResults);
+      // Ensure we have a complete, well-formed results object
+      const completeResults = ensureCompleteResults(updatedResults);
+      
+      console.log("Final results being passed to generateProposal:", completeResults);
       console.log("Additional voice minutes being passed to generateProposal:", additionalVoiceMinutes);
       
       // Generate proposal with all the extracted values
@@ -153,7 +160,7 @@ export const useProposalGenerator = ({ lead }: UseProposalGeneratorProps) => {
         phoneNumber: lead.phone_number || '',
         industry: lead.industry || 'Other',
         employeeCount: Number(lead.employee_count) || 5,
-        results: calculatorResults,
+        results: completeResults,
         additionalVoiceMinutes: additionalVoiceMinutes, // Make sure this value is passed correctly
         includedVoiceMinutes: includedVoiceMinutes,
         tierName: tierName,

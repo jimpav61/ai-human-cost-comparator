@@ -1,6 +1,6 @@
 
 import jsPDF from 'jspdf';
-import { GeneratePDFParams, JsPDFWithAutoTable, CalculationResults } from './types';
+import { GeneratePDFParams, JsPDFWithAutoTable, CalculationResults, ensureCalculationResults } from './types';
 import { addHeaderSection } from './sections/headerSection';
 import { addPlanSection } from './sections/planSection';
 import { addCostSummarySection } from './sections/costSummarySection';
@@ -9,21 +9,6 @@ import { addRecommendationsSection } from './sections/recommendationsSection';
 import { addAIPlacementsSection } from './sections/aiPlacementsSection';
 import { addContactSection } from './sections/contactSection';
 import { SharedResults } from '../shared/types';
-
-// Helper function to ensure we get a valid CalculationResults object 
-// regardless of whether we received CalculationResults or SharedResults
-function ensureCalculationResults(results: CalculationResults | SharedResults): CalculationResults {
-  // Create a safe copy to avoid mutation
-  const safeResults = {
-    ...results,
-    // Ensure tierKey is a valid value
-    tierKey: (results.tierKey || 'growth') as "starter" | "growth" | "premium",
-    // Ensure aiType is a valid value
-    aiType: results.aiType || 'chatbot',
-  };
-  
-  return safeResults as CalculationResults;
-}
 
 export const generatePDF = (params: GeneratePDFParams): JsPDFWithAutoTable => {
   const doc = new jsPDF() as JsPDFWithAutoTable;
@@ -47,16 +32,6 @@ export const generatePDF = (params: GeneratePDFParams): JsPDFWithAutoTable => {
   };
   
   console.log("Validated PDF parameters:", validatedParams);
-  
-  // Make sure we have a properly structured aiCostMonthly object
-  if (!validatedParams.results.aiCostMonthly) {
-    validatedParams.results.aiCostMonthly = {
-      voice: 0,
-      chatbot: 0,
-      total: 0,
-      setupFee: 0
-    };
-  }
   
   // Add header section with contact info
   let currentY = addHeaderSection(

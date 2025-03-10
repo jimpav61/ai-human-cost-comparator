@@ -77,3 +77,34 @@ export const getDefaultCalculationResults = (): CalculationResults => {
     aiType: 'chatbot'
   };
 };
+
+// Helper to merge a partial result set with defaults
+export const ensureCompleteCalculatorResults = (partialResults?: Partial<CalculationResults>): CalculationResults => {
+  const defaultResults = getDefaultCalculationResults();
+  
+  if (!partialResults) {
+    return defaultResults;
+  }
+  
+  return {
+    ...defaultResults,
+    // Deep merge nested objects
+    aiCostMonthly: {
+      ...defaultResults.aiCostMonthly,
+      ...(partialResults.aiCostMonthly || {})
+    },
+    breakEvenPoint: {
+      ...defaultResults.breakEvenPoint,
+      ...(partialResults.breakEvenPoint || {})
+    },
+    humanHours: {
+      ...defaultResults.humanHours,
+      ...(partialResults.humanHours || {})
+    },
+    // Merge all other top-level properties
+    ...partialResults,
+    // Make sure these required properties have valid values
+    tierKey: partialResults.tierKey || defaultResults.tierKey,
+    aiType: partialResults.aiType || defaultResults.aiType
+  };
+};

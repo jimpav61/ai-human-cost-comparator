@@ -1,4 +1,3 @@
-
 import { Lead } from "@/types/leads";
 import { DocumentGeneratorProps } from "./types";
 import { Button } from "@/components/ui/button";
@@ -10,7 +9,8 @@ import { getSafeFileName } from "./hooks/report-generator/saveReport";
 import { generatePDF } from "@/components/calculator/pdf";
 import { CalculationResults } from "@/hooks/calculator/types";
 import { EditReportDialog } from "./components/EditReportDialog";
-import { toJson } from "@/hooks/calculator/supabase-types";
+import { toJson, ensureCompleteCalculatorResults } from "@/hooks/calculator/supabase-types";
+import { ensureCalculationResults } from "@/components/calculator/pdf/types";
 
 export const DocumentGenerator = ({ lead }: DocumentGeneratorProps) => {
   const [isLoading, setIsLoading] = useState(false);
@@ -28,7 +28,6 @@ export const DocumentGenerator = ({ lead }: DocumentGeneratorProps) => {
   
   const handleSaveReportSettings = async (updatedLead: Lead) => {
     try {
-      // Update the lead in the database - using toJson to convert the type
       const { error } = await supabase
         .from('leads')
         .update({
@@ -38,7 +37,6 @@ export const DocumentGenerator = ({ lead }: DocumentGeneratorProps) => {
       
       if (error) throw error;
       
-      // Update the local lead state with the new values
       Object.assign(lead, updatedLead);
       
       toast({
@@ -118,7 +116,7 @@ export const DocumentGenerator = ({ lead }: DocumentGeneratorProps) => {
                             aiType === 'both' ? 'Text & Basic Voice' : 
                             aiType === 'both-premium' ? 'Text & Conversational Voice' : 'Text Only';
       
-      const typedCalculatorResults: CalculationResults = {
+      const partialResults: Partial<CalculationResults> = {
         aiCostMonthly: {
           voice: Number(calculatorResults?.aiCostMonthly?.voice) || 0,
           chatbot: Number(calculatorResults?.aiCostMonthly?.chatbot) || 0,
@@ -140,8 +138,12 @@ export const DocumentGenerator = ({ lead }: DocumentGeneratorProps) => {
           monthlyTotal: Number(calculatorResults?.humanHours?.monthlyTotal) || 0,
           yearlyTotal: Number(calculatorResults?.humanHours?.yearlyTotal) || 0
         },
-        annualPlan: Number(calculatorResults?.annualPlan) || 0
+        annualPlan: Number(calculatorResults?.annualPlan) || 0,
+        tierKey: (aiTier as "starter" | "growth" | "premium"),
+        aiType: (aiType as "voice" | "chatbot" | "both" | "conversationalVoice" | "both-premium")
       };
+      
+      const typedCalculatorResults = ensureCalculationResults(partialResults);
       
       const doc = generatePDF({
         contactInfo: existingReport.contact_name || 'Valued Client',
@@ -216,20 +218,15 @@ export const DocumentGenerator = ({ lead }: DocumentGeneratorProps) => {
       console.log("---------- ADMIN PROPOSAL PREVIEW ATTEMPT ----------");
       console.log("Generating proposal preview for lead ID:", lead.id);
       
-      // Make sure we have the proper SUPABASE_URL for the edge function
       const supabaseUrl = import.meta.env.VITE_SUPABASE_URL || "https://ujyhmchmjzlmsimtrtor.supabase.co";
       const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY;
       
-      // Log the URL we're using for debugging
       const functionUrl = `${supabaseUrl}/functions/v1/generate-proposal?preview=true`;
       console.log(`Using Supabase URL for preview: ${functionUrl}`);
       
-      // Ensure calculator_inputs exists and callVolume is a number
       if (lead.calculator_inputs) {
-        // Make a deep copy to avoid reference issues
         const sanitizedLead = JSON.parse(JSON.stringify(lead));
         
-        // Check if callVolume exists in calculator_inputs and ensure it's a number
         if (sanitizedLead.calculator_inputs.callVolume !== undefined) {
           if (typeof sanitizedLead.calculator_inputs.callVolume === 'string') {
             sanitizedLead.calculator_inputs.callVolume = parseInt(sanitizedLead.calculator_inputs.callVolume, 10) || 0;
@@ -256,33 +253,24 @@ export const DocumentGenerator = ({ lead }: DocumentGeneratorProps) => {
           let errorMessage = "Failed to generate proposal preview";
           
           try {
-            // Try to parse as JSON
             const errorJson = JSON.parse(errorText);
             if (errorJson.error) {
               errorMessage = errorJson.error;
             }
           } catch (parseError) {
-            // If parsing fails, use the raw text (limited)
             errorMessage = errorText.substring(0, 100);
           }
           
           throw new Error(errorMessage);
         }
         
-        // Get the response as blob for PDF download
         const blob = await response.blob();
-        
-        // Create a URL for the blob
         const url = window.URL.createObjectURL(blob);
-        
-        // Create a link element and trigger download
         const link = document.createElement('a');
         const safeCompanyName = getSafeFileName(lead);
         link.href = url;
         link.download = `${safeCompanyName}-ChatSites-Proposal-Preview.pdf`;
         link.click();
-        
-        // Clean up
         window.URL.revokeObjectURL(url);
         
         toast({
@@ -317,20 +305,15 @@ export const DocumentGenerator = ({ lead }: DocumentGeneratorProps) => {
       console.log("Generating proposal for lead ID:", lead.id);
       console.log("Complete lead object:", JSON.stringify(lead));
       
-      // Make sure we have the proper SUPABASE_URL for the edge function
       const supabaseUrl = import.meta.env.VITE_SUPABASE_URL || "https://ujyhmchmjzlmsimtrtor.supabase.co";
       const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY;
       
-      // Log the URL we're using for debugging
       const functionUrl = `${supabaseUrl}/functions/v1/generate-proposal`;
       console.log(`Using Supabase URL: ${functionUrl}`);
       
-      // Ensure calculator_inputs exists and callVolume is a number
       if (lead.calculator_inputs) {
-        // Make a deep copy to avoid reference issues
         const sanitizedLead = JSON.parse(JSON.stringify(lead));
         
-        // Check if callVolume exists in calculator_inputs and ensure it's a number
         if (sanitizedLead.calculator_inputs.callVolume !== undefined) {
           if (typeof sanitizedLead.calculator_inputs.callVolume === 'string') {
             sanitizedLead.calculator_inputs.callVolume = parseInt(sanitizedLead.calculator_inputs.callVolume, 10) || 0;
@@ -357,20 +340,17 @@ export const DocumentGenerator = ({ lead }: DocumentGeneratorProps) => {
           let errorMessage = "Failed to generate proposal";
           
           try {
-            // Try to parse as JSON
             const errorJson = JSON.parse(errorText);
             if (errorJson.error) {
               errorMessage = errorJson.error;
             }
           } catch (parseError) {
-            // If parsing fails, use the raw text (limited)
             errorMessage = errorText.substring(0, 100);
           }
           
           throw new Error(errorMessage);
         }
         
-        // Get the response as JSON
         const result = await response.json();
         console.log("Proposal generated successfully:", result.message);
         
