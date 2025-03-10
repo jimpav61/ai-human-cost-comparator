@@ -1,5 +1,5 @@
 
-import React from "react";
+import React, { useEffect } from "react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Lead } from "@/types/leads";
@@ -17,6 +17,9 @@ interface EditReportDialogProps {
 }
 
 export const EditReportDialog = ({ isOpen, onClose, lead, onSave }: EditReportDialogProps) => {
+  console.log("EditReportDialog rendering with lead:", lead);
+  console.log("Lead callVolume:", lead.calculator_inputs?.callVolume);
+  
   const {
     editableLead,
     handleCallVolumeChange,
@@ -29,6 +32,15 @@ export const EditReportDialog = ({ isOpen, onClose, lead, onSave }: EditReportDi
   const callVolume = editableLead.calculator_inputs?.callVolume || 0;
   const aiTier = editableLead.calculator_inputs?.aiTier || 'growth';
   const aiType = editableLead.calculator_inputs?.aiType || 'both';
+  
+  // Log current values for debugging
+  useEffect(() => {
+    console.log("EditReportDialog values:", {
+      callVolume,
+      aiTier,
+      aiType
+    });
+  }, [callVolume, aiTier, aiType]);
   
   // Determine if we should show voice minutes input
   const showVoiceMinutes = aiTier !== 'starter' && 

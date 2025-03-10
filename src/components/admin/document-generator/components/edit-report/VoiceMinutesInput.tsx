@@ -9,6 +9,11 @@ interface VoiceMinutesInputProps {
 }
 
 export const VoiceMinutesInput = ({ value, onChange }: VoiceMinutesInputProps) => {
+  // Ensure we always have a numeric value
+  const safeValue = typeof value === 'number' ? value : 0;
+  
+  console.log("VoiceMinutesInput rendering with value:", safeValue);
+  
   return (
     <div className="grid grid-cols-4 items-center gap-4">
       <Label htmlFor="callVolume" className="col-span-1">
@@ -18,7 +23,7 @@ export const VoiceMinutesInput = ({ value, onChange }: VoiceMinutesInputProps) =
         <Input
           id="callVolume"
           type="number"
-          value={value}
+          value={safeValue}
           onChange={(e) => onChange(e.target.value)}
           min={0}
           step={100}

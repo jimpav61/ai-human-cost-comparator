@@ -8,27 +8,37 @@ import { CalculatorInputs } from "@/hooks/calculator/types";
 export const useEditReportState = (lead: Lead, onSave: (updatedLead: Lead) => void, onClose: () => void) => {
   // Create a deep copy of the lead to avoid reference issues
   const [editableLead, setEditableLead] = useState<Lead>(() => {
-    return initializeLeadData(lead);
+    const initializedLead = initializeLeadData(lead);
+    console.log("Initial editable lead state:", initializedLead);
+    return initializedLead;
   });
 
   // Ensure dialog always shows the latest lead data when opened
   useEffect(() => {
-    setEditableLead(initializeLeadData(lead));
+    const initializedLead = initializeLeadData(lead);
+    console.log("useEffect updating editable lead:", initializedLead);
+    console.log("CallVolume from initialized lead:", initializedLead.calculator_inputs?.callVolume);
+    setEditableLead(initializedLead);
   }, [lead]);
   
   // Handle changes to the voice minutes input
   const handleCallVolumeChange = (value: string) => {
+    console.log("Changing callVolume to:", value);
     // Parse as number and ensure it's a multiple of 100
     let numValue = parseInt(value, 10) || 0;
     numValue = Math.round(numValue / 100) * 100;
     
-    setEditableLead(prev => ({
-      ...prev,
-      calculator_inputs: {
-        ...prev.calculator_inputs,
-        callVolume: numValue
-      }
-    }));
+    setEditableLead(prev => {
+      const updated = {
+        ...prev,
+        calculator_inputs: {
+          ...prev.calculator_inputs,
+          callVolume: numValue
+        }
+      };
+      console.log("Updated lead with new callVolume:", updated.calculator_inputs.callVolume);
+      return updated;
+    });
   };
   
   // Handle changes to the AI tier
@@ -113,6 +123,7 @@ export const useEditReportState = (lead: Lead, onSave: (updatedLead: Lead) => vo
         }
       }
       
+      console.log("Saving lead with callVolume:", updatedLead.calculator_inputs.callVolume);
       onSave(updatedLead);
       onClose();
       
