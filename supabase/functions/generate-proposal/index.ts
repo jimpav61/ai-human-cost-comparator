@@ -170,11 +170,11 @@ function generateProfessionalProposal(lead) {
   // Get voice details if applicable
   const includedVoiceMinutes = aiTier === 'starter' ? 0 : 600;
   
-  // Get additional voice minutes directly from inputs
+  // Get additional voice minutes directly from calculator inputs
+  // This is the important part that was missing or incorrect in previous attempts
   let additionalVoiceMinutes = 0;
-  
-  // Check for callVolume in calculator inputs and ensure it's a number
   if (calculatorInputs.callVolume !== undefined) {
+    // Convert string to number if needed
     additionalVoiceMinutes = typeof calculatorInputs.callVolume === 'string' 
       ? parseInt(calculatorInputs.callVolume, 10) || 0
       : calculatorInputs.callVolume || 0;
@@ -182,7 +182,7 @@ function generateProfessionalProposal(lead) {
   
   console.log("Additional voice minutes for PDF:", additionalVoiceMinutes);
   
-  // Calculate voice cost
+  // Calculate voice cost with clear rate
   const voiceCostPerMinute = 0.12;
   const voiceCost = aiTier !== 'starter' && additionalVoiceMinutes > 0 
     ? additionalVoiceMinutes * voiceCostPerMinute 
@@ -371,7 +371,7 @@ ${brandOrange} rg
 
 BT
 /F2 14 Tf
-72 110 Td
+72 90 Td
 ${brandOrange} rg
 (Selected Plan: ${tierName} - ${aiTypeDisplay}) Tj
 0 0 0 rg
@@ -434,7 +434,7 @@ ${brandOrange} rg
 (\\267 ${aiTypeDisplay} Interface ${aiTier !== 'starter' ? 'with speech recognition and synthesis' : ''}) Tj
 0 -20 Td`;
 
-  // Add voice information - handle both starter and non-starter tiers
+  // Add voice information - handle both starter and non-starter tiers clearly
   if (aiTier === 'starter') {
     pdfContent += `
 (\\267 No voice capabilities included in this tier) Tj
@@ -444,7 +444,7 @@ ${brandOrange} rg
 (\\267 Includes ${includedVoiceMinutes} voice minutes per month as part of base plan) Tj
 0 -20 Td`;
     
-    // Always show additional voice minutes information
+    // Always show additional voice minutes information clearly
     if (additionalVoiceMinutes > 0) {
       pdfContent += `
 (\\267 ${additionalVoiceMinutes} additional voice minutes at $${voiceCostPerMinute.toFixed(2)}/minute) Tj
@@ -458,18 +458,18 @@ ${brandOrange} rg
     }
   }
 
-  // Continue with standard content
+  // Continue with standard content (adjust positioning to prevent overflow)
   pdfContent += `
 (\\267 ${aiTier === 'premium' ? 'Unlimited' : '50,000+'} monthly text interactions) Tj
 0 -20 Td
 (\\267 Secure cloud-based deployment with 99.9% uptime guarantee) Tj
 0 -20 Td
 (\\267 ${aiTier === 'premium' ? 'Priority' : 'Standard'} technical support and maintenance) Tj
-0 -40 Td
+0 -30 Td
 
 BT
 /F2 16 Tf
-72 185 Td
+72 195 Td
 ${brandOrange} rg
 (Implementation Timeline:) Tj
 0 0 0 rg
@@ -518,7 +518,7 @@ ${brandOrange} rg
 ($${setupFee.toFixed(2)} one-time) Tj
 -200 -25 Td`;
 
-  // Handle voice minutes information - different for starter vs other tiers
+  // Handle voice minutes information clearly - different for starter vs other tiers
   if (aiTier === 'starter') {
     pdfContent += `
 (Voice Capabilities:) Tj
@@ -532,6 +532,7 @@ ${brandOrange} rg
 (${includedVoiceMinutes} minutes/month) Tj
 -200 -25 Td`;
     
+    // Explicit display of additional voice minutes with clear formatting
     if (additionalVoiceMinutes > 0) {
       pdfContent += `
 (Additional Voice Minutes:) Tj
@@ -551,6 +552,7 @@ ${brandOrange} rg
     }
   }
 
+  // Show total monthly cost with clear breakdown
   pdfContent += `
 (Total Monthly Investment:) Tj
 200 0 Td
