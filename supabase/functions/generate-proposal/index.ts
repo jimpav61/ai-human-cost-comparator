@@ -462,20 +462,20 @@ ${brandOrange} rg
 (${formatCurrency(setupFee)} one-time) Tj
 -200 -25 Td
 
-${includedVoiceMinutes > 0 ? `(Included Voice Minutes:)` : ``} Tj
-${includedVoiceMinutes > 0 ? `200 0 Td` : ``} Tj
-${includedVoiceMinutes > 0 ? `(${formatNumber(includedVoiceMinutes)} minutes/month)` : ``} Tj
-${includedVoiceMinutes > 0 ? `-200 -25 Td` : ``} Tj
+${aiTier !== 'starter' ? `(Included Voice Minutes:)
+200 0 Td
+(${formatNumber(includedVoiceMinutes)} minutes/month)
+-200 -25 Td` : ``}
 
-${additionalVoiceMinutes > 0 && aiTier !== 'starter' ? `(Additional Voice Minutes:)` : ``} Tj
-${additionalVoiceMinutes > 0 && aiTier !== 'starter' ? `200 0 Td` : ``} Tj
-${additionalVoiceMinutes > 0 && aiTier !== 'starter' ? `(${formatNumber(additionalVoiceMinutes)} minutes)` : ``} Tj
-${additionalVoiceMinutes > 0 && aiTier !== 'starter' ? `-200 -25 Td` : ``} Tj
+${additionalVoiceMinutes > 0 && aiTier !== 'starter' ? `(Additional Voice Minutes:)
+200 0 Td
+(${formatNumber(additionalVoiceMinutes)} minutes)
+-200 -25 Td` : ``}
 
-${extraVoiceMinutes > 0 ? `(Voice Minutes Cost:)` : ``} Tj
-${extraVoiceMinutes > 0 ? `200 0 Td` : ``} Tj
-${extraVoiceMinutes > 0 ? `(${formatCurrency(voiceCost)}/month)` : ``} Tj
-${extraVoiceMinutes > 0 ? `-200 -25 Td` : ``} Tj
+${extraVoiceMinutes > 0 ? `(Voice Minutes Cost:)
+200 0 Td
+(${formatCurrency(voiceCost)}/month)
+-200 -25 Td` : ``}
 
 (Total Monthly Investment:) Tj
 200 0 Td
@@ -711,3 +711,4 @@ startxref
   
   return pdfContent;
 }
+
