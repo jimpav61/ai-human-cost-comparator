@@ -67,7 +67,11 @@ export const useProposalPreview = () => {
         }
       }
       
-      // Build the URL to our edge function - reverting to the original approach
+      // Get the session token for authentication
+      const { data: sessionData } = await supabase.auth.getSession();
+      const accessToken = sessionData.session?.access_token;
+      
+      // Build the URL to the edge function
       const SUPABASE_URL = "https://ujyhmchmjzlmsimtrtor.supabase.co";
       const apiUrl = `${SUPABASE_URL}/functions/v1/generate-proposal`;
       
@@ -75,12 +79,12 @@ export const useProposalPreview = () => {
       console.log("Sending lead with calculator_inputs:", JSON.stringify(leadToSend.calculator_inputs, null, 2));
       console.log("Sending lead with calculator_results:", JSON.stringify(leadToSend.calculator_results, null, 2));
       
-      // Make the request - using the exact format that was working before
+      // Make the request
       const response = await fetch(apiUrl, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          'Authorization': `Bearer ${supabase.auth.getSession().then(({ data }) => data.session?.access_token)}`,
+          'Authorization': `Bearer ${accessToken}`,
         },
         body: JSON.stringify({
           lead: leadToSend,
