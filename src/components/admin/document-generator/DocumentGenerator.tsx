@@ -1,6 +1,5 @@
 import { Lead } from "@/types/leads";
 import { DocumentGeneratorProps } from "./types";
-import { EditProposalButton } from "./components/EditProposalButton";
 import { DownloadReportButton } from "./components/DownloadReportButton";
 import { PreviewProposalButton } from "./components/PreviewProposalButton";
 import { SendProposalButton } from "./components/SendProposalButton";
@@ -108,11 +107,6 @@ export const DocumentGenerator = ({ lead, onLeadUpdated }: ExtendedDocumentGener
   
   return (
     <div className="flex flex-wrap gap-2 justify-end">
-      <EditProposalButton 
-        lead={currentLead} 
-        onLeadUpdated={handleInternalLeadUpdate} 
-      />
-      
       <DownloadReportButton 
         lead={currentLead} 
       />
