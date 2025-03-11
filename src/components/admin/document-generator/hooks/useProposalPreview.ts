@@ -2,6 +2,7 @@
 import { useState } from "react";
 import { Lead } from "@/types/leads";
 import { toast } from "@/hooks/use-toast";
+import { supabase } from "@/integrations/supabase/client";
 
 export const useProposalPreview = () => {
   const [isLoading, setIsLoading] = useState(false);
@@ -16,14 +17,13 @@ export const useProposalPreview = () => {
         throw new Error("Lead is missing required calculator data");
       }
       
-      // Get the correct tier from calculator inputs - ensure backward compatibility
-      const aiTier = lead.calculator_inputs.aiTier || 'growth';
-      const aiType = lead.calculator_inputs.aiType || 'both';
-      const callVolume = lead.calculator_inputs.callVolume || 0;
-      
       // Build the URL to our edge function
-      const apiUrl = new URL('/functions/v1/generate-proposal', process.env.NEXT_PUBLIC_SUPABASE_URL);
+      const { data: { publicUrl } } = await supabase.storage.getPublicUrl('');
+      const supabaseUrl = new URL(publicUrl).origin;
+      const apiUrl = new URL('/functions/v1/generate-proposal', supabaseUrl);
       apiUrl.searchParams.append('preview', 'true');
+      
+      console.log("Calling edge function at:", apiUrl.toString());
       
       // Make the request
       const response = await fetch(apiUrl.toString(), {

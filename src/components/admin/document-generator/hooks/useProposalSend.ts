@@ -18,7 +18,11 @@ export const useProposalSend = () => {
       }
       
       // Build the URL to our edge function
-      const apiUrl = new URL('/functions/v1/generate-proposal', process.env.NEXT_PUBLIC_SUPABASE_URL);
+      const { data: { publicUrl } } = await supabase.storage.getPublicUrl('');
+      const supabaseUrl = new URL(publicUrl).origin;
+      const apiUrl = new URL('/functions/v1/generate-proposal', supabaseUrl);
+      
+      console.log("Calling edge function at:", apiUrl.toString());
       
       // Make the request - sending the proposal via email
       const response = await fetch(apiUrl.toString(), {
