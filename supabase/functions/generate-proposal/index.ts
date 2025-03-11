@@ -301,13 +301,7 @@ function generateProfessionalProposal(lead) {
     aiTypeDisplay = 'Text & Basic Voice';
   }
   
-  // Get price details from calculator results first, then fall back to tier defaults
-  const monthlyPrice = calculatorResults.basePriceMonthly || 
-                      (aiTier === 'starter' ? 99 : 
-                       aiTier === 'growth' ? 229 :
-                       aiTier === 'premium' ? 429 : 229);
-  
-  // Updated setup fees - use the results first, then fall back to defaults
+  // Get setup fees - use the results first, then fall back to defaults
   const setupFee = calculatorResults.aiCostMonthly?.setupFee ||
                   (aiTier === 'starter' ? 249 :
                    aiTier === 'growth' ? 749 :
@@ -342,68 +336,59 @@ function generateProfessionalProposal(lead) {
   
   console.log("Final additional voice minutes:", additionalVoiceMinutes);
   
-  // Calculate any voice costs based on additional minutes
-  let voiceCost = 0;
-  const voiceCostPerMinute = 0.12;
+  // CRITICAL FIX: DIRECTLY USE EXACT VALUES FROM CALCULATOR_RESULTS
+  // Don't recalculate anything - ensure the values exactly match those in the report
+  console.log("DIRECT EXTRACTION - Using exact values from calculator_results");
   
-  if (additionalVoiceMinutes > 0 && aiTier !== 'starter') {
-    voiceCost = additionalVoiceMinutes * voiceCostPerMinute;
-    console.log("Calculated voice cost:", voiceCost);
-  } else if (calculatorResults.aiCostMonthly && calculatorResults.aiCostMonthly.voice > 0) {
-    // If we have voice costs in the results, use them directly
-    voiceCost = calculatorResults.aiCostMonthly.voice;
-    console.log("Using voice cost from results:", voiceCost);
-  }
-  
-  // Total monthly cost - ensure voice cost is included
-  const totalMonthlyCost = calculatorResults.aiCostMonthly?.total || (monthlyPrice + voiceCost);
-  
-  // CRITICAL FIX: Use calculator results values directly for financial data
-  // Exact values from calculationResults are crucial for consistency with the report
-  // Add extensive logging to help debug any issues
-  console.log("Original humanCostMonthly from results:", calculatorResults.humanCostMonthly);
-  console.log("Original monthlySavings from results:", calculatorResults.monthlySavings);
-  console.log("Original yearlySavings from results:", calculatorResults.yearlySavings);
-  console.log("Original savingsPercentage from results:", calculatorResults.savingsPercentage);
-  
-  // Use exact values from calculatorResults, ensuring realistic defaults if missing
+  // Base costs and pricing - USING EXACT VALUES FROM RESULTS
   const humanCostMonthly = calculatorResults.humanCostMonthly !== undefined 
     ? calculatorResults.humanCostMonthly 
-    : 15000;
-    
-  const monthlySavings = calculatorResults.monthlySavings !== undefined 
-    ? calculatorResults.monthlySavings 
+    : 5000; // Single employee cost fallback
+  console.log("Using humanCostMonthly:", humanCostMonthly);
+  
+  // Use exact aiCostMonthly from calculator_results for the total monthly AI cost
+  const totalMonthlyCost = calculatorResults.aiCostMonthly?.total !== undefined
+    ? calculatorResults.aiCostMonthly.total
+    : (aiTier === 'starter' ? 99 : aiTier === 'growth' ? 229 : 429);
+  console.log("Using totalMonthlyCost:", totalMonthlyCost);
+  
+  // Use exact monthlySavings from calculator_results for savings
+  const monthlySavings = calculatorResults.monthlySavings !== undefined
+    ? calculatorResults.monthlySavings
     : (humanCostMonthly - totalMonthlyCost);
-    
+  console.log("Using monthlySavings:", monthlySavings);
+  
+  // Use exact yearlySavings from calculator_results for yearly savings
   const yearlySavings = calculatorResults.yearlySavings !== undefined
     ? calculatorResults.yearlySavings
     : (monthlySavings * 12);
-    
+  console.log("Using yearlySavings:", yearlySavings);
+  
+  // Use exact savingsPercentage from calculator_results for the percentage
   const savingsPercentage = calculatorResults.savingsPercentage !== undefined
     ? calculatorResults.savingsPercentage
-    : (humanCostMonthly > 0 ? Math.round((monthlySavings / humanCostMonthly) * 100) : 80);
+    : (humanCostMonthly > 0 ? Math.round((monthlySavings / humanCostMonthly) * 100) : 50);
+  console.log("Using savingsPercentage:", savingsPercentage);
   
-  // Calculate annual plan price - ensure it matches the report
+  // Annual plan cost - use results or calculate from monthly
   const annualPlan = calculatorResults.annualPlan !== undefined
     ? calculatorResults.annualPlan
-    : (totalMonthlyCost * 10);
+    : (totalMonthlyCost * 10); // Annual plan is typically 10 months pricing
+  console.log("Using annualPlan:", annualPlan);
   
-  // Log final values for debugging
-  console.log("FINAL VALUES FOR PROPOSAL:");
+  // Log the final values for the proposal to verify correct usage
+  console.log("FINAL PROPOSAL VALUES:");
   console.log("humanCostMonthly:", humanCostMonthly);
+  console.log("totalMonthlyCost:", totalMonthlyCost);
   console.log("monthlySavings:", monthlySavings);
   console.log("yearlySavings:", yearlySavings);
   console.log("savingsPercentage:", savingsPercentage);
+  console.log("setupFee:", setupFee);
   console.log("annualPlan:", annualPlan);
-  console.log("totalMonthlyCost:", totalMonthlyCost);
   
-  // Calculate ROI details with defaults if missing
+  // Calculate ROI details with proper values
   const breakEvenPoint = Math.ceil(setupFee / (monthlySavings || 1000));
-  
-  // Calculate first year ROI
   const firstYearROI = Math.round((yearlySavings - setupFee) / setupFee * 100);
-  
-  // Calculate five year total savings
   const fiveYearSavings = yearlySavings * 5;
   
   // Generate current date for the proposal
@@ -419,27 +404,12 @@ function generateProfessionalProposal(lead) {
     }).format(amount);
   };
   
-  // Log the specific values that will be shown in the PDF
-  console.log("PDF Values:", {
-    tierName,
-    aiTypeDisplay,
-    monthlyPrice,
-    setupFee,
-    additionalVoiceMinutes,
-    includedVoiceMinutes,
-    humanCostMonthly,
-    monthlySavings,
-    yearlySavings,
-    savingsPercentage,
-    annualPlan
-  });
-  
   // Brand Colors
   const brandRed = "#ff432a";  // Main brand color
   const brandDarkBlue = "#1a202c"; // Dark blue for headings
   
   // Generate PDF content - the template is kept mostly the same, 
-  // but values are now from calculator_results
+  // but values are now directly from calculator_results
   let pdfContent = `
 %PDF-1.7
 1 0 obj
@@ -667,9 +637,9 @@ ${brandRed} rg
     // Always show additional voice minutes information clearly
     if (additionalVoiceMinutes > 0) {
       pdfContent += `
-(\\267 ${additionalVoiceMinutes} additional voice minutes at $${voiceCostPerMinute.toFixed(2)}/minute) Tj
+(\\267 ${additionalVoiceMinutes} additional voice minutes at $0.12/minute) Tj
 0 -20 Td
-(\\267 Additional voice cost: $${voiceCost.toFixed(2)}/month) Tj
+(\\267 Additional voice cost: $${(additionalVoiceMinutes * 0.12).toFixed(2)}/month) Tj
 0 -20 Td`;
     } else {
       pdfContent += `
@@ -731,7 +701,7 @@ ${brandRed} rg
 /F1 13 Tf
 (Monthly Base Price:) Tj
 190 0 Td
-($${monthlyPrice.toFixed(2)}/month) Tj
+($${(totalMonthlyCost - (additionalVoiceMinutes * 0.12)).toFixed(2)}/month) Tj
 -190 -25 Td
 (Setup and Onboarding Fee:) Tj
 190 0 Td
@@ -757,11 +727,11 @@ ${brandRed} rg
       pdfContent += `
 (Additional Voice Minutes:) Tj
 190 0 Td
-(${additionalVoiceMinutes} minutes @ $${voiceCostPerMinute.toFixed(2)}/minute) Tj
+(${additionalVoiceMinutes} minutes @ $0.12/minute) Tj
 -190 -25 Td
 (Additional Voice Cost:) Tj
 190 0 Td
-($${voiceCost.toFixed(2)}/month) Tj
+($${(additionalVoiceMinutes * 0.12).toFixed(2)}/month) Tj
 -190 -25 Td`;
     } else {
       pdfContent += `
@@ -1006,3 +976,4 @@ startxref
     return new Intl.NumberFormat('en-US').format(value);
   }
 }
+
