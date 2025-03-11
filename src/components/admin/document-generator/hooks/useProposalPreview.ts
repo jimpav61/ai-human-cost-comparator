@@ -1,4 +1,3 @@
-
 import { useState } from "react";
 import { Lead } from "@/types/leads";
 import { toast } from "@/hooks/use-toast";
@@ -10,7 +9,6 @@ export const useProposalPreview = () => {
   const [currentRevision, setCurrentRevision] = useState<any>(null);
   const [showPdfPreview, setShowPdfPreview] = useState(false);
   
-  // Preview the proposal for a lead
   const handlePreviewProposal = async (lead: Lead) => {
     try {
       console.log("Previewing proposal for lead:", lead.id);
@@ -19,7 +17,6 @@ export const useProposalPreview = () => {
       
       setIsLoading(true);
       
-      // Find the latest proposal revision first
       const latestRevision = await getLatestProposalRevision(lead.id);
       
       if (latestRevision) {
@@ -29,14 +26,11 @@ export const useProposalPreview = () => {
         return latestRevision;
       }
       
-      // If no existing proposal, generate a new one
       console.log("No existing proposal found, generating new one");
       
-      // We need to call the edge function to generate a preview
       const SUPABASE_URL = "https://ujyhmchmjzlmsimtrtor.supabase.co";
       const apiUrl = new URL('/functions/v1/generate-proposal', SUPABASE_URL);
       
-      // Ensure we have all required calculator input properties
       const updatedCalculatorInputs = {
         aiTier: lead.calculator_inputs?.aiTier || 'growth',
         aiType: lead.calculator_inputs?.aiType || 'both',
@@ -49,7 +43,6 @@ export const useProposalPreview = () => {
         avgChatResolutionTime: lead.calculator_inputs?.avgChatResolutionTime || 0
       };
       
-      // Set returnContent to true to get the raw content instead of downloading
       const response = await fetch(apiUrl.toString(), {
         method: 'POST',
         headers: {
@@ -74,7 +67,6 @@ export const useProposalPreview = () => {
       
       console.log("Generated proposal content successfully");
       
-      // Save the generated proposal as the first revision
       const updatedLead = {
         ...lead,
         calculator_inputs: updatedCalculatorInputs
@@ -104,7 +96,6 @@ export const useProposalPreview = () => {
     }
   };
   
-  // Get all revisions of a proposal for a lead
   const getProposalRevisions = async (leadId: string) => {
     try {
       const { data, error } = await supabase
@@ -127,7 +118,6 @@ export const useProposalPreview = () => {
     }
   };
   
-  // Get the latest revision of a proposal for a lead
   const getLatestProposalRevision = async (leadId: string) => {
     try {
       const { data, error } = await supabase
@@ -139,7 +129,6 @@ export const useProposalPreview = () => {
         .single();
         
       if (error) {
-        // If no revisions exist, this is not an error
         if (error.code === 'PGRST116') {
           return null;
         }
@@ -149,12 +138,10 @@ export const useProposalPreview = () => {
       return data;
     } catch (error) {
       console.error("Error getting latest proposal revision:", error);
-      // We don't show a toast here since this could be a normal case for new leads
       return null;
     }
   };
   
-  // Save a new revision of a proposal
   const saveProposalRevision = async (
     leadId: string,
     proposalContent: string,
@@ -162,7 +149,6 @@ export const useProposalPreview = () => {
     notes: string
   ) => {
     try {
-      // Get the next version number
       const { data: versionData, error: versionError } = await supabase
         .rpc('get_next_proposal_version', { p_lead_id: leadId });
         
@@ -170,7 +156,6 @@ export const useProposalPreview = () => {
       
       const versionNumber = versionData || 1;
       
-      // Create the revision
       const { data, error } = await supabase
         .from('proposal_revisions')
         .insert({
@@ -203,11 +188,9 @@ export const useProposalPreview = () => {
     }
   };
   
-  // Generate a professional proposal based on lead data
   const generateProfessionalProposal = (lead: Lead) => {
     console.log("Generating professional proposal for lead:", lead.id);
     
-    // IMPORTANT: Ensure calculator_inputs exists and has valid values
     if (!lead.calculator_inputs) {
       lead.calculator_inputs = {
         aiTier: lead.calculator_results?.tierKey || 'growth',
@@ -222,10 +205,7 @@ export const useProposalPreview = () => {
       };
     }
     
-    // Generate a base64 PDF string that simulates a PDF
-    // This is a placeholder - in a real implementation, this would be
-    // a properly formatted PDF document encoded as base64
-    const pdfBase64 = "JVBERi0xLjcKJeLjz9MKNSAwIG9iago8PCAvVHlwZSAvUGFnZSAvUGFyZW50IDEgMCBSIC9MYXN0TW9kaWZpZWQgKEQOMjAyMzExMTYxNDQ1NTcrMDAnMDAnKSAvUmVzb3VyY2VzIDIgMCBSIC9NZWRpYUJveCBbMC4wMDAwMDAgMC4wMDAwMDAgNTk1LjI3NjAwMCA4NDEuODkwMDAwXSAvQ3JvcEJveCBbMC4wMDAwMDAgMC4wMDAwMDAgNTk1LjI3NjAwMCA4NDEuODkwMDAwXSAvQmxlZWRCb3ggWzAuMDAwMDAwIDAuMDAwMDAwIDU5NS4yNzYwMDAgODQxLjg5MDAwMF0gL1RyaW1Cb3ggWzAuMDAwMDAwIDAuMDAwMDAwIDU5NS4yNzYwMDAgODQxLjg5MDAwMF0gL0FydEJveCBbMC4wMDAwMDAgMC4wMDAwMDAgNTk1LjI3NjAwMCA4NDEuODkwMDAwXSAvQ29udGVudHMgMTAgMCBSIC9Sb3RhdGUgMCAvR3JvdXAgPDwgL1R5cGUgL0dyb3VwIC9TIC9UcmFuc3BhcmVuY3kgL0NTIC9EZXZpY2VSR0IgPj4gL0Fubm90cyBbIDggMCBSIF0gL1BaIDEgPj4KZW5kb2JqCjEwIDAgb2JqCjw8IC9MZW5ndGggMTEgMCBSIC9GaWx0ZXIgL0ZsYXRlRGVjb2RlID4+CnN0cmVhbQp4";
+    const pdfBase64 = `JVBERi0xLjcKJeLjz9MKNSAwIG9iago8PCAvVHlwZSAvUGFnZSAvUGFyZW50IDEgMCBSIC9MYXN0TW9kaWZpZWQgKEQOMjAyMzExMTYxNDQ1NTcrMDAnMDAnKSAvUmVzb3VyY2VzIDIgMCBSIC9NZWRpYUJveCBbMC4wMDAwMDAgMC4wMDAwMDAgNTk1LjI3NjAwMCA4NDEuODkwMDAwXSAvQ3JvcEJveCBbMC4wMDAwMDAgMC4wMDAwMDAgNTk1LjI3NjAwMCA4NDEuODkwMDAwXSAvQmxlZWRCb3ggWzAuMDAwMDAwIDAuMDAwMDAwIDU5NS4yNzYwMDAgODQxLjg5MDAwMF0gL1RyaW1Cb3ggWzAuMDAwMDAwIDAuMDAwMDAwIDU5NS4yNzYwMDAgODQxLjg5MDAwMF0gL0FydEJveCBbMC4wMDAwMDAgMC4wMDAwMDAgNTk1LjI3NjAwMCA4NDEuODkwMDAwXSAvQ29udGVudHMgMTAgMCBSIC9Sb3RhdGUgMCAvR3JvdXAgPDwgL1R5cGUgL0dyb3VwIC9TIC9UcmFuc3BhcmVuY3kgL0NTIC9EZXZpY2VSR0IgPj4gL0Fubm90cyBbIDggMCBSIF0gL1BaIDEgPj4KZW5kb2JqCjEwIDAgb2JqCjw8IC9MZW5ndGggMTEgMCBSIC9GaWx0ZXIgL0ZsYXRlRGVjb2RlID4+CnN0cmVhbQo=`;
     
     return pdfBase64;
   };
