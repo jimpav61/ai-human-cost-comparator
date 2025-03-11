@@ -1,7 +1,8 @@
+
 import { Lead } from "@/types/leads";
 import { DocumentGeneratorProps } from "./types";
 import { Button } from "@/components/ui/button";
-import { FileBarChart, FileText, Eye, Edit } from "lucide-react";
+import { FileBarChart, FileText, Eye, Pencil } from "lucide-react";
 import { toast } from "@/hooks/use-toast";
 import { useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
@@ -397,8 +398,8 @@ export const DocumentGenerator = ({ lead, onLeadUpdated }: ExtendedDocumentGener
         size="sm"
         className="whitespace-nowrap"
       >
-        <Edit className="h-4 w-4 mr-1" />
-        <span>Edit Report</span>
+        <Pencil className="h-4 w-4 mr-1" />
+        <span>Edit Proposal</span>
       </Button>
       
       <Button

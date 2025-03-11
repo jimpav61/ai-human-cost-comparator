@@ -37,7 +37,7 @@ export const EditReportDialog = ({ isOpen, onClose, lead, onSave }: EditProposal
   
   // Log current values for debugging
   useEffect(() => {
-    console.log("EditReportDialog values:", {
+    console.log("EditProposalDialog values:", {
       callVolume,
       aiTier,
       aiType
@@ -101,7 +101,7 @@ export const EditReportDialog = ({ isOpen, onClose, lead, onSave }: EditProposal
     <Dialog open={isOpen} onOpenChange={(open) => !open && onClose()}>
       <DialogContent className="sm:max-w-[500px]">
         <DialogHeader>
-          <DialogTitle>Edit Report Settings</DialogTitle>
+          <DialogTitle>Edit Proposal Settings</DialogTitle>
         </DialogHeader>
         
         <div className="grid gap-4 py-4">
