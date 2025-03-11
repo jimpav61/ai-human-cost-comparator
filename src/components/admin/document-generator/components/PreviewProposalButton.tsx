@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Eye, FileEdit, Save, FileText, ArrowLeft, Download } from "lucide-react";
@@ -63,10 +62,19 @@ export const PreviewProposalButton = ({ lead, disabled }: PreviewProposalButtonP
   const [editingAiType, setEditingAiType] = useState<AiType>(
     (lead.calculator_inputs?.aiType as AiType) || 'both'
   );
+
+  // Ensure callVolume is always a number
+  const parseCallVolume = (value: any): number => {
+    if (typeof value === 'string') {
+      return parseInt(value, 10) || 0;
+    } else if (typeof value === 'number') {
+      return value;
+    }
+    return 0;
+  };
+  
   const [editingCallVolume, setEditingCallVolume] = useState(
-    typeof lead.calculator_inputs?.callVolume === 'number' 
-      ? lead.calculator_inputs.callVolume 
-      : 0
+    parseCallVolume(lead.calculator_inputs?.callVolume)
   );
   
   // Calculate pricing based on current selections
@@ -94,11 +102,11 @@ export const PreviewProposalButton = ({ lead, disabled }: PreviewProposalButtonP
     if (lead) {
       setEditingAiTier((lead.calculator_inputs?.aiTier as AiTier) || 'growth');
       setEditingAiType((lead.calculator_inputs?.aiType as AiType) || 'both');
-      setEditingCallVolume(
-        typeof lead.calculator_inputs?.callVolume === 'number' 
-          ? lead.calculator_inputs.callVolume 
-          : 0
-      );
+      setEditingCallVolume(parseCallVolume(lead.calculator_inputs?.callVolume));
+      
+      console.log("PreviewProposalButton: Lead changed, callVolume =", 
+        lead.calculator_inputs?.callVolume, 
+        "parsed as", parseCallVolume(lead.calculator_inputs?.callVolume));
     }
   }, [lead]);
   
@@ -110,7 +118,9 @@ export const PreviewProposalButton = ({ lead, disabled }: PreviewProposalButtonP
         const notesData = JSON.parse(selectedVersion.notes || "{}");
         if (notesData.aiTier) setEditingAiTier(notesData.aiTier as AiTier);
         if (notesData.aiType) setEditingAiType(notesData.aiType as AiType);
-        if (notesData.callVolume !== undefined) setEditingCallVolume(notesData.callVolume);
+        if (notesData.callVolume !== undefined) {
+          setEditingCallVolume(parseCallVolume(notesData.callVolume));
+        }
       } catch (e) {
         // If notes isn't JSON, just continue with lead data
       }
@@ -127,6 +137,8 @@ export const PreviewProposalButton = ({ lead, disabled }: PreviewProposalButtonP
   
   const onClick = async () => {
     console.log("Preview button clicked with lead:", lead);
+    console.log("Current callVolume:", lead.calculator_inputs?.callVolume, 
+      "type:", typeof lead.calculator_inputs?.callVolume);
     
     if (!lead.calculator_inputs || !lead.calculator_results) {
       console.error("Missing calculator data");
@@ -139,29 +151,45 @@ export const PreviewProposalButton = ({ lead, disabled }: PreviewProposalButtonP
     }
     
     try {
+      // Create a copy of the lead with properly typed callVolume
+      const leadCopy = { ...lead };
+      if (leadCopy.calculator_inputs) {
+        leadCopy.calculator_inputs = { ...leadCopy.calculator_inputs };
+        leadCopy.calculator_inputs.callVolume = parseCallVolume(leadCopy.calculator_inputs.callVolume);
+        console.log("Using callVolume:", leadCopy.calculator_inputs.callVolume, 
+          "type:", typeof leadCopy.calculator_inputs.callVolume);
+      }
+      
       // Load previous versions
       setIsLoadingVersions(true);
-      const versions = await getProposalRevisions(lead.id);
+      const versions = await getProposalRevisions(leadCopy.id);
       setProposalVersions(versions);
       setIsLoadingVersions(false);
       
-      // Get or generate a preview
-      const latestRevision = await handlePreviewProposal(lead);
+      // Reset UI state
+      setSelectedVersion(null);
+      setActiveTab("preview");
+      setShowPdfPreview(false);
+      
+      // Generate proposal
+      const latestRevision = await handlePreviewProposal(leadCopy);
       
       if (latestRevision) {
         setProposalContent(latestRevision.proposal_content);
         setProposalTitle(latestRevision.title);
         setProposalNotes(latestRevision.notes || "");
-        
-        // Create PDF preview on initial open
-        handlePreviewPDF(latestRevision.proposal_content);
-        
-        setIsDialogOpen(true);
-        setActiveTab("preview"); // Start with preview tab
       }
+      
+      // Open dialog
+      setIsDialogOpen(true);
+      
     } catch (error) {
-      console.error("Error in preview button click handler:", error);
-      // Error is already handled in the hook with toast
+      console.error("Error generating proposal:", error);
+      toast({
+        title: "Error",
+        description: `Failed to generate proposal: ${error instanceof Error ? error.message : 'Unknown error'}`,
+        variant: "destructive",
+      });
     }
   };
   

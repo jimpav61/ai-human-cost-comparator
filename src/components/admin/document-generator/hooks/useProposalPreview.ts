@@ -1,4 +1,3 @@
-
 import { useState } from "react";
 import { Lead } from "@/types/leads";
 import { toast } from "@/hooks/use-toast";
@@ -184,6 +183,18 @@ export const useProposalPreview = () => {
                          aiType === 'both' ? 'Text & Basic Voice' : 
                          aiType === 'both-premium' ? 'Text & Conversational Voice' : 'Text Only';
     
+    // Parse callVolume to ensure it's a number
+    let callVolume = 0;
+    if (lead.calculator_inputs?.callVolume !== undefined) {
+      if (typeof lead.calculator_inputs.callVolume === 'string') {
+        callVolume = parseInt(lead.calculator_inputs.callVolume, 10) || 0;
+      } else if (typeof lead.calculator_inputs.callVolume === 'number') {
+        callVolume = lead.calculator_inputs.callVolume;
+      }
+    }
+    
+    console.log("Generating proposal with callVolume:", callVolume, "type:", typeof callVolume);
+    
     // Calculate pricing details
     const basePrice = 
       aiTier === 'starter' ? 99 :
@@ -191,9 +202,6 @@ export const useProposalPreview = () => {
       aiTier === 'premium' ? 429 : 229;
     
     const includedMinutes = aiTier === 'starter' ? 0 : 600;
-    const callVolume = typeof lead.calculator_inputs?.callVolume === 'number' 
-      ? lead.calculator_inputs.callVolume 
-      : 0;
     const additionalVoiceCost = aiTier !== 'starter' ? callVolume * 0.12 : 0;
     const totalPrice = basePrice + additionalVoiceCost;
     
@@ -217,7 +225,6 @@ export const useProposalPreview = () => {
     const brandRed = "#ff432a";  // Main brand color
     
     // Generate PDF content (multipage professional proposal)
-    // Changed from const to let to fix the TypeScript errors
     let pdfContent = `
 %PDF-1.7
 1 0 obj
@@ -780,6 +787,13 @@ startxref
       console.log("Previewing proposal for lead:", lead.id);
       console.log("Current lead calculator_inputs:", JSON.stringify(lead.calculator_inputs, null, 2));
       console.log("Current lead calculator_results:", JSON.stringify(lead.calculator_results, null, 2));
+      
+      // Ensure callVolume is a number
+      if (lead.calculator_inputs && typeof lead.calculator_inputs.callVolume === 'string') {
+        lead.calculator_inputs.callVolume = parseInt(lead.calculator_inputs.callVolume, 10) || 0;
+        console.log("Converted callVolume to number in handlePreviewProposal:", lead.calculator_inputs.callVolume);
+      }
+      
       setIsLoading(true);
       
       // First, check if we already have a proposal for this lead
