@@ -1,3 +1,4 @@
+
 import { Lead } from "@/types/leads";
 import { DocumentGeneratorProps } from "./types";
 import { DownloadReportButton } from "./components/DownloadReportButton";
@@ -31,9 +32,13 @@ export const DocumentGenerator = ({ lead, onLeadUpdated }: ExtendedDocumentGener
       };
     }
     
-    // Ensure callVolume is a number
+    // CRITICAL FIX: Always ensure callVolume is a number
     if (typeof leadCopy.calculator_inputs.callVolume === 'string') {
       leadCopy.calculator_inputs.callVolume = parseInt(leadCopy.calculator_inputs.callVolume, 10) || 0;
+      console.log("DocumentGenerator init: Converted callVolume from string to number:", leadCopy.calculator_inputs.callVolume);
+    } else if (leadCopy.calculator_inputs.callVolume === undefined || leadCopy.calculator_inputs.callVolume === null) {
+      leadCopy.calculator_inputs.callVolume = 0;
+      console.log("DocumentGenerator init: Set missing callVolume to 0");
     }
     
     return leadCopy;
@@ -51,7 +56,7 @@ export const DocumentGenerator = ({ lead, onLeadUpdated }: ExtendedDocumentGener
     console.log("DocumentGenerator component received lead update:", lead);
     console.log("lead.calculator_inputs.aiTier:", lead.calculator_inputs?.aiTier);
     console.log("lead.calculator_inputs.aiType:", lead.calculator_inputs?.aiType);
-    console.log("lead.calculator_inputs.callVolume:", lead.calculator_inputs?.callVolume);
+    console.log("lead.calculator_inputs.callVolume:", lead.calculator_inputs?.callVolume, "type:", typeof lead.calculator_inputs?.callVolume);
     
     // Deep clone to avoid reference issues
     const leadCopy = JSON.parse(JSON.stringify(lead));
@@ -72,10 +77,13 @@ export const DocumentGenerator = ({ lead, onLeadUpdated }: ExtendedDocumentGener
       };
     }
     
-    // Ensure callVolume is a number
+    // CRITICAL FIX: Always ensure callVolume is a number
     if (typeof leadCopy.calculator_inputs.callVolume === 'string') {
       leadCopy.calculator_inputs.callVolume = parseInt(leadCopy.calculator_inputs.callVolume, 10) || 0;
-      console.log("Converted callVolume from string to number:", leadCopy.calculator_inputs.callVolume);
+      console.log("DocumentGenerator update: Converted callVolume from string to number:", leadCopy.calculator_inputs.callVolume);
+    } else if (leadCopy.calculator_inputs.callVolume === undefined || leadCopy.calculator_inputs.callVolume === null) {
+      leadCopy.calculator_inputs.callVolume = 0;
+      console.log("DocumentGenerator update: Set missing callVolume to 0");
     }
     
     setCurrentLead(leadCopy);
@@ -86,15 +94,18 @@ export const DocumentGenerator = ({ lead, onLeadUpdated }: ExtendedDocumentGener
     console.log("DocumentGenerator received lead update from child:", updatedLead);
     console.log("Updated aiTier:", updatedLead.calculator_inputs?.aiTier);
     console.log("Updated aiType:", updatedLead.calculator_inputs?.aiType);
-    console.log("Updated callVolume:", updatedLead.calculator_inputs?.callVolume);
+    console.log("Updated callVolume:", updatedLead.calculator_inputs?.callVolume, "type:", typeof updatedLead.calculator_inputs?.callVolume);
     
     // Update our local state with a deep clone
     const updatedLeadCopy = JSON.parse(JSON.stringify(updatedLead));
     
-    // Ensure callVolume is a number
+    // CRITICAL FIX: Always ensure callVolume is a number before passing it on
     if (typeof updatedLeadCopy.calculator_inputs.callVolume === 'string') {
       updatedLeadCopy.calculator_inputs.callVolume = parseInt(updatedLeadCopy.calculator_inputs.callVolume, 10) || 0;
-      console.log("Converted updated callVolume from string to number:", updatedLeadCopy.calculator_inputs.callVolume);
+      console.log("DocumentGenerator handleInternalLeadUpdate: Converted callVolume from string to number:", updatedLeadCopy.calculator_inputs.callVolume);
+    } else if (updatedLeadCopy.calculator_inputs.callVolume === undefined || updatedLeadCopy.calculator_inputs.callVolume === null) {
+      updatedLeadCopy.calculator_inputs.callVolume = 0;
+      console.log("DocumentGenerator handleInternalLeadUpdate: Set missing callVolume to 0");
     }
     
     setCurrentLead(updatedLeadCopy);

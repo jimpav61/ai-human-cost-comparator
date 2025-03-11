@@ -55,15 +55,6 @@ export const PreviewProposalButton = ({ lead, disabled }: PreviewProposalButtonP
   const [isLoadingVersions, setIsLoadingVersions] = useState(false);
   const [currentPdfPreviewUrl, setCurrentPdfPreviewUrl] = useState<string | null>(null);
   
-  // Form state for proposal editing
-  const [editingAiTier, setEditingAiTier] = useState<AiTier>(
-    (lead.calculator_inputs?.aiTier as AiTier) || 'growth'
-  );
-  const [editingAiType, setEditingAiType] = useState<AiType>(
-    (lead.calculator_inputs?.aiType as AiType) || 'both'
-  );
-
-  // Ensure callVolume is always a number
   const parseCallVolume = (value: any): number => {
     if (typeof value === 'string') {
       return parseInt(value, 10) || 0;
@@ -73,11 +64,24 @@ export const PreviewProposalButton = ({ lead, disabled }: PreviewProposalButtonP
     return 0;
   };
   
+  const [editingAiTier, setEditingAiTier] = useState<AiTier>(
+    (lead.calculator_inputs?.aiTier as AiTier) || 'growth'
+  );
+  const [editingAiType, setEditingAiType] = useState<AiType>(
+    (lead.calculator_inputs?.aiType as AiType) || 'both'
+  );
+  
   const [editingCallVolume, setEditingCallVolume] = useState(
     parseCallVolume(lead.calculator_inputs?.callVolume)
   );
   
-  // Calculate pricing based on current selections
+  console.log("PreviewProposalButton initial values:", {
+    leadCallVolume: lead.calculator_inputs?.callVolume,
+    leadCallVolumeType: typeof lead.calculator_inputs?.callVolume,
+    parsedCallVolume: parseCallVolume(lead.calculator_inputs?.callVolume),
+    editingCallVolume
+  });
+  
   const calculatePrice = () => {
     const basePrice = 
       editingAiTier === 'starter' ? 99 :
@@ -97,37 +101,39 @@ export const PreviewProposalButton = ({ lead, disabled }: PreviewProposalButtonP
   
   const pricing = calculatePrice();
   
-  // Reset form state when lead changes
   useEffect(() => {
     if (lead) {
+      const parsedCallVolume = parseCallVolume(lead.calculator_inputs?.callVolume);
+      
       setEditingAiTier((lead.calculator_inputs?.aiTier as AiTier) || 'growth');
       setEditingAiType((lead.calculator_inputs?.aiType as AiType) || 'both');
-      setEditingCallVolume(parseCallVolume(lead.calculator_inputs?.callVolume));
+      setEditingCallVolume(parsedCallVolume);
       
       console.log("PreviewProposalButton: Lead changed, callVolume =", 
         lead.calculator_inputs?.callVolume, 
-        "parsed as", parseCallVolume(lead.calculator_inputs?.callVolume));
+        "type:", typeof lead.calculator_inputs?.callVolume,
+        "parsed as", parsedCallVolume);
     }
   }, [lead]);
   
-  // Effect to update form when changing versions
   useEffect(() => {
     if (selectedVersion) {
-      // If we have version-specific pricing data in notes (could be stored as JSON)
       try {
         const notesData = JSON.parse(selectedVersion.notes || "{}");
         if (notesData.aiTier) setEditingAiTier(notesData.aiTier as AiTier);
         if (notesData.aiType) setEditingAiType(notesData.aiType as AiType);
         if (notesData.callVolume !== undefined) {
           setEditingCallVolume(parseCallVolume(notesData.callVolume));
+          console.log("Loaded callVolume from version:", notesData.callVolume, 
+              "type:", typeof notesData.callVolume,
+              "parsed as:", parseCallVolume(notesData.callVolume));
         }
       } catch (e) {
-        // If notes isn't JSON, just continue with lead data
+        console.log("Error parsing version notes:", e);
       }
     }
   }, [selectedVersion]);
   
-  // Clean up PDF preview URL when dialog closes
   useEffect(() => {
     if (!isDialogOpen && currentPdfPreviewUrl) {
       URL.revokeObjectURL(currentPdfPreviewUrl);
@@ -151,27 +157,23 @@ export const PreviewProposalButton = ({ lead, disabled }: PreviewProposalButtonP
     }
     
     try {
-      // Create a copy of the lead with properly typed callVolume
       const leadCopy = { ...lead };
       if (leadCopy.calculator_inputs) {
         leadCopy.calculator_inputs = { ...leadCopy.calculator_inputs };
         leadCopy.calculator_inputs.callVolume = parseCallVolume(leadCopy.calculator_inputs.callVolume);
-        console.log("Using callVolume:", leadCopy.calculator_inputs.callVolume, 
+        console.log("Using callVolume for preview:", leadCopy.calculator_inputs.callVolume, 
           "type:", typeof leadCopy.calculator_inputs.callVolume);
       }
       
-      // Load previous versions
       setIsLoadingVersions(true);
       const versions = await getProposalRevisions(leadCopy.id);
       setProposalVersions(versions);
       setIsLoadingVersions(false);
       
-      // Reset UI state
       setSelectedVersion(null);
       setActiveTab("preview");
       setShowPdfPreview(false);
       
-      // Generate proposal
       const latestRevision = await handlePreviewProposal(leadCopy);
       
       if (latestRevision) {
@@ -180,7 +182,6 @@ export const PreviewProposalButton = ({ lead, disabled }: PreviewProposalButtonP
         setProposalNotes(latestRevision.notes || "");
       }
       
-      // Open dialog
       setIsDialogOpen(true);
       
     } catch (error) {
@@ -199,13 +200,11 @@ export const PreviewProposalButton = ({ lead, disabled }: PreviewProposalButtonP
     setProposalTitle(version.title);
     setProposalNotes(version.notes || "");
     
-    // Also create PDF preview for this version
     handlePreviewPDF(version.proposal_content);
   };
   
   const handleCreateNewVersion = async () => {
     try {
-      // Create updated proposal with new settings
       const updatedProposalContent = generateProfessionalProposal({
         ...lead,
         calculator_inputs: {
@@ -216,7 +215,6 @@ export const PreviewProposalButton = ({ lead, disabled }: PreviewProposalButtonP
         }
       });
       
-      // Store the pricing information in the notes as JSON
       const metadataForNotes = {
         aiTier: editingAiTier,
         aiType: editingAiType,
@@ -225,9 +223,11 @@ export const PreviewProposalButton = ({ lead, disabled }: PreviewProposalButtonP
         totalPrice: pricing.totalPrice
       };
       
+      console.log("Saving proposal with callVolume:", editingCallVolume, 
+          "type:", typeof editingCallVolume);
+      
       const notesWithMetadata = JSON.stringify(metadataForNotes);
       
-      // Save as a new revision
       const newRevision = await saveProposalRevision(
         lead.id,
         updatedProposalContent,
@@ -235,15 +235,12 @@ export const PreviewProposalButton = ({ lead, disabled }: PreviewProposalButtonP
         notesWithMetadata
       );
       
-      // Reload versions after saving
       const versions = await getProposalRevisions(lead.id);
       setProposalVersions(versions);
       
-      // Update the content and preview
       setProposalContent(updatedProposalContent);
       handlePreviewPDF(updatedProposalContent);
       
-      // Load the new version
       setSelectedVersion(newRevision);
       
       toast({
@@ -263,19 +260,15 @@ export const PreviewProposalButton = ({ lead, disabled }: PreviewProposalButtonP
   
   const handlePreviewPDF = (content = proposalContent) => {
     try {
-      // Generate a PDF preview from the current content
       const base64pdf = content;
       
-      // Revoke previous URL if it exists
       if (currentPdfPreviewUrl) {
         URL.revokeObjectURL(currentPdfPreviewUrl);
       }
       
       let pdfBlob: Blob;
       
-      // Check what format the content is in
       if (base64pdf.startsWith('JVB')) {
-        // It's already a PDF, start from the beginning
         const binaryData = atob(base64pdf);
         const bytes = new Uint8Array(binaryData.length);
         for (let i = 0; i < binaryData.length; i++) {
@@ -283,7 +276,6 @@ export const PreviewProposalButton = ({ lead, disabled }: PreviewProposalButtonP
         }
         pdfBlob = new Blob([bytes], { type: 'application/pdf' });
       } else if (base64pdf.startsWith('data:application/pdf;base64,')) {
-        // It has a data URL prefix
         const pdfData = base64pdf.split(',')[1];
         const binaryData = atob(pdfData);
         const bytes = new Uint8Array(binaryData.length);
@@ -292,11 +284,9 @@ export const PreviewProposalButton = ({ lead, disabled }: PreviewProposalButtonP
         }
         pdfBlob = new Blob([bytes], { type: 'application/pdf' });
       } else {
-        // It's probably raw PDF content
         pdfBlob = new Blob([base64pdf], { type: 'application/pdf' });
       }
       
-      // Create object URL for embedded viewer
       const url = URL.createObjectURL(pdfBlob);
       setCurrentPdfPreviewUrl(url);
       
@@ -312,11 +302,9 @@ export const PreviewProposalButton = ({ lead, disabled }: PreviewProposalButtonP
     }
   };
   
-  // Handle changes to AI tier with proper AI type adjustment
   const handleTierChange = (newTier: string) => {
     setEditingAiTier(newTier as AiTier);
     
-    // Update AI type based on tier
     if (newTier === 'starter' && editingAiType !== 'chatbot') {
       setEditingAiType('chatbot');
       setEditingCallVolume(0);
@@ -329,11 +317,9 @@ export const PreviewProposalButton = ({ lead, disabled }: PreviewProposalButtonP
     }
   };
   
-  // Handle AI type change with proper tier adjustment
   const handleAITypeChange = (newType: string) => {
     setEditingAiType(newType as AiType);
     
-    // Update tier based on AI type
     if ((newType === 'conversationalVoice' || newType === 'both-premium') && editingAiTier !== 'premium') {
       setEditingAiTier('premium');
     } else if ((newType === 'voice' || newType === 'both') && editingAiTier === 'starter') {
@@ -398,7 +384,6 @@ export const PreviewProposalButton = ({ lead, disabled }: PreviewProposalButtonP
     );
   };
   
-  // Create preset volume options in increments of 50
   const volumeOptions = Array.from({ length: 21 }, (_, i) => i * 50);
   
   return (
@@ -504,7 +489,11 @@ export const PreviewProposalButton = ({ lead, disabled }: PreviewProposalButtonP
                         <Label htmlFor="callVolume">Additional Voice Minutes</Label>
                         <Select
                           value={editingCallVolume.toString()}
-                          onValueChange={(value) => setEditingCallVolume(parseInt(value, 10))}
+                          onValueChange={(value) => {
+                            const numericValue = parseInt(value, 10) || 0;
+                            console.log("Changing editingCallVolume from", editingCallVolume, "to", numericValue);
+                            setEditingCallVolume(numericValue);
+                          }}
                           disabled={editingAiTier === 'starter'}
                         >
                           <SelectTrigger>
