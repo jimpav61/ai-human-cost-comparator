@@ -22,35 +22,34 @@ export const addPlanSection = (
   
   startY += 15;
   
-  // Calculate voice costs - ensure we have a valid number and it's only calculated for non-starter tiers
+  // Calculate additional voice cost if there are additional minutes
   const voiceCostPerMinute = 0.12;
-  const additionalVoiceCost = additionalVoiceMinutes > 0 ? additionalVoiceMinutes * voiceCostPerMinute : 0;
+  const additionalVoiceCost = additionalVoiceMinutes * voiceCostPerMinute;
   
-  // Create a data array for the table - explicitly handle zero vs positive minutes
+  // Create data array for the table
   let tableData = [
     ['Selected Plan:', `${tierName} (${aiType})`],
     ['Base Monthly Cost:', formatCurrency(basePrice) + '/month'],
     ['Setup and Onboarding Fee:', formatCurrency(setupFee) + ' one-time']
   ];
   
-  // Always add included voice minutes for non-starter tiers
+  // Add voice minutes info for non-starter tiers
   if (includedVoiceMinutes > 0) {
     tableData.push(['Included Voice Minutes:', formatNumber(includedVoiceMinutes) + ' minutes/month']);
   }
   
-  // Explicitly handle additional minutes display
+  // Add additional voice minutes if any
   if (additionalVoiceMinutes > 0) {
-    tableData.push(['Additional Voice Minutes:', formatNumber(additionalVoiceMinutes) + ' minutes/month']);
-    tableData.push(['Additional Voice Cost:', formatCurrency(additionalVoiceCost) + '/month']);
-  } else if (includedVoiceMinutes > 0) {
-    // Only show "None requested" for plans that support voice but don't have additional minutes
-    tableData.push(['Additional Voice Minutes:', 'None requested']);
+    tableData.push(
+      ['Additional Voice Minutes:', formatNumber(additionalVoiceMinutes) + ' minutes/month'],
+      ['Additional Voice Cost:', formatCurrency(additionalVoiceCost) + '/month']
+    );
   }
   
-  // Always show total monthly cost
+  // Total monthly cost (base + voice)
   tableData.push(['Total Monthly Investment:', formatCurrency(basePrice + additionalVoiceCost) + '/month']);
   
-  // Add annual option with 2 months free
+  // Annual option
   tableData.push(['Annual Investment:', formatCurrency((basePrice + additionalVoiceCost) * 10) + '/year (2 months free with annual plan)']);
   
   autoTable(doc, {
