@@ -71,8 +71,8 @@ export function useAdminAuth() {
         } else {
           // Properly convert JSON types to our expected types
           const typedLeads = (leadsData || []).map(lead => {
-            const calculatorInputs = fromJson<typeof getDefaultCalculatorInputs>(lead.calculator_inputs) || getDefaultCalculatorInputs();
-            const calculatorResults = fromJson<typeof getDefaultCalculationResults>(lead.calculator_results) || getDefaultCalculationResults();
+            const calculatorInputs = fromJson(lead.calculator_inputs) || getDefaultCalculatorInputs();
+            const calculatorResults = fromJson(lead.calculator_results) || getDefaultCalculationResults();
             
             return {
               ...lead,
@@ -142,8 +142,8 @@ export function useAdminAuth() {
             } else {
               // Properly convert JSON types to our expected types
               const typedLeads = (leadsData || []).map(lead => {
-                const calculatorInputs = fromJson<typeof getDefaultCalculatorInputs>(lead.calculator_inputs) || getDefaultCalculatorInputs();
-                const calculatorResults = fromJson<typeof getDefaultCalculationResults>(lead.calculator_results) || getDefaultCalculationResults();
+                const calculatorInputs = fromJson(lead.calculator_inputs) || getDefaultCalculatorInputs();
+                const calculatorResults = fromJson(lead.calculator_results) || getDefaultCalculationResults();
                 
                 return {
                   ...lead,
