@@ -66,7 +66,7 @@ export const useProposalPreview = () => {
         }
       }
       
-      // Build the URL to our edge function - use the URL string format exactly as was working before
+      // Build the URL to our edge function - exactly as it was originally
       const SUPABASE_URL = "https://ujyhmchmjzlmsimtrtor.supabase.co";
       const apiUrl = `${SUPABASE_URL}/functions/v1/generate-proposal?preview=true`;
       
@@ -74,7 +74,7 @@ export const useProposalPreview = () => {
       console.log("Sending lead with calculator_inputs:", JSON.stringify(leadToSend.calculator_inputs, null, 2));
       console.log("Sending lead with calculator_results:", JSON.stringify(leadToSend.calculator_results, null, 2));
       
-      // Make the request - ensure we're passing the complete lead object with latest calculator data
+      // Make the request - using the exact format that was working before
       const response = await fetch(apiUrl, {
         method: 'POST',
         headers: {
@@ -122,6 +122,7 @@ export const useProposalPreview = () => {
         description: `Failed to preview proposal: ${error instanceof Error ? error.message : 'Unknown error'}`,
         variant: "destructive",
       });
+      throw error; // Restore this line to properly propagate errors
     }
   };
   
