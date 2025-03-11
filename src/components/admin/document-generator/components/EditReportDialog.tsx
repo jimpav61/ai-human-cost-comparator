@@ -48,8 +48,8 @@ export const EditReportDialog = ({ isOpen, onClose, lead, onSave }: EditProposal
   const handleSave = () => {
     console.log("Saving with recalculation of results");
     
-    // Create a copy of the lead to avoid reference issues
-    const leadToSave = {...editableLead};
+    // Create a deep copy of the lead to avoid reference issues
+    const leadToSave = JSON.parse(JSON.stringify(editableLead));
     
     // Make sure we have calculator_inputs
     if (!leadToSave.calculator_inputs) {
@@ -86,9 +86,9 @@ export const EditReportDialog = ({ isOpen, onClose, lead, onSave }: EditProposal
       leadToSave.calculator_results = updatedResults;
     }
     
-    // Now we need to modify how we pass this to our onSave function
-    // First set the current editableLead state to our updated lead
-    // Then call the original handleSave which will use this updated state
+    console.log("Saving lead with updated results:", leadToSave);
+    
+    // Now pass the updated lead to the parent component
     onSave(leadToSave);
     onClose();
   };

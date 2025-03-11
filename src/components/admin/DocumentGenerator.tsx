@@ -14,7 +14,11 @@ export const DocumentGenerator = ({ lead }: DocumentGeneratorProps) => {
   
   // Update the current lead whenever the parent component provides a new lead
   useEffect(() => {
-    setCurrentLead(lead);
+    console.log("DocumentGenerator received updated lead from parent:", lead);
+    
+    // Create a deep copy to avoid reference issues
+    const leadCopy = JSON.parse(JSON.stringify(lead));
+    setCurrentLead(leadCopy);
   }, [lead]);
   
   // Make sure we're passing the correct lead data with proper calculator_inputs
@@ -34,11 +38,14 @@ export const DocumentGenerator = ({ lead }: DocumentGeneratorProps) => {
   
   // Handle updates to the lead data
   const handleLeadUpdate = (updatedLead: Lead) => {
-    console.log("DocumentGenerator received updated lead:", updatedLead);
+    console.log("DocumentGenerator received updated lead from edit dialog:", updatedLead);
     console.log("Updated callVolume:", updatedLead.calculator_inputs?.callVolume);
     
+    // Create a deep copy to avoid reference issues
+    const updatedLeadCopy = JSON.parse(JSON.stringify(updatedLead));
+    
     // Update our local state with the new lead data
-    setCurrentLead(updatedLead);
+    setCurrentLead(updatedLeadCopy);
   };
   
   return (

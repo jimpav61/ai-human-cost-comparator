@@ -2,7 +2,6 @@
 import { useState } from "react";
 import { Lead } from "@/types/leads";
 import { toast } from "@/hooks/use-toast";
-import { supabase } from "@/integrations/supabase/client";
 
 export const useProposalPreview = () => {
   const [isLoading, setIsLoading] = useState(false);
@@ -10,6 +9,8 @@ export const useProposalPreview = () => {
   const handlePreviewProposal = async (lead: Lead) => {
     try {
       console.log("Previewing proposal for lead:", lead.id);
+      console.log("Current lead calculator_inputs:", lead.calculator_inputs);
+      console.log("Current lead calculator_results:", lead.calculator_results);
       setIsLoading(true);
       
       // Make sure we have valid calculator inputs to use
@@ -24,7 +25,7 @@ export const useProposalPreview = () => {
       
       console.log("Calling edge function at:", apiUrl.toString());
       
-      // Make the request
+      // Make the request - ensure we're passing the complete lead object with latest calculator data
       const response = await fetch(apiUrl.toString(), {
         method: 'POST',
         headers: {

@@ -47,6 +47,10 @@ serve(async (req) => {
     console.log("Lead company:", lead.company_name);
     console.log("Mode:", isPreviewMode ? "Preview (download only)" : "Send email");
     
+    // Log calculator data to troubleshoot
+    console.log("Lead calculator_inputs:", JSON.stringify(lead.calculator_inputs));
+    console.log("Lead calculator_results:", JSON.stringify(lead.calculator_results));
+    
     if (isPreviewMode) {
       // In preview mode, generate and return the PDF directly
       console.log("Generating preview PDF for download");
@@ -161,6 +165,7 @@ function generateProfessionalProposal(lead) {
   // Determine AI plan details from inputs
   // Default to growth plan if no tier is specified
   const aiTier = (calculatorInputs.aiTier || 'growth').toLowerCase();
+  console.log("Proposal generation - AI Tier:", aiTier);
   
   // Get display names based on tier
   const tierName = aiTier === 'starter' ? 'Starter Plan' : 
@@ -171,6 +176,7 @@ function generateProfessionalProposal(lead) {
   let aiTypeDisplay = 'Text Only';
   if (calculatorInputs.aiType) {
     const aiType = calculatorInputs.aiType;
+    console.log("Proposal generation - AI Type:", aiType);
     aiTypeDisplay = aiType === 'chatbot' ? 'Text Only' : 
                     aiType === 'voice' ? 'Basic Voice' : 
                     aiType === 'conversationalVoice' ? 'Conversational Voice' : 
@@ -199,13 +205,16 @@ function generateProfessionalProposal(lead) {
   
   if (aiTier !== 'starter') {
     // First check if callVolume exists as a direct property
-    if ('callVolume' in calculatorInputs) {
+    if (calculatorInputs && 'callVolume' in calculatorInputs) {
       // Handle different types - ensure we have a number
       if (typeof calculatorInputs.callVolume === 'string') {
         additionalVoiceMinutes = parseInt(calculatorInputs.callVolume, 10) || 0;
       } else if (typeof calculatorInputs.callVolume === 'number') {
         additionalVoiceMinutes = calculatorInputs.callVolume;
       }
+      
+      console.log("Proposal generation - Found callVolume in inputs:", calculatorInputs.callVolume, 
+                  "Parsed as:", additionalVoiceMinutes);
     }
     
     // If we couldn't find callVolume directly, try to parse nested properties
@@ -220,6 +229,8 @@ function generateProfessionalProposal(lead) {
           } else if (typeof callVol === 'number') {
             additionalVoiceMinutes = callVol;
           }
+          console.log("Proposal generation - Found callVolume in nested property:", key, 
+                      "Value:", callVol, "Parsed as:", additionalVoiceMinutes);
         }
       });
     }

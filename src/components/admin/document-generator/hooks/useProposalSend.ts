@@ -10,6 +10,8 @@ export const useProposalSend = () => {
   const handleSendProposal = async (lead: Lead) => {
     try {
       console.log("Sending proposal for lead:", lead.id);
+      console.log("Current lead calculator_inputs:", lead.calculator_inputs);
+      console.log("Current lead calculator_results:", lead.calculator_results);
       setIsLoading(true);
       
       // Make sure we have valid calculator inputs to use
@@ -23,7 +25,7 @@ export const useProposalSend = () => {
       
       console.log("Calling edge function at:", apiUrl.toString());
       
-      // Make the request - sending the proposal via email
+      // Make the request - sending the proposal via email with latest calculator data
       const response = await fetch(apiUrl.toString(), {
         method: 'POST',
         headers: {
