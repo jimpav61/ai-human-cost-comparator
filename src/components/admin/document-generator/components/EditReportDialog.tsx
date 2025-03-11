@@ -61,6 +61,14 @@ export const EditReportDialog = ({ isOpen, onClose, lead, onSave }: EditProposal
     // Ensure callVolume is a number
     if (typeof leadToSave.calculator_inputs.callVolume === 'string') {
       leadToSave.calculator_inputs.callVolume = parseInt(leadToSave.calculator_inputs.callVolume, 10) || 0;
+    } else if (leadToSave.calculator_inputs.callVolume === undefined || leadToSave.calculator_inputs.callVolume === null) {
+      leadToSave.calculator_inputs.callVolume = 0;
+    }
+    
+    // If aiTier is starter, force callVolume to 0
+    if (leadToSave.calculator_inputs.aiTier === 'starter') {
+      leadToSave.calculator_inputs.callVolume = 0;
+      console.log("Reset callVolume to 0 for starter plan");
     }
     
     // If we have enough data to recalculate, do it

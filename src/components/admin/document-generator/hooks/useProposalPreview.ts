@@ -27,8 +27,29 @@ export const useProposalPreview = () => {
         console.log("Converted callVolume from string to number:", lead.calculator_inputs.callVolume);
       }
       
-      // Create a deep clone to avoid reference issues
+      // Deep clone to prevent any reference issues
       const leadToSend = JSON.parse(JSON.stringify(lead));
+      
+      // Double-check aiTier, aiType and callVolume are set correctly
+      if (!leadToSend.calculator_inputs.aiTier) {
+        leadToSend.calculator_inputs.aiTier = leadToSend.calculator_results?.tierKey || 'growth';
+        console.log("Set missing aiTier from calculator_results:", leadToSend.calculator_inputs.aiTier);
+      }
+      
+      if (!leadToSend.calculator_inputs.aiType) {
+        leadToSend.calculator_inputs.aiType = leadToSend.calculator_results?.aiType || 'both';
+        console.log("Set missing aiType from calculator_results:", leadToSend.calculator_inputs.aiType);
+      }
+      
+      if (leadToSend.calculator_inputs.aiTier === 'starter') {
+        // Force callVolume to 0 for starter plan
+        leadToSend.calculator_inputs.callVolume = 0;
+        console.log("Reset callVolume to 0 for starter plan");
+      } else if (leadToSend.calculator_inputs.callVolume === undefined || leadToSend.calculator_inputs.callVolume === null) {
+        // Set default callVolume if not set
+        leadToSend.calculator_inputs.callVolume = 0;
+        console.log("Set default callVolume to 0");
+      }
       
       // Build the URL to our edge function
       const SUPABASE_URL = "https://ujyhmchmjzlmsimtrtor.supabase.co";
