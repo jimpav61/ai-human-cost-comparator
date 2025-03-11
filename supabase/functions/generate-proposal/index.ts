@@ -1,3 +1,4 @@
+
 import { serve } from "https://deno.land/std@0.177.0/http/server.ts";
 import { corsHeaders } from "../_shared/cors.ts";
 
@@ -202,7 +203,7 @@ function generateProfessionalProposal(lead) {
   
   // Determine AI plan details from inputs
   // Default to growth plan if no tier is specified
-  const aiTier = (calculatorInputs.aiTier || 'growth').toLowerCase();
+  const aiTier = (calculatorInputs.aiTier || calculatorResults.tierKey || 'growth').toLowerCase();
   console.log("Proposal generation - AI Tier:", aiTier);
   
   // Get display names based on tier
@@ -220,20 +221,30 @@ function generateProfessionalProposal(lead) {
                     aiType === 'conversationalVoice' ? 'Conversational Voice' : 
                     aiType === 'both' ? 'Text & Basic Voice' : 
                     aiType === 'both-premium' ? 'Text & Conversational Voice' : 'Text Only';
+  } else if (calculatorResults.aiType) {
+    const aiType = calculatorResults.aiType;
+    console.log("Proposal generation - AI Type from results:", aiType);
+    aiTypeDisplay = aiType === 'chatbot' ? 'Text Only' : 
+                    aiType === 'voice' ? 'Basic Voice' : 
+                    aiType === 'conversationalVoice' ? 'Conversational Voice' : 
+                    aiType === 'both' ? 'Text & Basic Voice' : 
+                    aiType === 'both-premium' ? 'Text & Conversational Voice' : 'Text Only';
   } else if (aiTier !== 'starter') {
     // If no AI type specified but not on starter, default to voice capability
     aiTypeDisplay = 'Text & Basic Voice';
   }
   
-  // Get price details based on tier
-  const monthlyPrice = aiTier === 'starter' ? 99 : 
+  // Get price details from calculator results first, then fall back to tier defaults
+  const monthlyPrice = calculatorResults.basePriceMonthly || 
+                      (aiTier === 'starter' ? 99 : 
                       aiTier === 'growth' ? 229 :
-                      aiTier === 'premium' ? 429 : 229;
+                      aiTier === 'premium' ? 429 : 229);
   
-  // Updated setup fees - use the correct values
-  const setupFee = aiTier === 'starter' ? 249 :
+  // Updated setup fees - use the results first, then fall back to defaults
+  const setupFee = calculatorResults.aiCostMonthly?.setupFee ||
+                  (aiTier === 'starter' ? 249 :
                   aiTier === 'growth' ? 749 :
-                  aiTier === 'premium' ? 1149 : 749;
+                  aiTier === 'premium' ? 1149 : 749);
   
   // Get voice details - different for each tier
   const includedVoiceMinutes = aiTier === 'starter' ? 0 : 600;
@@ -287,12 +298,16 @@ function generateProfessionalProposal(lead) {
   // Total monthly cost - ensure voice cost is included
   const totalMonthlyCost = monthlyPrice + voiceCost;
   
-  // Use calculator results if available, otherwise use defaults
+  // CRITICAL FIX: Use calculator results values directly for financial data
+  // Extract these values directly from calculatorResults instead of calculating our own
   const humanCostMonthly = calculatorResults.humanCostMonthly || 15000;
   const monthlySavings = calculatorResults.monthlySavings || (humanCostMonthly - totalMonthlyCost);
   const yearlySavings = calculatorResults.yearlySavings || (monthlySavings * 12);
   const savingsPercentage = calculatorResults.savingsPercentage || 
                           (humanCostMonthly > 0 ? Math.round((monthlySavings / humanCostMonthly) * 100) : 80);
+  
+  // Calculate annual plan price
+  const annualPlan = calculatorResults.annualPlan || (totalMonthlyCost * 10);
   
   // Calculate ROI details with defaults if missing
   const breakEvenPoint = Math.ceil(setupFee / (monthlySavings || 1000));
@@ -312,7 +327,8 @@ function generateProfessionalProposal(lead) {
     humanCostMonthly,
     monthlySavings,
     yearlySavings,
-    savingsPercentage
+    savingsPercentage,
+    annualPlan
   });
   
   // Brand Colors
@@ -661,7 +677,7 @@ ${brandOrange} rg
 -190 -25 Td
 (Annual Investment:) Tj
 190 0 Td
-($${(totalMonthlyCost * 10).toFixed(2)}/year (2 months free with annual plan)) Tj
+($${annualPlan.toFixed(2)}/year (2 months free with annual plan)) Tj
 -190 -45 Td
 
 /F2 18 Tf
@@ -887,3 +903,4 @@ startxref
     return new Intl.NumberFormat('en-US').format(value);
   }
 }
+
