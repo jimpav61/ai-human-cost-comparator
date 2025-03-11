@@ -1,4 +1,3 @@
-
 import { useState } from "react";
 import { Lead } from "@/types/leads";
 import { toast } from "@/hooks/use-toast";
@@ -36,6 +35,19 @@ export const useProposalPreview = () => {
       const SUPABASE_URL = "https://ujyhmchmjzlmsimtrtor.supabase.co";
       const apiUrl = new URL('/functions/v1/generate-proposal', SUPABASE_URL);
       
+      // Ensure we have all required calculator input properties
+      const updatedCalculatorInputs = {
+        aiTier: lead.calculator_inputs?.aiTier || 'growth',
+        aiType: lead.calculator_inputs?.aiType || 'both',
+        callVolume: lead.calculator_inputs?.callVolume || 0,
+        role: lead.calculator_inputs?.role || 'customerService',
+        numEmployees: lead.calculator_inputs?.numEmployees || 5,
+        avgCallDuration: lead.calculator_inputs?.avgCallDuration || 0,
+        chatVolume: lead.calculator_inputs?.chatVolume || 2000,
+        avgChatLength: lead.calculator_inputs?.avgChatLength || 0,
+        avgChatResolutionTime: lead.calculator_inputs?.avgChatResolutionTime || 0
+      };
+      
       // Set returnContent to true to get the raw content instead of downloading
       const response = await fetch(apiUrl.toString(), {
         method: 'POST',
@@ -43,7 +55,10 @@ export const useProposalPreview = () => {
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({
-          lead: lead,
+          lead: {
+            ...lead,
+            calculator_inputs: updatedCalculatorInputs
+          },
           preview: true,
           returnContent: true
         }),
