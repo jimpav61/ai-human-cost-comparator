@@ -92,8 +92,32 @@ export const EditReportDialog = ({ isOpen, onClose, lead, onSave }: EditProposal
       const updatedResults = performCalculations(recalcInputs, DEFAULT_AI_RATES);
       console.log("Recalculated results:", updatedResults);
       
+      // Make sure base price and total costs are correct
+      const tierBasePrices = {
+        starter: 99,
+        growth: 229,
+        premium: 429
+      };
+      
+      const tier = recalcInputs.aiTier;
+      updatedResults.basePriceMonthly = tierBasePrices[tier];
+      
+      // Calculate additional voice cost
+      const additionalVoiceMinutes = recalcInputs.callVolume || 0;
+      const additionalVoiceCost = tier !== 'starter' ? additionalVoiceMinutes * 0.12 : 0;
+      
+      // Update voice cost in results
+      updatedResults.aiCostMonthly.voice = additionalVoiceCost;
+      updatedResults.aiCostMonthly.chatbot = updatedResults.basePriceMonthly;
+      // Recalculate total based on base + voice
+      updatedResults.aiCostMonthly.total = updatedResults.basePriceMonthly + additionalVoiceCost;
+      
       // Update the lead with new calculation results
       leadToSave.calculator_results = updatedResults;
+      
+      // Explicitly set the tierKey and aiType in the results to match inputs
+      leadToSave.calculator_results.tierKey = recalcInputs.aiTier;
+      leadToSave.calculator_results.aiType = recalcInputs.aiType;
     }
     
     console.log("Saving lead with updated results:", leadToSave);

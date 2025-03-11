@@ -34,21 +34,51 @@ export const useProposalSend = () => {
         console.log("Set default callVolume to 0");
       }
       
-      // Double-check aiTier, aiType and callVolume are set correctly
-      if (!leadToSend.calculator_inputs.aiTier) {
-        leadToSend.calculator_inputs.aiTier = leadToSend.calculator_results?.tierKey || 'growth';
-        console.log("Set missing aiTier from calculator_results:", leadToSend.calculator_inputs.aiTier);
-      }
-      
-      if (!leadToSend.calculator_inputs.aiType) {
-        leadToSend.calculator_inputs.aiType = leadToSend.calculator_results?.aiType || 'both';
-        console.log("Set missing aiType from calculator_results:", leadToSend.calculator_inputs.aiType);
-      }
-      
-      if (leadToSend.calculator_inputs.aiTier === 'starter') {
-        // Force callVolume to 0 for starter plan
-        leadToSend.calculator_inputs.callVolume = 0;
-        console.log("Reset callVolume to 0 for starter plan");
+      // CRITICAL FIX: Make sure the aiTier and aiType from inputs match what's in results
+      // This ensures the proposal and calculator report use the same data
+      if (leadToSend.calculator_results) {
+        // Set the correct tier in calculator_inputs based on results
+        if (leadToSend.calculator_results.tierKey) {
+          leadToSend.calculator_inputs.aiTier = leadToSend.calculator_results.tierKey;
+          console.log("Setting aiTier from calculator_results:", leadToSend.calculator_inputs.aiTier);
+        }
+        
+        // Set the correct AI type in calculator_inputs based on results
+        if (leadToSend.calculator_results.aiType) {
+          leadToSend.calculator_inputs.aiType = leadToSend.calculator_results.aiType;
+          console.log("Setting aiType from calculator_results:", leadToSend.calculator_inputs.aiType);
+        }
+        
+        // CRITICAL FIX: Ensure monthly total cost is calculated correctly in calculator_results
+        // Make sure base price is correct according to tier
+        const tierBasePrices = {
+          starter: 99,
+          growth: 229,
+          premium: 429
+        };
+        
+        const tier = leadToSend.calculator_inputs.aiTier;
+        
+        if (tier && tierBasePrices[tier]) {
+          leadToSend.calculator_results.basePriceMonthly = tierBasePrices[tier];
+          console.log("Updated basePriceMonthly to match tier:", leadToSend.calculator_results.basePriceMonthly);
+        }
+        
+        // Calculate additional voice cost
+        const additionalVoiceMinutes = leadToSend.calculator_inputs.callVolume || 0;
+        const additionalVoiceCost = tier !== 'starter' ? additionalVoiceMinutes * 0.12 : 0;
+        
+        // Update voice cost in results
+        if (leadToSend.calculator_results.aiCostMonthly) {
+          leadToSend.calculator_results.aiCostMonthly.voice = additionalVoiceCost;
+          leadToSend.calculator_results.aiCostMonthly.chatbot = leadToSend.calculator_results.basePriceMonthly;
+          // Recalculate total based on base + voice
+          leadToSend.calculator_results.aiCostMonthly.total = 
+            leadToSend.calculator_results.basePriceMonthly + additionalVoiceCost;
+          
+          console.log("Updated voice cost and total cost in results:", 
+            leadToSend.calculator_results.aiCostMonthly);
+        }
       }
       
       // Build the URL to our edge function
@@ -57,6 +87,7 @@ export const useProposalSend = () => {
       
       console.log("Calling edge function at:", apiUrl.toString());
       console.log("Sending lead with calculator_inputs:", JSON.stringify(leadToSend.calculator_inputs, null, 2));
+      console.log("Sending lead with calculator_results:", JSON.stringify(leadToSend.calculator_results, null, 2));
       
       // Make the request - sending the proposal via email with latest calculator data
       const response = await fetch(apiUrl.toString(), {

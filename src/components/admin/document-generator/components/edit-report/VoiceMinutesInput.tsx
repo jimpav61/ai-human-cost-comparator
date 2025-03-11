@@ -9,8 +9,10 @@ interface VoiceMinutesInputProps {
 }
 
 export const VoiceMinutesInput = ({ value, onChange }: VoiceMinutesInputProps) => {
-  // Ensure the value is a number for display purposes
-  const displayValue = typeof value === 'number' ? value : parseInt(String(value || '0'), 10) || 0;
+  // Ensure the value is a number for display purposes - parse more strictly
+  const displayValue = typeof value === 'number' ? value : 
+                      (value !== undefined && value !== null && value !== '' ? 
+                      parseInt(String(value), 10) : 0);
   
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     // Parse to number and pass to parent - ensure we're always passing a number
