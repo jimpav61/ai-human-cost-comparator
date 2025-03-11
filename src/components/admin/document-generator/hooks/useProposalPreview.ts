@@ -38,16 +38,18 @@ export const useProposalPreview = () => {
       // CRITICAL FIX: Make sure the aiTier and aiType from inputs match what's in results
       // This ensures the proposal and calculator report use the same data
       if (leadToSend.calculator_results) {
-        // Set the correct tier in calculator_inputs based on results
-        if (leadToSend.calculator_results.tierKey) {
-          leadToSend.calculator_inputs.aiTier = leadToSend.calculator_results.tierKey;
-          console.log("Setting aiTier from calculator_results:", leadToSend.calculator_inputs.aiTier);
+        // Ensure the calculator_results reflect the current calculator_inputs settings
+        
+        // Set the correct tier in calculator_results based on inputs
+        if (leadToSend.calculator_inputs.aiTier) {
+          leadToSend.calculator_results.tierKey = leadToSend.calculator_inputs.aiTier;
+          console.log("Setting tierKey in results from inputs:", leadToSend.calculator_results.tierKey);
         }
         
-        // Set the correct AI type in calculator_inputs based on results
-        if (leadToSend.calculator_results.aiType) {
-          leadToSend.calculator_inputs.aiType = leadToSend.calculator_results.aiType;
-          console.log("Setting aiType from calculator_results:", leadToSend.calculator_inputs.aiType);
+        // Set the correct AI type in calculator_results based on inputs
+        if (leadToSend.calculator_inputs.aiType) {
+          leadToSend.calculator_results.aiType = leadToSend.calculator_inputs.aiType;
+          console.log("Setting aiType in results from inputs:", leadToSend.calculator_results.aiType);
         }
         
         // CRITICAL FIX: Ensure monthly total cost is calculated correctly in calculator_results
@@ -117,78 +119,21 @@ export const useProposalPreview = () => {
         
         // Open it in a new window
         window.open(url, '_blank');
-      } catch (fetchError) {
-        console.error("Error fetching from edge function:", fetchError);
-        console.log("Falling back to client-side PDF generation");
         
-        // FALLBACK: Generate PDF locally if edge function fails
-        // Format tier and AI type display names
-        const aiTier = leadToSend.calculator_inputs.aiTier || 'growth';
-        const aiType = leadToSend.calculator_inputs.aiType || 'chatbot';
-        
-        const tierName = aiTier === 'starter' ? 'Starter Plan' : 
-                        aiTier === 'growth' ? 'Growth Plan' : 
-                        aiTier === 'premium' ? 'Premium Plan' : 'Growth Plan';
-                        
-        const aiTypeDisplay = aiType === 'chatbot' ? 'Text Only' : 
-                            aiType === 'voice' ? 'Basic Voice' : 
-                            aiType === 'conversationalVoice' ? 'Conversational Voice' : 
-                            aiType === 'both' ? 'Text & Basic Voice' : 
-                            aiType === 'both-premium' ? 'Text & Conversational Voice' : 'Text Only';
-                            
-        // Generate the PDF
-        const doc = generatePDF({
-          contactInfo: leadToSend.name || 'Valued Client',
-          companyName: leadToSend.company_name || 'Your Company',
-          email: leadToSend.email || 'client@example.com',
-          phoneNumber: leadToSend.phone_number || '',
-          industry: leadToSend.industry || 'Other',
-          employeeCount: Number(leadToSend.employee_count) || 5,
-          results: leadToSend.calculator_results,
-          additionalVoiceMinutes: Number(leadToSend.calculator_inputs.callVolume) || 0,
-          includedVoiceMinutes: aiTier === 'starter' ? 0 : 600,
-          tierName: tierName,
-          aiType: aiTypeDisplay,
-          businessSuggestions: [
-            {
-              title: "Automate Common Customer Inquiries",
-              description: "Implement an AI chatbot to handle frequently asked questions, reducing wait times and freeing up human agents."
-            },
-            {
-              title: "Enhance After-Hours Support",
-              description: "Deploy voice AI to provide 24/7 customer service without increasing staffing costs."
-            },
-            {
-              title: "Streamline Onboarding Process",
-              description: "Use AI assistants to guide new customers through product setup and initial questions."
-            }
-          ],
-          aiPlacements: [
-            {
-              role: "Front-line Customer Support",
-              capabilities: ["Handle basic inquiries", "Process simple requests", "Collect customer information"]
-            },
-            {
-              role: "Technical Troubleshooting",
-              capabilities: ["Guide users through common issues", "Recommend solutions based on symptoms", "Escalate complex problems to human agents"]
-            },
-            {
-              role: "Sales Assistant",
-              capabilities: ["Answer product questions", "Provide pricing information", "Schedule demonstrations with sales team"]
-            }
-          ]
-        });
-        
-        // Save the PDF with a proper name
-        const safeCompanyName = getSafeFileName(leadToSend);
-        doc.save(`${safeCompanyName}-ChatSites-Proposal.pdf`);
-        
-        // Alert the user that we used local generation
+        // Show success message
         toast({
-          title: "Local PDF generation used",
-          description: "We couldn't connect to our servers, so we generated the proposal locally.",
+          title: "Proposal Generated",
+          description: "Your proposal has been generated successfully.",
           variant: "default",
         });
+      } catch (fetchError) {
+        console.error("Error fetching from edge function:", fetchError);
+        toast({
+          title: "Error",
+          description: "Server error generating proposal. Please try again later.",
+          variant: "destructive",
+        });
+        throw fetchError;
       }
       
       setIsLoading(false);
@@ -200,6 +145,7 @@ export const useProposalPreview = () => {
         description: `Failed to preview proposal: ${error instanceof Error ? error.message : 'Unknown error'}`,
         variant: "destructive",
       });
+      throw error;
     }
   };
   

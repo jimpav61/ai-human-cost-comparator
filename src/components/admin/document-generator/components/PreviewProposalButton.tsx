@@ -33,11 +33,7 @@ export const PreviewProposalButton = ({ lead, disabled }: PreviewProposalButtonP
       await handlePreviewProposal(lead);
     } catch (error) {
       console.error("Error in preview button click handler:", error);
-      toast({
-        title: "Error",
-        description: "Failed to preview proposal. Please try again.",
-        variant: "destructive",
-      });
+      // Error is already handled in the hook with toast
     }
   };
   
