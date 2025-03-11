@@ -1,3 +1,4 @@
+
 import { useState } from "react";
 import { Lead } from "@/types/leads";
 import { toast } from "@/hooks/use-toast";
@@ -66,27 +67,40 @@ export const useProposalPreview = () => {
         }
       }
       
-      // Call the edge function using Supabase client
-      const { data, error } = await supabase.functions.invoke('generate-proposal', {
-        body: {
+      // Build the URL to our edge function - reverting to the original approach
+      const SUPABASE_URL = "https://ujyhmchmjzlmsimtrtor.supabase.co";
+      const apiUrl = `${SUPABASE_URL}/functions/v1/generate-proposal`;
+      
+      console.log("Calling edge function at:", apiUrl);
+      console.log("Sending lead with calculator_inputs:", JSON.stringify(leadToSend.calculator_inputs, null, 2));
+      console.log("Sending lead with calculator_results:", JSON.stringify(leadToSend.calculator_results, null, 2));
+      
+      // Make the request - using the exact format that was working before
+      const response = await fetch(apiUrl, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${supabase.auth.getSession().then(({ data }) => data.session?.access_token)}`,
+        },
+        body: JSON.stringify({
           lead: leadToSend,
           preview: true
-        }
+        }),
       });
-
-      if (error) {
-        console.error("Error from edge function:", error);
-        throw error;
+      
+      if (!response.ok) {
+        const errorText = await response.text();
+        console.error("Response not OK:", response.status, errorText);
+        try {
+          const errorJson = JSON.parse(errorText);
+          throw new Error(errorJson.error || "Failed to generate proposal");
+        } catch (e) {
+          throw new Error(`Server error: ${response.status} - ${errorText || "Unknown error"}`);
+        }
       }
-
-      // Convert the response data to a blob
-      const base64Data = data.pdf;
-      const binaryData = atob(base64Data);
-      const bytes = new Uint8Array(binaryData.length);
-      for (let i = 0; i < binaryData.length; i++) {
-        bytes[i] = binaryData.charCodeAt(i);
-      }
-      const blob = new Blob([bytes], { type: 'application/pdf' });
+      
+      // Get the PDF binary data
+      const blob = await response.blob();
       
       // Create a URL for the blob
       const url = URL.createObjectURL(blob);
