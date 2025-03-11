@@ -10,7 +10,7 @@ interface VoiceMinutesInputProps {
 
 export const VoiceMinutesInput = ({ value, onChange }: VoiceMinutesInputProps) => {
   // Ensure we always have a numeric value and it's not NaN
-  const safeValue = !isNaN(value) && value !== null ? value : 0;
+  const safeValue = !isNaN(Number(value)) && value !== null ? Number(value) : 0;
   
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     // We pass the raw string to the parent component

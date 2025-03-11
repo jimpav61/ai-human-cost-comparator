@@ -48,8 +48,11 @@ serve(async (req) => {
     console.log("Mode:", isPreviewMode ? "Preview (download only)" : "Send email");
     
     // Log calculator data to troubleshoot
-    console.log("Lead calculator_inputs:", JSON.stringify(lead.calculator_inputs));
-    console.log("Lead calculator_results:", JSON.stringify(lead.calculator_results));
+    console.log("Lead calculator_inputs:", JSON.stringify(lead.calculator_inputs, null, 2));
+    console.log("Lead calculator_results:", JSON.stringify(lead.calculator_results, null, 2));
+    console.log("AI Tier:", lead.calculator_inputs?.aiTier);
+    console.log("AI Type:", lead.calculator_inputs?.aiType);
+    console.log("Additional Voice Minutes:", lead.calculator_inputs?.callVolume);
     
     if (isPreviewMode) {
       // In preview mode, generate and return the PDF directly
@@ -123,7 +126,7 @@ function generateProfessionalProposal(lead) {
   const employeeCount = lead.employee_count || '10';
   
   // Log complete lead data for debugging
-  console.log("Full lead data for proposal generation:", JSON.stringify(lead));
+  console.log("Full lead data for proposal generation:", JSON.stringify(lead, null, 2));
   
   // Get calculator data if available
   let calculatorInputs = {};
@@ -132,12 +135,12 @@ function generateProfessionalProposal(lead) {
   // First try to access calculator_inputs/results directly
   if (lead.calculator_inputs) {
     calculatorInputs = lead.calculator_inputs;
-    console.log("Found calculator inputs in lead:", JSON.stringify(calculatorInputs));
+    console.log("Found calculator inputs in lead:", JSON.stringify(calculatorInputs, null, 2));
   }
   
   if (lead.calculator_results) {
     calculatorResults = lead.calculator_results;
-    console.log("Found calculator results in lead:", JSON.stringify(calculatorResults));
+    console.log("Found calculator results in lead:", JSON.stringify(calculatorResults, null, 2));
   }
   
   // Enhanced parsing for calculator inputs and results
@@ -145,7 +148,7 @@ function generateProfessionalProposal(lead) {
   if (typeof calculatorInputs === 'string') {
     try {
       calculatorInputs = JSON.parse(calculatorInputs);
-      console.log("Parsed calculator_inputs from string:", JSON.stringify(calculatorInputs));
+      console.log("Parsed calculator_inputs from string:", JSON.stringify(calculatorInputs, null, 2));
     } catch (e) {
       console.error("Error parsing calculator_inputs:", e);
       calculatorInputs = {};
@@ -155,7 +158,7 @@ function generateProfessionalProposal(lead) {
   if (typeof calculatorResults === 'string') {
     try {
       calculatorResults = JSON.parse(calculatorResults);
-      console.log("Parsed calculator_results from string:", JSON.stringify(calculatorResults));
+      console.log("Parsed calculator_results from string:", JSON.stringify(calculatorResults, null, 2));
     } catch (e) {
       console.error("Error parsing calculator_results:", e);
       calculatorResults = {};
@@ -249,7 +252,7 @@ function generateProfessionalProposal(lead) {
   // Total monthly cost - ensure voice cost is included
   const totalMonthlyCost = monthlyPrice + voiceCost;
   
-  // Extract financial values from calculatorResults or use defaults
+  // Use calculator results if available, otherwise use defaults
   const humanCostMonthly = calculatorResults.humanCostMonthly || 15000;
   const monthlySavings = calculatorResults.monthlySavings || (humanCostMonthly - totalMonthlyCost);
   const yearlySavings = calculatorResults.yearlySavings || (monthlySavings * 12);
@@ -849,3 +852,4 @@ startxref
     return new Intl.NumberFormat('en-US').format(value);
   }
 }
+

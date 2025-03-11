@@ -10,8 +10,11 @@ export const useProposalSend = () => {
   const handleSendProposal = async (lead: Lead) => {
     try {
       console.log("Sending proposal for lead:", lead.id);
-      console.log("Current lead calculator_inputs:", lead.calculator_inputs);
-      console.log("Current lead calculator_results:", lead.calculator_results);
+      console.log("Current lead calculator_inputs:", JSON.stringify(lead.calculator_inputs, null, 2));
+      console.log("Current lead calculator_results:", JSON.stringify(lead.calculator_results, null, 2)); 
+      console.log("Lead AI tier:", lead.calculator_inputs?.aiTier);
+      console.log("Lead AI type:", lead.calculator_inputs?.aiType);
+      console.log("Lead additional voice minutes:", lead.calculator_inputs?.callVolume);
       setIsLoading(true);
       
       // Make sure we have valid calculator inputs to use
@@ -25,12 +28,15 @@ export const useProposalSend = () => {
         console.log("Converted callVolume from string to number:", lead.calculator_inputs.callVolume);
       }
       
+      // Create a deep clone to avoid reference issues
+      const leadToSend = JSON.parse(JSON.stringify(lead));
+      
       // Build the URL to our edge function
       const SUPABASE_URL = "https://ujyhmchmjzlmsimtrtor.supabase.co";
       const apiUrl = new URL('/functions/v1/generate-proposal', SUPABASE_URL);
       
       console.log("Calling edge function at:", apiUrl.toString());
-      console.log("Sending lead with calculator_inputs:", JSON.stringify(lead.calculator_inputs));
+      console.log("Sending lead with calculator_inputs:", JSON.stringify(leadToSend.calculator_inputs, null, 2));
       
       // Make the request - sending the proposal via email with latest calculator data
       const response = await fetch(apiUrl.toString(), {
@@ -39,7 +45,7 @@ export const useProposalSend = () => {
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({
-          lead: JSON.parse(JSON.stringify(lead)), // Deep clone to avoid reference issues
+          lead: leadToSend,
           preview: false
         }),
       });
