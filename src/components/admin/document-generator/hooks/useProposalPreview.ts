@@ -18,9 +18,8 @@ export const useProposalPreview = () => {
       }
       
       // Build the URL to our edge function
-      const { data: { publicUrl } } = await supabase.storage.getPublicUrl('');
-      const supabaseUrl = new URL(publicUrl).origin;
-      const apiUrl = new URL('/functions/v1/generate-proposal', supabaseUrl);
+      const supabaseUrl = new URL(supabase.supabaseUrl);
+      const apiUrl = new URL('/functions/v1/generate-proposal', supabaseUrl.origin);
       apiUrl.searchParams.append('preview', 'true');
       
       console.log("Calling edge function at:", apiUrl.toString());
