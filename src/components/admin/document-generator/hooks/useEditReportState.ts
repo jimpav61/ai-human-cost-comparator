@@ -133,17 +133,10 @@ export const useEditReportState = (lead: Lead, onSave: (updatedLead: Lead) => vo
       
       console.log("Saving lead with callVolume:", updatedLead.calculator_inputs.callVolume);
       
-      // Create a complete new copy of the lead for the save callback
-      const saveableLead: Lead = JSON.parse(JSON.stringify(updatedLead));
+      // The EditReportDialog component will handle passing the updated lead to the onSave callback
+      // so we don't need to call onSave or onClose here anymore
       
-      // Pass the updated lead to the parent component
-      onSave(saveableLead);
-      onClose();
-      
-      toast({
-        title: "Report Settings Updated",
-        description: "The report settings have been updated successfully.",
-      });
+      return updatedLead;
     } catch (error) {
       console.error("Error saving report settings:", error);
       toast({
@@ -151,6 +144,7 @@ export const useEditReportState = (lead: Lead, onSave: (updatedLead: Lead) => vo
         description: "Failed to update report settings. Please try again.",
         variant: "destructive",
       });
+      return null;
     }
   };
 

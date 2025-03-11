@@ -86,8 +86,11 @@ export const EditReportDialog = ({ isOpen, onClose, lead, onSave }: EditReportDi
       leadToSave.calculator_results = updatedResults;
     }
     
-    // Call the original save function with our updated lead
-    originalHandleSave(leadToSave);
+    // Now we need to modify how we pass this to our onSave function
+    // First set the current editableLead state to our updated lead
+    // Then call the original handleSave which will use this updated state
+    onSave(leadToSave);
+    onClose();
   };
   
   // Determine if we should show voice minutes input
