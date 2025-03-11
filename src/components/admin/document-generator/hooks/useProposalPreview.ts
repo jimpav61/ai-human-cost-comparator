@@ -68,15 +68,14 @@ export const useProposalPreview = () => {
       
       // Build the URL to our edge function
       const SUPABASE_URL = "https://ujyhmchmjzlmsimtrtor.supabase.co";
-      const apiUrl = new URL('/functions/v1/generate-proposal', SUPABASE_URL);
-      apiUrl.searchParams.append('preview', 'true');
+      const apiUrl = `${SUPABASE_URL}/functions/v1/generate-proposal?preview=true`;
       
-      console.log("Calling edge function at:", apiUrl.toString());
+      console.log("Calling edge function at:", apiUrl);
       console.log("Sending lead with calculator_inputs:", JSON.stringify(leadToSend.calculator_inputs, null, 2));
       console.log("Sending lead with calculator_results:", JSON.stringify(leadToSend.calculator_results, null, 2));
       
       // Make the request - ensure we're passing the complete lead object with latest calculator data
-      const response = await fetch(apiUrl.toString(), {
+      const response = await fetch(apiUrl, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
