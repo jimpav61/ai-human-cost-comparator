@@ -49,6 +49,7 @@ export const DocumentGenerator = ({ lead, onLeadUpdated }: ExtendedDocumentGener
     console.log("DocumentGenerator initialized with lead:", lead.id);
     console.log("Current lead calculator_inputs:", currentLead.calculator_inputs);
     console.log("Current lead calculator_results:", currentLead.calculator_results);
+    console.log("Additional voice minutes:", currentLead.calculator_inputs.callVolume, typeof currentLead.calculator_inputs.callVolume);
   }, []);
   
   // Update internal state when lead prop changes
@@ -86,6 +87,20 @@ export const DocumentGenerator = ({ lead, onLeadUpdated }: ExtendedDocumentGener
       console.log("DocumentGenerator update: Set missing callVolume to 0");
     }
     
+    // IMPORTANT: Make sure calculator_results has the most up-to-date callVolume for proposal generation
+    if (leadCopy.calculator_results && leadCopy.calculator_results.aiCostMonthly) {
+      // Calculate the voice cost based on callVolume (12¢ per minute)
+      const voiceCost = leadCopy.calculator_inputs.callVolume * 0.12;
+      leadCopy.calculator_results.aiCostMonthly.voice = voiceCost;
+      
+      // Update the total cost
+      const basePriceMonthly = leadCopy.calculator_results.basePriceMonthly || 0;
+      leadCopy.calculator_results.aiCostMonthly.total = basePriceMonthly + voiceCost;
+      
+      console.log("Updated calculator_results with voice cost:", voiceCost);
+      console.log("Updated calculator_results total:", leadCopy.calculator_results.aiCostMonthly.total);
+    }
+    
     setCurrentLead(leadCopy);
   }, [lead]);
   
@@ -106,6 +121,20 @@ export const DocumentGenerator = ({ lead, onLeadUpdated }: ExtendedDocumentGener
     } else if (updatedLeadCopy.calculator_inputs.callVolume === undefined || updatedLeadCopy.calculator_inputs.callVolume === null) {
       updatedLeadCopy.calculator_inputs.callVolume = 0;
       console.log("DocumentGenerator handleInternalLeadUpdate: Set missing callVolume to 0");
+    }
+    
+    // Update calculator_results with the voice cost based on callVolume
+    if (updatedLeadCopy.calculator_results && updatedLeadCopy.calculator_results.aiCostMonthly) {
+      // Calculate the voice cost based on callVolume (12¢ per minute)
+      const voiceCost = updatedLeadCopy.calculator_inputs.callVolume * 0.12;
+      updatedLeadCopy.calculator_results.aiCostMonthly.voice = voiceCost;
+      
+      // Update the total cost
+      const basePriceMonthly = updatedLeadCopy.calculator_results.basePriceMonthly || 0;
+      updatedLeadCopy.calculator_results.aiCostMonthly.total = basePriceMonthly + voiceCost;
+      
+      console.log("Updated calculator_results with voice cost:", voiceCost);
+      console.log("Updated calculator_results total:", updatedLeadCopy.calculator_results.aiCostMonthly.total);
     }
     
     setCurrentLead(updatedLeadCopy);
