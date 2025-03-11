@@ -13,6 +13,9 @@ export const addCostSummarySection = (
   const margin = 20;
   const effectiveWidth = pageWidth - 2 * margin;
   
+  // Log the results for debugging
+  console.log("Cost Summary Section - Results:", results);
+  
   doc.setFontSize(16);
   doc.setTextColor(255, 67, 42); // Brand red color for headers
   doc.text('Cost Comparison and Savings', margin, startY);
@@ -29,10 +32,9 @@ export const addCostSummarySection = (
       valign: 'middle' as 'middle'
     },
     headStyles: {
-      // Fix: explicitly define RGB color as a tuple with fixed length
       fillColor: [245, 245, 245] as [number, number, number],
       textColor: [80, 80, 80] as [number, number, number],
-      fontStyle: 'bold' as 'bold' // Fix: use 'bold' as const to match FontStyle type
+      fontStyle: 'bold' as 'bold'
     },
     columnStyles: {
       0: { cellWidth: effectiveWidth * 0.6 },
@@ -42,20 +44,28 @@ export const addCostSummarySection = (
     startY: startY
   };
   
-  // Create formatted cost data
-  const monthlySavings = formatCurrency(results.monthlySavings);
-  const yearlySavings = formatCurrency(results.yearlySavings);
-  const savingsPercentage = `${Math.round(results.savingsPercentage)}%`;
+  // Create formatted cost data - ensure values exist and are formatted properly
+  const humanCostMonthly = results.humanCostMonthly || 0;
+  const aiCostMonthly = results.aiCostMonthly?.total || 0;
+  const monthlySavings = results.monthlySavings || 0;
+  const yearlySavings = results.yearlySavings || 0;
+  const savingsPercentage = results.savingsPercentage || 0;
+  
+  const formattedHumanCost = formatCurrency(humanCostMonthly);
+  const formattedAICost = formatCurrency(aiCostMonthly);
+  const formattedMonthlySavings = formatCurrency(monthlySavings);
+  const formattedYearlySavings = formatCurrency(yearlySavings);
+  const formattedSavingsPercentage = `${Math.round(savingsPercentage)}%`;
   
   // Setup cost comparison table with two columns
   autoTable(doc, {
     ...tableStyles,
     body: [
-      ['Current Estimated Monthly Cost:', formatCurrency(results.humanCostMonthly)],
-      ['AI Solution Monthly Cost:', formatCurrency(results.aiCostMonthly.total)],
-      ['Monthly Savings:', { content: monthlySavings, styles: { textColor: [255, 67, 42] as [number, number, number] } }],
-      ['Annual Savings:', { content: yearlySavings, styles: { textColor: [255, 67, 42] as [number, number, number] } }],
-      ['Savings Percentage:', { content: savingsPercentage, styles: { textColor: [255, 67, 42] as [number, number, number] } }]
+      ['Current Estimated Monthly Cost:', formattedHumanCost],
+      ['AI Solution Monthly Cost:', formattedAICost],
+      ['Monthly Savings:', { content: formattedMonthlySavings, styles: { textColor: [255, 67, 42] as [number, number, number] } }],
+      ['Annual Savings:', { content: formattedYearlySavings, styles: { textColor: [255, 67, 42] as [number, number, number] } }],
+      ['Savings Percentage:', { content: formattedSavingsPercentage, styles: { textColor: [255, 67, 42] as [number, number, number] } }]
     ]
   });
   
