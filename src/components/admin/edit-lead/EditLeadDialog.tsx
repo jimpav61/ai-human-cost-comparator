@@ -96,6 +96,8 @@ export const EditLeadDialog = ({ lead, isOpen, onClose, onSave }: EditLeadDialog
       if (typeof calculatorInputs.callVolume === 'string') {
         calculatorInputs.callVolume = parseInt(calculatorInputs.callVolume, 10) || 0;
         console.log("Converted callVolume from string to number:", calculatorInputs.callVolume);
+      } else if (typeof calculatorInputs.callVolume !== 'number') {
+        calculatorInputs.callVolume = 0;
       }
       
       // Ensure starter plan has 0 call volume
@@ -103,6 +105,9 @@ export const EditLeadDialog = ({ lead, isOpen, onClose, onSave }: EditLeadDialog
         calculatorInputs.callVolume = 0;
         console.log("Reset callVolume to 0 for starter plan");
       }
+
+      // Extra log to verify callVolume is being saved correctly
+      console.log("Final callVolume being saved:", calculatorInputs.callVolume, "of type:", typeof calculatorInputs.callVolume);
 
       const updatedLead: Lead = {
         ...formData,

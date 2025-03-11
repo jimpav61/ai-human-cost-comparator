@@ -58,12 +58,21 @@ export function useLeadCalculator(lead: Lead) {
       const aiTierFromInputs = lead.calculator_inputs.aiTier as string;
       const validatedAiTier = validateAiTier(aiTierFromInputs);
       
+      // CRITICAL FIX: Ensure callVolume is properly converted to a number
+      let callVolume = lead.calculator_inputs.callVolume;
+      if (typeof callVolume === 'string') {
+        callVolume = parseInt(callVolume, 10) || 0;
+      } else if (typeof callVolume !== 'number') {
+        callVolume = 0;
+      }
+      
       // Merge with defaults to ensure all properties exist
       const mergedInputs = { 
         ...defaultCalculatorInputs, 
         ...lead.calculator_inputs,
         aiType: validatedAiType,
         aiTier: validatedAiTier,
+        callVolume: callVolume, // Use the properly converted callVolume
         numEmployees: lead.employee_count || defaultCalculatorInputs.numEmployees
       } as CalculatorInputs;
       
@@ -113,9 +122,20 @@ export function useLeadCalculator(lead: Lead) {
         
         // Get chat volume and voice volume if available
         const chatVolume = results.chatVolume || defaultCalculatorInputs.chatVolume;
-        const callVolume = results.aiCostMonthly && results.aiCostMonthly.voice > 0 
-          ? Math.ceil(results.aiCostMonthly.voice / 0.12) // Calculate call volume from voice cost
-          : 0;
+        
+        // CRITICAL FIX: Extract callVolume from voice cost by calculating reverse from cost
+        // and explicitly ensure it's a number
+        let callVolume = 0;
+        if (results.aiCostMonthly && results.aiCostMonthly.voice > 0) {
+          callVolume = Math.ceil(results.aiCostMonthly.voice / 0.12); // Calculate call volume from voice cost
+        } else if (lead.calculator_inputs && lead.calculator_inputs.callVolume) {
+          // If we have the callVolume in inputs, use that (properly converted to a number)
+          if (typeof lead.calculator_inputs.callVolume === 'string') {
+            callVolume = parseInt(lead.calculator_inputs.callVolume, 10) || 0;
+          } else if (typeof lead.calculator_inputs.callVolume === 'number') {
+            callVolume = lead.calculator_inputs.callVolume;
+          }
+        }
         
         // Update inputs with the detected values
         const updatedInputs: CalculatorInputs = {
@@ -153,6 +173,13 @@ export function useLeadCalculator(lead: Lead) {
       value = validateAiType(value);
     } else if (field === 'aiTier') {
       value = validateAiTier(value);
+    } else if (field === 'callVolume') {
+      // CRITICAL FIX: Ensure callVolume is always a number
+      if (typeof value === 'string') {
+        value = parseInt(value, 10) || 0;
+      } else if (typeof value !== 'number') {
+        value = 0;
+      }
     }
     
     setCalculatorInputs(prev => ({
@@ -185,11 +212,20 @@ export function useLeadCalculator(lead: Lead) {
       const aiTierFromInputs = lead.calculator_inputs.aiTier as string;
       const validatedAiTier = validateAiTier(aiTierFromInputs);
       
+      // CRITICAL FIX: Ensure callVolume is properly converted to a number
+      let callVolume = lead.calculator_inputs.callVolume;
+      if (typeof callVolume === 'string') {
+        callVolume = parseInt(callVolume, 10) || 0;
+      } else if (typeof callVolume !== 'number') {
+        callVolume = 0;
+      }
+      
       const mergedInputs: CalculatorInputs = { 
         ...defaultCalculatorInputs, 
         ...lead.calculator_inputs,
         aiType: validatedAiType,
         aiTier: validatedAiTier,
+        callVolume: callVolume, // Use the properly converted callVolume
         numEmployees: lead.employee_count || defaultCalculatorInputs.numEmployees
       };
       
@@ -237,9 +273,12 @@ export function useLeadCalculator(lead: Lead) {
         
         // Get chat volume and voice volume if available
         const chatVolume = results.chatVolume || defaultCalculatorInputs.chatVolume;
-        const callVolume = results.aiCostMonthly && results.aiCostMonthly.voice > 0 
-          ? Math.ceil(results.aiCostMonthly.voice / 0.12) // Calculate call volume from voice cost
-          : 0;
+        
+        // CRITICAL FIX: Extract callVolume from voice cost and ensure it's a number
+        let callVolume = 0;
+        if (results.aiCostMonthly && results.aiCostMonthly.voice > 0) {
+          callVolume = Math.ceil(results.aiCostMonthly.voice / 0.12); // Calculate call volume from voice cost
+        }
         
         // Update inputs with the detected values
         const updatedInputs: CalculatorInputs = {
