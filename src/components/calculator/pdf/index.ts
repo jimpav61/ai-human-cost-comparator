@@ -44,7 +44,7 @@ export const generatePDF = (params: GeneratePDFParams): JsPDFWithAutoTable => {
     validatedParams.employeeCount
   );
 
-  // Add selected plan details
+  // Add selected plan details - pass basePrice from results
   currentY = addPlanSection(
     doc, 
     currentY, 

@@ -225,7 +225,7 @@ function generateProfessionalProposal(lead) {
   const email = lead.email || 'client@example.com';
   const phoneNumber = lead.phone_number || 'Not provided';
   const industry = lead.industry || 'Technology';
-  const employeeCount = lead.employee_count || '10';
+  const employeeCount = parseInt(lead.employee_count || '1', 10);
   
   // Log complete lead data for debugging
   console.log("Full lead data for proposal generation:", JSON.stringify(lead, null, 2));
@@ -309,11 +309,12 @@ function generateProfessionalProposal(lead) {
   // Voice minutes calculation
   const includedVoiceMinutes = aiTier === 'starter' ? 0 : 600;
   
-  // Get additional voice minutes from inputs
+  // Get additional voice minutes from inputs - make sure we parse it as a number
   let additionalVoiceMinutes = 0;
   if (aiTier !== 'starter') {
     if (calculatorInputs.callVolume !== undefined) {
       additionalVoiceMinutes = Number(calculatorInputs.callVolume) || 0;
+      console.log("Additional voice minutes from callVolume:", additionalVoiceMinutes);
     }
   }
   
@@ -324,15 +325,33 @@ function generateProfessionalProposal(lead) {
   // Calculate total monthly cost
   const totalMonthlyCost = monthlyPrice + additionalVoiceCost;
   
-  // CRITICAL FIX: Use human cost for ONE employee only
-  const humanCostMonthly = calculatorResults.humanCostMonthly !== undefined 
-    ? calculatorResults.humanCostMonthly / (Number(lead.employee_count) || 1)  // Divide by employee count to get cost per employee
-    : 5000; // Default to $5000 for one employee
+  // CRITICAL: Calculate human cost for ONE employee only
+  let humanCostPerEmployee = 0;
+  
+  if (calculatorResults.humanCostMonthly !== undefined) {
+    const totalHumanCost = typeof calculatorResults.humanCostMonthly === 'number' 
+      ? calculatorResults.humanCostMonthly 
+      : parseFloat(calculatorResults.humanCostMonthly);
+      
+    // Get the employee count, ensuring it's at least 1
+    const employeeCount = Math.max(1, parseInt(lead.employee_count || '1', 10));
+    
+    // Calculate the per-employee cost
+    humanCostPerEmployee = totalHumanCost / employeeCount;
+    
+    console.log("Total human cost:", totalHumanCost);
+    console.log("Employee count:", employeeCount);
+    console.log("Human cost per employee:", humanCostPerEmployee);
+  } else {
+    // Default to $5000 per employee if no data available
+    humanCostPerEmployee = 5000;
+    console.log("Using default human cost per employee:", humanCostPerEmployee);
+  }
   
   // Calculate savings based on ONE employee
-  const monthlySavings = humanCostMonthly - totalMonthlyCost;
+  const monthlySavings = humanCostPerEmployee - totalMonthlyCost;
   const yearlySavings = monthlySavings * 12;
-  const savingsPercentage = humanCostMonthly > 0 ? Math.round((monthlySavings / humanCostMonthly) * 100) : 0;
+  const savingsPercentage = humanCostPerEmployee > 0 ? Math.round((monthlySavings / humanCostPerEmployee) * 100) : 0;
   
   // Calculate annual plan price - ensure it matches the report
   const annualPlan = calculatorResults.annualPlan !== undefined
@@ -341,12 +360,15 @@ function generateProfessionalProposal(lead) {
   
   // Log final values for debugging
   console.log("FINAL VALUES FOR PROPOSAL:");
-  console.log("humanCostMonthly:", humanCostMonthly);
+  console.log("humanCostPerEmployee:", humanCostPerEmployee);
+  console.log("monthlyPrice:", monthlyPrice);
+  console.log("additionalVoiceMinutes:", additionalVoiceMinutes);
+  console.log("additionalVoiceCost:", additionalVoiceCost);
+  console.log("totalMonthlyCost:", totalMonthlyCost);
   console.log("monthlySavings:", monthlySavings);
   console.log("yearlySavings:", yearlySavings);
   console.log("savingsPercentage:", savingsPercentage);
   console.log("annualPlan:", annualPlan);
-  console.log("totalMonthlyCost:", totalMonthlyCost);
   
   // Calculate ROI details with defaults if missing
   const breakEvenPoint = Math.ceil(setupFee / (monthlySavings || 1000));
@@ -378,7 +400,7 @@ function generateProfessionalProposal(lead) {
     setupFee,
     additionalVoiceMinutes,
     includedVoiceMinutes,
-    humanCostMonthly,
+    humanCostPerEmployee,
     monthlySavings,
     yearlySavings,
     savingsPercentage,
@@ -712,7 +734,7 @@ ${brandRed} rg
 -190 -25 Td
 (Additional Voice Cost:) Tj
 190 0 Td
-($${voiceCost.toFixed(2)}/month) Tj
+($${additionalVoiceCost.toFixed(2)}/month) Tj
 -190 -25 Td`;
     } else {
       pdfContent += `
@@ -742,7 +764,7 @@ ${brandRed} rg
 /F1 13 Tf
 (Current Estimated Monthly Cost:) Tj
 190 0 Td
-(${formatCurrency(humanCostMonthly)}/month) Tj
+(${formatCurrency(humanCostPerEmployee)}/month) Tj
 -190 -25 Td
 (AI Solution Monthly Cost:) Tj
 190 0 Td
@@ -957,4 +979,3 @@ startxref
     return new Intl.NumberFormat('en-US').format(value);
   }
 }
-
