@@ -1,3 +1,4 @@
+
 import { HUMAN_HOURLY_RATES } from '@/constants/pricing';
 import { CalculatorInputs, CalculationResults } from './types';
 
@@ -90,6 +91,17 @@ export function calculateHumanResources(inputs: CalculatorInputs) {
   const monthlyTotalHours = (weeklyTotalHours * WEEKS_PER_YEAR) / MONTHS_PER_YEAR;
   const yearlyTotalHours = weeklyTotalHours * WEEKS_PER_YEAR;
   
+  console.log("🧪 HUMAN RESOURCES TEST:", {
+    scenario: `${inputs.numEmployees} ${inputs.role} employees, 1 replaced by AI`,
+    totalEmployees: inputs.numEmployees,
+    employeesAfterAI,
+    dailyHoursPerEmployee,
+    weeklyHoursPerEmployee,
+    weeklyTotalHours,
+    monthlyTotalHours,
+    yearlyTotalHours
+  });
+  
   return {
     dailyPerEmployee: dailyHoursPerEmployee,
     weeklyTotal: weeklyTotalHours,
@@ -105,6 +117,15 @@ export function calculateHumanCosts(inputs: CalculatorInputs, monthlyHours: numb
   const baseHourlyRate = HUMAN_HOURLY_RATES[inputs.role];
   const hourlyRateWithBenefits = baseHourlyRate * 1.3; // Add 30% for benefits
   const monthlyHumanCost = hourlyRateWithBenefits * monthlyHours;
+  
+  console.log("🧪 HUMAN COSTS TEST:", {
+    role: inputs.role,
+    baseHourlyRate,
+    hourlyRateWithBenefits,
+    monthlyHours,
+    monthlyHumanCost,
+    yearlyHumanCost: monthlyHumanCost * 12
+  });
   
   return {
     hourlyRate: baseHourlyRate,
@@ -192,6 +213,14 @@ export function calculateSavings(humanCost: number, aiCost: number) {
   const yearlySavings = monthlySavings * 12;
   const savingsPercentage = humanCost > 0 ? (monthlySavings / humanCost) * 100 : 0;
   
+  console.log("🧪 SAVINGS TEST:", {
+    humanCost,
+    aiCost,
+    monthlySavings,
+    yearlySavings,
+    savingsPercentage: savingsPercentage.toFixed(2) + '%'
+  });
+  
   return {
     monthlySavings,
     yearlySavings,
@@ -220,7 +249,13 @@ export function performCalculations(
   inputs: CalculatorInputs, 
   aiRates: any
 ): CalculationResults {
-  console.log("Performing full calculations with inputs:", inputs, "Using one employee replacement model");
+  console.log("🧪 TEST SCENARIO:", {
+    model: "One chatbot replaces one human",
+    employeeCount: inputs.numEmployees,
+    role: inputs.role,
+    aiTier: inputs.aiTier,
+    aiType: inputs.aiType
+  });
   
   const validatedInputs = validateInputs(inputs);
   const humanHours = calculateHumanResources(validatedInputs);
@@ -248,6 +283,17 @@ export function performCalculations(
     aiType: validatedInputs.aiType
   };
   
-  console.log("Final calculation results (one employee replacement model):", results);
+  console.log("🧪 FINAL TEST RESULTS:", {
+    employeesBeforeAI: validatedInputs.numEmployees,
+    employeesAfterAI: Math.max(validatedInputs.numEmployees - 1, 0),
+    role: validatedInputs.role,
+    aiPlan: `${validatedInputs.aiTier} (${validatedInputs.aiType})`,
+    monthlyHumanCost: results.humanCostMonthly,
+    monthlyAICost: results.aiCostMonthly.total,
+    monthlySavings: results.monthlySavings,
+    yearlySavings: results.yearlySavings,
+    savingsPercentage: results.savingsPercentage.toFixed(2) + '%'
+  });
+  
   return results;
 }
