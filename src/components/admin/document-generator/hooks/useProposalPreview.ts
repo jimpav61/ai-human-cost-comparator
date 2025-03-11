@@ -17,9 +17,9 @@ export const useProposalPreview = () => {
         throw new Error("Lead is missing required calculator data");
       }
       
-      // Build the URL to our edge function
-      const supabaseUrl = new URL(supabase.supabaseUrl);
-      const apiUrl = new URL('/functions/v1/generate-proposal', supabaseUrl.origin);
+      // Build the URL to our edge function using the project URL from our client file
+      const SUPABASE_URL = "https://ujyhmchmjzlmsimtrtor.supabase.co";
+      const apiUrl = new URL('/functions/v1/generate-proposal', SUPABASE_URL);
       apiUrl.searchParams.append('preview', 'true');
       
       console.log("Calling edge function at:", apiUrl.toString());
