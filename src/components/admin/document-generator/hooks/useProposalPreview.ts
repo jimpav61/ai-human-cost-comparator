@@ -67,9 +67,70 @@ export const useProposalPreview = () => {
         }
       }
       
+      try {
+        // First try with the direct function invoke approach using Supabase client
+        console.log("Trying to invoke edge function via Supabase client...");
+        
+        const { data, error } = await supabase.functions.invoke("generate-proposal", {
+          body: {
+            lead: leadToSend,
+            preview: true
+          }
+        });
+        
+        if (error) {
+          throw new Error(`Edge function error: ${error.message}`);
+        }
+        
+        if (data) {
+          console.log("Successfully received data from edge function:", typeof data);
+          
+          // Handle the binary PDF data - it might be returned as base64
+          let pdfBlob;
+          
+          if (typeof data === 'string') {
+            // Handle base64 encoded PDF data
+            const binaryData = atob(data);
+            const bytes = new Uint8Array(binaryData.length);
+            for (let i = 0; i < binaryData.length; i++) {
+              bytes[i] = binaryData.charCodeAt(i);
+            }
+            pdfBlob = new Blob([bytes], { type: 'application/pdf' });
+          } else {
+            // Handle other formats if needed
+            console.log("Unknown data format from edge function:", data);
+            throw new Error("Unexpected response format from server");
+          }
+          
+          // Create a URL for the blob and open it
+          const url = URL.createObjectURL(pdfBlob);
+          window.open(url, '_blank');
+          
+          // Show success message
+          toast({
+            title: "Proposal Generated",
+            description: "Your proposal has been generated successfully.",
+            variant: "default",
+          });
+          
+          setIsLoading(false);
+          return;
+        }
+      } catch (invokeError) {
+        // If the invoke method fails, log it and fall back to direct fetch
+        console.warn("Failed to use supabase.functions.invoke, falling back to direct fetch:", invokeError);
+      }
+      
+      // Fallback to direct fetch approach
+      console.log("Falling back to direct fetch approach...");
+      
       // Get the session token for authentication
       const { data: sessionData } = await supabase.auth.getSession();
       const accessToken = sessionData.session?.access_token;
+      
+      if (!accessToken) {
+        throw new Error("Authentication token is missing. Please log in again.");
+      }
       
       // Build the URL to the edge function
       const SUPABASE_URL = "https://ujyhmchmjzlmsimtrtor.supabase.co";
