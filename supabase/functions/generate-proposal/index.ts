@@ -318,11 +318,12 @@ function generateProfessionalProposal(lead) {
     }
   }
   
-  // Calculate voice costs - CRITICAL: Use this variable name to match template
+  // Calculate voice costs - CRITICAL: Define voiceCost properly for the PDF template
   const voiceCostPerMinute = 0.12;
   const additionalVoiceCost = additionalVoiceMinutes * voiceCostPerMinute;
-  // Add this variable for PDF template compatibility
+  // Explicitly define voiceCost variable to fix undefined issue in the template
   const voiceCost = additionalVoiceCost;
+  console.log("Voice cost explicitly defined:", voiceCost);
   
   // Calculate total monthly cost
   const totalMonthlyCost = monthlyPrice + additionalVoiceCost;
@@ -336,7 +337,7 @@ function generateProfessionalProposal(lead) {
       : parseFloat(calculatorResults.humanCostMonthly);
       
     // Get the employee count, ensuring it's at least 1
-    const numEmployees = Math.max(1, calculatorInputs.numEmployees || 1);
+    const numEmployees = Math.max(1, calculatorInputs.numEmployees || employeeCount || 1);
     
     // Calculate the per-employee cost
     humanCostPerEmployee = totalHumanCost / numEmployees;
@@ -982,3 +983,4 @@ startxref
     return new Intl.NumberFormat('en-US').format(value);
   }
 }
+
