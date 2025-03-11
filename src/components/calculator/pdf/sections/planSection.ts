@@ -22,9 +22,9 @@ export const addPlanSection = (
   
   startY += 15;
   
-  // Calculate voice costs - ensure we have a valid number
+  // Calculate voice costs - ensure we have a valid number and it's only calculated for non-starter tiers
   const voiceCostPerMinute = 0.12;
-  const additionalVoiceCost = additionalVoiceMinutes * voiceCostPerMinute;
+  const additionalVoiceCost = additionalVoiceMinutes > 0 ? additionalVoiceMinutes * voiceCostPerMinute : 0;
   
   // Create a data array for the table - explicitly handle zero vs positive minutes
   let tableData = [
