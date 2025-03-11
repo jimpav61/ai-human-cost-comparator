@@ -66,7 +66,7 @@ export const useProposalPreview = () => {
         }
       }
       
-      // Build the URL to our edge function
+      // Build the URL to our edge function - use the URL string format exactly as was working before
       const SUPABASE_URL = "https://ujyhmchmjzlmsimtrtor.supabase.co";
       const apiUrl = `${SUPABASE_URL}/functions/v1/generate-proposal?preview=true`;
       
@@ -122,7 +122,6 @@ export const useProposalPreview = () => {
         description: `Failed to preview proposal: ${error instanceof Error ? error.message : 'Unknown error'}`,
         variant: "destructive",
       });
-      throw error;
     }
   };
   
