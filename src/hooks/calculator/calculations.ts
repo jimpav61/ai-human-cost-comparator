@@ -79,12 +79,14 @@ export function validateInputs(inputs: CalculatorInputs): CalculatorInputs {
 }
 
 /**
- * Calculate human resource metrics
+ * Calculate human resource metrics based on total employees minus one (replaced by AI)
  */
 export function calculateHumanResources(inputs: CalculatorInputs) {
+  // Calculate metrics for employees minus one (the one replaced by AI)
+  const employeesAfterAI = Math.max(inputs.numEmployees - 1, 0);
   const dailyHoursPerEmployee = HOURS_PER_SHIFT;
   const weeklyHoursPerEmployee = dailyHoursPerEmployee * DAYS_PER_WEEK;
-  const weeklyTotalHours = weeklyHoursPerEmployee * inputs.numEmployees;
+  const weeklyTotalHours = weeklyHoursPerEmployee * employeesAfterAI;
   const monthlyTotalHours = (weeklyTotalHours * WEEKS_PER_YEAR) / MONTHS_PER_YEAR;
   const yearlyTotalHours = weeklyTotalHours * WEEKS_PER_YEAR;
   
@@ -97,7 +99,7 @@ export function calculateHumanResources(inputs: CalculatorInputs) {
 }
 
 /**
- * Calculate human resource costs
+ * Calculate human resource costs based on remaining employees after AI replacement
  */
 export function calculateHumanCosts(inputs: CalculatorInputs, monthlyHours: number) {
   const baseHourlyRate = HUMAN_HOURLY_RATES[inputs.role];
@@ -183,7 +185,7 @@ export function calculateAICosts(inputs: CalculatorInputs, aiRates: any) {
 }
 
 /**
- * Calculate savings and percentages
+ * Calculate savings and percentages based on one employee replacement
  */
 export function calculateSavings(humanCost: number, aiCost: number) {
   const monthlySavings = humanCost - aiCost;
@@ -218,10 +220,9 @@ export function performCalculations(
   inputs: CalculatorInputs, 
   aiRates: any
 ): CalculationResults {
-  console.log("Performing full calculations with inputs:", inputs);
+  console.log("Performing full calculations with inputs:", inputs, "Using one employee replacement model");
   
   const validatedInputs = validateInputs(inputs);
-  
   const humanHours = calculateHumanResources(validatedInputs);
   const humanCosts = calculateHumanCosts(validatedInputs, humanHours.monthlyTotal);
   const aiCosts = calculateAICosts(validatedInputs, aiRates);
@@ -247,6 +248,6 @@ export function performCalculations(
     aiType: validatedInputs.aiType
   };
   
-  console.log("Final calculation results:", results);
+  console.log("Final calculation results (one employee replacement model):", results);
   return results;
 }
