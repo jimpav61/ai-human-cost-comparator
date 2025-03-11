@@ -1,4 +1,3 @@
-
 import { Lead } from "@/types/leads";
 import { CalculatorInputs } from "@/hooks/calculator/types";
 
@@ -43,9 +42,8 @@ export function initializeLeadData(lead: Lead): Lead {
   }
   
   // Fix for 'standard' tier which should be mapped to 'growth'
-  // Use a type assertion to tell TypeScript that we're checking any string value
-  const aiTier = leadCopy.calculator_inputs.aiTier as string;
-  if (aiTier === 'standard') {
+  // Using type assertion to handle the comparison properly
+  if ((leadCopy.calculator_inputs.aiTier as string) === 'standard') {
     leadCopy.calculator_inputs.aiTier = 'growth';
     console.log("Fixed 'standard' tier to 'growth'");
   }
