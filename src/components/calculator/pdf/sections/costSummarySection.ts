@@ -13,8 +13,19 @@ export const addCostSummarySection = (
   const margin = 20;
   const effectiveWidth = pageWidth - 2 * margin;
   
-  // Log the results for debugging
-  console.log("Cost Summary Section - Results:", results);
+  // Use exact values from results without recalculation
+  const humanCostMonthly = results.humanCostMonthly;
+  const aiCostMonthly = results.aiCostMonthly?.total;
+  const monthlySavings = results.monthlySavings;
+  const yearlySavings = results.yearlySavings;
+  const savingsPercentage = results.savingsPercentage;
+  
+  // Format values directly from results
+  const formattedHumanCost = formatCurrency(humanCostMonthly);
+  const formattedAICost = formatCurrency(aiCostMonthly);
+  const formattedMonthlySavings = formatCurrency(monthlySavings);
+  const formattedYearlySavings = formatCurrency(yearlySavings);
+  const formattedSavingsPercentage = `${Math.round(savingsPercentage)}%`;
   
   doc.setFontSize(16);
   doc.setTextColor(255, 67, 42); // Brand red color for headers
@@ -44,20 +55,7 @@ export const addCostSummarySection = (
     startY: startY
   };
   
-  // Create formatted cost data - ensure values exist and are formatted properly
-  const humanCostMonthly = results.humanCostMonthly || 0;
-  const aiCostMonthly = results.aiCostMonthly?.total || 0;
-  const monthlySavings = results.monthlySavings || 0;
-  const yearlySavings = results.yearlySavings || 0;
-  const savingsPercentage = results.savingsPercentage || 0;
-  
-  const formattedHumanCost = formatCurrency(humanCostMonthly);
-  const formattedAICost = formatCurrency(aiCostMonthly);
-  const formattedMonthlySavings = formatCurrency(monthlySavings);
-  const formattedYearlySavings = formatCurrency(yearlySavings);
-  const formattedSavingsPercentage = `${Math.round(savingsPercentage)}%`;
-  
-  // Setup cost comparison table with two columns
+  // Setup cost comparison table with two columns - use exact values from results
   autoTable(doc, {
     ...tableStyles,
     body: [
