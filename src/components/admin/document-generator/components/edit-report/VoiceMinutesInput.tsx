@@ -5,7 +5,7 @@ import { Input } from "@/components/ui/input";
 
 interface VoiceMinutesInputProps {
   value: number;
-  onChange: (value: string) => void;
+  onChange: (value: number) => void;
 }
 
 export const VoiceMinutesInput = ({ value, onChange }: VoiceMinutesInputProps) => {
@@ -13,8 +13,9 @@ export const VoiceMinutesInput = ({ value, onChange }: VoiceMinutesInputProps) =
   const safeValue = !isNaN(Number(value)) && value !== null ? Number(value) : 0;
   
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    // We pass the raw string to the parent component
-    onChange(e.target.value);
+    // Parse the input value to a number and pass it to the parent component
+    const numericValue = Number(e.target.value);
+    onChange(!isNaN(numericValue) ? numericValue : 0);
   };
 
   return (
