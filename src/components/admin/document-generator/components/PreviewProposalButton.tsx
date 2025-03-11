@@ -16,8 +16,6 @@ export const PreviewProposalButton = ({ lead, disabled }: PreviewProposalButtonP
   
   const onClick = async () => {
     console.log("Preview button clicked with lead:", lead);
-    console.log("Lead calculator_inputs:", lead.calculator_inputs);
-    console.log("Lead calculator_results:", lead.calculator_results);
     
     if (!lead.calculator_inputs || !lead.calculator_results) {
       console.error("Missing calculator data");
