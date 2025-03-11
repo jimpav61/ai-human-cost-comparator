@@ -52,7 +52,8 @@ export const generatePDF = (params: GeneratePDFParams): JsPDFWithAutoTable => {
     validatedParams.aiType,
     validatedParams.results.aiCostMonthly?.setupFee,
     validatedParams.includedVoiceMinutes,
-    validatedParams.additionalVoiceMinutes
+    validatedParams.additionalVoiceMinutes,
+    validatedParams.results.basePriceMonthly
   );
 
   // Add cost summary table
