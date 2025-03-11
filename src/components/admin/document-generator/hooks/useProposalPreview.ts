@@ -1,7 +1,7 @@
-
 import { useState } from "react";
 import { Lead } from "@/types/leads";
 import { toast } from "@/hooks/use-toast";
+import { supabase } from "@/integrations/supabase/client";
 
 export const useProposalPreview = () => {
   const [isLoading, setIsLoading] = useState(false);
@@ -66,39 +66,27 @@ export const useProposalPreview = () => {
         }
       }
       
-      // Build the URL to our edge function - exactly as it was originally
-      const SUPABASE_URL = "https://ujyhmchmjzlmsimtrtor.supabase.co";
-      const apiUrl = `${SUPABASE_URL}/functions/v1/generate-proposal?preview=true`;
-      
-      console.log("Calling edge function at:", apiUrl);
-      console.log("Sending lead with calculator_inputs:", JSON.stringify(leadToSend.calculator_inputs, null, 2));
-      console.log("Sending lead with calculator_results:", JSON.stringify(leadToSend.calculator_results, null, 2));
-      
-      // Make the request - using the exact format that was working before
-      const response = await fetch(apiUrl, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
+      // Call the edge function using Supabase client
+      const { data, error } = await supabase.functions.invoke('generate-proposal', {
+        body: {
           lead: leadToSend,
           preview: true
-        }),
-      });
-      
-      if (!response.ok) {
-        const errorText = await response.text();
-        console.error("Response not OK:", response.status, errorText);
-        try {
-          const errorJson = JSON.parse(errorText);
-          throw new Error(errorJson.error || "Failed to generate proposal");
-        } catch (e) {
-          throw new Error(`Server error: ${response.status} - ${errorText || "Unknown error"}`);
         }
+      });
+
+      if (error) {
+        console.error("Error from edge function:", error);
+        throw error;
       }
-      
-      // Get the PDF binary data
-      const blob = await response.blob();
+
+      // Convert the response data to a blob
+      const base64Data = data.pdf;
+      const binaryData = atob(base64Data);
+      const bytes = new Uint8Array(binaryData.length);
+      for (let i = 0; i < binaryData.length; i++) {
+        bytes[i] = binaryData.charCodeAt(i);
+      }
+      const blob = new Blob([bytes], { type: 'application/pdf' });
       
       // Create a URL for the blob
       const url = URL.createObjectURL(blob);
@@ -122,7 +110,7 @@ export const useProposalPreview = () => {
         description: `Failed to preview proposal: ${error instanceof Error ? error.message : 'Unknown error'}`,
         variant: "destructive",
       });
-      throw error; // Restore this line to properly propagate errors
+      throw error;
     }
   };
   
