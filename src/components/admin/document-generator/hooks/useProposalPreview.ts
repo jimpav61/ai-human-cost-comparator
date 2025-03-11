@@ -13,6 +13,8 @@ export const useProposalPreview = () => {
     title: string;
     notes: string;
   } | null>(null);
+  const [currentRevision, setCurrentRevision] = useState<any>(null);
+  const [showPdfPreview, setShowPdfPreview] = useState(false);
   
   // Get all proposal revisions for a lead
   const getProposalRevisions = async (leadId: string) => {
@@ -97,6 +99,7 @@ export const useProposalPreview = () => {
       if (error) throw error;
       
       setIsLoading(false);
+      setCurrentRevision(data);
       
       toast({
         title: "Success",
@@ -116,6 +119,43 @@ export const useProposalPreview = () => {
       });
       
       throw error;
+    }
+  };
+  
+  // Get the latest proposal revision for a lead
+  const getLatestProposalRevision = async (leadId: string) => {
+    try {
+      setIsLoading(true);
+      
+      const { data, error } = await supabase
+        .from('proposal_revisions')
+        .select('*')
+        .eq('lead_id', leadId)
+        .order('version_number', { ascending: false })
+        .limit(1)
+        .single();
+      
+      if (error) {
+        // If no revision found, it's not really an error
+        if (error.code === 'PGRST116') {
+          setIsLoading(false);
+          return null;
+        }
+        throw error;
+      }
+      
+      setIsLoading(false);
+      setCurrentRevision(data);
+      return data;
+    } catch (error) {
+      console.error("Error fetching latest proposal revision:", error);
+      setIsLoading(false);
+      toast({
+        title: "Error",
+        description: `Failed to fetch latest proposal revision: ${error instanceof Error ? error.message : 'Unknown error'}`,
+        variant: "destructive",
+      });
+      return null;
     }
   };
   
@@ -230,6 +270,23 @@ startxref
       console.log("Current lead calculator_results:", JSON.stringify(lead.calculator_results, null, 2));
       setIsLoading(true);
       
+      // First, check if we already have a proposal for this lead
+      const existingProposal = await getLatestProposalRevision(lead.id);
+      
+      if (existingProposal) {
+        console.log("Found existing proposal, using it:", existingProposal.id);
+        setEditableProposal({
+          id: lead.id,
+          content: existingProposal.proposal_content,
+          version: existingProposal.version_number,
+          title: existingProposal.title,
+          notes: existingProposal.notes || ""
+        });
+        setShowPdfPreview(true);
+        setIsLoading(false);
+        return existingProposal;
+      }
+      
       // Make sure we have valid calculator inputs to use
       if (!lead.calculator_inputs || !lead.calculator_results) {
         throw new Error("Lead is missing required calculator data");
@@ -243,13 +300,13 @@ startxref
       const title = `Proposal for ${lead.company_name}`;
       const notes = "Generated preview";
       
-      await saveProposalRevision(lead.id, proposalContent, title, notes);
+      const newRevision = await saveProposalRevision(lead.id, proposalContent, title, notes);
       
       // Set the editable proposal for the editor
       setEditableProposal({
         id: lead.id,
         content: proposalContent,
-        version: await getNextVersionNumber(lead.id) - 1, // Use the version that was just saved
+        version: newRevision.version_number,
         title,
         notes
       });
@@ -261,7 +318,9 @@ startxref
         variant: "default",
       });
       
+      setShowPdfPreview(true);
       setIsLoading(false);
+      return newRevision;
       
     } catch (error) {
       console.error("Error previewing proposal:", error);
@@ -298,6 +357,7 @@ startxref
       if (error) throw error;
       
       setIsLoading(false);
+      setCurrentRevision(data);
       
       toast({
         title: "Success",
@@ -326,7 +386,12 @@ startxref
     setEditableProposal,
     handlePreviewProposal,
     getProposalRevisions,
+    getLatestProposalRevision,
     saveProposalRevision,
-    updateProposalRevision
+    updateProposalRevision,
+    currentRevision,
+    setCurrentRevision,
+    showPdfPreview,
+    setShowPdfPreview
   };
 };
