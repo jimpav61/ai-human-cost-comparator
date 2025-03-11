@@ -217,7 +217,8 @@ export const useProposalPreview = () => {
     const brandRed = "#ff432a";  // Main brand color
     
     // Generate PDF content (multipage professional proposal)
-    const pdfContent = `
+    // Changed from const to let to fix the TypeScript errors
+    let pdfContent = `
 %PDF-1.7
 1 0 obj
 << /Type /Catalog
