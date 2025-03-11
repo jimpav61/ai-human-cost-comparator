@@ -23,7 +23,7 @@ serve(async (req) => {
     
     // Parse the request body
     const requestData = await req.json();
-    console.log("Request data received:", JSON.stringify(requestData));
+    console.log("Request data received:", JSON.stringify(requestData, null, 2));
     
     const { lead, preview } = requestData;
     // Support preview parameter in both URL and request body
@@ -53,6 +53,41 @@ serve(async (req) => {
     console.log("AI Tier:", lead.calculator_inputs?.aiTier);
     console.log("AI Type:", lead.calculator_inputs?.aiType);
     console.log("Additional Voice Minutes:", lead.calculator_inputs?.callVolume);
+    
+    // Ensure calculator data exists and is properly formatted
+    if (!lead.calculator_inputs || typeof lead.calculator_inputs !== 'object') {
+      lead.calculator_inputs = {};
+    }
+    
+    if (!lead.calculator_results || typeof lead.calculator_results !== 'object') {
+      lead.calculator_results = {};
+    }
+    
+    // Ensure critical values are properly set
+    if (!lead.calculator_inputs.aiTier) {
+      lead.calculator_inputs.aiTier = lead.calculator_results?.tierKey || 'growth';
+      console.log("Set missing aiTier from calculator_results:", lead.calculator_inputs.aiTier);
+    }
+    
+    if (!lead.calculator_inputs.aiType) {
+      lead.calculator_inputs.aiType = lead.calculator_results?.aiType || 'both';
+      console.log("Set missing aiType from calculator_results:", lead.calculator_inputs.aiType);
+    }
+    
+    // Make sure callVolume is a number
+    if (typeof lead.calculator_inputs.callVolume === 'string') {
+      lead.calculator_inputs.callVolume = parseInt(lead.calculator_inputs.callVolume, 10) || 0;
+      console.log("Converted callVolume from string to number:", lead.calculator_inputs.callVolume);
+    } else if (lead.calculator_inputs.callVolume === undefined || lead.calculator_inputs.callVolume === null) {
+      lead.calculator_inputs.callVolume = 0;
+      console.log("Set default callVolume to 0");
+    }
+    
+    // Force callVolume to 0 for starter plan
+    if (lead.calculator_inputs.aiTier === 'starter') {
+      lead.calculator_inputs.callVolume = 0;
+      console.log("Reset callVolume to 0 for starter plan");
+    }
     
     if (isPreviewMode) {
       // In preview mode, generate and return the PDF directly
@@ -852,4 +887,3 @@ startxref
     return new Intl.NumberFormat('en-US').format(value);
   }
 }
-
