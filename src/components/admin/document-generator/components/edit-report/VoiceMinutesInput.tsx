@@ -8,7 +8,7 @@ interface VoiceMinutesInputProps {
   onChange: (value: number) => void;
 }
 
-export const VoiceMinutesInput = ({ value, onChange }: VoiceMinutesInputProps) => {
+export const VoiceMinutesInput = ({ value, onChange }: VoiceMinutesInputProps) {
   // Ensure we always have a numeric value and it's not NaN
   const safeValue = !isNaN(Number(value)) && value !== null ? Number(value) : 0;
   
