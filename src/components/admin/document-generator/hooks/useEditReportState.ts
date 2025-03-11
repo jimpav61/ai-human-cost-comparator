@@ -7,96 +7,152 @@ export const useEditReportState = (
   onSave: (updatedLead: Lead) => void,
   onClose: () => void
 ) => {
-  const [editableLead, setEditableLead] = useState<Lead>({...lead});
+  // Create deep copy of lead to avoid reference issues
+  const [editableLead, setEditableLead] = useState<Lead>(() => {
+    const leadCopy = JSON.parse(JSON.stringify(lead));
+    
+    // Make sure calculator_inputs exists and has correct values
+    if (!leadCopy.calculator_inputs) {
+      leadCopy.calculator_inputs = {
+        aiTier: 'growth',
+        aiType: 'both',
+        callVolume: 0,
+        chatVolume: 2000,
+        role: 'customerService',
+        numEmployees: leadCopy.employee_count || 5,
+        avgCallDuration: 0,
+        avgChatLength: 0,
+        avgChatResolutionTime: 0
+      };
+    }
+    
+    // Ensure callVolume is a number
+    if (typeof leadCopy.calculator_inputs.callVolume === 'string') {
+      leadCopy.calculator_inputs.callVolume = parseInt(leadCopy.calculator_inputs.callVolume, 10) || 0;
+    }
+    
+    return leadCopy;
+  });
   
   // Update the editable lead when the original lead changes
   useEffect(() => {
-    setEditableLead({...lead});
-  }, [lead]);
-  
-  // Make sure calculator_inputs exists
-  useEffect(() => {
-    if (!editableLead.calculator_inputs) {
-      setEditableLead(prev => ({
-        ...prev,
-        calculator_inputs: {
-          aiTier: 'growth',
-          aiType: 'both',
-          callVolume: 0,
-          chatVolume: 2000,
-          role: 'customerService',
-          numEmployees: prev.employee_count || 5,
-          avgCallDuration: 0,
-          avgChatLength: 0,
-          avgChatResolutionTime: 0
-        }
-      }));
+    console.log("useEditReportState: lead prop changed");
+    console.log("New lead aiTier:", lead.calculator_inputs?.aiTier);
+    console.log("New lead aiType:", lead.calculator_inputs?.aiType);
+    console.log("New lead callVolume:", lead.calculator_inputs?.callVolume);
+    
+    const leadCopy = JSON.parse(JSON.stringify(lead));
+    
+    // Make sure calculator_inputs exists
+    if (!leadCopy.calculator_inputs) {
+      leadCopy.calculator_inputs = {
+        aiTier: 'growth',
+        aiType: 'both',
+        callVolume: 0,
+        chatVolume: 2000,
+        role: 'customerService',
+        numEmployees: leadCopy.employee_count || 5,
+        avgCallDuration: 0,
+        avgChatLength: 0,
+        avgChatResolutionTime: 0
+      };
     }
-  }, [editableLead]);
+    
+    // Ensure callVolume is a number
+    if (typeof leadCopy.calculator_inputs.callVolume === 'string') {
+      leadCopy.calculator_inputs.callVolume = parseInt(leadCopy.calculator_inputs.callVolume, 10) || 0;
+    }
+    
+    setEditableLead(leadCopy);
+  }, [lead]);
   
   // Handle changes to call volume
   const handleCallVolumeChange = (value: number | string) => {
     const numValue = typeof value === 'string' ? parseInt(value, 10) || 0 : value;
+    console.log("Setting callVolume to:", numValue);
     
-    setEditableLead(prev => ({
-      ...prev,
-      calculator_inputs: {
-        ...prev.calculator_inputs,
-        callVolume: numValue
+    setEditableLead(prev => {
+      // Create deep copy to avoid reference issues
+      const updated = JSON.parse(JSON.stringify(prev));
+      
+      // Update the callVolume
+      if (!updated.calculator_inputs) {
+        updated.calculator_inputs = {};
       }
-    }));
+      updated.calculator_inputs.callVolume = numValue;
+      
+      return updated;
+    });
   };
   
   // Handle changes to AI tier
   const handleAITierChange = (value: string) => {
     const newAiTier = value as 'starter' | 'growth' | 'premium';
-    let newAiType = editableLead.calculator_inputs?.aiType || 'both';
+    console.log("Setting aiTier to:", newAiTier);
     
-    // Ensure AI type is compatible with the selected tier
-    if (newAiTier === 'starter' && newAiType !== 'chatbot') {
-      newAiType = 'chatbot';
-    } else if (newAiTier === 'premium') {
-      if (newAiType === 'voice') {
-        newAiType = 'conversationalVoice';
-      } else if (newAiType === 'both') {
-        newAiType = 'both-premium';
+    setEditableLead(prev => {
+      // Create deep copy to avoid reference issues
+      const updated = JSON.parse(JSON.stringify(prev));
+      
+      if (!updated.calculator_inputs) {
+        updated.calculator_inputs = {};
       }
-    } else if (newAiTier === 'growth') {
-      if (newAiType === 'conversationalVoice') {
-        newAiType = 'voice';
-      } else if (newAiType === 'both-premium') {
-        newAiType = 'both';
+      
+      // Get current AI type
+      let newAiType = updated.calculator_inputs.aiType || 'both';
+      
+      // Ensure AI type is compatible with the selected tier
+      if (newAiTier === 'starter' && newAiType !== 'chatbot') {
+        newAiType = 'chatbot';
+      } else if (newAiTier === 'premium') {
+        if (newAiType === 'voice') {
+          newAiType = 'conversationalVoice';
+        } else if (newAiType === 'both') {
+          newAiType = 'both-premium';
+        }
+      } else if (newAiTier === 'growth') {
+        if (newAiType === 'conversationalVoice') {
+          newAiType = 'voice';
+        } else if (newAiType === 'both-premium') {
+          newAiType = 'both';
+        }
       }
-    }
-    
-    setEditableLead(prev => ({
-      ...prev,
-      calculator_inputs: {
-        ...prev.calculator_inputs,
-        aiTier: newAiTier,
-        aiType: newAiType,
-        // Reset callVolume to 0 for starter tier
-        callVolume: newAiTier === 'starter' ? 0 : prev.calculator_inputs?.callVolume || 0
+      
+      // Update tier and type
+      updated.calculator_inputs.aiTier = newAiTier;
+      updated.calculator_inputs.aiType = newAiType;
+      
+      // Reset callVolume to 0 for starter tier since it doesn't support voice
+      if (newAiTier === 'starter') {
+        updated.calculator_inputs.callVolume = 0;
       }
-    }));
+      
+      return updated;
+    });
   };
   
   // Handle changes to AI type
   const handleAITypeChange = (value: string) => {
     const newAiType = value as 'chatbot' | 'voice' | 'both' | 'conversationalVoice' | 'both-premium';
-    const currentTier = editableLead.calculator_inputs?.aiTier || 'growth';
+    console.log("Setting aiType to:", newAiType);
     
-    setEditableLead(prev => ({
-      ...prev,
-      calculator_inputs: {
-        ...prev.calculator_inputs,
-        aiType: newAiType
+    setEditableLead(prev => {
+      // Create deep copy to avoid reference issues
+      const updated = JSON.parse(JSON.stringify(prev));
+      
+      if (!updated.calculator_inputs) {
+        updated.calculator_inputs = {};
       }
-    }));
+      
+      updated.calculator_inputs.aiType = newAiType;
+      
+      return updated;
+    });
   };
   
   // Handle saving changes
   const handleSave = () => {
+    console.log("Saving changes:", editableLead);
     onSave(editableLead);
   };
   

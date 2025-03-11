@@ -20,6 +20,8 @@ interface EditProposalDialogProps {
 
 export const EditReportDialog = ({ isOpen, onClose, lead, onSave }: EditProposalDialogProps) => {
   console.log("EditProposalDialog rendering with lead:", lead);
+  console.log("Initial aiTier:", lead.calculator_inputs?.aiTier);
+  console.log("Initial aiType:", lead.calculator_inputs?.aiType);
   console.log("Initial callVolume:", lead.calculator_inputs?.callVolume);
   
   const {

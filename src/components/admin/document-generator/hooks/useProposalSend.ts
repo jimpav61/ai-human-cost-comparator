@@ -19,11 +19,18 @@ export const useProposalSend = () => {
         throw new Error("Lead is missing required calculator data");
       }
       
-      // Build the URL to our edge function using the project URL from our client file
+      // Ensure callVolume is a number - critical for correct pricing
+      if (typeof lead.calculator_inputs.callVolume === 'string') {
+        lead.calculator_inputs.callVolume = parseInt(lead.calculator_inputs.callVolume, 10) || 0;
+        console.log("Converted callVolume from string to number:", lead.calculator_inputs.callVolume);
+      }
+      
+      // Build the URL to our edge function
       const SUPABASE_URL = "https://ujyhmchmjzlmsimtrtor.supabase.co";
       const apiUrl = new URL('/functions/v1/generate-proposal', SUPABASE_URL);
       
       console.log("Calling edge function at:", apiUrl.toString());
+      console.log("Sending lead with calculator_inputs:", JSON.stringify(lead.calculator_inputs));
       
       // Make the request - sending the proposal via email with latest calculator data
       const response = await fetch(apiUrl.toString(), {
@@ -32,7 +39,7 @@ export const useProposalSend = () => {
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({
-          lead,
+          lead: JSON.parse(JSON.stringify(lead)), // Deep clone to avoid reference issues
           preview: false
         }),
       });
