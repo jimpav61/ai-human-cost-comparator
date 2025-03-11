@@ -28,7 +28,7 @@ export const EditReportDialog = ({ isOpen, onClose, lead, onSave }: EditReportDi
     handleSave
   } = useEditReportState(lead, onSave, onClose);
   
-  // Current values
+  // Current values - ensure we have non-null values for all fields
   const callVolume = editableLead.calculator_inputs?.callVolume ?? 0;
   const aiTier = editableLead.calculator_inputs?.aiTier || 'growth';
   const aiType = editableLead.calculator_inputs?.aiType || 'both';

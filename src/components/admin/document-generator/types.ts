@@ -3,6 +3,7 @@ import { Lead } from "@/types/leads";
 
 export interface DocumentGeneratorProps {
   lead: Lead;
+  onLeadUpdated?: (updatedLead: Lead) => void;
 }
 
 export interface UseDownloadStateProps {

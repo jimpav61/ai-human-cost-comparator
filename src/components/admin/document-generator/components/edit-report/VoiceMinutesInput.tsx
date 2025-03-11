@@ -1,5 +1,5 @@
 
-import React, { useEffect } from "react";
+import React from "react";
 import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
 
@@ -9,13 +9,13 @@ interface VoiceMinutesInputProps {
 }
 
 export const VoiceMinutesInput = ({ value, onChange }: VoiceMinutesInputProps) => {
-  // Ensure we always have a numeric value
-  const safeValue = typeof value === 'number' ? value : 0;
+  // Ensure we always have a numeric value and it's not NaN
+  const safeValue = !isNaN(value) && value !== null ? value : 0;
   
-  useEffect(() => {
-    console.log("VoiceMinutesInput mounted with value:", value);
-    console.log("Type of value:", typeof value);
-  }, [value]);
+  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    // We pass the raw string to the parent component
+    onChange(e.target.value);
+  };
 
   return (
     <div className="grid grid-cols-4 items-center gap-4">
@@ -27,7 +27,7 @@ export const VoiceMinutesInput = ({ value, onChange }: VoiceMinutesInputProps) =
           id="callVolume"
           type="number"
           value={safeValue}
-          onChange={(e) => onChange(e.target.value)}
+          onChange={handleInputChange}
           min={0}
           step={100}
           className="w-full"

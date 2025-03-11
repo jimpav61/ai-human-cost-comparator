@@ -24,11 +24,19 @@ export const useEditReportState = (lead: Lead, onSave: (updatedLead: Lead) => vo
   // Handle changes to the voice minutes input
   const handleCallVolumeChange = (value: string) => {
     console.log("Changing callVolume to:", value);
-    // Parse as number and ensure it's a multiple of 100
-    let numValue = parseInt(value, 10) || 0;
+    // Parse as number
+    let numValue = parseInt(value, 10);
+    
+    // If parsing failed, use 0
+    if (isNaN(numValue)) {
+      numValue = 0;
+    }
+
+    // Round to the nearest multiple of 100
     numValue = Math.round(numValue / 100) * 100;
     
     setEditableLead(prev => {
+      // Create a new object to ensure state update
       const updated = {
         ...prev,
         calculator_inputs: {
@@ -124,7 +132,12 @@ export const useEditReportState = (lead: Lead, onSave: (updatedLead: Lead) => vo
       }
       
       console.log("Saving lead with callVolume:", updatedLead.calculator_inputs.callVolume);
-      onSave(updatedLead);
+      
+      // Create a complete new copy of the lead for the save callback
+      const saveableLead: Lead = JSON.parse(JSON.stringify(updatedLead));
+      
+      // Pass the updated lead to the parent component
+      onSave(saveableLead);
       onClose();
       
       toast({

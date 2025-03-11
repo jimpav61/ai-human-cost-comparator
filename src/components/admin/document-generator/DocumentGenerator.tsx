@@ -12,7 +12,11 @@ import { EditReportDialog } from "./components/EditReportDialog";
 import { toJson, ensureCompleteCalculatorResults } from "@/hooks/calculator/supabase-types";
 import { ensureCalculationResults } from "@/components/calculator/pdf/types";
 
-export const DocumentGenerator = ({ lead }: DocumentGeneratorProps) => {
+interface ExtendedDocumentGeneratorProps extends DocumentGeneratorProps {
+  onLeadUpdated?: (updatedLead: Lead) => void;
+}
+
+export const DocumentGenerator = ({ lead, onLeadUpdated }: ExtendedDocumentGeneratorProps) => {
   const [isLoading, setIsLoading] = useState(false);
   const [isProposalLoading, setIsProposalLoading] = useState(false);
   const [isPreviewLoading, setIsPreviewLoading] = useState(false);
@@ -37,7 +41,12 @@ export const DocumentGenerator = ({ lead }: DocumentGeneratorProps) => {
       
       if (error) throw error;
       
-      Object.assign(lead, updatedLead);
+      const updatedLeadCopy = {...lead};
+      updatedLeadCopy.calculator_inputs = {...updatedLead.calculator_inputs};
+      
+      if (onLeadUpdated) {
+        onLeadUpdated(updatedLeadCopy);
+      }
       
       toast({
         title: "Success",
