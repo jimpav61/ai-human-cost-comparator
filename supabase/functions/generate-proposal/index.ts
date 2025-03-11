@@ -1,4 +1,3 @@
-
 import { serve } from "https://deno.land/std@0.177.0/http/server.ts";
 import { corsHeaders } from "../_shared/cors.ts";
 
@@ -187,9 +186,10 @@ function generateProfessionalProposal(lead) {
                       aiTier === 'growth' ? 229 :
                       aiTier === 'premium' ? 429 : 229;
   
-  const setupFee = aiTier === 'starter' ? 499 :
+  // Updated setup fees - use the correct values
+  const setupFee = aiTier === 'starter' ? 249 :
                   aiTier === 'growth' ? 749 :
-                  aiTier === 'premium' ? 999 : 749;
+                  aiTier === 'premium' ? 1149 : 749;
   
   // Get voice details - different for each tier
   const includedVoiceMinutes = aiTier === 'starter' ? 0 : 600;

@@ -11,15 +11,15 @@ import { CalculatorInputs } from "@/hooks/calculator/types";
 import { performCalculations } from "@/hooks/calculator/calculations";
 import { DEFAULT_AI_RATES } from "@/constants/pricing"; 
 
-interface EditReportDialogProps {
+interface EditProposalDialogProps {
   isOpen: boolean;
   onClose: () => void;
   lead: Lead;
   onSave: (updatedLead: Lead) => void;
 }
 
-export const EditReportDialog = ({ isOpen, onClose, lead, onSave }: EditReportDialogProps) => {
-  console.log("EditReportDialog rendering with lead:", lead);
+export const EditReportDialog = ({ isOpen, onClose, lead, onSave }: EditProposalDialogProps) => {
+  console.log("EditProposalDialog rendering with lead:", lead);
   console.log("Initial callVolume:", lead.calculator_inputs?.callVolume);
   
   const {
