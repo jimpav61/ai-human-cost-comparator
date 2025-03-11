@@ -13,7 +13,18 @@ interface PreviewProposalButtonProps {
 export const PreviewProposalButton = ({ lead, disabled }: PreviewProposalButtonProps) => {
   const { isLoading, handlePreviewProposal } = useProposalPreview();
   
-  const onClick = () => handlePreviewProposal(lead);
+  const onClick = async () => {
+    console.log("Preview button clicked with lead:", lead);
+    console.log("Lead calculator_inputs:", lead.calculator_inputs);
+    console.log("Lead calculator_results:", lead.calculator_results);
+    
+    if (!lead.calculator_inputs || !lead.calculator_results) {
+      console.error("Missing calculator data");
+      return;
+    }
+    
+    await handlePreviewProposal(lead);
+  };
   
   return (
     <Button
