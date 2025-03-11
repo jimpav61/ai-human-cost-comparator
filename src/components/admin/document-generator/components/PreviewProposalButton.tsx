@@ -26,6 +26,10 @@ interface PreviewProposalButtonProps {
   disabled?: boolean;
 }
 
+// Type definitions for aiTier and aiType
+type AiTier = "starter" | "growth" | "premium";
+type AiType = "voice" | "chatbot" | "both" | "conversationalVoice" | "both-premium";
+
 export const PreviewProposalButton = ({ lead, disabled }: PreviewProposalButtonProps) => {
   const { 
     isLoading, 
@@ -35,6 +39,7 @@ export const PreviewProposalButton = ({ lead, disabled }: PreviewProposalButtonP
     getProposalRevisions,
     getLatestProposalRevision,
     saveProposalRevision,
+    generateProfessionalProposal,
     currentRevision,
     setCurrentRevision,
     showPdfPreview,
@@ -52,8 +57,12 @@ export const PreviewProposalButton = ({ lead, disabled }: PreviewProposalButtonP
   const [currentPdfPreviewUrl, setCurrentPdfPreviewUrl] = useState<string | null>(null);
   
   // Form state for proposal editing
-  const [editingAiTier, setEditingAiTier] = useState(lead.calculator_inputs?.aiTier || 'growth');
-  const [editingAiType, setEditingAiType] = useState(lead.calculator_inputs?.aiType || 'both');
+  const [editingAiTier, setEditingAiTier] = useState<AiTier>(
+    (lead.calculator_inputs?.aiTier as AiTier) || 'growth'
+  );
+  const [editingAiType, setEditingAiType] = useState<AiType>(
+    (lead.calculator_inputs?.aiType as AiType) || 'both'
+  );
   const [editingCallVolume, setEditingCallVolume] = useState(
     typeof lead.calculator_inputs?.callVolume === 'number' 
       ? lead.calculator_inputs.callVolume 
@@ -83,8 +92,8 @@ export const PreviewProposalButton = ({ lead, disabled }: PreviewProposalButtonP
   // Reset form state when lead changes
   useEffect(() => {
     if (lead) {
-      setEditingAiTier(lead.calculator_inputs?.aiTier || 'growth');
-      setEditingAiType(lead.calculator_inputs?.aiType || 'both');
+      setEditingAiTier((lead.calculator_inputs?.aiTier as AiTier) || 'growth');
+      setEditingAiType((lead.calculator_inputs?.aiType as AiType) || 'both');
       setEditingCallVolume(
         typeof lead.calculator_inputs?.callVolume === 'number' 
           ? lead.calculator_inputs.callVolume 
@@ -99,8 +108,8 @@ export const PreviewProposalButton = ({ lead, disabled }: PreviewProposalButtonP
       // If we have version-specific pricing data in notes (could be stored as JSON)
       try {
         const notesData = JSON.parse(selectedVersion.notes || "{}");
-        if (notesData.aiTier) setEditingAiTier(notesData.aiTier);
-        if (notesData.aiType) setEditingAiType(notesData.aiType);
+        if (notesData.aiTier) setEditingAiTier(notesData.aiTier as AiTier);
+        if (notesData.aiType) setEditingAiType(notesData.aiType as AiType);
         if (notesData.callVolume !== undefined) setEditingCallVolume(notesData.callVolume);
       } catch (e) {
         // If notes isn't JSON, just continue with lead data
@@ -168,6 +177,17 @@ export const PreviewProposalButton = ({ lead, disabled }: PreviewProposalButtonP
   
   const handleCreateNewVersion = async () => {
     try {
+      // Create updated proposal with new settings
+      const updatedProposalContent = generateProfessionalProposal({
+        ...lead,
+        calculator_inputs: {
+          ...lead.calculator_inputs,
+          aiTier: editingAiTier,
+          aiType: editingAiType,
+          callVolume: editingCallVolume
+        }
+      });
+      
       // Store the pricing information in the notes as JSON
       const metadataForNotes = {
         aiTier: editingAiTier,
@@ -182,7 +202,7 @@ export const PreviewProposalButton = ({ lead, disabled }: PreviewProposalButtonP
       // Save as a new revision
       const newRevision = await saveProposalRevision(
         lead.id,
-        proposalContent,
+        updatedProposalContent,
         proposalTitle,
         notesWithMetadata
       );
@@ -190,6 +210,10 @@ export const PreviewProposalButton = ({ lead, disabled }: PreviewProposalButtonP
       // Reload versions after saving
       const versions = await getProposalRevisions(lead.id);
       setProposalVersions(versions);
+      
+      // Update the content and preview
+      setProposalContent(updatedProposalContent);
+      handlePreviewPDF(updatedProposalContent);
       
       // Load the new version
       setSelectedVersion(newRevision);
@@ -262,7 +286,7 @@ export const PreviewProposalButton = ({ lead, disabled }: PreviewProposalButtonP
   
   // Handle changes to AI tier with proper AI type adjustment
   const handleTierChange = (newTier: string) => {
-    setEditingAiTier(newTier);
+    setEditingAiTier(newTier as AiTier);
     
     // Update AI type based on tier
     if (newTier === 'starter' && editingAiType !== 'chatbot') {
@@ -279,7 +303,7 @@ export const PreviewProposalButton = ({ lead, disabled }: PreviewProposalButtonP
   
   // Handle AI type change with proper tier adjustment
   const handleAITypeChange = (newType: string) => {
-    setEditingAiType(newType);
+    setEditingAiType(newType as AiType);
     
     // Update tier based on AI type
     if ((newType === 'conversationalVoice' || newType === 'both-premium') && editingAiTier !== 'premium') {
@@ -519,30 +543,6 @@ export const PreviewProposalButton = ({ lead, disabled }: PreviewProposalButtonP
                         />
                         <p className="text-xs text-gray-500">
                           These notes are for your reference and won't appear in the proposal.
-                        </p>
-                      </div>
-                      
-                      <div className="space-y-2">
-                        <Label htmlFor="content">Raw Content (Advanced)</Label>
-                        <Button 
-                          variant="outline" 
-                          size="sm" 
-                          className="mb-2"
-                          onClick={() => {
-                            const url = handlePreviewPDF();
-                            if (url) setCurrentPdfPreviewUrl(url);
-                          }}
-                        >
-                          <Eye className="h-4 w-4 mr-2" /> Preview Changes
-                        </Button>
-                        <Textarea
-                          id="content"
-                          value={proposalContent}
-                          onChange={(e) => setProposalContent(e.target.value)}
-                          className="font-mono text-xs h-32"
-                        />
-                        <p className="text-xs text-gray-500">
-                          Warning: Only edit raw content if you know what you're doing.
                         </p>
                       </div>
                     </div>
