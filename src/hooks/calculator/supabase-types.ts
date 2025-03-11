@@ -1,110 +1,109 @@
 
-import type { Json } from '@/integrations/supabase/types';
-import type { CalculatorInputs, CalculationResults } from './types';
+import { CalculatorInputs, CalculationResults } from "./types";
 
-// Helper function to safely cast our calculator types to Json for Supabase
-export const toJson = <T>(data: T): Json => {
-  if (!data) return null;
-  
-  try {
-    // For objects that may contain special types, convert to plain JSON
-    const serialized = JSON.parse(JSON.stringify(data));
-    return serialized as Json;
-  } catch (e) {
-    console.error('Failed to convert data to JSON:', e);
-    return null;
-  }
-};
+/**
+ * Converts JavaScript objects to JSON format for Supabase storage
+ */
+export function toJson(data: any): any {
+  if (!data) return {};
+  return JSON.parse(JSON.stringify(data));
+}
 
-// Helper function to cast Json back to our calculator types with proper type safety
-export const fromJson = <T>(json: Json): T => {
-  if (!json) {
-    // Return an empty object cast to the expected type if null
-    return {} as T;
-  }
-  
-  try {
-    // If it's already an object, just return it with the expected type
-    if (typeof json === 'object' && json !== null) {
-      return json as unknown as T;
+/**
+ * Parses JSON from Supabase into correct objects
+ */
+export function fromJson(data: any): any {
+  if (typeof data === 'string') {
+    try {
+      return JSON.parse(data);
+    } catch (e) {
+      console.error("Error parsing JSON:", e);
+      return {};
     }
-    
-    // If it's a string, try to parse it
-    if (typeof json === 'string') {
-      return JSON.parse(json) as T;
-    }
-    
-    return {} as T;
-  } catch (e) {
-    console.error('Failed to convert JSON to object:', e);
-    return {} as T;
   }
-};
+  return data || {};
+}
 
-// Helper to ensure a default for CalculatorInputs when none exists
-export const getDefaultCalculatorInputs = (): CalculatorInputs => {
+/**
+ * Provides default calculator inputs if none exist
+ */
+export function getDefaultCalculatorInputs(): CalculatorInputs {
   return {
-    aiType: 'chatbot',
-    aiTier: 'starter',
+    aiTier: 'growth',
+    aiType: 'both',
     role: 'customerService',
     numEmployees: 5,
     callVolume: 0,
-    avgCallDuration: 5,
+    avgCallDuration: 0,
     chatVolume: 2000,
-    avgChatLength: 3,
-    avgChatResolutionTime: 10
+    avgChatLength: 0,
+    avgChatResolutionTime: 0
   };
-};
+}
 
-// Helper to ensure a default for CalculationResults when none exists
-export const getDefaultCalculationResults = (): CalculationResults => {
+/**
+ * Provides default calculator results if none exist
+ */
+export function getDefaultCalculationResults(): CalculationResults {
   return {
-    aiCostMonthly: { voice: 0, chatbot: 0, total: 0, setupFee: 0 },
-    basePriceMonthly: 0,
+    aiCostMonthly: {
+      voice: 0,
+      chatbot: 0,
+      total: 0,
+      setupFee: 749 // Default to growth tier setup fee
+    },
+    basePriceMonthly: 229, // Default to growth tier
     humanCostMonthly: 0,
     monthlySavings: 0,
     yearlySavings: 0,
     savingsPercentage: 0,
-    breakEvenPoint: { voice: 0, chatbot: 0 },
+    breakEvenPoint: {
+      voice: 0,
+      chatbot: 0
+    },
     humanHours: {
-      dailyPerEmployee: 0,
+      dailyPerEmployee: 8,
       weeklyTotal: 0,
       monthlyTotal: 0,
       yearlyTotal: 0
     },
-    annualPlan: 0,
-    tierKey: 'growth',
-    aiType: 'chatbot'
+    annualPlan: 2290 // Default to growth tier annual plan
   };
-};
+}
 
-// Helper to merge a partial result set with defaults
-export const ensureCompleteCalculatorResults = (partialResults?: Partial<CalculationResults>): CalculationResults => {
+/**
+ * Ensures calculator results are complete with all required properties
+ */
+export function ensureCompleteCalculatorResults(results: any): CalculationResults {
   const defaultResults = getDefaultCalculationResults();
   
-  if (!partialResults) {
-    return defaultResults;
-  }
+  if (!results) return defaultResults;
   
   return {
-    ...defaultResults,
-    // Deep merge nested objects
     aiCostMonthly: {
-      ...defaultResults.aiCostMonthly,
-      ...(partialResults.aiCostMonthly || {})
+      voice: results.aiCostMonthly?.voice ?? defaultResults.aiCostMonthly.voice,
+      chatbot: results.aiCostMonthly?.chatbot ?? defaultResults.aiCostMonthly.chatbot,
+      total: results.aiCostMonthly?.total ?? defaultResults.aiCostMonthly.total,
+      setupFee: results.aiCostMonthly?.setupFee ?? defaultResults.aiCostMonthly.setupFee
     },
+    basePriceMonthly: results.basePriceMonthly ?? defaultResults.basePriceMonthly,
+    humanCostMonthly: results.humanCostMonthly ?? defaultResults.humanCostMonthly,
+    monthlySavings: results.monthlySavings ?? defaultResults.monthlySavings,
+    yearlySavings: results.yearlySavings ?? defaultResults.yearlySavings,
+    savingsPercentage: results.savingsPercentage ?? defaultResults.savingsPercentage,
     breakEvenPoint: {
-      ...defaultResults.breakEvenPoint,
-      ...(partialResults.breakEvenPoint || {})
+      voice: results.breakEvenPoint?.voice ?? defaultResults.breakEvenPoint.voice,
+      chatbot: results.breakEvenPoint?.chatbot ?? defaultResults.breakEvenPoint.chatbot
     },
     humanHours: {
-      ...defaultResults.humanHours,
-      ...(partialResults.humanHours || {})
+      dailyPerEmployee: results.humanHours?.dailyPerEmployee ?? defaultResults.humanHours.dailyPerEmployee,
+      weeklyTotal: results.humanHours?.weeklyTotal ?? defaultResults.humanHours.weeklyTotal,
+      monthlyTotal: results.humanHours?.monthlyTotal ?? defaultResults.humanHours.monthlyTotal,
+      yearlyTotal: results.humanHours?.yearlyTotal ?? defaultResults.humanHours.yearlyTotal
     },
-    // Merge all other top-level properties
-    ...partialResults,
-    // Make sure these required properties have valid values
-    tierKey: partialResults.tierKey || defaultResults.tierKey,
-    aiType: partialResults.aiType || defaultResults.aiType
+    annualPlan: results.annualPlan ?? defaultResults.annualPlan,
+    tierKey: results.tierKey || (results.basePriceMonthly === 99 ? 'starter' : 
+                                results.basePriceMonthly === 429 ? 'premium' : 'growth'),
+    aiType: results.aiType || 'both'
   };
-};
+}
