@@ -1,3 +1,4 @@
+
 import { serve } from "https://deno.land/std@0.177.0/http/server.ts";
 import { corsHeaders } from "../_shared/cors.ts";
 
@@ -276,8 +277,10 @@ function generateProfessionalProposal(lead) {
   
   // Calculate any voice costs based on additional minutes
   let voiceCost = 0;
+  const voiceCostPerMinute = 0.12;
+  
   if (additionalVoiceMinutes > 0 && aiTier !== 'starter') {
-    voiceCost = additionalVoiceMinutes * 0.12;
+    voiceCost = additionalVoiceMinutes * voiceCostPerMinute;
     console.log("Calculated voice cost:", voiceCost);
   } else if (calculatorResults.aiCostMonthly && calculatorResults.aiCostMonthly.voice > 0) {
     // If we have voice costs in the results, use them directly
@@ -329,6 +332,12 @@ function generateProfessionalProposal(lead) {
   
   // Calculate ROI details with defaults if missing
   const breakEvenPoint = Math.ceil(setupFee / (monthlySavings || 1000));
+  
+  // Calculate first year ROI
+  const firstYearROI = Math.round((yearlySavings - setupFee) / setupFee * 100);
+  
+  // Calculate five year total savings
+  const fiveYearSavings = yearlySavings * 5;
   
   // Generate current date for the proposal
   const today = new Date();
@@ -490,7 +499,7 @@ ${brandRed} rg
 
 (\\267 Reduction in operational costs by up to ${savingsPercentage}%) Tj
 0 -20 Td
-(\\267 Estimated annual savings of $${formatCurrency(yearlySavings)}) Tj
+(\\267 Estimated annual savings of ${formatCurrency(yearlySavings)}) Tj
 0 -20 Td
 (\\267 24/7 customer service availability without additional staffing costs) Tj
 0 -20 Td
