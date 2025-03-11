@@ -22,14 +22,17 @@ export const useProposalSend = () => {
         throw new Error("Lead is missing required calculator data");
       }
       
-      // Ensure callVolume is a number - critical for correct pricing
-      if (typeof lead.calculator_inputs.callVolume === 'string') {
-        lead.calculator_inputs.callVolume = parseInt(lead.calculator_inputs.callVolume, 10) || 0;
-        console.log("Converted callVolume from string to number:", lead.calculator_inputs.callVolume);
-      }
-      
       // Deep clone to prevent any reference issues
       const leadToSend = JSON.parse(JSON.stringify(lead));
+      
+      // Ensure callVolume is a number - critical for correct pricing
+      if (typeof leadToSend.calculator_inputs.callVolume === 'string') {
+        leadToSend.calculator_inputs.callVolume = parseInt(leadToSend.calculator_inputs.callVolume, 10) || 0;
+        console.log("Converted callVolume from string to number:", leadToSend.calculator_inputs.callVolume);
+      } else if (leadToSend.calculator_inputs.callVolume === undefined || leadToSend.calculator_inputs.callVolume === null) {
+        leadToSend.calculator_inputs.callVolume = 0;
+        console.log("Set default callVolume to 0");
+      }
       
       // Double-check aiTier, aiType and callVolume are set correctly
       if (!leadToSend.calculator_inputs.aiTier) {
@@ -46,10 +49,6 @@ export const useProposalSend = () => {
         // Force callVolume to 0 for starter plan
         leadToSend.calculator_inputs.callVolume = 0;
         console.log("Reset callVolume to 0 for starter plan");
-      } else if (leadToSend.calculator_inputs.callVolume === undefined || leadToSend.calculator_inputs.callVolume === null) {
-        // Set default callVolume if not set
-        leadToSend.calculator_inputs.callVolume = 0;
-        console.log("Set default callVolume to 0");
       }
       
       // Build the URL to our edge function
