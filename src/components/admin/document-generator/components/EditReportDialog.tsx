@@ -8,6 +8,8 @@ import { AITypeSelector } from "./edit-report/AITypeSelector";
 import { VoiceMinutesInput } from "./edit-report/VoiceMinutesInput";
 import { useEditReportState } from "../hooks/useEditReportState";
 import { CalculatorInputs } from "@/hooks/calculator/types";
+import { performCalculations } from "@/hooks/calculator/calculations";
+import { DEFAULT_AI_RATES } from "@/constants/pricing"; 
 
 interface EditReportDialogProps {
   isOpen: boolean;
@@ -25,7 +27,7 @@ export const EditReportDialog = ({ isOpen, onClose, lead, onSave }: EditReportDi
     handleCallVolumeChange,
     handleAITierChange,
     handleAITypeChange,
-    handleSave
+    handleSave: originalHandleSave
   } = useEditReportState(lead, onSave, onClose);
   
   // Current values - ensure we have non-null values for all fields
@@ -41,6 +43,52 @@ export const EditReportDialog = ({ isOpen, onClose, lead, onSave }: EditReportDi
       aiType
     });
   }, [callVolume, aiTier, aiType]);
+  
+  // Enhanced save handler that recalculates results
+  const handleSave = () => {
+    console.log("Saving with recalculation of results");
+    
+    // Create a copy of the lead to avoid reference issues
+    const leadToSave = {...editableLead};
+    
+    // Make sure we have calculator_inputs
+    if (!leadToSave.calculator_inputs) {
+      leadToSave.calculator_inputs = {} as CalculatorInputs;
+    }
+    
+    // Ensure callVolume is a number
+    if (typeof leadToSave.calculator_inputs.callVolume === 'string') {
+      leadToSave.calculator_inputs.callVolume = parseInt(leadToSave.calculator_inputs.callVolume, 10) || 0;
+    }
+    
+    // If we have enough data to recalculate, do it
+    if (leadToSave.calculator_inputs) {
+      // Create a valid CalculatorInputs object for recalculation
+      const recalcInputs: CalculatorInputs = {
+        aiTier: leadToSave.calculator_inputs.aiTier || 'growth',
+        aiType: leadToSave.calculator_inputs.aiType || 'both',
+        role: leadToSave.calculator_inputs.role || 'customerService',
+        numEmployees: leadToSave.calculator_inputs.numEmployees || Number(leadToSave.employee_count) || 5,
+        callVolume: leadToSave.calculator_inputs.callVolume || 0,
+        avgCallDuration: leadToSave.calculator_inputs.avgCallDuration || 0,
+        chatVolume: leadToSave.calculator_inputs.chatVolume || 2000,
+        avgChatLength: leadToSave.calculator_inputs.avgChatLength || 0,
+        avgChatResolutionTime: leadToSave.calculator_inputs.avgChatResolutionTime || 0
+      };
+      
+      console.log("Recalculating with inputs:", recalcInputs);
+      
+      // Perform calculation to get updated results
+      const updatedResults = performCalculations(recalcInputs, DEFAULT_AI_RATES);
+      console.log("Recalculated results:", updatedResults);
+      
+      // Update the lead with new calculation results
+      leadToSave.calculator_results = updatedResults;
+    }
+    
+    // Call the original save function with our updated lead
+    originalHandleSave(leadToSave);
+  };
   
   // Determine if we should show voice minutes input
   const showVoiceMinutes = aiTier !== 'starter' && 
