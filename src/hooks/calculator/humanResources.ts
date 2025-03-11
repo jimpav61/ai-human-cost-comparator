@@ -4,38 +4,33 @@ import { CalculatorInputs } from './types';
 import { HOURS_PER_SHIFT, DAYS_PER_WEEK, WEEKS_PER_YEAR, MONTHS_PER_YEAR } from './constants';
 
 /**
- * Calculate human resource metrics based on total employees minus one (replaced by AI)
+ * Calculate human resource metrics for one employee (the one to be replaced by AI)
  */
 export function calculateHumanResources(inputs: CalculatorInputs) {
-  // Calculate metrics for employees minus one (the one replaced by AI)
-  const employeesAfterAI = Math.max(inputs.numEmployees - 1, 0);
+  // Calculate metrics for just ONE employee (the one to be replaced by AI)
   const dailyHoursPerEmployee = HOURS_PER_SHIFT;
   const weeklyHoursPerEmployee = dailyHoursPerEmployee * DAYS_PER_WEEK;
-  const weeklyTotalHours = weeklyHoursPerEmployee * employeesAfterAI;
-  const monthlyTotalHours = (weeklyTotalHours * WEEKS_PER_YEAR) / MONTHS_PER_YEAR;
-  const yearlyTotalHours = weeklyTotalHours * WEEKS_PER_YEAR;
+  const monthlyTotalHours = (weeklyHoursPerEmployee * WEEKS_PER_YEAR) / MONTHS_PER_YEAR;
+  const yearlyTotalHours = weeklyHoursPerEmployee * WEEKS_PER_YEAR;
   
   console.log("🧪 HUMAN RESOURCES TEST:", {
-    scenario: `${inputs.numEmployees} ${inputs.role} employees, 1 replaced by AI`,
-    totalEmployees: inputs.numEmployees,
-    employeesAfterAI,
+    scenario: `Calculating hours for 1 ${inputs.role} employee to be replaced by AI`,
     dailyHoursPerEmployee,
     weeklyHoursPerEmployee,
-    weeklyTotalHours,
     monthlyTotalHours,
     yearlyTotalHours
   });
   
   return {
     dailyPerEmployee: dailyHoursPerEmployee,
-    weeklyTotal: weeklyTotalHours,
+    weeklyTotal: weeklyHoursPerEmployee,
     monthlyTotal: monthlyTotalHours,
     yearlyTotal: yearlyTotalHours
   };
 }
 
 /**
- * Calculate human resource costs based on remaining employees after AI replacement
+ * Calculate human resource costs for one employee
  */
 export function calculateHumanCosts(inputs: CalculatorInputs, monthlyHours: number) {
   const baseHourlyRate = HUMAN_HOURLY_RATES[inputs.role];
