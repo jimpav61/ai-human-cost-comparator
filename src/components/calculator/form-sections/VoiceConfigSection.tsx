@@ -38,14 +38,16 @@ export const VoiceConfigSection: React.FC<VoiceConfigSectionProps> = ({
   }, [aiTier, isStarterPlan, callVolume, onInputChange]);
   
   // Handle call volume changes
-  const handleCallVolumeChange = (value: number) => {
-    console.log(`VoiceConfigSection: Call volume changed to ${value}`);
+  const handleCallVolumeChange = (value: string) => {
+    // Ensure value is parsed as a number
+    const numericValue = parseInt(value, 10);
+    console.log(`VoiceConfigSection: Call volume changed to ${numericValue}`);
     
-    if (isStarterPlan && value > 0) {
+    if (isStarterPlan && numericValue > 0) {
       // If user tries to add minutes in starter plan, auto-upgrade to growth
       console.log("VoiceConfigSection: Call volume > 0 on starter plan, upgrading to Growth tier");
       onInputChange('aiTier', 'growth');
-      onInputChange('callVolume', value);
+      onInputChange('callVolume', numericValue);
       
       toast({
         title: "Plan Upgraded",
@@ -53,8 +55,8 @@ export const VoiceConfigSection: React.FC<VoiceConfigSectionProps> = ({
         variant: "default",
       });
     } else {
-      // Normal handling for non-starter plans
-      onInputChange('callVolume', value);
+      // Normal handling for non-starter plans - ensure we pass a number
+      onInputChange('callVolume', numericValue);
     }
   };
   
@@ -68,8 +70,8 @@ export const VoiceConfigSection: React.FC<VoiceConfigSectionProps> = ({
           Additional Voice Minutes
         </label>
         <Select
-          value={callVolume.toString()}
-          onValueChange={(value) => handleCallVolumeChange(parseInt(value))}
+          value={String(callVolume)}
+          onValueChange={handleCallVolumeChange}
           disabled={isStarterPlan}
         >
           <SelectTrigger className="calculator-input border border-red-100 focus:border-red-300">
@@ -77,7 +79,7 @@ export const VoiceConfigSection: React.FC<VoiceConfigSectionProps> = ({
           </SelectTrigger>
           <SelectContent>
             {volumeOptions.map((option) => (
-              <SelectItem key={option} value={option.toString()}>
+              <SelectItem key={option} value={String(option)}>
                 {option} minutes
               </SelectItem>
             ))}
