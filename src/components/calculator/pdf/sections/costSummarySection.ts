@@ -42,19 +42,19 @@ export const addCostSummarySection = (
     startY: startY
   };
   
-  // Create formatted cost data
+  // Create formatted cost data for one employee replacement
   const monthlySavings = formatCurrency(results.monthlySavings);
   const yearlySavings = formatCurrency(results.yearlySavings);
   const savingsPercentage = `${Math.round(results.savingsPercentage)}%`;
   
-  // Setup cost comparison table with two columns
+  // Setup cost comparison table with clarification about one employee
   autoTable(doc, {
     ...tableStyles,
     body: [
-      ['Current Estimated Monthly Cost:', formatCurrency(results.humanCostMonthly)],
+      ['Current Monthly Cost (One Employee):', formatCurrency(results.humanCostMonthly)],
       ['AI Solution Monthly Cost:', formatCurrency(results.aiCostMonthly.total)],
-      ['Monthly Savings:', { content: monthlySavings, styles: { textColor: [255, 67, 42] as [number, number, number] } }],
-      ['Annual Savings:', { content: yearlySavings, styles: { textColor: [255, 67, 42] as [number, number, number] } }],
+      ['Monthly Savings (Per Employee):', { content: monthlySavings, styles: { textColor: [255, 67, 42] as [number, number, number] } }],
+      ['Annual Savings (Per Employee):', { content: yearlySavings, styles: { textColor: [255, 67, 42] as [number, number, number] } }],
       ['Savings Percentage:', { content: savingsPercentage, styles: { textColor: [255, 67, 42] as [number, number, number] } }]
     ]
   });
