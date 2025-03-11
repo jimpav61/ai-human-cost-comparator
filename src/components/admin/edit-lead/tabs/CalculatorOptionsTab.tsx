@@ -1,3 +1,4 @@
+
 import { CalculatorInputs } from "@/hooks/useCalculator";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -25,30 +26,15 @@ export const CalculatorOptionsTab = ({
   const currentTier = calculatorInputs?.aiTier || 'starter';
   const currentAIType = calculatorInputs?.aiType || 'chatbot';
   
-  // CRITICAL FIX: Ensure callVolume is a number
+  // Ensure callVolume is a number
   let currentCallVolume = calculatorInputs?.callVolume;
   if (typeof currentCallVolume === 'string') {
     currentCallVolume = parseInt(currentCallVolume, 10) || 0;
-    console.log("CalculatorOptionsTab: Converted string callVolume to number:", currentCallVolume);
-  } else if (typeof currentCallVolume !== 'number' || isNaN(currentCallVolume)) {
+  } else if (typeof currentCallVolume !== 'number') {
     currentCallVolume = 0;
-    console.log("CalculatorOptionsTab: Reset invalid callVolume to 0");
   }
   
-  // Debug the current value
-  console.log("CalculatorOptionsTab: currentCallVolume =", currentCallVolume, "type:", typeof currentCallVolume);
-  
-  // Ensure the calculatorInputs has the correct numeric value
-  useEffect(() => {
-    if (typeof calculatorInputs.callVolume !== 'number' || 
-        calculatorInputs.callVolume !== currentCallVolume) {
-      console.log("CalculatorOptionsTab: Updating callVolume in calculatorInputs from", 
-          calculatorInputs.callVolume, "to", currentCallVolume);
-      handleCalculatorInputChange('callVolume', currentCallVolume);
-    }
-  }, []);
-  
-  // Handle changes to AI tier with proper AI type adjustment
+  // Handle changes to AI tier to ensure AI type stays consistent
   useEffect(() => {
     // If tier changed to premium, upgrade voice capabilities if applicable
     if (currentTier === 'premium') {
@@ -141,10 +127,10 @@ export const CalculatorOptionsTab = ({
     handleCalculatorInputChange('aiType', newType);
   };
   
-  // CRITICAL FIX: Handle call volume change - ensure it's stored as a number
+  // Handle call volume change - ensure it's stored as a number
   const handleCallVolumeChange = (value: string) => {
     const numericValue = parseInt(value, 10) || 0;
-    console.log(`CalculatorOptionsTab: Changing call volume from ${callVolume} to ${numericValue}, type: ${typeof numericValue}`);
+    console.log(`Changing call volume from ${callVolume} to ${numericValue}`);
     handleCalculatorInputChange('callVolume', numericValue);
   };
 
@@ -260,7 +246,7 @@ export const CalculatorOptionsTab = ({
           <div className="space-y-2">
             <Label htmlFor="callVolume" className="text-sm font-medium">Additional Voice Minutes</Label>
             <Select
-              value={String(callVolume)}
+              value={callVolume.toString()}
               onValueChange={handleCallVolumeChange}
               disabled={currentTier === 'starter'}
             >
@@ -269,7 +255,7 @@ export const CalculatorOptionsTab = ({
               </SelectTrigger>
               <SelectContent>
                 {volumeOptions.map((option) => (
-                  <SelectItem key={option} value={String(option)}>
+                  <SelectItem key={option} value={option.toString()}>
                     {option} minutes
                   </SelectItem>
                 ))}

@@ -1,4 +1,3 @@
-
 import { Lead } from "@/types/leads";
 import { DocumentGeneratorProps } from "./types";
 import { DownloadReportButton } from "./components/DownloadReportButton";
@@ -32,13 +31,9 @@ export const DocumentGenerator = ({ lead, onLeadUpdated }: ExtendedDocumentGener
       };
     }
     
-    // CRITICAL FIX: Always ensure callVolume is a number
+    // Ensure callVolume is a number
     if (typeof leadCopy.calculator_inputs.callVolume === 'string') {
       leadCopy.calculator_inputs.callVolume = parseInt(leadCopy.calculator_inputs.callVolume, 10) || 0;
-      console.log("DocumentGenerator init: Converted callVolume from string to number:", leadCopy.calculator_inputs.callVolume);
-    } else if (leadCopy.calculator_inputs.callVolume === undefined || leadCopy.calculator_inputs.callVolume === null) {
-      leadCopy.calculator_inputs.callVolume = 0;
-      console.log("DocumentGenerator init: Set missing callVolume to 0");
     }
     
     return leadCopy;
@@ -49,7 +44,6 @@ export const DocumentGenerator = ({ lead, onLeadUpdated }: ExtendedDocumentGener
     console.log("DocumentGenerator initialized with lead:", lead.id);
     console.log("Current lead calculator_inputs:", currentLead.calculator_inputs);
     console.log("Current lead calculator_results:", currentLead.calculator_results);
-    console.log("Additional voice minutes:", currentLead.calculator_inputs.callVolume, typeof currentLead.calculator_inputs.callVolume);
   }, []);
   
   // Update internal state when lead prop changes
@@ -57,7 +51,7 @@ export const DocumentGenerator = ({ lead, onLeadUpdated }: ExtendedDocumentGener
     console.log("DocumentGenerator component received lead update:", lead);
     console.log("lead.calculator_inputs.aiTier:", lead.calculator_inputs?.aiTier);
     console.log("lead.calculator_inputs.aiType:", lead.calculator_inputs?.aiType);
-    console.log("lead.calculator_inputs.callVolume:", lead.calculator_inputs?.callVolume, "type:", typeof lead.calculator_inputs?.callVolume);
+    console.log("lead.calculator_inputs.callVolume:", lead.calculator_inputs?.callVolume);
     
     // Deep clone to avoid reference issues
     const leadCopy = JSON.parse(JSON.stringify(lead));
@@ -78,27 +72,10 @@ export const DocumentGenerator = ({ lead, onLeadUpdated }: ExtendedDocumentGener
       };
     }
     
-    // CRITICAL FIX: Always ensure callVolume is a number
+    // Ensure callVolume is a number
     if (typeof leadCopy.calculator_inputs.callVolume === 'string') {
       leadCopy.calculator_inputs.callVolume = parseInt(leadCopy.calculator_inputs.callVolume, 10) || 0;
-      console.log("DocumentGenerator update: Converted callVolume from string to number:", leadCopy.calculator_inputs.callVolume);
-    } else if (leadCopy.calculator_inputs.callVolume === undefined || leadCopy.calculator_inputs.callVolume === null) {
-      leadCopy.calculator_inputs.callVolume = 0;
-      console.log("DocumentGenerator update: Set missing callVolume to 0");
-    }
-    
-    // IMPORTANT: Make sure calculator_results has the most up-to-date callVolume for proposal generation
-    if (leadCopy.calculator_results && leadCopy.calculator_results.aiCostMonthly) {
-      // Calculate the voice cost based on callVolume (12¢ per minute)
-      const voiceCost = leadCopy.calculator_inputs.callVolume * 0.12;
-      leadCopy.calculator_results.aiCostMonthly.voice = voiceCost;
-      
-      // Update the total cost
-      const basePriceMonthly = leadCopy.calculator_results.basePriceMonthly || 0;
-      leadCopy.calculator_results.aiCostMonthly.total = basePriceMonthly + voiceCost;
-      
-      console.log("Updated calculator_results with voice cost:", voiceCost);
-      console.log("Updated calculator_results total:", leadCopy.calculator_results.aiCostMonthly.total);
+      console.log("Converted callVolume from string to number:", leadCopy.calculator_inputs.callVolume);
     }
     
     setCurrentLead(leadCopy);
@@ -109,32 +86,15 @@ export const DocumentGenerator = ({ lead, onLeadUpdated }: ExtendedDocumentGener
     console.log("DocumentGenerator received lead update from child:", updatedLead);
     console.log("Updated aiTier:", updatedLead.calculator_inputs?.aiTier);
     console.log("Updated aiType:", updatedLead.calculator_inputs?.aiType);
-    console.log("Updated callVolume:", updatedLead.calculator_inputs?.callVolume, "type:", typeof updatedLead.calculator_inputs?.callVolume);
+    console.log("Updated callVolume:", updatedLead.calculator_inputs?.callVolume);
     
     // Update our local state with a deep clone
     const updatedLeadCopy = JSON.parse(JSON.stringify(updatedLead));
     
-    // CRITICAL FIX: Always ensure callVolume is a number before passing it on
+    // Ensure callVolume is a number
     if (typeof updatedLeadCopy.calculator_inputs.callVolume === 'string') {
       updatedLeadCopy.calculator_inputs.callVolume = parseInt(updatedLeadCopy.calculator_inputs.callVolume, 10) || 0;
-      console.log("DocumentGenerator handleInternalLeadUpdate: Converted callVolume from string to number:", updatedLeadCopy.calculator_inputs.callVolume);
-    } else if (updatedLeadCopy.calculator_inputs.callVolume === undefined || updatedLeadCopy.calculator_inputs.callVolume === null) {
-      updatedLeadCopy.calculator_inputs.callVolume = 0;
-      console.log("DocumentGenerator handleInternalLeadUpdate: Set missing callVolume to 0");
-    }
-    
-    // Update calculator_results with the voice cost based on callVolume
-    if (updatedLeadCopy.calculator_results && updatedLeadCopy.calculator_results.aiCostMonthly) {
-      // Calculate the voice cost based on callVolume (12¢ per minute)
-      const voiceCost = updatedLeadCopy.calculator_inputs.callVolume * 0.12;
-      updatedLeadCopy.calculator_results.aiCostMonthly.voice = voiceCost;
-      
-      // Update the total cost
-      const basePriceMonthly = updatedLeadCopy.calculator_results.basePriceMonthly || 0;
-      updatedLeadCopy.calculator_results.aiCostMonthly.total = basePriceMonthly + voiceCost;
-      
-      console.log("Updated calculator_results with voice cost:", voiceCost);
-      console.log("Updated calculator_results total:", updatedLeadCopy.calculator_results.aiCostMonthly.total);
+      console.log("Converted updated callVolume from string to number:", updatedLeadCopy.calculator_inputs.callVolume);
     }
     
     setCurrentLead(updatedLeadCopy);

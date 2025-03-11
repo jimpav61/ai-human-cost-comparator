@@ -14,7 +14,7 @@ export const useProposalSend = () => {
       console.log("Current lead calculator_results:", JSON.stringify(lead.calculator_results, null, 2)); 
       console.log("Lead AI tier:", lead.calculator_inputs?.aiTier);
       console.log("Lead AI type:", lead.calculator_inputs?.aiType);
-      console.log("Lead additional voice minutes:", lead.calculator_inputs?.callVolume, "type:", typeof lead.calculator_inputs?.callVolume);
+      console.log("Lead additional voice minutes:", lead.calculator_inputs?.callVolume);
       setIsLoading(true);
       
       // Make sure we have valid calculator inputs to use
@@ -67,9 +67,6 @@ export const useProposalSend = () => {
         // Calculate additional voice cost
         const additionalVoiceMinutes = leadToSend.calculator_inputs.callVolume || 0;
         const additionalVoiceCost = tier !== 'starter' ? additionalVoiceMinutes * 0.12 : 0;
-        
-        console.log("Final additional voice minutes:", additionalVoiceMinutes, "type:", typeof additionalVoiceMinutes);
-        console.log("Final additional voice cost:", additionalVoiceCost);
         
         // Update voice cost in results
         if (leadToSend.calculator_results.aiCostMonthly) {

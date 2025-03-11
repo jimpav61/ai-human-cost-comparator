@@ -17,7 +17,6 @@ interface EditLeadDialogProps {
 
 export const EditLeadDialog = ({ lead, isOpen, onClose, onSave }: EditLeadDialogProps) => {
   console.log("EditLeadDialog rendering. isOpen:", isOpen, "lead:", lead);
-  console.log("Initial lead callVolume:", lead.calculator_inputs?.callVolume, "type:", typeof lead.calculator_inputs?.callVolume);
 
   // Use custom hooks to manage state and logic
   const { formData, handleBasicInfoChange, setFormData } = useLeadForm(lead);
@@ -48,7 +47,6 @@ export const EditLeadDialog = ({ lead, isOpen, onClose, onSave }: EditLeadDialog
   const handleSave = () => {
     try {
       console.log("Saving lead with calculator inputs:", calculatorInputs);
-      console.log("Current callVolume being saved:", calculatorInputs.callVolume, "type:", typeof calculatorInputs.callVolume);
       console.log("Current calculation results:", calculationResults);
       
       // Ensure employee count is synced
@@ -97,7 +95,7 @@ export const EditLeadDialog = ({ lead, isOpen, onClose, onSave }: EditLeadDialog
       // CRUCIAL FIX: Make sure call volume is a number
       if (typeof calculatorInputs.callVolume === 'string') {
         calculatorInputs.callVolume = parseInt(calculatorInputs.callVolume, 10) || 0;
-        console.log("EditLeadDialog handleSave: Converted callVolume from string to number:", calculatorInputs.callVolume);
+        console.log("Converted callVolume from string to number:", calculatorInputs.callVolume);
       } else if (typeof calculatorInputs.callVolume !== 'number') {
         calculatorInputs.callVolume = 0;
       }
@@ -140,7 +138,6 @@ export const EditLeadDialog = ({ lead, isOpen, onClose, onSave }: EditLeadDialog
   useEffect(() => {
     console.log("EditLeadDialog mounted/updated. isOpen:", isOpen);
     console.log("Current calculator inputs:", calculatorInputs);
-    console.log("Current callVolume:", calculatorInputs.callVolume, "type:", typeof calculatorInputs.callVolume);
     console.log("Current calculation results:", calculationResults);
     return () => console.log("EditLeadDialog unmounted");
   }, [isOpen, calculatorInputs, calculationResults]);
