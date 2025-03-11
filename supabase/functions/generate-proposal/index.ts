@@ -5,7 +5,7 @@ import { corsHeaders } from "../_shared/cors.ts";
 console.log("Proposal generation function loaded");
 
 serve(async (req) => {
-  // Handle CORS preflight requests
+  // Handle CORS preflight requests - make sure this is properly handled
   if (req.method === "OPTIONS") {
     console.log("CORS preflight request received");
     return new Response(null, {
@@ -16,19 +16,22 @@ serve(async (req) => {
 
   try {
     console.log("Proposal generation request received");
+    console.log("Request method:", req.method);
+    console.log("Request headers:", JSON.stringify(Object.fromEntries([...req.headers]), null, 2));
     
     // Get URL parameters
     const url = new URL(req.url);
     const isPreview = url.searchParams.get('preview') === 'true';
-    console.log("Is preview mode:", isPreview);
+    console.log("Is preview mode (from URL):", isPreview);
     
     // Parse the request body
     const requestData = await req.json();
-    console.log("Request data received:", JSON.stringify(requestData, null, 2));
+    console.log("Request data keys:", Object.keys(requestData));
     
     const { lead, preview } = requestData;
     // Support preview parameter in both URL and request body
     const isPreviewMode = isPreview || preview === true;
+    console.log("Final preview mode:", isPreviewMode);
     
     if (!lead) {
       console.error("Missing lead data in request");
@@ -94,25 +97,64 @@ serve(async (req) => {
       // In preview mode, generate and return the PDF directly
       console.log("Generating preview PDF for download");
       
-      // Get company name from lead data for the filename
-      const companyName = lead.company_name || 'Client';
-      // Sanitize company name for filename
-      const safeCompanyName = companyName.replace(/[^a-z0-9]/gi, '-').toLowerCase();
-      
-      // Create a professional multi-page proposal PDF with actual lead data
-      const pdfContent = generateProfessionalProposal(lead);
-      
-      return new Response(
-        pdfContent,
-        {
-          headers: {
-            ...corsHeaders,
-            "Content-Type": "application/pdf",
-            "Content-Disposition": `attachment; filename="proposal-${safeCompanyName}.pdf"`,
-          },
-          status: 200,
+      try {
+        // Get company name from lead data for the filename
+        const companyName = lead.company_name || 'Client';
+        // Sanitize company name for filename
+        const safeCompanyName = companyName.replace(/[^a-z0-9]/gi, '-').toLowerCase();
+        
+        // Create a professional multi-page proposal PDF with actual lead data
+        const pdfContent = generateProfessionalProposal(lead);
+        
+        // For client.invoke() method, return base64 encoded PDF
+        const isInvokeMethod = req.headers.get('x-client-info')?.includes('supabase');
+        console.log("Is using invoke method:", isInvokeMethod);
+        
+        if (isInvokeMethod) {
+          console.log("Returning base64 encoded PDF for invoke method");
+          // Convert to base64 for easy transmission through JSON
+          const base64Content = btoa(pdfContent);
+          return new Response(
+            JSON.stringify(base64Content),
+            {
+              headers: {
+                ...corsHeaders,
+                "Content-Type": "application/json",
+              },
+              status: 200,
+            }
+          );
+        } else {
+          // For direct fetch, return the PDF as binary data
+          console.log("Returning binary PDF for direct fetch");
+          return new Response(
+            pdfContent,
+            {
+              headers: {
+                ...corsHeaders,
+                "Content-Type": "application/pdf",
+                "Content-Disposition": `attachment; filename="proposal-${safeCompanyName}.pdf"`,
+              },
+              status: 200,
+            }
+          );
         }
-      );
+      } catch (pdfError) {
+        console.error("Error generating PDF:", pdfError);
+        return new Response(
+          JSON.stringify({ 
+            error: "Failed to generate PDF: " + pdfError.message,
+            stack: pdfError.stack 
+          }),
+          {
+            headers: {
+              ...corsHeaders,
+              "Content-Type": "application/json",
+            },
+            status: 500,
+          }
+        );
+      }
     } else {
       // Original email sending logic
       console.log("Proposal generation successful, returning response");
@@ -133,11 +175,13 @@ serve(async (req) => {
       );
     }
   } catch (error) {
-    console.error("Error in proposal generation:", error.message, error.stack);
+    console.error("Error in proposal generation:", error.message);
+    console.error("Stack trace:", error.stack);
     
     return new Response(
       JSON.stringify({
         error: "Failed to generate proposal: " + error.message,
+        stack: error.stack,
         timestamp: new Date().toISOString(),
       }),
       {
