@@ -1,4 +1,3 @@
-
 import { serve } from "https://deno.land/std@0.177.0/http/server.ts";
 import { corsHeaders } from "../_shared/cors.ts";
 
@@ -237,14 +236,14 @@ function generateProfessionalProposal(lead) {
   // Get price details from calculator results first, then fall back to tier defaults
   const monthlyPrice = calculatorResults.basePriceMonthly || 
                       (aiTier === 'starter' ? 99 : 
-                      aiTier === 'growth' ? 229 :
-                      aiTier === 'premium' ? 429 : 229);
+                       aiTier === 'growth' ? 229 :
+                       aiTier === 'premium' ? 429 : 229);
   
   // Updated setup fees - use the results first, then fall back to defaults
   const setupFee = calculatorResults.aiCostMonthly?.setupFee ||
                   (aiTier === 'starter' ? 249 :
-                  aiTier === 'growth' ? 749 :
-                  aiTier === 'premium' ? 1149 : 749);
+                   aiTier === 'growth' ? 749 :
+                   aiTier === 'premium' ? 1149 : 749);
   
   // Get voice details - different for each tier
   const includedVoiceMinutes = aiTier === 'starter' ? 0 : 600;
@@ -262,68 +261,96 @@ function generateProfessionalProposal(lead) {
         additionalVoiceMinutes = calculatorInputs.callVolume;
       }
       
-      console.log("Proposal generation - Found callVolume in inputs:", calculatorInputs.callVolume, 
-                  "Parsed as:", additionalVoiceMinutes);
-    }
-    
-    // If we couldn't find callVolume directly, try to parse nested properties
-    if (additionalVoiceMinutes === 0 && typeof calculatorInputs === 'object') {
-      // Check for nested properties that might contain callVolume
-      Object.keys(calculatorInputs).forEach(key => {
-        const value = calculatorInputs[key];
-        if (typeof value === 'object' && value && 'callVolume' in value) {
-          const callVol = value.callVolume;
-          if (typeof callVol === 'string') {
-            additionalVoiceMinutes = parseInt(callVol, 10) || 0;
-          } else if (typeof callVol === 'number') {
-            additionalVoiceMinutes = callVol;
-          }
-          console.log("Proposal generation - Found callVolume in nested property:", key, 
-                      "Value:", callVol, "Parsed as:", additionalVoiceMinutes);
-        }
-      });
+      console.log("Using additional voice minutes from inputs:", additionalVoiceMinutes);
+    } else {
+      // Try to calculate from voice costs in results
+      if (calculatorResults.aiCostMonthly && calculatorResults.aiCostMonthly.voice > 0) {
+        // If we have voice costs in the results, calculate the minutes (at 12¢ per minute)
+        additionalVoiceMinutes = Math.round(calculatorResults.aiCostMonthly.voice / 0.12);
+        console.log("Calculated additional voice minutes from costs:", additionalVoiceMinutes);
+      }
     }
   }
   
-  // Log voice minutes for debugging
-  console.log("Proposal generation - included voice minutes:", includedVoiceMinutes);
-  console.log("Proposal generation - additional voice minutes:", additionalVoiceMinutes);
+  console.log("Final additional voice minutes:", additionalVoiceMinutes);
   
-  // Calculate voice cost with clear rate (12 cents per minute)
-  const voiceCostPerMinute = 0.12;
-  const voiceCost = aiTier !== 'starter' && additionalVoiceMinutes > 0 
-    ? additionalVoiceMinutes * voiceCostPerMinute 
-    : 0;
+  // Calculate any voice costs based on additional minutes
+  let voiceCost = 0;
+  if (additionalVoiceMinutes > 0 && aiTier !== 'starter') {
+    voiceCost = additionalVoiceMinutes * 0.12;
+    console.log("Calculated voice cost:", voiceCost);
+  } else if (calculatorResults.aiCostMonthly && calculatorResults.aiCostMonthly.voice > 0) {
+    // If we have voice costs in the results, use them directly
+    voiceCost = calculatorResults.aiCostMonthly.voice;
+    console.log("Using voice cost from results:", voiceCost);
+  }
   
   // Total monthly cost - ensure voice cost is included
-  const totalMonthlyCost = monthlyPrice + voiceCost;
+  const totalMonthlyCost = calculatorResults.aiCostMonthly?.total || (monthlyPrice + voiceCost);
   
   // CRITICAL FIX: Use calculator results values directly for financial data
-  // Extract these values directly from calculatorResults instead of calculating our own
-  const humanCostMonthly = calculatorResults.humanCostMonthly || 15000;
-  const monthlySavings = calculatorResults.monthlySavings || (humanCostMonthly - totalMonthlyCost);
-  const yearlySavings = calculatorResults.yearlySavings || (monthlySavings * 12);
-  const savingsPercentage = calculatorResults.savingsPercentage || 
-                          (humanCostMonthly > 0 ? Math.round((monthlySavings / humanCostMonthly) * 100) : 80);
+  // Exact values from calculationResults are crucial for consistency with the report
+  // Add extensive logging to help debug any issues
+  console.log("Original humanCostMonthly from results:", calculatorResults.humanCostMonthly);
+  console.log("Original monthlySavings from results:", calculatorResults.monthlySavings);
+  console.log("Original yearlySavings from results:", calculatorResults.yearlySavings);
+  console.log("Original savingsPercentage from results:", calculatorResults.savingsPercentage);
   
-  // Calculate annual plan price
-  const annualPlan = calculatorResults.annualPlan || (totalMonthlyCost * 10);
+  // Use exact values from calculatorResults, ensuring realistic defaults if missing
+  const humanCostMonthly = calculatorResults.humanCostMonthly !== undefined 
+    ? calculatorResults.humanCostMonthly 
+    : 15000;
+    
+  const monthlySavings = calculatorResults.monthlySavings !== undefined 
+    ? calculatorResults.monthlySavings 
+    : (humanCostMonthly - totalMonthlyCost);
+    
+  const yearlySavings = calculatorResults.yearlySavings !== undefined
+    ? calculatorResults.yearlySavings
+    : (monthlySavings * 12);
+    
+  const savingsPercentage = calculatorResults.savingsPercentage !== undefined
+    ? calculatorResults.savingsPercentage
+    : (humanCostMonthly > 0 ? Math.round((monthlySavings / humanCostMonthly) * 100) : 80);
+  
+  // Calculate annual plan price - ensure it matches the report
+  const annualPlan = calculatorResults.annualPlan !== undefined
+    ? calculatorResults.annualPlan
+    : (totalMonthlyCost * 10);
+  
+  // Log final values for debugging
+  console.log("FINAL VALUES FOR PROPOSAL:");
+  console.log("humanCostMonthly:", humanCostMonthly);
+  console.log("monthlySavings:", monthlySavings);
+  console.log("yearlySavings:", yearlySavings);
+  console.log("savingsPercentage:", savingsPercentage);
+  console.log("annualPlan:", annualPlan);
+  console.log("totalMonthlyCost:", totalMonthlyCost);
   
   // Calculate ROI details with defaults if missing
   const breakEvenPoint = Math.ceil(setupFee / (monthlySavings || 1000));
-  const firstYearROI = Math.round(((yearlySavings || 12000) - setupFee) / (totalMonthlyCost * 12 + setupFee) * 100);
-  const fiveYearSavings = (yearlySavings || 12000) * 5 - (totalMonthlyCost * 12 * 5 + setupFee);
   
-  // Log values for debugging
-  console.log("PDF Generation values:", {
+  // Generate current date for the proposal
+  const today = new Date();
+  const formattedDate = `${today.toLocaleString('default', { month: 'long' })} ${today.getDate()}, ${today.getFullYear()}`;
+  
+  // Format all monetary values for display
+  const formatCurrency = (amount) => {
+    return new Intl.NumberFormat('en-US', {
+      style: 'currency',
+      currency: 'USD',
+      minimumFractionDigits: 2
+    }).format(amount);
+  };
+  
+  // Log the specific values that will be shown in the PDF
+  console.log("PDF Values:", {
     tierName,
     aiTypeDisplay,
     monthlyPrice,
-    includedVoiceMinutes,
-    additionalVoiceMinutes,
-    voiceCost,
-    totalMonthlyCost,
     setupFee,
+    additionalVoiceMinutes,
+    includedVoiceMinutes,
     humanCostMonthly,
     monthlySavings,
     yearlySavings,
@@ -332,11 +359,11 @@ function generateProfessionalProposal(lead) {
   });
   
   // Brand Colors
-  const brandOrange = "0.965 0.322 0.157";
-  const brandBlack = "0 0 0";
-  const brandWhite = "1 1 1";
+  const brandRed = "#ff432a";  // Main brand color
+  const brandDarkBlue = "#1a202c"; // Dark blue for headings
   
-  // Create PDF content
+  // Generate PDF content - the template is kept mostly the same, 
+  // but values are now from calculator_results
   let pdfContent = `
 %PDF-1.7
 1 0 obj
@@ -427,7 +454,7 @@ endobj
 << /Length 3300 >>
 stream
 q
-${brandOrange} rg
+${brandRed} rg
 0 792 612 -70 re f
 0 0 0 rg
 BT
@@ -441,7 +468,7 @@ BT
 (Prepared exclusively for ${companyName}) Tj
 /F2 18 Tf
 0 -50 Td
-${brandOrange} rg
+${brandRed} rg
 (EXECUTIVE SUMMARY) Tj
 0 0 0 rg
 0 -25 Td
@@ -455,7 +482,7 @@ ${brandOrange} rg
 (enhance customer experiences across industries.) Tj
 0 -40 Td
 /F2 16 Tf
-${brandOrange} rg
+${brandRed} rg
 (KEY BENEFITS) Tj
 0 0 0 rg
 0 -25 Td
@@ -463,7 +490,7 @@ ${brandOrange} rg
 
 (\\267 Reduction in operational costs by up to ${savingsPercentage}%) Tj
 0 -20 Td
-(\\267 Estimated annual savings of $${formatNumber(yearlySavings)}) Tj
+(\\267 Estimated annual savings of $${formatCurrency(yearlySavings)}) Tj
 0 -20 Td
 (\\267 24/7 customer service availability without additional staffing costs) Tj
 0 -20 Td
@@ -473,7 +500,7 @@ ${brandOrange} rg
 0 0 0 rg
 0 -40 Td
 /F2 16 Tf
-${brandOrange} rg
+${brandRed} rg
 (CONTACT INFORMATION) Tj
 0 0 0 rg
 0 -25 Td
@@ -489,7 +516,7 @@ ${brandOrange} rg
 BT
 /F2 14 Tf
 72 90 Td
-${brandOrange} rg
+${brandRed} rg
 (Selected Plan: ${tierName} - ${aiTypeDisplay}) Tj
 0 0 0 rg
 ET
@@ -501,7 +528,7 @@ endobj
 << /Length 3500 >>
 stream
 q
-${brandOrange} rg
+${brandRed} rg
 0 792 612 -70 re f
 0 0 0 rg
 BT
@@ -512,7 +539,7 @@ BT
 0 0 0 rg
 0 -45 Td
 /F2 18 Tf
-${brandOrange} rg
+${brandRed} rg
 (${tierName} - ${aiTypeDisplay}) Tj
 0 0 0 rg
 0 -30 Td
@@ -522,7 +549,7 @@ ${brandOrange} rg
 (${aiTypeDisplay} capabilities as the optimal solution for ${companyName}.) Tj
 0 -40 Td
 /F2 16 Tf
-${brandOrange} rg
+${brandRed} rg
 (Solution Features:) Tj
 0 0 0 rg
 0 -25 Td
@@ -541,7 +568,7 @@ ${brandOrange} rg
 0 0 0 rg
 0 -40 Td
 /F2 16 Tf
-${brandOrange} rg
+${brandRed} rg
 (Technical Specifications:) Tj
 0 0 0 rg
 0 -25 Td
@@ -587,7 +614,7 @@ ${brandOrange} rg
 BT
 /F2 16 Tf
 72 195 Td
-${brandOrange} rg
+${brandRed} rg
 (Implementation Timeline:) Tj
 0 0 0 rg
 0 -25 Td
@@ -610,7 +637,7 @@ endobj
 << /Length 3700 >>
 stream
 q
-${brandOrange} rg
+${brandRed} rg
 0 792 612 -70 re f
 0 0 0 rg
 BT
@@ -621,7 +648,7 @@ BT
 0 0 0 rg
 0 -45 Td
 /F2 18 Tf
-${brandOrange} rg
+${brandRed} rg
 (Investment Details) Tj
 0 0 0 rg
 0 -30 Td
@@ -681,7 +708,7 @@ ${brandOrange} rg
 -190 -45 Td
 
 /F2 18 Tf
-${brandOrange} rg
+${brandRed} rg
 (Cost Comparison and Savings) Tj
 0 0 0 rg
 0 -30 Td
@@ -696,25 +723,25 @@ ${brandOrange} rg
 -190 -25 Td
 (Monthly Savings:) Tj
 190 0 Td
-${brandOrange} rg
+${brandRed} rg
 (${formatCurrency(monthlySavings)}/month) Tj
 0 0 0 rg
 -190 -25 Td
 (Annual Savings:) Tj
 190 0 Td
-${brandOrange} rg
+${brandRed} rg
 (${formatCurrency(yearlySavings)}/year) Tj
 0 0 0 rg
 -190 -25 Td
 (Savings Percentage:) Tj
 190 0 Td
-${brandOrange} rg
+${brandRed} rg
 (${savingsPercentage}%) Tj
 0 0 0 rg
 -190 -45 Td
 
 /F2 18 Tf
-${brandOrange} rg
+${brandRed} rg
 (Return on Investment) Tj
 0 0 0 rg
 0 -30 Td
@@ -736,7 +763,7 @@ endobj
 << /Length 3000 >>
 stream
 q
-${brandOrange} rg
+${brandRed} rg
 0 792 612 -70 re f
 0 0 0 rg
 BT
@@ -747,12 +774,12 @@ BT
 0 0 0 rg
 0 -45 Td
 /F2 18 Tf
-${brandOrange} rg
+${brandRed} rg
 (Implementation Process) Tj
 0 0 0 rg
 0 -30 Td
 /F1 13 Tf
-${brandOrange} rg
+${brandRed} rg
 (1. Discovery Workshop) Tj
 0 0 0 rg
 0 -20 Td
@@ -762,7 +789,7 @@ ${brandOrange} rg
 0 -20 Td
 (   \\267 Development of implementation roadmap and timeline) Tj
 0 -30 Td
-${brandOrange} rg
+${brandRed} rg
 (2. Development and Customization) Tj
 0 0 0 rg
 0 -20 Td
@@ -772,7 +799,7 @@ ${brandOrange} rg
 0 -20 Td
 (   \\267 Integration with your existing systems and workflows) Tj
 0 -30 Td
-${brandOrange} rg
+${brandRed} rg
 (3. Testing and Deployment) Tj
 0 0 0 rg
 0 -20 Td
@@ -782,7 +809,7 @@ ${brandOrange} rg
 0 -20 Td
 (   \\267 Performance monitoring and fine-tuning) Tj
 0 -30 Td
-${brandOrange} rg
+${brandRed} rg
 (4. Training and Adoption) Tj
 0 0 0 rg
 0 -20 Td
@@ -794,7 +821,7 @@ ${brandOrange} rg
 
 0 -40 Td
 /F2 18 Tf
-${brandOrange} rg
+${brandRed} rg
 (Next Steps) Tj
 0 0 0 rg
 0 -30 Td
@@ -809,7 +836,7 @@ ${brandOrange} rg
 0 0 0 rg
 0 -40 Td
 /F2 16 Tf
-${brandOrange} rg
+${brandRed} rg
 (For questions or to move forward, please contact us at:) Tj
 0 0 0 rg
 0 -30 Td
@@ -903,4 +930,3 @@ startxref
     return new Intl.NumberFormat('en-US').format(value);
   }
 }
-

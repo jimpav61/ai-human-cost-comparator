@@ -19,14 +19,23 @@ export const calculatePricingDetails = (inputs: CalculatorInputs): PricingDetail
   // Calculate any additional voice costs
   // Always use 600 minutes for included voice in growth and premium plans
   const includedVoiceMinutes = inputs.aiTier === 'starter' ? 0 : 600;
-  const totalVoiceMinutes = inputs.aiTier !== 'starter' ? includedVoiceMinutes + inputs.callVolume : 0;
-  const extraVoiceMinutes = inputs.callVolume;
+  
+  // Ensure callVolume is a number
+  const extraVoiceMinutes = typeof inputs.callVolume === 'number' 
+    ? inputs.callVolume 
+    : parseInt(String(inputs.callVolume || '0'), 10) || 0;
+    
+  console.log("pricingDetailsCalculator: callVolume =", inputs.callVolume, "extraVoiceMinutes =", extraVoiceMinutes);
+  
+  const totalVoiceMinutes = inputs.aiTier !== 'starter' ? includedVoiceMinutes + extraVoiceMinutes : 0;
+  
   let additionalVoiceCost = 0;
   
   if (extraVoiceMinutes > 0 && inputs.aiTier !== 'starter') {
     // Always use 12¢ per minute for additional voice minutes
     const additionalMinuteRate = 0.12;
     additionalVoiceCost = extraVoiceMinutes * additionalMinuteRate;
+    console.log("pricingDetailsCalculator: Additional voice cost =", additionalVoiceCost);
   }
   
   // Total monthly cost

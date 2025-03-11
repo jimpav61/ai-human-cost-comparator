@@ -13,8 +13,13 @@ export const VoiceMinutesInput = ({ value, onChange }: VoiceMinutesInputProps) =
   const displayValue = typeof value === 'number' ? value : parseInt(String(value || '0'), 10) || 0;
   
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    // Parse to number and pass to parent
+    // Parse to number and pass to parent - ensure we're always passing a number
     const numValue = parseInt(e.target.value, 10) || 0;
+    
+    // Log the value being set for debugging
+    console.log("VoiceMinutesInput: Setting call volume to:", numValue);
+    
+    // Always pass a number to the parent component
     onChange(numValue);
   };
 
