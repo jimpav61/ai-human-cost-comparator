@@ -43,7 +43,8 @@ export function initializeLeadData(lead: Lead): Lead {
   }
   
   // Fix for 'standard' tier which should be mapped to 'growth'
-  if (leadCopy.calculator_inputs.aiTier === 'standard') {
+  // Use type safe comparison with string value
+  if (typeof leadCopy.calculator_inputs.aiTier === 'string' && leadCopy.calculator_inputs.aiTier === 'standard') {
     leadCopy.calculator_inputs.aiTier = 'growth';
     console.log("Fixed 'standard' tier to 'growth'");
   }
