@@ -4,6 +4,7 @@ import { Button } from "@/components/ui/button";
 import { Eye } from "lucide-react";
 import { Lead } from "@/types/leads";
 import { useProposalPreview } from "../hooks/useProposalPreview";
+import { toast } from "@/hooks/use-toast";
 
 interface PreviewProposalButtonProps {
   lead: Lead;
@@ -20,10 +21,24 @@ export const PreviewProposalButton = ({ lead, disabled }: PreviewProposalButtonP
     
     if (!lead.calculator_inputs || !lead.calculator_results) {
       console.error("Missing calculator data");
+      toast({
+        title: "Missing Data",
+        description: "Calculator data is missing. Please edit the lead and configure calculator options first.",
+        variant: "destructive",
+      });
       return;
     }
     
-    await handlePreviewProposal(lead);
+    try {
+      await handlePreviewProposal(lead);
+    } catch (error) {
+      console.error("Error in preview button click handler:", error);
+      toast({
+        title: "Error",
+        description: "Failed to preview proposal. Please try again.",
+        variant: "destructive",
+      });
+    }
   };
   
   return (

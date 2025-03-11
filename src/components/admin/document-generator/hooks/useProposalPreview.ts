@@ -2,6 +2,8 @@
 import { useState } from "react";
 import { Lead } from "@/types/leads";
 import { toast } from "@/hooks/use-toast";
+import { generatePDF } from "@/components/calculator/pdf";
+import { getSafeFileName } from "./report-generator/saveReport";
 
 export const useProposalPreview = () => {
   const [isLoading, setIsLoading] = useState(false);
@@ -89,31 +91,105 @@ export const useProposalPreview = () => {
       console.log("Sending lead with calculator_inputs:", JSON.stringify(leadToSend.calculator_inputs, null, 2));
       console.log("Sending lead with calculator_results:", JSON.stringify(leadToSend.calculator_results, null, 2));
       
-      // Make the request - ensure we're passing the complete lead object with latest calculator data
-      const response = await fetch(apiUrl.toString(), {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          lead: leadToSend,
-          preview: true
-        }),
-      });
-      
-      if (!response.ok) {
-        const error = await response.json();
-        throw new Error(error.message || "Failed to generate proposal");
+      try {
+        // Make the request - ensure we're passing the complete lead object with latest calculator data
+        const response = await fetch(apiUrl.toString(), {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            lead: leadToSend,
+            preview: true
+          }),
+        });
+        
+        if (!response.ok) {
+          const error = await response.json();
+          throw new Error(error.message || "Failed to generate proposal");
+        }
+        
+        // Get the PDF binary data
+        const blob = await response.blob();
+        
+        // Create a URL for the blob
+        const url = URL.createObjectURL(blob);
+        
+        // Open it in a new window
+        window.open(url, '_blank');
+      } catch (fetchError) {
+        console.error("Error fetching from edge function:", fetchError);
+        console.log("Falling back to client-side PDF generation");
+        
+        // FALLBACK: Generate PDF locally if edge function fails
+        // Format tier and AI type display names
+        const aiTier = leadToSend.calculator_inputs.aiTier || 'growth';
+        const aiType = leadToSend.calculator_inputs.aiType || 'chatbot';
+        
+        const tierName = aiTier === 'starter' ? 'Starter Plan' : 
+                        aiTier === 'growth' ? 'Growth Plan' : 
+                        aiTier === 'premium' ? 'Premium Plan' : 'Growth Plan';
+                        
+        const aiTypeDisplay = aiType === 'chatbot' ? 'Text Only' : 
+                            aiType === 'voice' ? 'Basic Voice' : 
+                            aiType === 'conversationalVoice' ? 'Conversational Voice' : 
+                            aiType === 'both' ? 'Text & Basic Voice' : 
+                            aiType === 'both-premium' ? 'Text & Conversational Voice' : 'Text Only';
+                            
+        // Generate the PDF
+        const doc = generatePDF({
+          contactInfo: leadToSend.name || 'Valued Client',
+          companyName: leadToSend.company_name || 'Your Company',
+          email: leadToSend.email || 'client@example.com',
+          phoneNumber: leadToSend.phone_number || '',
+          industry: leadToSend.industry || 'Other',
+          employeeCount: Number(leadToSend.employee_count) || 5,
+          results: leadToSend.calculator_results,
+          additionalVoiceMinutes: Number(leadToSend.calculator_inputs.callVolume) || 0,
+          includedVoiceMinutes: aiTier === 'starter' ? 0 : 600,
+          tierName: tierName,
+          aiType: aiTypeDisplay,
+          businessSuggestions: [
+            {
+              title: "Automate Common Customer Inquiries",
+              description: "Implement an AI chatbot to handle frequently asked questions, reducing wait times and freeing up human agents."
+            },
+            {
+              title: "Enhance After-Hours Support",
+              description: "Deploy voice AI to provide 24/7 customer service without increasing staffing costs."
+            },
+            {
+              title: "Streamline Onboarding Process",
+              description: "Use AI assistants to guide new customers through product setup and initial questions."
+            }
+          ],
+          aiPlacements: [
+            {
+              role: "Front-line Customer Support",
+              capabilities: ["Handle basic inquiries", "Process simple requests", "Collect customer information"]
+            },
+            {
+              role: "Technical Troubleshooting",
+              capabilities: ["Guide users through common issues", "Recommend solutions based on symptoms", "Escalate complex problems to human agents"]
+            },
+            {
+              role: "Sales Assistant",
+              capabilities: ["Answer product questions", "Provide pricing information", "Schedule demonstrations with sales team"]
+            }
+          ]
+        });
+        
+        // Save the PDF with a proper name
+        const safeCompanyName = getSafeFileName(leadToSend);
+        doc.save(`${safeCompanyName}-ChatSites-Proposal.pdf`);
+        
+        // Alert the user that we used local generation
+        toast({
+          title: "Local PDF generation used",
+          description: "We couldn't connect to our servers, so we generated the proposal locally.",
+          variant: "default",
+        });
       }
-      
-      // Get the PDF binary data
-      const blob = await response.blob();
-      
-      // Create a URL for the blob
-      const url = URL.createObjectURL(blob);
-      
-      // Open it in a new window
-      window.open(url, '_blank');
       
       setIsLoading(false);
     } catch (error) {
