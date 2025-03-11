@@ -28,10 +28,13 @@ serve(async (req) => {
     const requestData = await req.json();
     console.log("Request data keys:", Object.keys(requestData));
     
-    const { lead, preview } = requestData;
+    const { lead, preview, saveRevision, returnContent } = requestData;
     // Support preview parameter in both URL and request body
     const isPreviewMode = isPreview || preview === true;
+    // Flag to determine if we should return the raw content instead of PDF
+    const shouldReturnContent = returnContent === true;
     console.log("Final preview mode:", isPreviewMode);
+    console.log("Return content flag:", shouldReturnContent);
     
     if (!lead) {
       console.error("Missing lead data in request");
@@ -105,6 +108,26 @@ serve(async (req) => {
         
         // Create a professional multi-page proposal PDF with actual lead data
         const pdfContent = generateProfessionalProposal(lead);
+        
+        // If returnContent flag is set, return the raw content instead of PDF
+        if (shouldReturnContent) {
+          console.log("Returning raw proposal content as requested");
+          return new Response(
+            JSON.stringify({
+              proposalContent: pdfContent,
+              title: `Proposal for ${companyName}`,
+              notes: `Generated proposal for ${companyName} on ${new Date().toLocaleString()}`,
+              leadId: lead.id
+            }),
+            {
+              headers: {
+                ...corsHeaders,
+                "Content-Type": "application/json",
+              },
+              status: 200,
+            }
+          );
+        }
         
         // For client.invoke() method, return base64 encoded PDF
         const isInvokeMethod = req.headers.get('x-client-info')?.includes('supabase');

@@ -182,6 +182,50 @@ export type Database = {
         }
         Relationships: []
       }
+      proposal_revisions: {
+        Row: {
+          created_at: string
+          created_by: string | null
+          id: string
+          is_sent: boolean
+          lead_id: string
+          notes: string | null
+          proposal_content: string
+          title: string
+          version_number: number
+        }
+        Insert: {
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          is_sent?: boolean
+          lead_id: string
+          notes?: string | null
+          proposal_content: string
+          title?: string
+          version_number: number
+        }
+        Update: {
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          is_sent?: boolean
+          lead_id?: string
+          notes?: string | null
+          proposal_content?: string
+          title?: string
+          version_number?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "proposal_revisions_lead_id_fkey"
+            columns: ["lead_id"]
+            isOneToOne: false
+            referencedRelation: "leads"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       user_roles: {
         Row: {
           created_at: string | null
@@ -208,6 +252,12 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      get_next_proposal_version: {
+        Args: {
+          p_lead_id: string
+        }
+        Returns: number
+      }
       has_role: {
         Args: {
           role_to_check: Database["public"]["Enums"]["app_role"]
