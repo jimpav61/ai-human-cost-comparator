@@ -44,16 +44,15 @@ export const generatePDF = (params: GeneratePDFParams): JsPDFWithAutoTable => {
     validatedParams.employeeCount
   );
 
-  // Add selected plan details - explicitly pass basePrice from results
+  // Add selected plan details
   currentY = addPlanSection(
     doc, 
     currentY, 
     validatedParams.tierName, 
     validatedParams.aiType,
-    validatedParams.results.aiCostMonthly?.setupFee || 0,
+    validatedParams.results.aiCostMonthly?.setupFee,
     validatedParams.includedVoiceMinutes,
-    validatedParams.additionalVoiceMinutes,
-    validatedParams.results.basePriceMonthly || 0
+    validatedParams.additionalVoiceMinutes
   );
 
   // Add cost summary table

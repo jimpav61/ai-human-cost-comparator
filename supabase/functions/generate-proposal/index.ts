@@ -1,3 +1,4 @@
+
 import { serve } from "https://deno.land/std@0.177.0/http/server.ts";
 import { corsHeaders } from "../_shared/cors.ts";
 
@@ -225,12 +226,12 @@ function generateProfessionalProposal(lead) {
   const email = lead.email || 'client@example.com';
   const phoneNumber = lead.phone_number || 'Not provided';
   const industry = lead.industry || 'Technology';
-  const employeeCount = parseInt(lead.employee_count || '1', 10);
+  const employeeCount = lead.employee_count || '10';
   
   // Log complete lead data for debugging
   console.log("Full lead data for proposal generation:", JSON.stringify(lead, null, 2));
   
-  // Extract calculator data and ensure proper typing
+  // Get calculator data if available
   let calculatorInputs = {};
   let calculatorResults = {};
   
@@ -245,10 +246,12 @@ function generateProfessionalProposal(lead) {
     console.log("Found calculator results in lead:", JSON.stringify(calculatorResults, null, 2));
   }
   
-  // Handle string parsing if needed
+  // Enhanced parsing for calculator inputs and results
+  // Handle case where they might be strings
   if (typeof calculatorInputs === 'string') {
     try {
       calculatorInputs = JSON.parse(calculatorInputs);
+      console.log("Parsed calculator_inputs from string:", JSON.stringify(calculatorInputs, null, 2));
     } catch (e) {
       console.error("Error parsing calculator_inputs:", e);
       calculatorInputs = {};
@@ -258,14 +261,17 @@ function generateProfessionalProposal(lead) {
   if (typeof calculatorResults === 'string') {
     try {
       calculatorResults = JSON.parse(calculatorResults);
+      console.log("Parsed calculator_results from string:", JSON.stringify(calculatorResults, null, 2));
     } catch (e) {
       console.error("Error parsing calculator_results:", e);
       calculatorResults = {};
     }
   }
   
-  // Get AI plan details
+  // Determine AI plan details from inputs
+  // Default to growth plan if no tier is specified
   const aiTier = (calculatorInputs.aiTier || calculatorResults.tierKey || 'growth').toLowerCase();
+  console.log("Proposal generation - AI Tier:", aiTier);
   
   // Get display names based on tier
   const tierName = aiTier === 'starter' ? 'Starter Plan' : 
@@ -295,66 +301,87 @@ function generateProfessionalProposal(lead) {
     aiTypeDisplay = 'Text & Basic Voice';
   }
   
-  // Get base price and setup fee
+  // Get price details from calculator results first, then fall back to tier defaults
   const monthlyPrice = calculatorResults.basePriceMonthly || 
                       (aiTier === 'starter' ? 99 : 
                        aiTier === 'growth' ? 229 :
                        aiTier === 'premium' ? 429 : 229);
   
+  // Updated setup fees - use the results first, then fall back to defaults
   const setupFee = calculatorResults.aiCostMonthly?.setupFee ||
                   (aiTier === 'starter' ? 249 :
                    aiTier === 'growth' ? 749 :
                    aiTier === 'premium' ? 1149 : 749);
   
-  // Voice minutes calculation
+  // Get voice details - different for each tier
   const includedVoiceMinutes = aiTier === 'starter' ? 0 : 600;
   
-  // Get additional voice minutes from inputs - make sure we parse it as a number
+  // Improved call volume extraction with better type handling
   let additionalVoiceMinutes = 0;
+  
   if (aiTier !== 'starter') {
-    if (calculatorInputs.callVolume !== undefined) {
-      additionalVoiceMinutes = Number(calculatorInputs.callVolume) || 0;
-      console.log("Additional voice minutes from callVolume:", additionalVoiceMinutes);
+    // First check if callVolume exists as a direct property
+    if (calculatorInputs && 'callVolume' in calculatorInputs) {
+      // Handle different types - ensure we have a number
+      if (typeof calculatorInputs.callVolume === 'string') {
+        additionalVoiceMinutes = parseInt(calculatorInputs.callVolume, 10) || 0;
+      } else if (typeof calculatorInputs.callVolume === 'number') {
+        additionalVoiceMinutes = calculatorInputs.callVolume;
+      }
+      
+      console.log("Using additional voice minutes from inputs:", additionalVoiceMinutes);
+    } else {
+      // Try to calculate from voice costs in results
+      if (calculatorResults.aiCostMonthly && calculatorResults.aiCostMonthly.voice > 0) {
+        // If we have voice costs in the results, calculate the minutes (at 12¢ per minute)
+        additionalVoiceMinutes = Math.round(calculatorResults.aiCostMonthly.voice / 0.12);
+        console.log("Calculated additional voice minutes from costs:", additionalVoiceMinutes);
+      }
     }
   }
   
-  // Calculate voice costs - CRITICAL: Define voiceCost properly for the PDF template
+  console.log("Final additional voice minutes:", additionalVoiceMinutes);
+  
+  // Calculate any voice costs based on additional minutes
+  let voiceCost = 0;
   const voiceCostPerMinute = 0.12;
-  const additionalVoiceCost = additionalVoiceMinutes * voiceCostPerMinute;
-  // Explicitly define voiceCost variable to fix undefined issue in the template
-  const voiceCost = additionalVoiceCost;
-  console.log("Voice cost explicitly defined:", voiceCost);
   
-  // Calculate total monthly cost
-  const totalMonthlyCost = monthlyPrice + additionalVoiceCost;
-  
-  // CRITICAL: Calculate human cost for ONE employee only
-  let humanCostPerEmployee = 0;
-  
-  if (calculatorResults.humanCostMonthly !== undefined) {
-    const totalHumanCost = typeof calculatorResults.humanCostMonthly === 'number' 
-      ? calculatorResults.humanCostMonthly 
-      : parseFloat(calculatorResults.humanCostMonthly);
-      
-    // Get the employee count, ensuring it's at least 1
-    const numEmployees = Math.max(1, calculatorInputs.numEmployees || employeeCount || 1);
-    
-    // Calculate the per-employee cost
-    humanCostPerEmployee = totalHumanCost / numEmployees;
-    
-    console.log("Total human cost:", totalHumanCost);
-    console.log("Employee count used for calculation:", numEmployees);
-    console.log("Human cost per employee:", humanCostPerEmployee);
-  } else {
-    // Default to $5000 per employee if no data available
-    humanCostPerEmployee = 5000;
-    console.log("Using default human cost per employee:", humanCostPerEmployee);
+  if (additionalVoiceMinutes > 0 && aiTier !== 'starter') {
+    voiceCost = additionalVoiceMinutes * voiceCostPerMinute;
+    console.log("Calculated voice cost:", voiceCost);
+  } else if (calculatorResults.aiCostMonthly && calculatorResults.aiCostMonthly.voice > 0) {
+    // If we have voice costs in the results, use them directly
+    voiceCost = calculatorResults.aiCostMonthly.voice;
+    console.log("Using voice cost from results:", voiceCost);
   }
   
-  // Calculate savings based on ONE employee
-  const monthlySavings = humanCostPerEmployee - totalMonthlyCost;
-  const yearlySavings = monthlySavings * 12;
-  const savingsPercentage = humanCostPerEmployee > 0 ? Math.round((monthlySavings / humanCostPerEmployee) * 100) : 0;
+  // Total monthly cost - ensure voice cost is included
+  const totalMonthlyCost = calculatorResults.aiCostMonthly?.total || (monthlyPrice + voiceCost);
+  
+  // CRITICAL FIX: Use calculator results values directly for financial data
+  // Exact values from calculationResults are crucial for consistency with the report
+  // Add extensive logging to help debug any issues
+  console.log("Original humanCostMonthly from results:", calculatorResults.humanCostMonthly);
+  console.log("Original monthlySavings from results:", calculatorResults.monthlySavings);
+  console.log("Original yearlySavings from results:", calculatorResults.yearlySavings);
+  console.log("Original savingsPercentage from results:", calculatorResults.savingsPercentage);
+  
+  // Use exact values from calculatorResults, ensuring realistic defaults if missing
+  const humanCostMonthly = calculatorResults.humanCostMonthly !== undefined 
+    ? calculatorResults.humanCostMonthly 
+    : 15000;
+    
+  const monthlySavings = calculatorResults.monthlySavings !== undefined 
+    ? calculatorResults.monthlySavings 
+    : (humanCostMonthly - totalMonthlyCost);
+    
+  const yearlySavings = calculatorResults.yearlySavings !== undefined
+    ? calculatorResults.yearlySavings
+    : (monthlySavings * 12);
+    
+  const savingsPercentage = calculatorResults.savingsPercentage !== undefined
+    ? calculatorResults.savingsPercentage
+    : (humanCostMonthly > 0 ? Math.round((monthlySavings / humanCostMonthly) * 100) : 80);
   
   // Calculate annual plan price - ensure it matches the report
   const annualPlan = calculatorResults.annualPlan !== undefined
@@ -363,16 +390,12 @@ function generateProfessionalProposal(lead) {
   
   // Log final values for debugging
   console.log("FINAL VALUES FOR PROPOSAL:");
-  console.log("humanCostPerEmployee:", humanCostPerEmployee);
-  console.log("monthlyPrice:", monthlyPrice);
-  console.log("additionalVoiceMinutes:", additionalVoiceMinutes);
-  console.log("additionalVoiceCost:", additionalVoiceCost);
-  console.log("voiceCost (for template):", voiceCost);
-  console.log("totalMonthlyCost:", totalMonthlyCost);
+  console.log("humanCostMonthly:", humanCostMonthly);
   console.log("monthlySavings:", monthlySavings);
   console.log("yearlySavings:", yearlySavings);
   console.log("savingsPercentage:", savingsPercentage);
   console.log("annualPlan:", annualPlan);
+  console.log("totalMonthlyCost:", totalMonthlyCost);
   
   // Calculate ROI details with defaults if missing
   const breakEvenPoint = Math.ceil(setupFee / (monthlySavings || 1000));
@@ -392,7 +415,7 @@ function generateProfessionalProposal(lead) {
     return new Intl.NumberFormat('en-US', {
       style: 'currency',
       currency: 'USD',
-      maximumFractionDigits: 0
+      minimumFractionDigits: 2
     }).format(amount);
   };
   
@@ -404,7 +427,7 @@ function generateProfessionalProposal(lead) {
     setupFee,
     additionalVoiceMinutes,
     includedVoiceMinutes,
-    humanCostPerEmployee,
+    humanCostMonthly,
     monthlySavings,
     yearlySavings,
     savingsPercentage,
@@ -738,7 +761,7 @@ ${brandRed} rg
 -190 -25 Td
 (Additional Voice Cost:) Tj
 190 0 Td
-($${additionalVoiceCost.toFixed(2)}/month) Tj
+($${voiceCost.toFixed(2)}/month) Tj
 -190 -25 Td`;
     } else {
       pdfContent += `
@@ -768,19 +791,19 @@ ${brandRed} rg
 /F1 13 Tf
 (Current Estimated Monthly Cost:) Tj
 190 0 Td
-(${formatCurrency(humanCostPerEmployee)}/month) Tj
+(${formatCurrency(humanCostMonthly)}/month) Tj
 -190 -25 Td
 (AI Solution Monthly Cost:) Tj
 190 0 Td
 (${formatCurrency(totalMonthlyCost)}/month) Tj
 -190 -25 Td
-(Monthly Savings (Per Employee):) Tj
+(Monthly Savings:) Tj
 190 0 Td
 ${brandRed} rg
 (${formatCurrency(monthlySavings)}/month) Tj
 0 0 0 rg
 -190 -25 Td
-(Annual Savings (Per Employee):) Tj
+(Annual Savings:) Tj
 190 0 Td
 ${brandRed} rg
 (${formatCurrency(yearlySavings)}/year) Tj
@@ -983,4 +1006,3 @@ startxref
     return new Intl.NumberFormat('en-US').format(value);
   }
 }
-
