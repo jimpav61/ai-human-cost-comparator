@@ -1,3 +1,4 @@
+
 import { HUMAN_HOURLY_RATES } from '@/constants/pricing';
 import { CalculatorInputs, CalculationResults } from './types';
 
@@ -165,7 +166,8 @@ export function calculateAICosts(inputs: CalculatorInputs, aiRates: any) {
     setupFee,
     annualPlan,
     totalMonthlyCost,
-    extraVoiceMinutes
+    extraVoiceMinutes,
+    includedVoiceMinutes
   };
 }
 
@@ -217,7 +219,7 @@ export function performCalculations(
   // Calculate included voice minutes based on tier
   const includedVoiceMinutes = validatedInputs.aiTier === 'starter' ? 0 : 600;
   
-  const results = {
+  const results: CalculationResults = {
     aiCostMonthly: {
       voice: aiCosts.additionalVoiceCost,
       chatbot: aiCosts.tierBase,

@@ -1,3 +1,4 @@
+
 import { JsPDFWithAutoTable } from '../types';
 import { formatCurrency } from '@/utils/formatters';
 import autoTable from 'jspdf-autotable';
