@@ -1,6 +1,7 @@
 
 import { Lead } from "@/types/leads";
 import { formatCurrency } from "@/utils/formatters";
+import { CalculationResults } from "@/hooks/calculator/types";
 
 /**
  * Template-based PDF generator that uses direct value replacement
@@ -15,7 +16,8 @@ export function generateTemplateBasedPdf(lead: Lead): string {
   console.log("FULL CALCULATOR RESULTS:", JSON.stringify(lead.calculator_results, null, 2));
   
   // Extract data directly from lead without any adjustments
-  const calculatorResults = lead.calculator_results || {};
+  // Type assertion to help TypeScript understand the shape of the object
+  const calculatorResults = lead.calculator_results as CalculationResults || {};
   
   // Company information - use exactly what's in the lead
   const companyName = lead.company_name || 'Client';
@@ -73,7 +75,8 @@ export function generateTemplateBasedPdf(lead: Lead): string {
   const totalMonthlyCost = aiCostMonthly.total;
   const voiceCost = aiCostMonthly.voice || 0;
   const additionalVoiceMinutes = lead.calculator_inputs?.callVolume || 0;
-  const annualPlan = calculatorResults.annualPlan || 0;
+  // Safely access annualPlan with type checking
+  const annualPlan = typeof calculatorResults.annualPlan === 'number' ? calculatorResults.annualPlan : 0;
   
   // Derived values for ROI calculations
   const breakEvenPoint = monthlySavings > 0 ? Math.ceil(setupFee / monthlySavings) : 1;
@@ -642,3 +645,4 @@ startxref
   console.log("==== PDF GENERATION COMPLETE ====");
   return pdfTemplate;
 }
+
