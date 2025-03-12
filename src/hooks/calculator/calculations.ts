@@ -82,8 +82,8 @@ export function validateInputs(inputs: CalculatorInputs): CalculatorInputs {
  * Calculate human resource metrics based on total employees minus one (replaced by AI)
  */
 export function calculateHumanResources(inputs: CalculatorInputs) {
-  // Calculate metrics for employees minus one (the one replaced by AI)
-  const employeesAfterAI = Math.max(inputs.numEmployees - 1, 0);
+  // Always calculate for ONE employee only, regardless of total employees
+  const employeesAfterAI = 1; // We're replacing exactly one employee
   const dailyHoursPerEmployee = HOURS_PER_SHIFT;
   const weeklyHoursPerEmployee = dailyHoursPerEmployee * DAYS_PER_WEEK;
   const weeklyTotalHours = weeklyHoursPerEmployee * employeesAfterAI;
