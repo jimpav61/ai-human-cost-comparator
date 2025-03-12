@@ -21,7 +21,7 @@ export function generateProfessionalProposal(lead: any) {
   const industry = lead.industry || 'Technology';
   const employeeCount = lead.employee_count || '10';
   
-  // Direct extraction of values without any processing
+  // CRITICAL: Direct extraction of values without any processing or recalculation
   // If a value doesn't exist, use a sensible default but DO NOT RECALCULATE
   const calculatorResults = lead.calculator_results || {};
   const tierKey = calculatorResults.tierKey || 'growth';
@@ -72,8 +72,8 @@ export function generateProfessionalProposal(lead: any) {
   const additionalVoiceMinutes = lead.calculator_inputs?.callVolume || 0;
   
   // Calculate ROI details with exact values
-  const breakEvenPoint = Math.ceil(setupFee / (monthlySavings || 1000));
-  const firstYearROI = Math.round((yearlySavings - setupFee) / setupFee * 100);
+  const breakEvenPoint = Math.ceil(setupFee / monthlySavings) || 1; // Avoid division by zero
+  const firstYearROI = monthlySavings > 0 ? Math.round((yearlySavings - setupFee) / setupFee * 100) : 0;
   const fiveYearSavings = yearlySavings * 5;
   
   // Generate current date for the proposal

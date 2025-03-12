@@ -1,4 +1,3 @@
-
 import { useState } from "react";
 import { Lead } from "@/types/leads";
 import { toast } from "@/hooks/use-toast";
@@ -168,6 +167,10 @@ export const useProposalPreview = () => {
     const phoneNumber = lead.phone_number || 'Not provided';
     const industry = lead.industry || 'Technology';
     
+    // CRITICAL: Extract values directly from calculator_results without any recalculation
+    // Ensure we're using the exact values from the calculator
+    const calculatorResults = lead.calculator_results || {};
+    
     // Extract AI tier information from calculator inputs
     const aiTier = lead.calculator_inputs?.aiTier || 'growth';
     const aiType = lead.calculator_inputs?.aiType || 'both';
@@ -184,34 +187,39 @@ export const useProposalPreview = () => {
                          aiType === 'both' ? 'Text & Basic Voice' : 
                          aiType === 'both-premium' ? 'Text & Conversational Voice' : 'Text Only';
     
-    // Use existing pricing data from calculator_results
-    // No recalculation needed, just extract what we have
-    const basePrice = 
-      aiTier === 'starter' ? 99 :
+    // CRITICAL: Use exact values from calculator_results without any processing
+    const basePrice = calculatorResults.basePriceMonthly || 
+      (aiTier === 'starter' ? 99 :
       aiTier === 'growth' ? 229 :
-      aiTier === 'premium' ? 429 : 229;
+      aiTier === 'premium' ? 429 : 229);
     
     const includedMinutes = aiTier === 'starter' ? 0 : 600;
     const callVolume = typeof lead.calculator_inputs?.callVolume === 'number' 
       ? lead.calculator_inputs.callVolume 
       : 0;
-    const additionalVoiceCost = aiTier !== 'starter' ? callVolume * 0.12 : 0;
-    const totalPrice = basePrice + additionalVoiceCost;
     
-    // Get setup fee
-    const setupFee = aiTier === 'starter' ? 249 : 
-                    aiTier === 'growth' ? 749 : 
-                    aiTier === 'premium' ? 1149 : 749;
+    // Use exact voice cost from calculator_results if available
+    const additionalVoiceCost = calculatorResults.aiCostMonthly?.voice || 
+      (aiTier !== 'starter' ? callVolume * 0.12 : 0);
+    
+    // Use exact total cost from calculator_results if available
+    const totalPrice = calculatorResults.aiCostMonthly?.total || (basePrice + additionalVoiceCost);
+    
+    // Get setup fee from calculator_results
+    const setupFee = calculatorResults.aiCostMonthly?.setupFee || 
+      (aiTier === 'starter' ? 249 : 
+      aiTier === 'growth' ? 749 : 
+      aiTier === 'premium' ? 1149 : 749);
     
     // Format date for the proposal
     const today = new Date();
     const formattedDate = `${today.getMonth() + 1}/${today.getDate()}/${today.getFullYear()}`;
     
-    // Get ROI metrics from calculator results - use existing values without recalculation
-    const humanCostMonthly = lead.calculator_results?.humanCostMonthly || 15000;
-    const monthlySavings = lead.calculator_results?.monthlySavings || (humanCostMonthly - totalPrice);
-    const yearlySavings = lead.calculator_results?.yearlySavings || (monthlySavings * 12);
-    const savingsPercentage = lead.calculator_results?.savingsPercentage || 
+    // CRITICAL: Use exact values from calculator_results for ROI metrics
+    const humanCostMonthly = calculatorResults.humanCostMonthly || 15000;
+    const monthlySavings = calculatorResults.monthlySavings || (humanCostMonthly - totalPrice);
+    const yearlySavings = calculatorResults.yearlySavings || (monthlySavings * 12);
+    const savingsPercentage = calculatorResults.savingsPercentage || 
       (humanCostMonthly > 0 ? Math.round((monthlySavings / humanCostMonthly) * 100) : 80);
     
     // Brand Colors
@@ -771,6 +779,12 @@ startxref
 15179
 %%EOF
   `;
+    
+    console.log("generateProfessionalProposal: Using exact values from calculator!");
+    console.log("humanCostMonthly:", humanCostMonthly);
+    console.log("totalPrice:", totalPrice);
+    console.log("monthlySavings:", monthlySavings);
+    console.log("yearlySavings:", yearlySavings);
     
     return pdfContent;
   };

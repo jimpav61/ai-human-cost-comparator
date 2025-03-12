@@ -22,7 +22,9 @@ serve(async (req) => {
     console.log("Company:", lead.company_name);
     console.log("Calculator inputs type:", typeof lead.calculator_inputs);
     console.log("Calculator results type:", typeof lead.calculator_results);
+    console.log("Raw calculator results:", JSON.stringify(lead.calculator_results));
     
+    // CRITICAL: Ensure calculator_results is an object not a string
     if (!lead.calculator_results || typeof lead.calculator_results !== 'object') {
       // If calculator_results is a string, try to parse it
       if (typeof lead.calculator_results === 'string') {
@@ -37,7 +39,7 @@ serve(async (req) => {
       }
     }
     
-    // If calculator_inputs is a string, parse it
+    // CRITICAL: Ensure calculator_inputs is an object not a string
     if (typeof lead.calculator_inputs === 'string') {
       try {
         lead.calculator_inputs = JSON.parse(lead.calculator_inputs);
@@ -48,8 +50,13 @@ serve(async (req) => {
       }
     }
     
-    // Log the calculator results for debugging
-    console.log("CALCULATOR RESULTS:", JSON.stringify(lead.calculator_results, null, 2));
+    // DEBUG: Log key values from calculator results we'll use in the proposal
+    console.log("CALCULATOR RESULTS DEBUGGING:");
+    console.log("humanCostMonthly:", lead.calculator_results.humanCostMonthly);
+    console.log("aiCostMonthly.total:", lead.calculator_results.aiCostMonthly?.total);
+    console.log("monthlySavings:", lead.calculator_results.monthlySavings);
+    console.log("yearlySavings:", lead.calculator_results.yearlySavings);
+    console.log("savingsPercentage:", lead.calculator_results.savingsPercentage);
     
     // Generate the PDF using exact values from calculator_results
     const pdfContent = generateProfessionalProposal(lead);
