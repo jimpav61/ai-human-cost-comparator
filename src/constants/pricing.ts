@@ -1,3 +1,4 @@
+
 import { supabase } from "@/integrations/supabase/client";
 import type { PricingConfiguration, PackageTier } from '@/types/pricing';
 
@@ -9,9 +10,9 @@ export const DEFAULT_AI_RATES = {
     premium: 0.12,
   },
   chatbot: {
-    starter: { base: 149, perMessage: 0, setupFee: 499, annualPrice: 1490, includedVoiceMinutes: 0, additionalVoiceRate: 0 },
+    starter: { base: 99, perMessage: 0, setupFee: 249, annualPrice: 990, includedVoiceMinutes: 0, additionalVoiceRate: 0 },
     growth: { base: 229, perMessage: 0.005, setupFee: 749, annualPrice: 2290, includedVoiceMinutes: 600, additionalVoiceRate: 0.12 },
-    premium: { base: 429, perMessage: 0.008, setupFee: 1499, annualPrice: 4290, includedVoiceMinutes: 600, additionalVoiceRate: 0.12 }
+    premium: { base: 429, perMessage: 0.008, setupFee: 1149, annualPrice: 4290, includedVoiceMinutes: 600, additionalVoiceRate: 0.12 }
   }
 };
 

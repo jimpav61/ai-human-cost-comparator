@@ -1,4 +1,3 @@
-
 import { useState } from "react";
 import { Lead } from "@/types/leads";
 import { toast } from "@/hooks/use-toast";
@@ -80,16 +79,16 @@ export const useReportDownload = () => {
       let setupFee = 0;
       let basePrice = 0;
       
-      // Assign proper pricing values based on tier - UPDATED PREMIUM PRICE TO 429
+      // Assign proper pricing values based on tier
       if (aiTier === 'starter') {
-        setupFee = 499;
-        basePrice = 149;
+        setupFee = 249;
+        basePrice = 99;
       } else if (aiTier === 'growth') {
         setupFee = 749;
         basePrice = 229;
       } else if (aiTier === 'premium') {
-        setupFee = 1499;
-        basePrice = 429; // Updated from 399 to 429
+        setupFee = 1149;
+        basePrice = 429;
       }
       
       // Create a proper typed object for the calculator results to use in recalculation

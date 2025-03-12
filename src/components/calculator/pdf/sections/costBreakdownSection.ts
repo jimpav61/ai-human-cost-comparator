@@ -22,11 +22,11 @@ export const addCostBreakdownSection = (
   let basePrice = results.basePriceMonthly;
   if (basePrice === 0) {
     if (results.tierKey === 'starter') {
-      basePrice = 149;
+      basePrice = 99;
     } else if (results.tierKey === 'growth') {
       basePrice = 229;
     } else if (results.tierKey === 'premium') {
-      basePrice = 429; // Updated from 399 to 429
+      basePrice = 429;
     } else {
       basePrice = 229; // Default to growth price
     }

@@ -1,4 +1,3 @@
-
 import { formatCurrency } from "../_shared/utils.ts";
 
 /**
@@ -24,20 +23,56 @@ export function generateProfessionalProposal(lead: any) {
   const calculatorResults = lead.calculator_results || {};
   const tierKey = calculatorResults.tierKey || 'growth';
   const aiType = calculatorResults.aiType || 'both';
-  const basePriceMonthly = calculatorResults.basePriceMonthly || 229;
+  
+  // Use these hardcoded prices to ensure consistency
+  let basePriceMonthly = 229; // Default to growth price
+  let setupFee = 749; // Default to growth setup fee
+  let annualPlan = 2290; // Default to growth annual plan
+  
+  // Set correct pricing based on tier
+  if (tierKey === 'starter') {
+    basePriceMonthly = 99;
+    setupFee = 249;
+    annualPlan = 990;
+  } else if (tierKey === 'growth') {
+    basePriceMonthly = 229;
+    setupFee = 749;
+    annualPlan = 2290;
+  } else if (tierKey === 'premium') {
+    basePriceMonthly = 429;
+    setupFee = 1149;
+    annualPlan = 4290;
+  }
+  
+  // Use values from results if available
+  if (calculatorResults.basePriceMonthly > 0) {
+    basePriceMonthly = calculatorResults.basePriceMonthly;
+  }
+  
+  if (calculatorResults.aiCostMonthly && calculatorResults.aiCostMonthly.setupFee > 0) {
+    setupFee = calculatorResults.aiCostMonthly.setupFee;
+  }
+  
+  if (calculatorResults.annualPlan > 0) {
+    annualPlan = calculatorResults.annualPlan;
+  }
+  
+  // Extract remaining values
   const humanCostMonthly = calculatorResults.humanCostMonthly || 0;
   const monthlySavings = calculatorResults.monthlySavings || 0;
   const yearlySavings = calculatorResults.yearlySavings || 0;
   const savingsPercentage = calculatorResults.savingsPercentage || 0;
-  const annualPlan = calculatorResults.annualPlan || 2290;
   
   // Extract the aiCostMonthly structure exactly as is
   const aiCostMonthly = calculatorResults.aiCostMonthly || {
     voice: 0,
-    chatbot: 229,
-    total: 229,
-    setupFee: 749
+    chatbot: basePriceMonthly,
+    total: basePriceMonthly,
+    setupFee: setupFee
   };
+  
+  // Calculate total cost from base and voice
+  const totalMonthlyCost = aiCostMonthly.total || basePriceMonthly;
   
   // Log all extracted values for debugging
   console.log("TEMPLATE VALUES:", {
@@ -49,7 +84,9 @@ export function generateProfessionalProposal(lead: any) {
     yearlySavings,
     savingsPercentage,
     annualPlan,
-    aiCostMonthly
+    aiCostMonthly,
+    setupFee,
+    totalMonthlyCost
   });
   
   // Get display names based on tier
@@ -64,9 +101,7 @@ export function generateProfessionalProposal(lead: any) {
                       aiType === 'both' ? 'Text & Basic Voice' : 
                       aiType === 'both-premium' ? 'Text & Conversational Voice' : 'Text Only';
 
-  // Use exact values from calculator_results
-  const setupFee = aiCostMonthly.setupFee;
-  const totalMonthlyCost = aiCostMonthly.total;
+  // Additional voice minutes
   const additionalVoiceMinutes = lead.calculator_inputs?.callVolume || 0;
   
   // Calculate ROI details with exact values

@@ -136,11 +136,11 @@ export function calculateAICosts(inputs: CalculatorInputs, aiRates: any) {
       setupFee = aiRates.chatbot[inputs.aiTier].setupFee;
     } else {
       // Fallback to default values
-      setupFee = inputs.aiTier === 'starter' ? 499 : inputs.aiTier === 'growth' ? 749 : 999;
+      setupFee = inputs.aiTier === 'starter' ? 249 : inputs.aiTier === 'growth' ? 749 : 1149;
     }
   } catch (error) {
     console.error("Error getting setup fee:", error);
-    setupFee = inputs.aiTier === 'starter' ? 499 : inputs.aiTier === 'growth' ? 749 : 999;
+    setupFee = inputs.aiTier === 'starter' ? 249 : inputs.aiTier === 'growth' ? 749 : 1149;
   }
   
   // Calculate annual plan price

@@ -8,9 +8,9 @@ export const calculatePricingDetails = (inputs: CalculatorInputs): PricingDetail
 
   // Hardcoded base prices to ensure consistency
   const hardcodedBasePrices = {
-    starter: 149,
+    starter: 99,
     growth: 229,
-    premium: 429  // Updated from 429 to match constants.pricing.ts
+    premium: 429
   };
   
   // Get the exact base price for the selected tier
