@@ -38,7 +38,8 @@ export const generateProposalPdf = (lead: Lead) => {
   const monthlySavings = calculatorResults.monthlySavings;
   const yearlySavings = calculatorResults.yearlySavings;
   const savingsPercentage = calculatorResults.savingsPercentage;
-  const annualPlan = calculatorResults.annualPlan || false; // Fixed: Use boolean default instead of number
+  // Convert annualPlan to boolean - if it's 1 or any other truthy number, it becomes true
+  const annualPlan = Boolean(calculatorResults.annualPlan);
   const voiceCost = calculatorResults.aiCostMonthly.voice;
   const includedMinutes = aiTier === 'starter' ? 0 : 600;
   const callVolume = lead.calculator_inputs?.callVolume || 0;
