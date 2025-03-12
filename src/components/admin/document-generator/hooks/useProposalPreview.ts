@@ -1,3 +1,4 @@
+
 import { useState } from "react";
 import { Lead } from "@/types/leads";
 import { toast } from "@/hooks/use-toast";
@@ -935,3 +936,18 @@ startxref
   };
   
   return {
+    isLoading,
+    editableProposal,
+    setEditableProposal,
+    currentRevision,
+    setCurrentRevision,
+    showPdfPreview,
+    setShowPdfPreview,
+    getProposalRevisions,
+    getLatestProposalRevision,
+    saveProposalRevision,
+    updateProposalRevision,
+    handlePreviewProposal,
+    generateProfessionalProposal
+  };
+};
