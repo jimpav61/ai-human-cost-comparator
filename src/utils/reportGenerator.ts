@@ -6,6 +6,7 @@ import { toast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 import { CalculationResults } from "@/hooks/calculator/types";
 import { toJson } from "@/hooks/calculator/supabase-types";
+import { performCalculations } from "@/hooks/calculator/calculations";
 
 /**
  * Checks if a lead has calculator results and can generate a report
@@ -40,6 +41,25 @@ export const generateAndDownloadReport = async (lead: Lead) => {
     // Create a safely typed CalculationResults object from the lead data
     const rawCalculatorResults = lead.calculator_results as unknown as Record<string, any>;
     const calculatorInputs = lead.calculator_inputs as unknown as Record<string, any>;
+    
+    // CRITICAL: Ensure 1:1 replacement model by forcing numEmployees to 1
+    if (calculatorInputs) {
+      calculatorInputs.numEmployees = 1;
+      
+      // Recalculate with 1:1 replacement model
+      try {
+        const recalculatedResults = performCalculations(calculatorInputs, {});
+        console.log("[CALCULATOR REPORT] Recalculated results with 1:1 replacement model:", recalculatedResults);
+        // Update raw results with recalculated values
+        rawCalculatorResults.humanCostMonthly = recalculatedResults.humanCostMonthly;
+        rawCalculatorResults.monthlySavings = recalculatedResults.monthlySavings;
+        rawCalculatorResults.yearlySavings = recalculatedResults.yearlySavings;
+        rawCalculatorResults.savingsPercentage = recalculatedResults.savingsPercentage;
+      } catch (calcError) {
+        console.error("[CALCULATOR REPORT] Error recalculating results:", calcError);
+        // Continue with existing results if recalculation fails
+      }
+    }
     
     // Extract calculator data
     const calculatorResults: CalculationResults = {
@@ -132,9 +152,14 @@ export const generateAndDownloadReport = async (lead: Lead) => {
     
     // Only save if we have a valid report ID
     if (reportId) {
+      // Update calculator_inputs to ensure numEmployees is 1
+      if (calculatorInputs) {
+        calculatorInputs.numEmployees = 1;
+      }
+      
       // Convert complex objects to JSON-compatible format
-      const jsonInputs = toJson(lead.calculator_inputs);
-      const jsonResults = toJson(lead.calculator_results);
+      const jsonInputs = toJson(calculatorInputs);
+      const jsonResults = toJson(rawCalculatorResults);
       
       // Create the report data with the generated UUID
       const reportData = {

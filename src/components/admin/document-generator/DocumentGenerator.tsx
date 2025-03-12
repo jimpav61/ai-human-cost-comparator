@@ -1,9 +1,11 @@
+
 import { Lead } from "@/types/leads";
 import { DocumentGeneratorProps } from "./types";
 import { DownloadReportButton } from "./components/DownloadReportButton";
 import { PreviewProposalButton } from "./components/PreviewProposalButton";
 import { SendProposalButton } from "./components/SendProposalButton";
 import { useState, useEffect } from "react";
+import { performCalculations } from "@/hooks/calculator/calculations";
 
 interface ExtendedDocumentGeneratorProps extends DocumentGeneratorProps {
   onLeadUpdated?: (updatedLead: Lead) => void;
@@ -23,17 +25,31 @@ export const DocumentGenerator = ({ lead, onLeadUpdated }: ExtendedDocumentGener
         aiType: leadCopy.calculator_results?.aiType || 'both',
         callVolume: 0,
         role: 'customerService',
-        numEmployees: leadCopy.employee_count || 5,
+        numEmployees: 1, // Always use 1 employee for 1:1 replacement
         chatVolume: 2000,
         avgCallDuration: 0,
         avgChatLength: 0,
         avgChatResolutionTime: 0
       };
+    } else {
+      // Force numEmployees to 1 for 1:1 replacement model
+      leadCopy.calculator_inputs.numEmployees = 1;
     }
     
     // Ensure callVolume is a number
     if (typeof leadCopy.calculator_inputs.callVolume === 'string') {
       leadCopy.calculator_inputs.callVolume = parseInt(leadCopy.calculator_inputs.callVolume, 10) || 0;
+    }
+    
+    // Recalculate results using 1:1 replacement model if we have inputs
+    if (leadCopy.calculator_inputs) {
+      try {
+        // Use empty object for aiRates - the function will use hardcoded defaults
+        leadCopy.calculator_results = performCalculations(leadCopy.calculator_inputs, {});
+        console.log("Recalculated results with 1:1 replacement model:", leadCopy.calculator_results);
+      } catch (error) {
+        console.error("Error recalculating results:", error);
+      }
     }
     
     return leadCopy;
@@ -64,18 +80,32 @@ export const DocumentGenerator = ({ lead, onLeadUpdated }: ExtendedDocumentGener
         aiType: leadCopy.calculator_results?.aiType || 'both',
         callVolume: 0,
         role: 'customerService',
-        numEmployees: leadCopy.employee_count || 5,
+        numEmployees: 1, // Always use 1 employee for 1:1 replacement
         chatVolume: 2000,
         avgCallDuration: 0,
         avgChatLength: 0,
         avgChatResolutionTime: 0
       };
+    } else {
+      // Force numEmployees to 1 for 1:1 replacement model
+      leadCopy.calculator_inputs.numEmployees = 1;
     }
     
     // Ensure callVolume is a number
     if (typeof leadCopy.calculator_inputs.callVolume === 'string') {
       leadCopy.calculator_inputs.callVolume = parseInt(leadCopy.calculator_inputs.callVolume, 10) || 0;
       console.log("Converted callVolume from string to number:", leadCopy.calculator_inputs.callVolume);
+    }
+    
+    // Recalculate results using 1:1 replacement model
+    if (leadCopy.calculator_inputs) {
+      try {
+        // Use empty object for aiRates - the function will use hardcoded defaults
+        leadCopy.calculator_results = performCalculations(leadCopy.calculator_inputs, {});
+        console.log("Recalculated results with 1:1 replacement model on lead update:", leadCopy.calculator_results);
+      } catch (error) {
+        console.error("Error recalculating results:", error);
+      }
     }
     
     setCurrentLead(leadCopy);
@@ -91,10 +121,26 @@ export const DocumentGenerator = ({ lead, onLeadUpdated }: ExtendedDocumentGener
     // Update our local state with a deep clone
     const updatedLeadCopy = JSON.parse(JSON.stringify(updatedLead));
     
+    // Force numEmployees to 1 for 1:1 replacement model
+    if (updatedLeadCopy.calculator_inputs) {
+      updatedLeadCopy.calculator_inputs.numEmployees = 1;
+    }
+    
     // Ensure callVolume is a number
     if (typeof updatedLeadCopy.calculator_inputs.callVolume === 'string') {
       updatedLeadCopy.calculator_inputs.callVolume = parseInt(updatedLeadCopy.calculator_inputs.callVolume, 10) || 0;
       console.log("Converted updated callVolume from string to number:", updatedLeadCopy.calculator_inputs.callVolume);
+    }
+    
+    // Recalculate results using 1:1 replacement model
+    if (updatedLeadCopy.calculator_inputs) {
+      try {
+        // Use empty object for aiRates - the function will use hardcoded defaults
+        updatedLeadCopy.calculator_results = performCalculations(updatedLeadCopy.calculator_inputs, {});
+        console.log("Recalculated results with 1:1 replacement model on internal update:", updatedLeadCopy.calculator_results);
+      } catch (error) {
+        console.error("Error recalculating results:", error);
+      }
     }
     
     setCurrentLead(updatedLeadCopy);

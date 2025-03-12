@@ -1,3 +1,4 @@
+
 import { HUMAN_HOURLY_RATES } from '@/constants/pricing';
 import { CalculatorInputs, CalculationResults } from './types';
 

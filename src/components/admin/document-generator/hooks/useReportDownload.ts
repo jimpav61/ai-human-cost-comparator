@@ -7,6 +7,7 @@ import { getSafeFileName } from "./report-generator/saveReport";
 import { generatePDF } from "@/components/calculator/pdf";
 import { CalculationResults } from "@/hooks/calculator/types";
 import { ensureCalculationResults } from "@/components/calculator/pdf/types";
+import { performCalculations } from "@/hooks/calculator/calculations";
 
 export const useReportDownload = () => {
   const [isLoading, setIsLoading] = useState(false);
@@ -59,6 +60,25 @@ export const useReportDownload = () => {
       
       console.log("Report calculator results:", calculatorResults);
       console.log("Report calculator inputs:", calculatorInputs);
+      
+      // CRITICAL: Ensure we're using the 1:1 replacement model
+      // Force numEmployees to 1 for calculation
+      if (calculatorInputs) {
+        calculatorInputs.numEmployees = 1;
+        
+        // Recalculate using the 1:1 replacement model
+        try {
+          const recalculatedResults = performCalculations(calculatorInputs, {});
+          console.log("Recalculated results with 1:1 replacement model:", recalculatedResults);
+          calculatorResults.humanCostMonthly = recalculatedResults.humanCostMonthly;
+          calculatorResults.monthlySavings = recalculatedResults.monthlySavings;
+          calculatorResults.yearlySavings = recalculatedResults.yearlySavings;
+          calculatorResults.savingsPercentage = recalculatedResults.savingsPercentage;
+        } catch (calcError) {
+          console.error("Error recalculating results:", calcError);
+          // Continue with existing results if recalculation fails
+        }
+      }
       
       const aiTier = calculatorInputs?.aiTier || 'growth';
       const aiType = calculatorInputs?.aiType || 'chatbot';
