@@ -1,3 +1,4 @@
+
 import React, { useEffect } from 'react';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { toast } from "@/components/ui/use-toast";
@@ -13,6 +14,9 @@ export const AITypeSection: React.FC<AITypeSectionProps> = ({
   aiTier,
   handleAITypeChange
 }) => {
+  // Debug logging
+  console.log("AITypeSection rendering with aiType:", aiType, "aiTier:", aiTier);
+  
   // Force AI type update when tier changes
   useEffect(() => {
     console.log(`AITypeSection: Effect triggered - aiTier: ${aiTier}, aiType: ${aiType}`);
@@ -115,7 +119,7 @@ export const AITypeSection: React.FC<AITypeSectionProps> = ({
         <SelectTrigger className="calculator-input bg-white">
           <SelectValue placeholder="Select AI Type" />
         </SelectTrigger>
-        <SelectContent className="bg-white">
+        <SelectContent className="bg-white z-50">
           <SelectItem value="chatbot">Text Only</SelectItem>
           <SelectItem value="voice" disabled={aiTier === 'starter'}>Basic Voice Only</SelectItem>
           <SelectItem value="conversationalVoice" disabled={aiTier !== 'premium'}>Conversational Voice Only</SelectItem>

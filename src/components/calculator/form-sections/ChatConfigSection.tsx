@@ -13,6 +13,16 @@ export const ChatConfigSection: React.FC<ChatConfigSectionProps> = ({
   chatVolume,
   onInputChange
 }) => {
+  // Logging for debugging
+  console.log("ChatConfigSection rendering with chatVolume:", chatVolume);
+  
+  // Handle change to ensure it's a number
+  const handleChatVolumeChange = (value: string) => {
+    const numValue = parseInt(value, 10) || 0;
+    console.log("ChatConfigSection: chat volume changed to", numValue);
+    onInputChange('chatVolume', numValue);
+  };
+  
   return (
     <div className="mb-4">
       <Label htmlFor="chatVolume" className="block text-sm font-medium text-gray-700 mb-1">
@@ -23,7 +33,7 @@ export const ChatConfigSection: React.FC<ChatConfigSectionProps> = ({
         type="number" 
         min="1"
         value={chatVolume}
-        onChange={(e) => onInputChange('chatVolume', parseInt(e.target.value) || 0)}
+        onChange={(e) => handleChatVolumeChange(e.target.value)}
         className="w-full"
       />
     </div>

@@ -37,10 +37,13 @@ export const VoiceConfigSection: React.FC<VoiceConfigSectionProps> = ({
     }
   }, [aiTier, isStarterPlan, callVolume, onInputChange]);
   
+  // Log for debugging purposes
+  console.log("VoiceConfigSection rendering with callVolume:", callVolume, "aiTier:", aiTier);
+  
   // Handle call volume changes
   const handleCallVolumeChange = (value: string) => {
     // Ensure value is parsed as a number
-    const numericValue = parseInt(value, 10);
+    const numericValue = parseInt(value, 10) || 0;
     console.log(`VoiceConfigSection: Call volume changed to ${numericValue}`);
     
     if (isStarterPlan && numericValue > 0) {

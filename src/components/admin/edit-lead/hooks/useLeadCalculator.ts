@@ -1,4 +1,5 @@
-import { useState, useEffect } from 'react';
+
+import { useState, useEffect, useCallback } from 'react';
 import { useCalculator, type CalculatorInputs } from "@/hooks/useCalculator";
 import { Lead } from "@/types/leads";
 
@@ -122,8 +123,8 @@ export function useLeadCalculator(lead: Lead) {
   // Use the calculator hook to get calculation results
   const calculationResults = useCalculator(calculatorInputs);
 
-  // Handle changes to calculator inputs
-  const handleCalculatorInputChange = (field: string, value: any) => {
+  // Handle changes to calculator inputs - wrap in useCallback to avoid unnecessary recreation
+  const handleCalculatorInputChange = useCallback((field: string, value: any) => {
     console.log(`Changing calculator input ${field} to:`, value);
     
     if (field === 'aiType') {
@@ -143,7 +144,7 @@ export function useLeadCalculator(lead: Lead) {
       ...prev,
       [field]: value
     }));
-  };
+  }, []);
 
   // Update calculator inputs when lead changes
   useEffect(() => {

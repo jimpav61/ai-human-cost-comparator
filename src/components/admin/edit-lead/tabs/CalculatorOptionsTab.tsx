@@ -7,7 +7,7 @@ import { getTierDisplayName, getAITypeDisplay } from "@/components/calculator/pr
 import { AI_RATES } from "@/constants/pricing";
 import { Card } from "@/components/ui/card";
 import { formatCurrency, formatNumber } from "@/utils/formatters";
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 
 interface CalculatorOptionsTabProps {
   calculatorInputs: CalculatorInputs;
@@ -22,6 +22,9 @@ export const CalculatorOptionsTab = ({
   calculationResults,
   safeFormatNumber
 }: CalculatorOptionsTabProps) => {
+  // Debug state
+  const [lastChange, setLastChange] = useState<string>("none");
+  
   // Ensure we have a valid tier value and callVolume is a number
   const currentTier = calculatorInputs?.aiTier || 'starter';
   const currentAIType = calculatorInputs?.aiType || 'chatbot';
@@ -29,6 +32,7 @@ export const CalculatorOptionsTab = ({
   // Log for debugging
   console.log("CalculatorOptionsTab calculatorInputs:", calculatorInputs);
   console.log("CalculatorOptionsTab calculationResults:", calculationResults);
+  console.log("CalculatorOptionsTab last change:", lastChange);
   
   // CRITICAL FIX: Try to get callVolume from multiple possible sources
   let currentCallVolume: number;
@@ -61,10 +65,12 @@ export const CalculatorOptionsTab = ({
       if (currentAIType === 'voice') {
         console.log("CalculatorOptionsTab: Upgraded to premium, enhancing to conversational voice");
         handleCalculatorInputChange('aiType', 'conversationalVoice');
+        setLastChange("tier-premium-voice-upgrade");
       } 
       else if (currentAIType === 'both') {
         console.log("CalculatorOptionsTab: Upgraded to premium, enhancing to premium voice features");
         handleCalculatorInputChange('aiType', 'both-premium');
+        setLastChange("tier-premium-both-upgrade");
       }
     }
     // If downgraded from premium and using premium features, downgrade features
@@ -72,15 +78,18 @@ export const CalculatorOptionsTab = ({
       if (currentAIType === 'conversationalVoice') {
         console.log("CalculatorOptionsTab: Downgraded to growth, changing to basic voice");
         handleCalculatorInputChange('aiType', 'voice');
+        setLastChange("tier-growth-voice-downgrade");
       } 
       else if (currentAIType === 'both-premium') {
         console.log("CalculatorOptionsTab: Downgraded to growth, changing to basic voice features");
         handleCalculatorInputChange('aiType', 'both');
+        setLastChange("tier-growth-both-downgrade");
       }
       // Important fix: Make sure growth plan has appropriate capabilities (at least both)
       else if (currentAIType === 'chatbot') {
         console.log("CalculatorOptionsTab: On growth plan, enhancing to text & basic voice");
         handleCalculatorInputChange('aiType', 'both');
+        setLastChange("tier-growth-chatbot-upgrade");
       }
     }
     // If downgraded to starter, force chatbot
@@ -89,6 +98,7 @@ export const CalculatorOptionsTab = ({
         console.log("CalculatorOptionsTab: Downgraded to starter, forcing chatbot only");
         handleCalculatorInputChange('aiType', 'chatbot');
         handleCalculatorInputChange('callVolume', 0);
+        setLastChange("tier-starter-force-chatbot");
       }
     }
   }, [currentTier, currentAIType, handleCalculatorInputChange]);
@@ -121,16 +131,16 @@ export const CalculatorOptionsTab = ({
   // Handle tier change with proper AI type adjustment
   const handleTierChange = (newTier: string) => {
     console.log(`Changing tier from ${currentTier} to ${newTier}`);
+    setLastChange(`tier-change-${newTier}`);
     
-    // First update the tier
+    // First update the tier - useEffect will handle AI type adjustments
     handleCalculatorInputChange('aiTier', newTier);
-    
-    // AI type adjustments will be handled by the useEffect
   };
   
   // Handle AI type change with proper tier adjustment
   const handleAITypeChange = (newType: string) => {
     console.log(`Changing AI type from ${currentAIType} to ${newType}`);
+    setLastChange(`aitype-change-${newType}`);
     
     // If selecting premium voice features, upgrade tier if needed
     if ((newType === 'conversationalVoice' || newType === 'both-premium') && currentTier !== 'premium') {
@@ -151,7 +161,29 @@ export const CalculatorOptionsTab = ({
   const handleCallVolumeChange = (value: string) => {
     const numericValue = parseInt(value, 10) || 0;
     console.log(`Changing call volume from ${callVolume} to ${numericValue}`);
+    setLastChange(`callvolume-change-${numericValue}`);
     handleCalculatorInputChange('callVolume', numericValue);
+  };
+  
+  // Handle chat volume change
+  const handleChatVolumeChange = (value: number) => {
+    console.log(`Changing chat volume to ${value}`);
+    setLastChange(`chatvolume-change-${value}`);
+    handleCalculatorInputChange('chatVolume', value);
+  };
+  
+  // Handle number of employees change
+  const handleEmployeeCountChange = (value: number) => {
+    console.log(`Changing employee count to ${value}`);
+    setLastChange(`employees-change-${value}`);
+    handleCalculatorInputChange('numEmployees', value);
+  };
+  
+  // Handle role change
+  const handleRoleChange = (value: string) => {
+    console.log(`Changing role to ${value}`);
+    setLastChange(`role-change-${value}`);
+    handleCalculatorInputChange('role', value);
   };
 
   return (
@@ -224,7 +256,7 @@ export const CalculatorOptionsTab = ({
               id="numEmployees"
               type="number"
               value={calculatorInputs?.numEmployees || ''}
-              onChange={(e) => handleCalculatorInputChange('numEmployees', Number(e.target.value))}
+              onChange={(e) => handleEmployeeCountChange(Number(e.target.value))}
               className="w-full"
             />
           </div>
@@ -233,7 +265,7 @@ export const CalculatorOptionsTab = ({
             <Label htmlFor="role" className="text-sm font-medium">Employee Role</Label>
             <Select
               value={calculatorInputs?.role || 'customerService'}
-              onValueChange={(value) => handleCalculatorInputChange('role', value)}
+              onValueChange={handleRoleChange}
             >
               <SelectTrigger className="w-full">
                 <SelectValue placeholder="Select role" />
@@ -258,7 +290,7 @@ export const CalculatorOptionsTab = ({
               id="chatVolume"
               type="number"
               value={calculatorInputs?.chatVolume || ''}
-              onChange={(e) => handleCalculatorInputChange('chatVolume', Number(e.target.value))}
+              onChange={(e) => handleChatVolumeChange(Number(e.target.value))}
               className="w-full"
             />
           </div>

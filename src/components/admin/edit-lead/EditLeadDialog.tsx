@@ -16,7 +16,7 @@ interface EditLeadDialogProps {
 }
 
 export const EditLeadDialog = ({ lead, isOpen, onClose, onSave }: EditLeadDialogProps) => {
-  console.log("EditLeadDialog rendering. isOpen:", isOpen, "lead:", lead);
+  console.log("EditLeadDialog rendering. isOpen:", isOpen, "lead:", lead.id);
   
   // Detailed debugging of calculator data
   console.log("Initial calculator_results:", JSON.stringify(lead.calculator_results, null, 2));
@@ -35,7 +35,7 @@ export const EditLeadDialog = ({ lead, isOpen, onClose, onSave }: EditLeadDialog
 
   // Reset form when lead changes
   useEffect(() => {
-    console.log("Lead changed in EditLeadDialog:", lead);
+    console.log("Lead changed in EditLeadDialog:", lead.id);
     setFormData(lead);
   }, [lead, setFormData]);
   
