@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from 'react';
 import { useCalculator, type CalculatorInputs } from "@/hooks/useCalculator";
 import { Lead } from "@/types/leads";
@@ -44,7 +43,7 @@ export function useLeadCalculator(lead: Lead) {
                            typeof leadClone.calculator_results === 'object' && 
                            Object.keys(leadClone.calculator_results).length > 0;
     
-    // Prioritize getting values from calculator_results as they are more likely to be correct
+    // CRITICAL: Always prioritize getting values from calculator_results as they are the source of truth
     if (hasValidResults) {
       console.log("Initializing from calculator_results:", leadClone.calculator_results);
       
@@ -53,23 +52,27 @@ export function useLeadCalculator(lead: Lead) {
       const aiType = leadClone.calculator_results.aiType || 'both';
       
       // CRITICAL: Extract additional voice minutes from calculator_results
-      const additionalVoiceMinutes = leadClone.calculator_results.additionalVoiceMinutes || 0;
-      console.log("Found additionalVoiceMinutes in results:", additionalVoiceMinutes);
+      // This is the most important fix - we need to get additionalVoiceMinutes
+      let additionalVoiceMinutes = 0;
+      if ('additionalVoiceMinutes' in leadClone.calculator_results) {
+        additionalVoiceMinutes = leadClone.calculator_results.additionalVoiceMinutes;
+        console.log("Found additionalVoiceMinutes in results:", additionalVoiceMinutes);
+      }
       
       // Create input objects based on the results data
       const inputsFromResults: CalculatorInputs = {
         ...defaultCalculatorInputs,
         aiTier: validateAiTier(tierKey),
         aiType: validateAiType(aiType),
-        callVolume: additionalVoiceMinutes,
-        numEmployees: leadClone.employee_count || defaultCalculatorInputs.numEmployees
+        callVolume: Number(additionalVoiceMinutes) || 0,
+        numEmployees: Number(leadClone.employee_count) || defaultCalculatorInputs.numEmployees
       };
       
       console.log("Created calculator inputs from results:", inputsFromResults);
       return inputsFromResults;
     }
     
-    // Check if lead has valid calculator_inputs as fallback
+    // Only fall back to calculator_inputs if no results are available
     const hasValidInputs = leadClone.calculator_inputs && 
                           typeof leadClone.calculator_inputs === 'object' && 
                           Object.keys(leadClone.calculator_inputs).length > 0;
@@ -163,16 +166,19 @@ export function useLeadCalculator(lead: Lead) {
       const aiType = leadClone.calculator_results.aiType || 'both';
       
       // Extract additional voice minutes from results
-      const additionalVoiceMinutes = leadClone.calculator_results.additionalVoiceMinutes || 0;
-      console.log("Found additionalVoiceMinutes in results:", additionalVoiceMinutes);
+      let additionalVoiceMinutes = 0;
+      if ('additionalVoiceMinutes' in leadClone.calculator_results) {
+        additionalVoiceMinutes = leadClone.calculator_results.additionalVoiceMinutes;
+        console.log("Found additionalVoiceMinutes in results:", additionalVoiceMinutes);
+      }
       
       // Create calculator inputs from the results
       const inputsFromResults: CalculatorInputs = {
         ...defaultCalculatorInputs,
         aiTier: validateAiTier(tierKey),
         aiType: validateAiType(aiType),
-        callVolume: additionalVoiceMinutes,
-        numEmployees: leadClone.employee_count || defaultCalculatorInputs.numEmployees
+        callVolume: Number(additionalVoiceMinutes) || 0,
+        numEmployees: Number(leadClone.employee_count) || defaultCalculatorInputs.numEmployees
       };
       
       console.log("Updated calculator inputs from results:", inputsFromResults);

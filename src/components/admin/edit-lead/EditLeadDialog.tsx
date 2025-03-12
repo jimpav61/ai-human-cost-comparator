@@ -18,11 +18,12 @@ interface EditLeadDialogProps {
 export const EditLeadDialog = ({ lead, isOpen, onClose, onSave }: EditLeadDialogProps) => {
   console.log("EditLeadDialog rendering. isOpen:", isOpen, "lead:", lead);
   
-  // Detailed logging of calculator data
+  // Detailed logging of calculator data for debugging
   console.log("Initial calculator_results:", JSON.stringify(lead.calculator_results, null, 2));
   console.log("Initial calculator_inputs:", JSON.stringify(lead.calculator_inputs, null, 2));
   
-  if (lead.calculator_results && lead.calculator_results.additionalVoiceMinutes) {
+  // Specifically log the voice minutes value since it's the main issue
+  if (lead.calculator_results && 'additionalVoiceMinutes' in lead.calculator_results) {
     console.log("Found additionalVoiceMinutes:", lead.calculator_results.additionalVoiceMinutes);
   }
 
