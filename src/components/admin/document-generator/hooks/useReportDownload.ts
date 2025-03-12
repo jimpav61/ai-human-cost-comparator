@@ -1,3 +1,4 @@
+
 import { useState } from "react";
 import { Lead } from "@/types/leads";
 import { toast } from "@/hooks/use-toast";
@@ -60,12 +61,22 @@ export const useReportDownload = () => {
           calculatorResults.aiType as string : 
         'chatbot';
       
-      // Determine additional voice minutes
+      // CRITICAL FIX: Properly extract additional voice minutes
       let additionalVoiceMinutes = 0;
+      
+      // First try to get from calculator_results.additionalVoiceMinutes (most authoritative)
       if (calculatorResults && typeof calculatorResults === 'object' && 'additionalVoiceMinutes' in calculatorResults) {
         additionalVoiceMinutes = Number(calculatorResults.additionalVoiceMinutes);
-      } else if (calculatorInputs && typeof calculatorInputs === 'object' && 'callVolume' in calculatorInputs) {
-        additionalVoiceMinutes = Number(calculatorInputs.callVolume);
+        console.log("Using additionalVoiceMinutes from calculator_results:", additionalVoiceMinutes);
+      } 
+      // Then try calculator_inputs.callVolume as fallback
+      else if (calculatorInputs && typeof calculatorInputs === 'object' && 'callVolume' in calculatorInputs) {
+        if (typeof calculatorInputs.callVolume === 'number') {
+          additionalVoiceMinutes = calculatorInputs.callVolume;
+        } else if (typeof calculatorInputs.callVolume === 'string') {
+          additionalVoiceMinutes = parseInt(calculatorInputs.callVolume, 10) || 0;
+        }
+        console.log("Using callVolume from calculator_inputs:", additionalVoiceMinutes);
       }
       
       console.log("Using tierKey:", aiTier);
@@ -91,12 +102,15 @@ export const useReportDownload = () => {
         basePrice = 429;
       }
       
+      // Calculate additional voice cost using the proper rate
+      const additionalVoiceCost = additionalVoiceMinutes * 0.12;
+      
       // Create a proper typed object for the calculator results to use in recalculation
       let typedCalculatorResults: CalculationResults = {
         aiCostMonthly: {
-          voice: aiType.includes('voice') ? 0.12 * additionalVoiceMinutes : 0,
+          voice: additionalVoiceCost,
           chatbot: basePrice,
-          total: basePrice + (aiType.includes('voice') ? 0.12 * additionalVoiceMinutes : 0),
+          total: basePrice + additionalVoiceCost,
           setupFee: setupFee
         },
         basePriceMonthly: basePrice,
@@ -143,38 +157,26 @@ export const useReportDownload = () => {
         typedCalculatorResults.annualPlan = typedResults.annualPlan;
       }
       
-      // Recalculate results to ensure consistency
-      try {
-        const validInputs = ensureCalculatorInputs(adjustedInputs);
-        const recalculatedResults = performCalculations(validInputs, {});
-        
-        // Make sure humanCostMonthly is properly set
-        if (typedResults.humanCostMonthly && 
-            typeof typedResults.humanCostMonthly === 'number' && 
-            typedResults.humanCostMonthly > 0) {
-          typedCalculatorResults.humanCostMonthly = typedResults.humanCostMonthly;
-        } else {
-          // If no humanCostMonthly is set, let's use the recalculated value or set a default
-          typedCalculatorResults.humanCostMonthly = recalculatedResults.humanCostMonthly > 0 ? 
-            recalculatedResults.humanCostMonthly : 
-            typedCalculatorResults.basePriceMonthly * 3; // 3x the base price as a default
-        }
-        
-        // Recalculate savings
-        const aiTotalCost = typedCalculatorResults.aiCostMonthly.total;
-        typedCalculatorResults.monthlySavings = typedCalculatorResults.humanCostMonthly - aiTotalCost;
-        typedCalculatorResults.yearlySavings = typedCalculatorResults.monthlySavings * 12;
-        typedCalculatorResults.savingsPercentage = 
-          (typedCalculatorResults.monthlySavings / typedCalculatorResults.humanCostMonthly) * 100;
-        
-        // Make sure aiType and tierKey are set correctly
-        typedCalculatorResults.aiType = aiType as 'voice' | 'chatbot' | 'both' | 'conversationalVoice' | 'both-premium';
-        typedCalculatorResults.tierKey = aiTier as 'starter' | 'growth' | 'premium';
-        typedCalculatorResults.additionalVoiceMinutes = additionalVoiceMinutes;
-      } catch (calcError) {
-        console.error("Error recalculating results:", calcError);
-        // Continue with existing results if recalculation fails
+      // Make sure humanCostMonthly is properly set
+      if (typedResults.humanCostMonthly && 
+          typeof typedResults.humanCostMonthly === 'number' && 
+          typedResults.humanCostMonthly > 0) {
+        typedCalculatorResults.humanCostMonthly = typedResults.humanCostMonthly;
+      } else {
+        // If no humanCostMonthly is set, let's use a default
+        typedCalculatorResults.humanCostMonthly = typedCalculatorResults.basePriceMonthly * 3; // 3x the base price as a default
       }
+      
+      // Recalculate savings based on human cost and AI cost
+      const aiTotalCost = typedCalculatorResults.basePriceMonthly + typedCalculatorResults.aiCostMonthly.voice;
+      typedCalculatorResults.aiCostMonthly.total = aiTotalCost;
+      typedCalculatorResults.monthlySavings = typedCalculatorResults.humanCostMonthly - aiTotalCost;
+      typedCalculatorResults.yearlySavings = typedCalculatorResults.monthlySavings * 12;
+      typedCalculatorResults.savingsPercentage = 
+        (typedCalculatorResults.monthlySavings / typedCalculatorResults.humanCostMonthly) * 100;
+      
+      // CRITICAL: Make sure the additionalVoiceMinutes is set correctly
+      typedCalculatorResults.additionalVoiceMinutes = additionalVoiceMinutes;
       
       // Format tier and AI type display names
       const tierName = aiTier === 'starter' ? 'Starter Plan' : 
@@ -187,7 +189,7 @@ export const useReportDownload = () => {
                             aiType === 'both' ? 'Text & Basic Voice' : 
                             aiType === 'both-premium' ? 'Text & Conversational Voice' : 'Text Only';
       
-      // Generate the PDF
+      // Generate the PDF - ensure additionalVoiceMinutes is passed to the PDF generator
       const doc = generatePDF({
         contactInfo: lead.name || 'Valued Client',
         companyName: lead.company_name || 'Your Company',
@@ -234,7 +236,15 @@ export const useReportDownload = () => {
       try {
         // Convert calculator data to JSON format
         const jsonInputs = toJson(adjustedInputs);
-        const jsonResults = toJson(typedCalculatorResults);
+        
+        // CRITICAL: Make sure additionalVoiceMinutes is included in the calculator_results
+        if (typeof calculatorResults === 'object') {
+          (calculatorResults as any).additionalVoiceMinutes = additionalVoiceMinutes;
+          (calculatorResults as any).aiType = aiType;
+          (calculatorResults as any).tierKey = aiTier;
+        }
+        
+        const jsonResults = toJson(calculatorResults);
         
         // Create the report data with the generated UUID and lead reference
         const reportData = {
