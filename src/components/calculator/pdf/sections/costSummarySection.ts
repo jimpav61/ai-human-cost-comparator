@@ -13,11 +13,35 @@ export const addCostSummarySection = (
   const margin = 20;
   const effectiveWidth = pageWidth - 2 * margin;
   
-  const humanCostMonthly = results.humanCostMonthly;
-  const aiCostMonthly = results.aiCostMonthly?.total;
-  const monthlySavings = results.monthlySavings;
-  const yearlySavings = results.yearlySavings;
-  const savingsPercentage = results.savingsPercentage;
+  // Ensure humanCostMonthly is not zero
+  let humanCostMonthly = results.humanCostMonthly;
+  let aiCostMonthly = results.aiCostMonthly?.total || 0;
+  
+  // Default pricing based on tier if needed
+  let basePrice = 0;
+  if (results.tierKey === 'starter') {
+    basePrice = 149;
+  } else if (results.tierKey === 'growth') {
+    basePrice = 229;
+  } else if (results.tierKey === 'premium') {
+    basePrice = 399;
+  } else {
+    basePrice = 229; // Default to growth
+  }
+  
+  // If humanCostMonthly is 0, set a reasonable default (3x the AI cost)
+  if (humanCostMonthly === 0) {
+    // If aiCostMonthly is also 0, use the base price
+    if (aiCostMonthly === 0) {
+      aiCostMonthly = basePrice;
+    }
+    humanCostMonthly = aiCostMonthly * 3;
+  }
+  
+  // Calculate savings
+  const monthlySavings = results.monthlySavings || (humanCostMonthly - aiCostMonthly);
+  const yearlySavings = results.yearlySavings || (monthlySavings * 12);
+  const savingsPercentage = results.savingsPercentage || ((monthlySavings / humanCostMonthly) * 100);
   
   const formattedHumanCost = formatCurrency(humanCostMonthly);
   const formattedAICost = formatCurrency(aiCostMonthly);

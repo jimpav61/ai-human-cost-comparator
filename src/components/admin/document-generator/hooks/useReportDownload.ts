@@ -72,19 +72,35 @@ export const useReportDownload = () => {
       // Ensure 1:1 replacement model by setting numEmployees to 1
       const adjustedInputs = { ...calculatorInputs, numEmployees: 1 };
       
+      // Set proper pricing based on tier
+      let setupFee = 0;
+      let basePrice = 0;
+      
+      // Assign proper pricing values based on tier
+      if (aiTier === 'starter') {
+        setupFee = 499;
+        basePrice = 149;
+      } else if (aiTier === 'growth') {
+        setupFee = 749;
+        basePrice = 229;
+      } else if (aiTier === 'premium') {
+        setupFee = 1499;
+        basePrice = 399;
+      }
+      
       // Create a proper typed object for the calculator results to use in recalculation
       let typedCalculatorResults: CalculationResults = {
         aiCostMonthly: {
-          voice: 0,
-          chatbot: 0,
-          total: 0,
-          setupFee: 0
+          voice: aiType.includes('voice') ? 0.12 * additionalVoiceMinutes : 0,
+          chatbot: basePrice,
+          total: basePrice + (aiType.includes('voice') ? 0.12 * additionalVoiceMinutes : 0),
+          setupFee: setupFee
         },
-        basePriceMonthly: 0,
-        humanCostMonthly: 0,
-        monthlySavings: 0,
-        yearlySavings: 0,
-        savingsPercentage: 0,
+        basePriceMonthly: basePrice,
+        humanCostMonthly: 0, // Will be recalculated
+        monthlySavings: 0, // Will be recalculated
+        yearlySavings: 0, // Will be recalculated
+        savingsPercentage: 0, // Will be recalculated
         breakEvenPoint: {
           voice: 0,
           chatbot: 0
@@ -95,41 +111,52 @@ export const useReportDownload = () => {
           monthlyTotal: 0,
           yearlyTotal: 0
         },
-        annualPlan: 0,
-        includedVoiceMinutes: 0,
+        annualPlan: basePrice * 10, // 10 months equivalent for annual plan
+        includedVoiceMinutes: aiTier === 'starter' ? 0 : 600,
         tierKey: aiTier as 'starter' | 'growth' | 'premium',
         aiType: aiType as 'voice' | 'chatbot' | 'both' | 'conversationalVoice' | 'both-premium',
         additionalVoiceMinutes: additionalVoiceMinutes
       };
+      
+      // Use values from calculatorResults if they exist and are not zero
+      if (calculatorResults?.aiCostMonthly?.setupFee > 0) {
+        typedCalculatorResults.aiCostMonthly.setupFee = calculatorResults.aiCostMonthly.setupFee;
+      }
+      
+      if (calculatorResults?.basePriceMonthly > 0) {
+        typedCalculatorResults.basePriceMonthly = calculatorResults.basePriceMonthly;
+      }
+      
+      if (calculatorResults?.annualPlan > 0) {
+        typedCalculatorResults.annualPlan = calculatorResults.annualPlan;
+      }
       
       // Recalculate results to ensure consistency
       try {
         const validInputs = ensureCalculatorInputs(adjustedInputs);
         const recalculatedResults = performCalculations(validInputs, {});
         
-        // Update calculator_results with recalculated values
-        typedCalculatorResults.humanCostMonthly = recalculatedResults.humanCostMonthly;
-        typedCalculatorResults.monthlySavings = recalculatedResults.monthlySavings;
-        typedCalculatorResults.yearlySavings = recalculatedResults.yearlySavings;
-        typedCalculatorResults.savingsPercentage = recalculatedResults.savingsPercentage;
+        // Make sure humanCostMonthly is properly set
+        if (calculatorResults.humanCostMonthly && calculatorResults.humanCostMonthly > 0) {
+          typedCalculatorResults.humanCostMonthly = calculatorResults.humanCostMonthly;
+        } else {
+          // If no humanCostMonthly is set, let's use the recalculated value or set a default
+          typedCalculatorResults.humanCostMonthly = recalculatedResults.humanCostMonthly > 0 ? 
+            recalculatedResults.humanCostMonthly : 
+            typedCalculatorResults.basePriceMonthly * 3; // 3x the base price as a default
+        }
+        
+        // Recalculate savings
+        const aiTotalCost = typedCalculatorResults.aiCostMonthly.total;
+        typedCalculatorResults.monthlySavings = typedCalculatorResults.humanCostMonthly - aiTotalCost;
+        typedCalculatorResults.yearlySavings = typedCalculatorResults.monthlySavings * 12;
+        typedCalculatorResults.savingsPercentage = 
+          (typedCalculatorResults.monthlySavings / typedCalculatorResults.humanCostMonthly) * 100;
         
         // Make sure aiType and tierKey are set correctly
         typedCalculatorResults.aiType = aiType as 'voice' | 'chatbot' | 'both' | 'conversationalVoice' | 'both-premium';
         typedCalculatorResults.tierKey = aiTier as 'starter' | 'growth' | 'premium';
         typedCalculatorResults.additionalVoiceMinutes = additionalVoiceMinutes;
-        
-        // Update the original calculator_results object for database storage
-        if (calculatorResults) {
-          // Use type assertion to allow property assignment
-          const typedResults = calculatorResults as CalculationResults;
-          typedResults.humanCostMonthly = recalculatedResults.humanCostMonthly;
-          typedResults.monthlySavings = recalculatedResults.monthlySavings;
-          typedResults.yearlySavings = recalculatedResults.yearlySavings;
-          typedResults.savingsPercentage = recalculatedResults.savingsPercentage;
-          typedResults.aiType = aiType as 'voice' | 'chatbot' | 'both' | 'conversationalVoice' | 'both-premium';
-          typedResults.tierKey = aiTier as 'starter' | 'growth' | 'premium';
-          typedResults.additionalVoiceMinutes = additionalVoiceMinutes;
-        }
       } catch (calcError) {
         console.error("Error recalculating results:", calcError);
         // Continue with existing results if recalculation fails

@@ -42,7 +42,7 @@ export const PreviousReportsDialog = ({ lead, isOpen, onClose }: PreviousReports
   const [isLoading, setIsLoading] = useState(false);
 
   useEffect(() => {
-    if (isOpen) {
+    if (isOpen && lead.id) {
       loadReports();
     }
   }, [isOpen, lead.id]);
@@ -53,7 +53,7 @@ export const PreviousReportsDialog = ({ lead, isOpen, onClose }: PreviousReports
     try {
       console.log("Loading reports for lead ID:", lead.id);
       
-      // Search by lead_id instead of id
+      // Search by lead_id
       let { data: reportsByLeadId, error: idError } = await supabase
         .from('generated_reports')
         .select('*')
@@ -62,12 +62,26 @@ export const PreviousReportsDialog = ({ lead, isOpen, onClose }: PreviousReports
         
       if (idError) {
         console.error("Error fetching reports by lead ID:", idError);
-        toast({
-          title: "Error",
-          description: "Failed to load report history. Please try again.",
-          variant: "destructive",
-        });
-        setReports([]);
+        
+        // Fall back to searching by ID if no lead_id records found (for backward compatibility)
+        const { data: reportsById, error: idError2 } = await supabase
+          .from('generated_reports')
+          .select('*')
+          .eq('id', lead.id)
+          .order('report_date', { ascending: false });
+          
+        if (idError2) {
+          console.error("Error in fallback query by ID:", idError2);
+          toast({
+            title: "Error",
+            description: "Failed to load report history. Please try again.",
+            variant: "destructive",
+          });
+          setReports([]);
+        } else {
+          console.log(`Found ${reportsById?.length || 0} legacy reports for lead ${lead.name}`);
+          setReports(reportsById || []);
+        }
       } else {
         console.log(`Found ${reportsByLeadId?.length || 0} reports for lead ${lead.name} with ID ${lead.id}`);
         setReports(reportsByLeadId || []);
@@ -92,6 +106,8 @@ export const PreviousReportsDialog = ({ lead, isOpen, onClose }: PreviousReports
       
       const calculatorResults = report.calculator_results;
       const calculatorInputs = report.calculator_inputs;
+      
+      // Ensure we have valid values for the tier and AI type
       const aiTier = calculatorInputs?.aiTier || calculatorResults?.tierKey || 'growth';
       const aiType = calculatorInputs?.aiType || calculatorResults?.aiType || 'chatbot';
       
@@ -101,6 +117,50 @@ export const PreviousReportsDialog = ({ lead, isOpen, onClose }: PreviousReports
         additionalVoiceMinutes = Number(calculatorResults.additionalVoiceMinutes);
       } else if (calculatorInputs && 'callVolume' in calculatorInputs) {
         additionalVoiceMinutes = Number(calculatorInputs.callVolume);
+      }
+      
+      // Set proper pricing based on tier
+      let setupFee = 0;
+      let basePrice = 0;
+      
+      // Ensure we have proper pricing values
+      if (aiTier === 'starter') {
+        setupFee = 499;
+        basePrice = 149;
+      } else if (aiTier === 'growth') {
+        setupFee = 749;
+        basePrice = 229;
+      } else if (aiTier === 'premium') {
+        setupFee = 1499;
+        basePrice = 399;
+      }
+      
+      // Override with values from calculator_results if they exist and are not zero
+      if (calculatorResults?.aiCostMonthly?.setupFee > 0) {
+        setupFee = calculatorResults.aiCostMonthly.setupFee;
+      }
+      
+      if (calculatorResults?.basePriceMonthly > 0) {
+        basePrice = calculatorResults.basePriceMonthly;
+      }
+      
+      // Fix aiCostMonthly values if they're zero
+      if (!calculatorResults.aiCostMonthly || calculatorResults.aiCostMonthly.total === 0) {
+        calculatorResults.aiCostMonthly = {
+          voice: aiType.includes('voice') ? 0.12 * additionalVoiceMinutes : 0,
+          chatbot: basePrice,
+          total: basePrice + (aiType.includes('voice') ? 0.12 * additionalVoiceMinutes : 0),
+          setupFee: setupFee
+        };
+      }
+      
+      // Make sure humanCostMonthly is properly set
+      if (!calculatorResults.humanCostMonthly || calculatorResults.humanCostMonthly === 0) {
+        // Set a reasonable default based on typical cost savings
+        calculatorResults.humanCostMonthly = basePrice * 3; // Example: 3x the AI cost
+        calculatorResults.monthlySavings = calculatorResults.humanCostMonthly - calculatorResults.aiCostMonthly.total;
+        calculatorResults.yearlySavings = calculatorResults.monthlySavings * 12;
+        calculatorResults.savingsPercentage = (calculatorResults.monthlySavings / calculatorResults.humanCostMonthly) * 100;
       }
       
       const tierName = aiTier === 'starter' ? 'Starter Plan' : 

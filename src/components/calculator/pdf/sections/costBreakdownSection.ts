@@ -18,6 +18,20 @@ export const addCostBreakdownSection = (
     aiType: results.aiType
   });
   
+  // Ensure we have valid base price based on tier if basePriceMonthly is zero
+  let basePrice = results.basePriceMonthly;
+  if (basePrice === 0) {
+    if (results.tierKey === 'starter') {
+      basePrice = 149;
+    } else if (results.tierKey === 'growth') {
+      basePrice = 229;
+    } else if (results.tierKey === 'premium') {
+      basePrice = 399;
+    } else {
+      basePrice = 229; // Default to growth price
+    }
+  }
+  
   // Cost Breakdown Section
   doc.setFontSize(16);
   doc.setTextColor(246, 82, 40); // Brand color for section header
@@ -33,7 +47,7 @@ export const addCostBreakdownSection = (
   const baseLabel = results.tierKey === 'premium' ? 'Premium AI Service Base' : 
                   results.tierKey === 'growth' ? 'Growth AI Service Base' : 
                   'Starter AI Service Base';
-  tableRows.push([baseLabel, formatCurrency(results.basePriceMonthly)]);
+  tableRows.push([baseLabel, formatCurrency(basePrice)]);
   
   // Add voice cost if applicable - only show when there's an actual voice cost
   if (results.aiCostMonthly.voice > 0 || (results.additionalVoiceMinutes && results.additionalVoiceMinutes > 0)) {
@@ -50,8 +64,11 @@ export const addCostBreakdownSection = (
     }
   }
   
-  // Add total - use the pre-calculated total
-  tableRows.push(['Monthly Total', formatCurrency(results.aiCostMonthly.total)]);
+  // Calculate total
+  const totalCost = basePrice + (results.aiCostMonthly.voice || 0);
+  
+  // Add total - use the pre-calculated total or the sum of components
+  tableRows.push(['Monthly Total', formatCurrency(results.aiCostMonthly.total > 0 ? results.aiCostMonthly.total : totalCost)]);
   
   // Create the breakdown table with same styling as frontend
   autoTable(doc, {
