@@ -1,4 +1,3 @@
-
 import { JsPDFWithAutoTable } from '../types';
 import { formatCurrency } from '@/utils/formatters';
 import autoTable from 'jspdf-autotable';
@@ -13,14 +12,12 @@ export const addCostSummarySection = (
   const margin = 20;
   const effectiveWidth = pageWidth - 2 * margin;
   
-  // Use exact values from results without recalculation
   const humanCostMonthly = results.humanCostMonthly;
   const aiCostMonthly = results.aiCostMonthly?.total;
   const monthlySavings = results.monthlySavings;
   const yearlySavings = results.yearlySavings;
   const savingsPercentage = results.savingsPercentage;
   
-  // Format values directly from results
   const formattedHumanCost = formatCurrency(humanCostMonthly);
   const formattedAICost = formatCurrency(aiCostMonthly);
   const formattedMonthlySavings = formatCurrency(monthlySavings);
@@ -33,7 +30,6 @@ export const addCostSummarySection = (
   
   startY += 15;
   
-  // Set table styling
   const tableStyles = {
     styles: {
       fontSize: 11,
@@ -55,7 +51,6 @@ export const addCostSummarySection = (
     startY: startY
   };
   
-  // Setup cost comparison table with two columns - use exact values from results
   autoTable(doc, {
     ...tableStyles,
     body: [
@@ -67,9 +62,13 @@ export const addCostSummarySection = (
     ]
   });
   
-  // Get the new Y position after the table is drawn
-  // Fix: jspdf-autotable doesn't add lastAutoTable to the document directly
-  // Instead, get the final Y position from the previous table that was generated
-  const finalY = ((doc as any).__autoTableLastFinalY || startY) + 15;
-  return finalY;
+  let finalY = startY;
+  
+  if (typeof (doc as any).__autoTableLastFinalY !== 'undefined') {
+    finalY = (doc as any).__autoTableLastFinalY;
+  } else {
+    finalY = startY + 25 * 5;
+  }
+  
+  return finalY + 15;
 };

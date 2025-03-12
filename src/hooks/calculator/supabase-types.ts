@@ -1,3 +1,4 @@
+
 import { CalculatorInputs, CalculationResults } from "./types";
 
 /**
@@ -67,7 +68,8 @@ export function getDefaultCalculationResults(): CalculationResults {
       yearlyTotal: 0
     },
     annualPlan: 2290, // Default to growth tier annual plan
-    includedVoiceMinutes: 600 // Default for growth tier
+    includedVoiceMinutes: 600, // Default for growth tier
+    additionalVoiceMinutes: 0 // Default to 0 additional minutes
   };
 }
 
@@ -106,7 +108,7 @@ export function ensureCompleteCalculatorResults(results: any): CalculationResult
                                 results.basePriceMonthly === 429 ? 'premium' : 'growth'),
     aiType: results.aiType || 'both',
     includedVoiceMinutes: results.includedVoiceMinutes ?? (results.tierKey === 'starter' ? 0 : 600),
-    additionalVoiceMinutes: results.additionalVoiceMinutes
+    additionalVoiceMinutes: results.additionalVoiceMinutes ?? 0
   };
 }
 

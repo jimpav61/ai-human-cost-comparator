@@ -24,7 +24,8 @@ export function useCalculator(inputs: CalculatorInputs): CalculationResults {
       yearlyTotal: 0
     },
     annualPlan: 0,
-    includedVoiceMinutes: 0
+    includedVoiceMinutes: 0,
+    additionalVoiceMinutes: 0
   });
   
   const [aiRates, setAiRates] = useState(DEFAULT_AI_RATES);
