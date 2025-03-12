@@ -30,13 +30,29 @@ export const CalculatorOptionsTab = ({
   console.log("CalculatorOptionsTab calculatorInputs:", calculatorInputs);
   console.log("CalculatorOptionsTab calculationResults:", calculationResults);
   
-  // Ensure callVolume is a number
-  let currentCallVolume = calculatorInputs?.callVolume;
-  if (typeof currentCallVolume === 'string') {
-    currentCallVolume = parseInt(currentCallVolume, 10) || 0;
-  } else if (typeof currentCallVolume !== 'number') {
+  // CRITICAL FIX: Try to get callVolume from multiple possible sources
+  let currentCallVolume: number;
+  
+  // First check calculator_inputs
+  if (typeof calculatorInputs?.callVolume === 'number') {
+    currentCallVolume = calculatorInputs.callVolume;
+  } else if (typeof calculatorInputs?.callVolume === 'string') {
+    currentCallVolume = parseInt(calculatorInputs.callVolume, 10) || 0;
+  } 
+  // Then check calculator_results.additionalVoiceMinutes
+  else if (calculationResults?.additionalVoiceMinutes !== undefined) {
+    currentCallVolume = calculationResults.additionalVoiceMinutes;
+    // Also update the calculator inputs to match
+    if (calculatorInputs.callVolume !== currentCallVolume) {
+      console.log("Updating calculatorInputs.callVolume to match additionalVoiceMinutes:", currentCallVolume);
+      handleCalculatorInputChange('callVolume', currentCallVolume);
+    }
+  }
+  else {
     currentCallVolume = 0;
   }
+  
+  console.log("Using currentCallVolume:", currentCallVolume);
   
   // Handle changes to AI tier to ensure AI type stays consistent
   useEffect(() => {

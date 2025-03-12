@@ -14,6 +14,12 @@ export const generateProposalPdf = (lead: Lead): string => {
   // Make sure we have proper results data by creating a deep clone
   const sanitizedLead = JSON.parse(JSON.stringify(lead));
   
+  // Explicitly log the important fields for debugging
+  console.log("BEFORE SYNC - aiTier:", sanitizedLead.calculator_inputs?.aiTier);
+  console.log("BEFORE SYNC - aiType:", sanitizedLead.calculator_inputs?.aiType);
+  console.log("BEFORE SYNC - callVolume:", sanitizedLead.calculator_inputs?.callVolume);
+  console.log("BEFORE SYNC - additionalVoiceMinutes:", sanitizedLead.calculator_results?.additionalVoiceMinutes);
+  
   // Ensure callVolume is a number
   if (sanitizedLead.calculator_inputs && typeof sanitizedLead.calculator_inputs.callVolume === 'string') {
     sanitizedLead.calculator_inputs.callVolume = parseInt(sanitizedLead.calculator_inputs.callVolume, 10) || 0;
@@ -35,7 +41,7 @@ export const generateProposalPdf = (lead: Lead): string => {
       sanitizedLead.calculator_inputs.aiType = aiType;
     }
     
-    // Sync additionalVoiceMinutes to callVolume
+    // CRITICAL FIX: Copy additionalVoiceMinutes to callVolume - this is a source of confusion
     if ('additionalVoiceMinutes' in sanitizedLead.calculator_results) {
       const additionalVoiceMinutes = sanitizedLead.calculator_results.additionalVoiceMinutes || 0;
       if (sanitizedLead.calculator_inputs.callVolume !== additionalVoiceMinutes) {
@@ -44,6 +50,10 @@ export const generateProposalPdf = (lead: Lead): string => {
       }
     }
   }
+  
+  console.log("AFTER SYNC - aiTier:", sanitizedLead.calculator_inputs?.aiTier);
+  console.log("AFTER SYNC - aiType:", sanitizedLead.calculator_inputs?.aiType);
+  console.log("AFTER SYNC - callVolume:", sanitizedLead.calculator_inputs?.callVolume);
   
   // Use our template-based approach that directly uses stored values
   return generateTemplateBasedPdf(sanitizedLead);

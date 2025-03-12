@@ -17,8 +17,14 @@ interface EditLeadDialogProps {
 
 export const EditLeadDialog = ({ lead, isOpen, onClose, onSave }: EditLeadDialogProps) => {
   console.log("EditLeadDialog rendering. isOpen:", isOpen, "lead:", lead);
-  // Log calculator results for debugging
-  console.log("Initial calculator_results:", lead.calculator_results);
+  
+  // Detailed logging of calculator data
+  console.log("Initial calculator_results:", JSON.stringify(lead.calculator_results, null, 2));
+  console.log("Initial calculator_inputs:", JSON.stringify(lead.calculator_inputs, null, 2));
+  
+  if (lead.calculator_results && lead.calculator_results.additionalVoiceMinutes) {
+    console.log("Found additionalVoiceMinutes:", lead.calculator_results.additionalVoiceMinutes);
+  }
 
   // Use custom hooks to manage state and logic
   const { formData, handleBasicInfoChange, setFormData } = useLeadForm(lead);
@@ -60,7 +66,7 @@ export const EditLeadDialog = ({ lead, isOpen, onClose, onSave }: EditLeadDialog
       const aiTier = calculatorInputs.aiTier || 'growth';
       let aiType = calculatorInputs.aiType || 'both';
       
-      // CRUCIAL FIX: Force consistent AI type values based on tier
+      // Force consistent AI type values based on tier
       if (aiTier === 'starter' && aiType !== 'chatbot') {
         // Starter plan only supports text (chatbot)
         aiType = 'chatbot';
@@ -94,7 +100,7 @@ export const EditLeadDialog = ({ lead, isOpen, onClose, onSave }: EditLeadDialog
         }
       }
 
-      // CRUCIAL FIX: Make sure call volume is a number
+      // Make sure call volume is a number
       if (typeof calculatorInputs.callVolume === 'string') {
         calculatorInputs.callVolume = parseInt(calculatorInputs.callVolume, 10) || 0;
         console.log("Converted callVolume from string to number:", calculatorInputs.callVolume);
@@ -106,6 +112,19 @@ export const EditLeadDialog = ({ lead, isOpen, onClose, onSave }: EditLeadDialog
       if (aiTier === 'starter' && calculatorInputs.callVolume > 0) {
         calculatorInputs.callVolume = 0;
         console.log("Reset callVolume to 0 for starter plan");
+      }
+
+      // Important: Make sure the calculationResults have the right additionalVoiceMinutes
+      // This ensures the PDF generator has the correct data
+      if (calculationResults) {
+        calculationResults.additionalVoiceMinutes = calculatorInputs.callVolume;
+        calculationResults.tierKey = aiTier;
+        calculationResults.aiType = aiType;
+        console.log("Updated calculationResults with current values:", {
+          additionalVoiceMinutes: calculationResults.additionalVoiceMinutes,
+          tierKey: calculationResults.tierKey,
+          aiType: calculationResults.aiType
+        });
       }
 
       // Extra log to verify callVolume is being saved correctly
