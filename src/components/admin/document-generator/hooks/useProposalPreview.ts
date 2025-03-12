@@ -50,7 +50,8 @@ export const useProposalPreview = () => {
     loadProposalVersion,
     calculatePrice,
     handleTierChange,
-    handleAITypeChange
+    handleAITypeChange,
+    getUnifiedDocumentData
   } = useEditableProposal();
   
   // Generate the proposal and save as revision
@@ -141,19 +142,10 @@ export const useProposalPreview = () => {
   // Handle creating a new version of the proposal with updated settings
   const handleCreateNewVersion = async (lead: Lead) => {
     try {
-      // Create updated proposal with new settings
-      // FIX: Add type assertion to ensure aiType has the correct type
-      const updatedLead: Lead = {
-        ...lead,
-        calculator_inputs: {
-          ...lead.calculator_inputs,
-          aiTier: editingAiTier,
-          // Use type assertion to ensure aiType is one of the allowed values
-          aiType: editingAiType as "voice" | "chatbot" | "both" | "conversationalVoice" | "both-premium",
-          callVolume: editingCallVolume
-        }
-      };
+      // Use the unified document approach to create an updated lead with consistent data
+      const updatedLead = getUnifiedDocumentData(lead);
       
+      // Generate the new proposal content from the updated lead
       const updatedProposalContent = generateProposalPdf(updatedLead);
       
       // Store the pricing information in the notes as JSON

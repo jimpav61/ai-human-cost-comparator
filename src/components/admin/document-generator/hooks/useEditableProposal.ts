@@ -3,6 +3,10 @@ import { useState } from "react";
 import { Lead } from "@/types/leads";
 import { ProposalRevision } from "./useProposalRevisions";
 
+// Define a consistent set of allowed AI types for better type safety
+export type AIType = "voice" | "chatbot" | "both" | "conversationalVoice" | "both-premium";
+export type AITier = "starter" | "growth" | "premium";
+
 interface EditableProposal {
   id: string | null;
   content: string | null;
@@ -18,18 +22,23 @@ export const useEditableProposal = () => {
   const [isLoadingVersions, setIsLoadingVersions] = useState(false);
   
   // Form state for proposal editing
-  const [editingAiTier, setEditingAiTier] = useState<"starter" | "growth" | "premium">("growth");
-  // Ensure aiType is properly typed for strict type checking
-  const [editingAiType, setEditingAiType] = useState<"voice" | "chatbot" | "both" | "conversationalVoice" | "both-premium">("both");
+  const [editingAiTier, setEditingAiTier] = useState<AITier>("growth");
+  const [editingAiType, setEditingAiType] = useState<AIType>("both");
   const [editingCallVolume, setEditingCallVolume] = useState(0);
   const [proposalTitle, setProposalTitle] = useState("");
   const [proposalNotes, setProposalNotes] = useState("");
   
   // Initialize form state from lead data
   const initializeFromLead = (lead: Lead) => {
-    setEditingAiTier((lead.calculator_inputs?.aiTier as any) || 'growth');
+    // Safely handle AITier
+    const aiTier = lead.calculator_inputs?.aiTier;
+    if (aiTier === 'starter' || aiTier === 'growth' || aiTier === 'premium') {
+      setEditingAiTier(aiTier);
+    } else {
+      setEditingAiTier('growth'); // Default to growth if invalid
+    }
     
-    // Ensure aiType is properly set with type checking
+    // Safely handle AIType
     const aiType = lead.calculator_inputs?.aiType;
     if (aiType === 'voice' || aiType === 'chatbot' || aiType === 'both' || 
         aiType === 'conversationalVoice' || aiType === 'both-premium') {
@@ -39,10 +48,13 @@ export const useEditableProposal = () => {
       setEditingAiType('both');
     }
     
+    // Ensure callVolume is a number
     setEditingCallVolume(
       typeof lead.calculator_inputs?.callVolume === 'number' 
         ? lead.calculator_inputs.callVolume 
-        : 0
+        : typeof lead.calculator_inputs?.callVolume === 'string'
+          ? parseInt(lead.calculator_inputs.callVolume, 10) || 0
+          : 0
     );
   };
   
@@ -66,9 +78,13 @@ export const useEditableProposal = () => {
     // Try to extract AI settings from notes JSON if available
     try {
       const notesData = JSON.parse(version.notes || "{}");
-      if (notesData.aiTier) setEditingAiTier(notesData.aiTier as any);
       
-      // Handle aiType with proper type checking
+      // Safely handle aiTier
+      if (notesData.aiTier === 'starter' || notesData.aiTier === 'growth' || notesData.aiTier === 'premium') {
+        setEditingAiTier(notesData.aiTier);
+      }
+      
+      // Safely handle aiType with proper type checking
       if (notesData.aiType) {
         const aiType = notesData.aiType;
         if (aiType === 'voice' || aiType === 'chatbot' || aiType === 'both' || 
@@ -77,9 +93,17 @@ export const useEditableProposal = () => {
         }
       }
       
-      if (notesData.callVolume !== undefined) setEditingCallVolume(notesData.callVolume);
+      // Ensure callVolume is a number
+      if (notesData.callVolume !== undefined) {
+        setEditingCallVolume(
+          typeof notesData.callVolume === 'number' 
+            ? notesData.callVolume 
+            : parseInt(String(notesData.callVolume), 10) || 0
+        );
+      }
     } catch (e) {
       // If notes isn't JSON, just continue with existing data
+      console.log("Error parsing proposal notes JSON:", e);
     }
   };
   
@@ -102,7 +126,7 @@ export const useEditableProposal = () => {
   };
   
   // Handle changes to AI tier with proper AI type adjustment
-  const handleTierChange = (newTier: "starter" | "growth" | "premium") => {
+  const handleTierChange = (newTier: AITier) => {
     setEditingAiTier(newTier);
     
     // Update AI type based on tier
@@ -119,7 +143,7 @@ export const useEditableProposal = () => {
   };
   
   // Handle AI type change with proper tier adjustment
-  const handleAITypeChange = (newType: "voice" | "chatbot" | "both" | "conversationalVoice" | "both-premium") => {
+  const handleAITypeChange = (newType: AIType) => {
     setEditingAiType(newType);
     
     // Update tier based on AI type
@@ -130,6 +154,58 @@ export const useEditableProposal = () => {
     } else if (newType === 'chatbot' && editingAiTier === 'starter') {
       setEditingCallVolume(0);
     }
+  };
+  
+  // Create a unified document data structure that combines all editable fields
+  const getUnifiedDocumentData = (lead: Lead): Lead => {
+    // Start with the existing lead
+    const updatedLead: Lead = {
+      ...lead,
+      calculator_inputs: {
+        ...lead.calculator_inputs,
+        aiTier: editingAiTier,
+        aiType: editingAiType,
+        callVolume: editingCallVolume
+      }
+    };
+    
+    // If calculator_results doesn't exist, initialize it with basic structure
+    if (!updatedLead.calculator_results) {
+      updatedLead.calculator_results = {
+        aiCostMonthly: {
+          voice: 0,
+          chatbot: 0,
+          total: 0,
+          setupFee: 0
+        },
+        basePriceMonthly: 0,
+        humanCostMonthly: 0,
+        monthlySavings: 0,
+        yearlySavings: 0,
+        savingsPercentage: 0,
+        breakEvenPoint: {
+          voice: 0,
+          chatbot: 0
+        },
+        humanHours: {
+          dailyPerEmployee: 0,
+          weeklyTotal: 0,
+          monthlyTotal: 0,
+          yearlyTotal: 0
+        },
+        annualPlan: 0
+      };
+    }
+    
+    // Update key values based on current settings
+    const pricing = calculatePrice();
+    updatedLead.calculator_results.tierKey = editingAiTier;
+    updatedLead.calculator_results.aiType = editingAiType;
+    updatedLead.calculator_results.basePriceMonthly = pricing.basePrice;
+    updatedLead.calculator_results.aiCostMonthly.total = pricing.totalPrice;
+    updatedLead.calculator_results.includedVoiceMinutes = pricing.includedMinutes;
+    
+    return updatedLead;
   };
   
   return {
@@ -153,6 +229,7 @@ export const useEditableProposal = () => {
     loadProposalVersion,
     calculatePrice,
     handleTierChange,
-    handleAITypeChange
+    handleAITypeChange,
+    getUnifiedDocumentData
   };
 };
