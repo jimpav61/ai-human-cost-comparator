@@ -32,23 +32,17 @@ export const VoiceConfigSection: React.FC<VoiceConfigSectionProps> = ({
   // Reset call volume to 0 when tier changes to starter
   useEffect(() => {
     if (isStarterPlan && callVolume > 0) {
-      console.log("VoiceConfigSection: Resetting call volume to 0 for starter plan");
       onInputChange('callVolume', 0);
     }
   }, [aiTier, isStarterPlan, callVolume, onInputChange]);
-  
-  // Log for debugging purposes
-  console.log("VoiceConfigSection rendering with callVolume:", callVolume, "aiTier:", aiTier);
   
   // Handle call volume changes
   const handleCallVolumeChange = (value: string) => {
     // Ensure value is parsed as a number
     const numericValue = parseInt(value, 10) || 0;
-    console.log(`VoiceConfigSection: Call volume changed to ${numericValue}`);
     
     if (isStarterPlan && numericValue > 0) {
       // If user tries to add minutes in starter plan, auto-upgrade to growth
-      console.log("VoiceConfigSection: Call volume > 0 on starter plan, upgrading to Growth tier");
       onInputChange('aiTier', 'growth');
       onInputChange('callVolume', numericValue);
       
@@ -58,7 +52,7 @@ export const VoiceConfigSection: React.FC<VoiceConfigSectionProps> = ({
         variant: "default",
       });
     } else {
-      // Normal handling for non-starter plans - ensure we pass a number
+      // Normal handling for non-starter plans
       onInputChange('callVolume', numericValue);
     }
   };

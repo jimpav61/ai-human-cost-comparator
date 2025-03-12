@@ -1,6 +1,7 @@
 
 import { useState, useEffect, useCallback } from 'react';
-import { useCalculator, type CalculatorInputs } from "@/hooks/useCalculator";
+import { useCalculator } from "@/hooks/useCalculator";
+import type { CalculatorInputs } from "@/hooks/calculator/types";
 import { Lead } from "@/types/leads";
 
 // Helper function to validate aiType
@@ -26,214 +27,117 @@ const defaultCalculatorInputs: CalculatorInputs = {
   role: 'customerService',
   numEmployees: 5,
   callVolume: 0,
-  avgCallDuration: 0, // Keep for backward compatibility but no longer used
+  avgCallDuration: 0,
   chatVolume: 2000,
-  avgChatLength: 0, // Keep for backward compatibility but no longer used
-  avgChatResolutionTime: 0 // Keep for backward compatibility but no longer used
+  avgChatLength: 0,
+  avgChatResolutionTime: 0
 };
 
 export function useLeadCalculator(lead: Lead) {
-  // Ensure we have valid calculator inputs by merging defaults with lead data if available
+  // Initialize state with properly processed inputs
   const [calculatorInputs, setCalculatorInputs] = useState<CalculatorInputs>(() => {
-    // Deep clone the lead to avoid reference issues
+    // Start with a deep clone of the lead to avoid reference issues
     const leadClone = JSON.parse(JSON.stringify(lead));
-    console.log("INIT useLeadCalculator with lead:", leadClone.id);
     
-    // CRITICAL FIX: ALWAYS prioritize calculator_results over calculator_inputs
-    // Check if lead has valid calculator_results                      
-    const hasValidResults = leadClone.calculator_results && 
-                           typeof leadClone.calculator_results === 'object' && 
-                           Object.keys(leadClone.calculator_results).length > 0;
+    // Extract key values with proper defaults
+    const aiTier = leadClone.calculator_results?.tierKey || 
+                  leadClone.calculator_inputs?.aiTier || 
+                  'growth';
+                  
+    const aiType = leadClone.calculator_results?.aiType || 
+                  leadClone.calculator_inputs?.aiType || 
+                  'both';
+                  
+    const callVolume = Number(leadClone.calculator_results?.additionalVoiceMinutes || 
+                             leadClone.calculator_inputs?.callVolume || 
+                             0);
+                             
+    const chatVolume = Number(leadClone.calculator_inputs?.chatVolume || 2000);
     
-    if (hasValidResults) {
-      console.log("Initializing from calculator_results:", leadClone.calculator_results);
-      
-      // Extract the tierKey and aiType directly from calculator_results
-      const tierKey = leadClone.calculator_results.tierKey || 'growth';
-      const aiType = leadClone.calculator_results.aiType || 'both';
-      
-      // CRITICAL: Extract additional voice minutes from calculator_results
-      let additionalVoiceMinutes = 0;
-      if ('additionalVoiceMinutes' in leadClone.calculator_results) {
-        additionalVoiceMinutes = leadClone.calculator_results.additionalVoiceMinutes;
-        console.log("Found additionalVoiceMinutes in results:", additionalVoiceMinutes);
-      }
-      
-      // Create input objects based on the results data
-      const inputsFromResults: CalculatorInputs = {
-        ...defaultCalculatorInputs,
-        aiTier: validateAiTier(tierKey),
-        aiType: validateAiType(aiType),
-        callVolume: Number(additionalVoiceMinutes) || 0,
-        numEmployees: Number(leadClone.employee_count) || defaultCalculatorInputs.numEmployees
-      };
-      
-      console.log("Created calculator inputs from results:", inputsFromResults);
-      return inputsFromResults;
-    }
+    const numEmployees = Number(leadClone.employee_count || 5);
     
-    // Only fall back to calculator_inputs if no results are available
-    const hasValidInputs = leadClone.calculator_inputs && 
-                          typeof leadClone.calculator_inputs === 'object' && 
-                          Object.keys(leadClone.calculator_inputs).length > 0;
-    
-    if (hasValidInputs) {
-      console.log("Falling back to calculator_inputs:", leadClone.calculator_inputs);
-      
-      // Get AI type from inputs, ensure it's a valid value
-      const aiTypeFromInputs = leadClone.calculator_inputs.aiType as string;
-      const validatedAiType = validateAiType(aiTypeFromInputs);
-      
-      // Get tier from inputs, ensure it's a valid value
-      const aiTierFromInputs = leadClone.calculator_inputs.aiTier as string;
-      const validatedAiTier = validateAiTier(aiTierFromInputs);
-      
-      // Ensure callVolume is properly converted to a number
-      let callVolume = leadClone.calculator_inputs.callVolume;
-      if (typeof callVolume === 'string') {
-        callVolume = parseInt(callVolume, 10) || 0;
-      } else if (typeof callVolume !== 'number') {
-        callVolume = 0;
-      }
-      
-      // Merge with defaults to ensure all properties exist
-      const mergedInputs = { 
-        ...defaultCalculatorInputs, 
-        ...leadClone.calculator_inputs,
-        aiType: validatedAiType,
-        aiTier: validatedAiTier,
-        callVolume: callVolume,
-        numEmployees: leadClone.employee_count || defaultCalculatorInputs.numEmployees
-      } as CalculatorInputs;
-      
-      console.log("Initialized calculator inputs from lead inputs:", mergedInputs);
-      return mergedInputs;
-    }
-    
-    // If no valid inputs or results, use default inputs with employee count from lead
-    const defaultInputs = {
+    // Create initial state with validated values
+    return {
       ...defaultCalculatorInputs,
-      numEmployees: leadClone.employee_count || defaultCalculatorInputs.numEmployees
+      aiTier: validateAiTier(aiTier),
+      aiType: validateAiType(aiType),
+      callVolume: callVolume,
+      chatVolume: chatVolume,
+      numEmployees: numEmployees
     };
-    
-    console.log("Using default inputs:", defaultInputs);
-    return defaultInputs;
   });
 
   // Use the calculator hook to get calculation results
   const calculationResults = useCalculator(calculatorInputs);
 
-  // Handle changes to calculator inputs - wrap in useCallback to avoid unnecessary recreation
-  const handleCalculatorInputChange = useCallback((field: string, value: any) => {
-    console.log(`Changing calculator input ${field} to:`, value);
-    
-    if (field === 'aiType') {
-      value = validateAiType(value);
-    } else if (field === 'aiTier') {
-      value = validateAiTier(value);
-    } else if (field === 'callVolume') {
-      // Ensure callVolume is always a number
-      if (typeof value === 'string') {
-        value = parseInt(value, 10) || 0;
-      } else if (typeof value !== 'number') {
-        value = 0;
+  // Create a stable callback for handling input changes
+  const handleCalculatorInputChange = useCallback((field: keyof CalculatorInputs, value: any) => {
+    setCalculatorInputs(prev => {
+      const updatedInputs = { ...prev };
+      
+      // Handle special field logic
+      if (field === 'aiType') {
+        updatedInputs[field] = validateAiType(value);
+      } 
+      else if (field === 'aiTier') {
+        const newTier = validateAiTier(value);
+        updatedInputs[field] = newTier;
+        
+        // Handle tier-specific logic
+        if (newTier === 'starter') {
+          updatedInputs.aiType = 'chatbot';
+          updatedInputs.callVolume = 0;
+        }
+        else if (newTier === 'premium') {
+          if (prev.aiType === 'voice') {
+            updatedInputs.aiType = 'conversationalVoice';
+          }
+          else if (prev.aiType === 'both') {
+            updatedInputs.aiType = 'both-premium';
+          }
+        }
+        else if (newTier === 'growth') {
+          if (prev.aiType === 'conversationalVoice') {
+            updatedInputs.aiType = 'voice';
+          }
+          else if (prev.aiType === 'both-premium') {
+            updatedInputs.aiType = 'both';
+          }
+        }
       }
-    }
-    
-    setCalculatorInputs(prev => ({
-      ...prev,
-      [field]: value
-    }));
+      else if (field === 'callVolume') {
+        // Ensure callVolume is always a number
+        updatedInputs[field] = typeof value === 'string' ? (parseInt(value, 10) || 0) : value;
+      }
+      else if (field === 'numEmployees') {
+        // Ensure numEmployees is always a number
+        updatedInputs[field] = typeof value === 'string' ? (parseInt(value, 10) || 1) : value;
+      }
+      else {
+        // For all other fields, just set the value directly
+        updatedInputs[field] = value;
+      }
+      
+      return updatedInputs;
+    });
   }, []);
 
-  // Update calculator inputs when lead changes
+  // Update inputs when lead changes, but only for initialization
   useEffect(() => {
-    // Deep clone the lead to avoid reference issues
     const leadClone = JSON.parse(JSON.stringify(lead));
-    console.log("Lead changed in useLeadCalculator:", leadClone.id);
     
-    // CRITICAL FIX: ALWAYS prioritize calculator_results over calculator_inputs
-    // Check if lead has valid calculator_results                      
-    const hasValidResults = leadClone.calculator_results && 
-                           typeof leadClone.calculator_results === 'object' && 
-                           Object.keys(leadClone.calculator_results).length > 0;
-    
-    if (hasValidResults) {
-      console.log("Updating from calculator_results:", leadClone.calculator_results);
-      
-      // Extract values directly from calculator_results
-      const tierKey = leadClone.calculator_results.tierKey || 'growth';
-      const aiType = leadClone.calculator_results.aiType || 'both';
-      
-      // Extract additional voice minutes from results
-      let additionalVoiceMinutes = 0;
-      if ('additionalVoiceMinutes' in leadClone.calculator_results) {
-        additionalVoiceMinutes = leadClone.calculator_results.additionalVoiceMinutes;
-        console.log("Found additionalVoiceMinutes in results:", additionalVoiceMinutes);
+    // Only update when the lead ID changes to avoid re-rendering issues
+    setCalculatorInputs(prev => {
+      if (prev.numEmployees === Number(leadClone.employee_count)) {
+        return prev; // Don't update if employee count is the same
       }
       
-      // Create calculator inputs from the results
-      const inputsFromResults: CalculatorInputs = {
-        ...defaultCalculatorInputs,
-        aiTier: validateAiTier(tierKey),
-        aiType: validateAiType(aiType),
-        callVolume: Number(additionalVoiceMinutes) || 0,
-        numEmployees: Number(leadClone.employee_count) || defaultCalculatorInputs.numEmployees
+      return {
+        ...prev,
+        numEmployees: Number(leadClone.employee_count || 5)
       };
-      
-      console.log("Updated calculator inputs from results:", inputsFromResults);
-      setCalculatorInputs(inputsFromResults);
-      return;  // Exit early since we've updated from results
-    }
-    
-    // Only fall back to calculator_inputs if no results are available
-    const hasValidInputs = leadClone.calculator_inputs && 
-                          typeof leadClone.calculator_inputs === 'object' && 
-                          Object.keys(leadClone.calculator_inputs).length > 0;
-    
-    if (hasValidInputs) {
-      console.log("Falling back to calculator_inputs:", leadClone.calculator_inputs);
-      
-      // Get AI type from inputs, ensure it's a valid value
-      const aiTypeFromInputs = leadClone.calculator_inputs.aiType as string;
-      const validatedAiType = validateAiType(aiTypeFromInputs);
-      
-      // Get tier from inputs, ensure it's a valid value
-      const aiTierFromInputs = leadClone.calculator_inputs.aiTier as string;
-      const validatedAiTier = validateAiTier(aiTierFromInputs);
-      
-      // Ensure callVolume is properly converted to a number
-      let callVolume = leadClone.calculator_inputs.callVolume;
-      if (typeof callVolume === 'string') {
-        callVolume = parseInt(callVolume, 10) || 0;
-      } else if (typeof callVolume !== 'number') {
-        callVolume = 0;
-      }
-      
-      // Merge with defaults to ensure all properties exist
-      const mergedInputs = { 
-        ...defaultCalculatorInputs, 
-        ...leadClone.calculator_inputs,
-        aiType: validatedAiType,
-        aiTier: validatedAiTier,
-        callVolume: callVolume,
-        numEmployees: leadClone.employee_count || defaultCalculatorInputs.numEmployees
-      } as CalculatorInputs;
-      
-      console.log("Updated calculator inputs from lead inputs:", mergedInputs);
-      setCalculatorInputs(mergedInputs);
-    }
-    else {
-      // If no valid inputs or results, use default inputs with employee count from lead
-      const defaultInputs = {
-        ...defaultCalculatorInputs,
-        numEmployees: leadClone.employee_count || defaultCalculatorInputs.numEmployees
-      };
-      
-      console.log("Using default inputs:", defaultInputs);
-      setCalculatorInputs(defaultInputs);
-    }
-  }, [lead]);
+    });
+  }, [lead.id, lead.employee_count]);
 
   return {
     calculatorInputs,

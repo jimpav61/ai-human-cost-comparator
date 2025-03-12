@@ -13,13 +13,10 @@ export const ChatConfigSection: React.FC<ChatConfigSectionProps> = ({
   chatVolume,
   onInputChange
 }) => {
-  // Logging for debugging
-  console.log("ChatConfigSection rendering with chatVolume:", chatVolume);
-  
   // Handle change to ensure it's a number
-  const handleChatVolumeChange = (value: string) => {
+  const handleChatVolumeChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const value = e.target.value;
     const numValue = parseInt(value, 10) || 0;
-    console.log("ChatConfigSection: chat volume changed to", numValue);
     onInputChange('chatVolume', numValue);
   };
   
@@ -33,7 +30,7 @@ export const ChatConfigSection: React.FC<ChatConfigSectionProps> = ({
         type="number" 
         min="1"
         value={chatVolume}
-        onChange={(e) => handleChatVolumeChange(e.target.value)}
+        onChange={handleChatVolumeChange}
         className="w-full"
       />
     </div>
