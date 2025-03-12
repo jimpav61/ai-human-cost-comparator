@@ -26,104 +26,47 @@ interface PreviewProposalButtonProps {
   disabled?: boolean;
 }
 
-// Type definitions for aiTier and aiType
-type AiTier = "starter" | "growth" | "premium";
-type AiType = "voice" | "chatbot" | "both" | "conversationalVoice" | "both-premium";
-
 export const PreviewProposalButton = ({ lead, disabled }: PreviewProposalButtonProps) => {
   const { 
     isLoading, 
-    handlePreviewProposal, 
-    editableProposal, 
-    setEditableProposal,
-    getProposalRevisions,
-    getLatestProposalRevision,
-    saveProposalRevision,
-    generateProfessionalProposal,
-    currentRevision,
-    setCurrentRevision,
+    handlePreviewProposal,
+    loadProposalVersions,
+    handleCreateNewVersion,
+    editableProposal,
+    proposalVersions,
+    selectedVersion,
+    isLoadingVersions,
+    currentPdfPreviewUrl,
     showPdfPreview,
-    setShowPdfPreview
+    setShowPdfPreview,
+    editingAiTier,
+    editingAiType,
+    editingCallVolume,
+    setEditingCallVolume,
+    proposalTitle,
+    setProposalTitle,
+    proposalNotes,
+    setProposalNotes,
+    handleTierChange,
+    handleAITypeChange,
+    loadProposalVersion,
+    calculatePrice,
+    handlePreviewPDF,
+    downloadPdf,
+    cleanupPdfPreview
   } = useProposalPreview();
   
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [activeTab, setActiveTab] = useState("preview");
-  const [proposalContent, setProposalContent] = useState("");
-  const [proposalTitle, setProposalTitle] = useState("");
-  const [proposalNotes, setProposalNotes] = useState("");
-  const [proposalVersions, setProposalVersions] = useState<any[]>([]);
-  const [selectedVersion, setSelectedVersion] = useState<any>(null);
-  const [isLoadingVersions, setIsLoadingVersions] = useState(false);
-  const [currentPdfPreviewUrl, setCurrentPdfPreviewUrl] = useState<string | null>(null);
-  
-  // Form state for proposal editing
-  const [editingAiTier, setEditingAiTier] = useState<AiTier>(
-    (lead.calculator_inputs?.aiTier as AiTier) || 'growth'
-  );
-  const [editingAiType, setEditingAiType] = useState<AiType>(
-    (lead.calculator_inputs?.aiType as AiType) || 'both'
-  );
-  const [editingCallVolume, setEditingCallVolume] = useState(
-    typeof lead.calculator_inputs?.callVolume === 'number' 
-      ? lead.calculator_inputs.callVolume 
-      : 0
-  );
-  
-  // Calculate pricing based on current selections
-  const calculatePrice = () => {
-    const basePrice = 
-      editingAiTier === 'starter' ? 99 :
-      editingAiTier === 'growth' ? 229 :
-      editingAiTier === 'premium' ? 429 : 229;
-    
-    const includedMinutes = editingAiTier === 'starter' ? 0 : 600;
-    const extraVoiceCost = editingAiTier !== 'starter' ? editingCallVolume * 0.12 : 0;
-    
-    return {
-      basePrice,
-      includedMinutes,
-      extraVoiceCost,
-      totalPrice: basePrice + extraVoiceCost
-    };
-  };
-  
-  const pricing = calculatePrice();
-  
-  // Reset form state when lead changes
-  useEffect(() => {
-    if (lead) {
-      setEditingAiTier((lead.calculator_inputs?.aiTier as AiTier) || 'growth');
-      setEditingAiType((lead.calculator_inputs?.aiType as AiType) || 'both');
-      setEditingCallVolume(
-        typeof lead.calculator_inputs?.callVolume === 'number' 
-          ? lead.calculator_inputs.callVolume 
-          : 0
-      );
-    }
-  }, [lead]);
-  
-  // Effect to update form when changing versions
-  useEffect(() => {
-    if (selectedVersion) {
-      // If we have version-specific pricing data in notes (could be stored as JSON)
-      try {
-        const notesData = JSON.parse(selectedVersion.notes || "{}");
-        if (notesData.aiTier) setEditingAiTier(notesData.aiTier as AiTier);
-        if (notesData.aiType) setEditingAiType(notesData.aiType as AiType);
-        if (notesData.callVolume !== undefined) setEditingCallVolume(notesData.callVolume);
-      } catch (e) {
-        // If notes isn't JSON, just continue with lead data
-      }
-    }
-  }, [selectedVersion]);
   
   // Clean up PDF preview URL when dialog closes
   useEffect(() => {
-    if (!isDialogOpen && currentPdfPreviewUrl) {
-      URL.revokeObjectURL(currentPdfPreviewUrl);
-      setCurrentPdfPreviewUrl(null);
+    if (!isDialogOpen) {
+      cleanupPdfPreview();
     }
-  }, [isDialogOpen, currentPdfPreviewUrl]);
+  }, [isDialogOpen, cleanupPdfPreview]);
+  
+  const pricing = calculatePrice();
   
   const onClick = async () => {
     console.log("Preview button clicked with lead:", lead);
@@ -140,22 +83,12 @@ export const PreviewProposalButton = ({ lead, disabled }: PreviewProposalButtonP
     
     try {
       // Load previous versions
-      setIsLoadingVersions(true);
-      const versions = await getProposalRevisions(lead.id);
-      setProposalVersions(versions);
-      setIsLoadingVersions(false);
+      await loadProposalVersions(lead.id);
       
       // Get or generate a preview
       const latestRevision = await handlePreviewProposal(lead);
       
       if (latestRevision) {
-        setProposalContent(latestRevision.proposal_content);
-        setProposalTitle(latestRevision.title);
-        setProposalNotes(latestRevision.notes || "");
-        
-        // Create PDF preview on initial open
-        handlePreviewPDF(latestRevision.proposal_content);
-        
         setIsDialogOpen(true);
         setActiveTab("preview"); // Start with preview tab
       }
@@ -165,165 +98,12 @@ export const PreviewProposalButton = ({ lead, disabled }: PreviewProposalButtonP
     }
   };
   
-  const loadProposalVersion = (version: any) => {
-    setSelectedVersion(version);
-    setProposalContent(version.proposal_content);
-    setProposalTitle(version.title);
-    setProposalNotes(version.notes || "");
-    
-    // Also create PDF preview for this version
-    handlePreviewPDF(version.proposal_content);
-  };
-  
-  const handleCreateNewVersion = async () => {
+  const handleSaveNewVersion = async () => {
     try {
-      // Create updated proposal with new settings
-      const updatedProposalContent = generateProfessionalProposal({
-        ...lead,
-        calculator_inputs: {
-          ...lead.calculator_inputs,
-          aiTier: editingAiTier,
-          aiType: editingAiType,
-          callVolume: editingCallVolume
-        }
-      });
-      
-      // Store the pricing information in the notes as JSON
-      const metadataForNotes = {
-        aiTier: editingAiTier,
-        aiType: editingAiType,
-        callVolume: editingCallVolume,
-        basePrice: pricing.basePrice,
-        totalPrice: pricing.totalPrice
-      };
-      
-      const notesWithMetadata = JSON.stringify(metadataForNotes);
-      
-      // Save as a new revision
-      const newRevision = await saveProposalRevision(
-        lead.id,
-        updatedProposalContent,
-        proposalTitle,
-        notesWithMetadata
-      );
-      
-      // Reload versions after saving
-      const versions = await getProposalRevisions(lead.id);
-      setProposalVersions(versions);
-      
-      // Update the content and preview
-      setProposalContent(updatedProposalContent);
-      handlePreviewPDF(updatedProposalContent);
-      
-      // Load the new version
-      setSelectedVersion(newRevision);
-      
-      toast({
-        title: "Success",
-        description: `Created proposal version ${newRevision.version_number}`,
-        variant: "default",
-      });
+      await handleCreateNewVersion(lead);
     } catch (error) {
-      console.error("Error saving proposal changes:", error);
-      toast({
-        title: "Error", 
-        description: "Failed to create new version",
-        variant: "destructive",
-      });
+      // Error already handled in the hook
     }
-  };
-  
-  const handlePreviewPDF = (content = proposalContent) => {
-    try {
-      // Generate a PDF preview from the current content
-      const base64pdf = content;
-      
-      // Revoke previous URL if it exists
-      if (currentPdfPreviewUrl) {
-        URL.revokeObjectURL(currentPdfPreviewUrl);
-      }
-      
-      let pdfBlob: Blob;
-      
-      // Check what format the content is in
-      if (base64pdf.startsWith('JVB')) {
-        // It's already a PDF, start from the beginning
-        const binaryData = atob(base64pdf);
-        const bytes = new Uint8Array(binaryData.length);
-        for (let i = 0; i < binaryData.length; i++) {
-          bytes[i] = binaryData.charCodeAt(i);
-        }
-        pdfBlob = new Blob([bytes], { type: 'application/pdf' });
-      } else if (base64pdf.startsWith('data:application/pdf;base64,')) {
-        // It has a data URL prefix
-        const pdfData = base64pdf.split(',')[1];
-        const binaryData = atob(pdfData);
-        const bytes = new Uint8Array(binaryData.length);
-        for (let i = 0; i < binaryData.length; i++) {
-          bytes[i] = binaryData.charCodeAt(i);
-        }
-        pdfBlob = new Blob([bytes], { type: 'application/pdf' });
-      } else {
-        // It's probably raw PDF content
-        pdfBlob = new Blob([base64pdf], { type: 'application/pdf' });
-      }
-      
-      // Create object URL for embedded viewer
-      const url = URL.createObjectURL(pdfBlob);
-      setCurrentPdfPreviewUrl(url);
-      
-      return url;
-    } catch (error) {
-      console.error("Error previewing PDF:", error);
-      toast({
-        title: "Error",
-        description: "Could not preview PDF. The content may not be in valid format.",
-        variant: "destructive",
-      });
-      return null;
-    }
-  };
-  
-  // Handle changes to AI tier with proper AI type adjustment
-  const handleTierChange = (newTier: string) => {
-    setEditingAiTier(newTier as AiTier);
-    
-    // Update AI type based on tier
-    if (newTier === 'starter' && editingAiType !== 'chatbot') {
-      setEditingAiType('chatbot');
-      setEditingCallVolume(0);
-    } else if (newTier === 'premium') {
-      if (editingAiType === 'voice') setEditingAiType('conversationalVoice');
-      else if (editingAiType === 'both') setEditingAiType('both-premium');
-    } else if (newTier === 'growth') {
-      if (editingAiType === 'conversationalVoice') setEditingAiType('voice');
-      else if (editingAiType === 'both-premium') setEditingAiType('both');
-    }
-  };
-  
-  // Handle AI type change with proper tier adjustment
-  const handleAITypeChange = (newType: string) => {
-    setEditingAiType(newType as AiType);
-    
-    // Update tier based on AI type
-    if ((newType === 'conversationalVoice' || newType === 'both-premium') && editingAiTier !== 'premium') {
-      setEditingAiTier('premium');
-    } else if ((newType === 'voice' || newType === 'both') && editingAiTier === 'starter') {
-      setEditingAiTier('growth');
-    } else if (newType === 'chatbot' && editingAiTier === 'starter') {
-      setEditingCallVolume(0);
-    }
-  };
-  
-  const downloadPdf = () => {
-    if (!currentPdfPreviewUrl) return;
-    
-    const a = document.createElement('a');
-    a.href = currentPdfPreviewUrl;
-    a.download = `Proposal_${lead.company_name || 'Client'}.pdf`;
-    document.body.appendChild(a);
-    a.click();
-    document.body.removeChild(a);
   };
   
   const renderVersionList = () => {
@@ -440,7 +220,7 @@ export const PreviewProposalButton = ({ lead, disabled }: PreviewProposalButtonP
                         <Label htmlFor="aiTier">AI Plan Tier</Label>
                         <Select
                           value={editingAiTier}
-                          onValueChange={handleTierChange}
+                          onValueChange={(value) => handleTierChange(value as "starter" | "growth" | "premium")}
                         >
                           <SelectTrigger>
                             <SelectValue placeholder="Select tier" />
@@ -553,7 +333,7 @@ export const PreviewProposalButton = ({ lead, disabled }: PreviewProposalButtonP
                   <Button variant="outline" onClick={() => setActiveTab("preview")}>
                     <ArrowLeft className="h-4 w-4 mr-2" /> Back to Preview
                   </Button>
-                  <Button onClick={handleCreateNewVersion}>
+                  <Button onClick={handleSaveNewVersion}>
                     <Save className="h-4 w-4 mr-2" /> Save as New Version
                   </Button>
                 </div>
