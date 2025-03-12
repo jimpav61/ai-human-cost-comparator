@@ -1,4 +1,13 @@
 
+import type JsPDF from 'jspdf';
+import 'jspdf-autotable';
+
+// Extend JsPDF with autotable
+export interface JsPDFWithAutoTable extends JsPDF {
+  autoTable: (options: any) => void;
+}
+
+// Base interface for calculation results
 export interface SharedResults {
   aiCostMonthly: {
     voice: number;
@@ -25,6 +34,29 @@ export interface SharedResults {
   tierKey?: 'starter' | 'growth' | 'premium';
   aiType?: 'voice' | 'chatbot' | 'both' | 'conversationalVoice' | 'both-premium';
   includedVoiceMinutes: number;
+  additionalVoiceMinutes?: number;
+}
+
+// Base parameters for document generation
+export interface SharedGenerationParams {
+  contactInfo: string;
+  companyName: string;
+  email: string;
+  phoneNumber: string | null;
+  industry?: string;
+  employeeCount?: number;
+  results: SharedResults;
+  tierName?: string;
+  aiType?: string;
+  businessSuggestions?: Array<{
+    title: string;
+    description: string;
+  }>;
+  aiPlacements?: Array<{
+    role: string;
+    capabilities: string[];
+  }>;
+  includedVoiceMinutes?: number;
   additionalVoiceMinutes?: number;
 }
 

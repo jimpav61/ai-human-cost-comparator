@@ -1,3 +1,4 @@
+
 import { AIRates } from '@/constants/pricing';
 
 export interface CalculatorInputs {
