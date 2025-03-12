@@ -1,7 +1,7 @@
-
 import { Lead } from "@/types/leads";
 import { formatCurrency } from "@/utils/formatters";
 import { CalculationResults } from "@/hooks/calculator/types";
+import { ensureCompleteCalculatorResults } from "@/hooks/calculator/supabase-types";
 
 /**
  * Template-based PDF generator that uses direct value replacement
@@ -16,8 +16,10 @@ export function generateTemplateBasedPdf(lead: Lead): string {
   console.log("FULL CALCULATOR RESULTS:", JSON.stringify(lead.calculator_results, null, 2));
   
   // Extract data directly from lead without any adjustments
-  // Type assertion to help TypeScript understand the shape of the object
-  const calculatorResults = lead.calculator_results as CalculationResults || {};
+  // Use ensureCompleteCalculatorResults to make sure we have default values for all properties
+  const calculatorResults = lead.calculator_results 
+    ? ensureCompleteCalculatorResults(lead.calculator_results) 
+    : ensureCompleteCalculatorResults({});
   
   // Company information - use exactly what's in the lead
   const companyName = lead.company_name || 'Client';
@@ -645,4 +647,3 @@ startxref
   console.log("==== PDF GENERATION COMPLETE ====");
   return pdfTemplate;
 }
-
