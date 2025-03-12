@@ -1,3 +1,4 @@
+
 import { formatCurrency } from "../_shared/utils.ts";
 
 /**
@@ -9,6 +10,9 @@ export function generateProfessionalProposal(lead: any) {
   console.log("Lead ID:", lead.id);
   console.log("Company name:", lead.company_name);
   
+  // Log the entire calculator_results for debugging
+  console.log("FULL CALCULATOR RESULTS:", JSON.stringify(lead.calculator_results, null, 2));
+  
   // Extract data directly from lead without any adjustments
   const companyName = lead.company_name || 'Client';
   const contactName = lead.name || 'Valued Client';
@@ -17,12 +21,9 @@ export function generateProfessionalProposal(lead: any) {
   const industry = lead.industry || 'Technology';
   const employeeCount = lead.employee_count || '10';
   
-  // Log all the calculator results we're using EXACTLY AS PROVIDED
-  const calculatorResults = lead.calculator_results || {};
-  console.log("USING EXACT CALCULATOR RESULTS:", JSON.stringify(calculatorResults, null, 2));
-  
   // Direct extraction of values without any processing
   // If a value doesn't exist, use a sensible default but DO NOT RECALCULATE
+  const calculatorResults = lead.calculator_results || {};
   const tierKey = calculatorResults.tierKey || 'growth';
   const aiType = calculatorResults.aiType || 'both';
   const basePriceMonthly = calculatorResults.basePriceMonthly || 229;
