@@ -56,30 +56,68 @@ export const useReportDownload = () => {
       // Ensure 1:1 replacement model by setting numEmployees to 1
       const adjustedInputs = { ...calculatorInputs, numEmployees: 1 };
       
+      // Create a proper typed object for the calculator results to use in recalculation
+      let typedCalculatorResults: CalculationResults = {
+        aiCostMonthly: {
+          voice: 0,
+          chatbot: 0,
+          total: 0,
+          setupFee: 0
+        },
+        basePriceMonthly: 0,
+        humanCostMonthly: 0,
+        monthlySavings: 0,
+        yearlySavings: 0,
+        savingsPercentage: 0,
+        breakEvenPoint: {
+          voice: 0,
+          chatbot: 0
+        },
+        humanHours: {
+          dailyPerEmployee: 0,
+          weeklyTotal: 0,
+          monthlyTotal: 0,
+          yearlyTotal: 0
+        },
+        annualPlan: 0,
+        includedVoiceMinutes: 0,
+        tierKey: aiTier as 'starter' | 'growth' | 'premium',
+        aiType: aiType as 'voice' | 'chatbot' | 'both' | 'conversationalVoice' | 'both-premium',
+        additionalVoiceMinutes: additionalVoiceMinutes
+      };
+      
       // Recalculate results to ensure consistency
       try {
         const validInputs = ensureCalculatorInputs(adjustedInputs);
         const recalculatedResults = performCalculations(validInputs, {});
         
         // Update calculator_results with recalculated values
+        typedCalculatorResults.humanCostMonthly = recalculatedResults.humanCostMonthly;
+        typedCalculatorResults.monthlySavings = recalculatedResults.monthlySavings;
+        typedCalculatorResults.yearlySavings = recalculatedResults.yearlySavings;
+        typedCalculatorResults.savingsPercentage = recalculatedResults.savingsPercentage;
+        
+        // Make sure aiType and tierKey are set correctly
+        typedCalculatorResults.aiType = aiType as 'voice' | 'chatbot' | 'both' | 'conversationalVoice' | 'both-premium';
+        typedCalculatorResults.tierKey = aiTier as 'starter' | 'growth' | 'premium';
+        typedCalculatorResults.additionalVoiceMinutes = additionalVoiceMinutes;
+        
+        // Update the original calculator_results object for database storage
         if (calculatorResults) {
-          calculatorResults.humanCostMonthly = recalculatedResults.humanCostMonthly;
-          calculatorResults.monthlySavings = recalculatedResults.monthlySavings;
-          calculatorResults.yearlySavings = recalculatedResults.yearlySavings;
-          calculatorResults.savingsPercentage = recalculatedResults.savingsPercentage;
-          
-          // Make sure aiType and tierKey are set correctly
-          calculatorResults.aiType = aiType;
-          calculatorResults.tierKey = aiTier;
-          calculatorResults.additionalVoiceMinutes = additionalVoiceMinutes;
+          // Use type assertion to allow property assignment
+          const typedResults = calculatorResults as CalculationResults;
+          typedResults.humanCostMonthly = recalculatedResults.humanCostMonthly;
+          typedResults.monthlySavings = recalculatedResults.monthlySavings;
+          typedResults.yearlySavings = recalculatedResults.yearlySavings;
+          typedResults.savingsPercentage = recalculatedResults.savingsPercentage;
+          typedResults.aiType = aiType as 'voice' | 'chatbot' | 'both' | 'conversationalVoice' | 'both-premium';
+          typedResults.tierKey = aiTier as 'starter' | 'growth' | 'premium';
+          typedResults.additionalVoiceMinutes = additionalVoiceMinutes;
         }
       } catch (calcError) {
         console.error("Error recalculating results:", calcError);
         // Continue with existing results if recalculation fails
       }
-      
-      // Create a typed CalculationResults object
-      const typedCalculatorResults = ensureCalculationResults(calculatorResults);
       
       // Format tier and AI type display names
       const tierName = aiTier === 'starter' ? 'Starter Plan' : 
@@ -139,7 +177,7 @@ export const useReportDownload = () => {
       try {
         // Convert calculator data to JSON format
         const jsonInputs = toJson(adjustedInputs);
-        const jsonResults = toJson(calculatorResults);
+        const jsonResults = toJson(typedCalculatorResults);
         
         // Create the report data
         const reportData = {
