@@ -10,54 +10,22 @@ export const useProposalSend = () => {
   const handleSendProposal = async (lead: Lead) => {
     try {
       console.log("Sending proposal for lead:", lead.id);
-      console.log("Current lead calculator_inputs:", JSON.stringify(lead.calculator_inputs, null, 2));
-      console.log("Current lead calculator_results:", JSON.stringify(lead.calculator_results, null, 2)); 
-      console.log("Lead AI tier:", lead.calculator_inputs?.aiTier);
-      console.log("Lead AI type:", lead.calculator_inputs?.aiType);
-      console.log("Lead additional voice minutes:", lead.calculator_inputs?.callVolume);
+      console.log("Using exact calculator_results:", JSON.stringify(lead.calculator_results, null, 2));
       setIsLoading(true);
       
-      // Make sure we have valid calculator inputs to use
-      if (!lead.calculator_inputs || !lead.calculator_results) {
-        throw new Error("Lead is missing required calculator data");
+      // Make sure we have valid calculator results to use
+      if (!lead.calculator_results) {
+        throw new Error("Lead is missing required calculator results");
       }
       
       // Deep clone to prevent any reference issues
       const leadToSend = JSON.parse(JSON.stringify(lead));
-      
-      // Ensure callVolume is a number - critical for correct pricing
-      if (typeof leadToSend.calculator_inputs.callVolume === 'string') {
-        leadToSend.calculator_inputs.callVolume = parseInt(leadToSend.calculator_inputs.callVolume, 10) || 0;
-        console.log("Converted callVolume from string to number:", leadToSend.calculator_inputs.callVolume);
-      } else if (leadToSend.calculator_inputs.callVolume === undefined || leadToSend.calculator_inputs.callVolume === null) {
-        leadToSend.calculator_inputs.callVolume = 0;
-        console.log("Set default callVolume to 0");
-      }
-      
-      // Ensure that aiTier and aiType are consistent
-      // No need to recalculate - just make sure the data is consistent
-      if (leadToSend.calculator_results && leadToSend.calculator_inputs) {
-        // Make sure calculator_inputs.aiTier and calculator_results.tierKey are in sync
-        if (leadToSend.calculator_results.tierKey && 
-            leadToSend.calculator_inputs.aiTier !== leadToSend.calculator_results.tierKey) {
-          console.log("Syncing aiTier from calculator_results:", leadToSend.calculator_results.tierKey);
-          leadToSend.calculator_inputs.aiTier = leadToSend.calculator_results.tierKey;
-        }
-        
-        // Make sure calculator_inputs.aiType and calculator_results.aiType are in sync
-        if (leadToSend.calculator_results.aiType && 
-            leadToSend.calculator_inputs.aiType !== leadToSend.calculator_results.aiType) {
-          console.log("Syncing aiType from calculator_results:", leadToSend.calculator_results.aiType);
-          leadToSend.calculator_inputs.aiType = leadToSend.calculator_results.aiType;
-        }
-      }
       
       // Build the URL to our edge function
       const SUPABASE_URL = "https://ujyhmchmjzlmsimtrtor.supabase.co";
       const apiUrl = new URL('/functions/v1/generate-proposal', SUPABASE_URL);
       
       console.log("Calling edge function at:", apiUrl.toString());
-      console.log("Sending lead with calculator_inputs:", JSON.stringify(leadToSend.calculator_inputs, null, 2));
       console.log("Sending lead with calculator_results:", JSON.stringify(leadToSend.calculator_results, null, 2));
       
       // Make the request - sending the proposal via email with latest calculator data
