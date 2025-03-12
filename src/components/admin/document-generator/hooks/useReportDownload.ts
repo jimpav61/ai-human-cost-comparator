@@ -17,10 +17,10 @@ export const useReportDownload = () => {
   const handleDownloadReport = async (lead: Lead) => {
     try {
       setIsLoading(true);
-      console.log("---------- ADMIN REPORT DOWNLOAD ATTEMPT ----------");
-      console.log("Lead data for report:", lead);
+      console.log('---------- ADMIN REPORT DOWNLOAD ATTEMPT ----------');
+      console.log('Lead data for report:', lead);
       
-      // Get the next version number for reports for this lead
+      // Get the next version number for this lead
       const { data: existingReports, error: countError } = await supabase
         .from('generated_reports')
         .select('version')

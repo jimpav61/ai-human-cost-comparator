@@ -35,8 +35,10 @@ export type Database = {
           contact_name: string
           email: string
           id: string
+          lead_id: string | null
           phone_number: string | null
           report_date: string | null
+          version: number | null
         }
         Insert: {
           calculator_inputs: Json
@@ -45,8 +47,10 @@ export type Database = {
           contact_name: string
           email: string
           id: string
+          lead_id?: string | null
           phone_number?: string | null
           report_date?: string | null
+          version?: number | null
         }
         Update: {
           calculator_inputs?: Json
@@ -55,10 +59,20 @@ export type Database = {
           contact_name?: string
           email?: string
           id?: string
+          lead_id?: string | null
           phone_number?: string | null
           report_date?: string | null
+          version?: number | null
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "generated_reports_lead_id_fkey"
+            columns: ["lead_id"]
+            isOneToOne: false
+            referencedRelation: "leads"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       lead_assignments: {
         Row: {
