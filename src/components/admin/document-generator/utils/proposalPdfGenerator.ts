@@ -38,10 +38,14 @@ export const generateProposalPdf = (lead: Lead) => {
   const monthlySavings = calculatorResults.monthlySavings;
   const yearlySavings = calculatorResults.yearlySavings;
   const savingsPercentage = calculatorResults.savingsPercentage;
-  const annualPlan = calculatorResults.annualPlan;
+  const annualPlan = calculatorResults.annualPlan || false; // Fixed: Use boolean default instead of number
   const voiceCost = calculatorResults.aiCostMonthly.voice;
   const includedMinutes = aiTier === 'starter' ? 0 : 600;
   const callVolume = lead.calculator_inputs?.callVolume || 0;
+
+  // Generate current date for the proposal
+  const today = new Date();
+  const formattedDate = `${today.toLocaleString('default', { month: 'long' })} ${today.getDate()}, ${today.getFullYear()}`;
 
   // Brand Colors
   const brandRed = "#ff432a";
@@ -68,7 +72,8 @@ export const generateProposalPdf = (lead: Lead) => {
     monthlySavings,
     yearlySavings,
     savingsPercentage,
-    annualPlan
+    annualPlan,
+    formattedDate
   });
 };
 
@@ -94,6 +99,7 @@ interface PdfContentParams {
   yearlySavings: number;
   savingsPercentage: number;
   annualPlan: boolean;
+  formattedDate: string; // Added formattedDate to the interface
 }
 
 // Function to generate the actual PDF content
@@ -118,7 +124,8 @@ function generatePdfContent(params: PdfContentParams): string {
     monthlySavings,
     yearlySavings,
     savingsPercentage,
-    annualPlan
+    annualPlan,
+    formattedDate
   } = params;
 
   let pdfContent = `
@@ -221,7 +228,6 @@ BT
 (AI SOLUTION PROPOSAL) Tj
 0 0 0 rg
 /F1 12 Tf
-0 -36 Td
 (Prepared exclusively for ${companyName}) Tj
 /F2 18 Tf
 0 -50 Td
