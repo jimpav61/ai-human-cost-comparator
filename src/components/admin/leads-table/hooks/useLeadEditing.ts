@@ -158,6 +158,16 @@ export function useLeadEditing(onLeadUpdated?: () => void) {
         }
       }
       
+      // Make sure the calculator_results data is updated with the latest calculator_inputs
+      if (updatedLead.calculator_results && updatedLead.calculator_inputs) {
+        // Ensure aiType and tierKey match in both objects
+        updatedLead.calculator_results.aiType = updatedLead.calculator_inputs.aiType;
+        updatedLead.calculator_results.tierKey = updatedLead.calculator_inputs.aiTier;
+        
+        // Make sure additionalVoiceMinutes matches callVolume
+        updatedLead.calculator_results.additionalVoiceMinutes = updatedLead.calculator_inputs.callVolume;
+      }
+      
       // Update the lead in the database - use toJson to properly convert types
       const { error } = await supabase
         .from('leads')
