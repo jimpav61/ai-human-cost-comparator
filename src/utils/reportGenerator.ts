@@ -38,6 +38,21 @@ export const generateAndDownloadReport = async (lead: Lead) => {
       throw new Error("This lead has no calculator results. Please complete the calculator first.");
     }
 
+    // Get the next version number for this lead
+    const { data: existingReports, error: countError } = await supabase
+      .from('generated_reports')
+      .select('version')
+      .eq('lead_id', lead.id)
+      .order('version', { ascending: false })
+      .limit(1);
+      
+    let nextVersion = 1;
+    if (!countError && existingReports && existingReports.length > 0) {
+      nextVersion = (existingReports[0].version || 0) + 1;
+    }
+    
+    console.log('[CALCULATOR REPORT] Creating new report version:', nextVersion);
+
     // Create a safely typed CalculationResults object from the lead data
     const rawCalculatorResults = lead.calculator_results as unknown as Record<string, any>;
     const calculatorInputs = lead.calculator_inputs as unknown as Record<string, any>;
@@ -168,9 +183,9 @@ export const generateAndDownloadReport = async (lead: Lead) => {
       aiType: aiTypeDisplay
     });
     
-    // Generate a report ID that will be used when saving to database
-    // Using crypto.randomUUID() to ensure a valid UUID format
+    // Generate a new unique report ID
     const reportId = crypto.randomUUID();
+    console.log('[CALCULATOR REPORT] Generated new report ID:', reportId);
     
     // Only save if we have a valid report ID
     if (reportId) {
@@ -189,22 +204,25 @@ export const generateAndDownloadReport = async (lead: Lead) => {
       const jsonInputs = toJson(calculatorInputs);
       const jsonResults = toJson(rawCalculatorResults);
       
-      // Create the report data with the generated UUID
+      // Create the report data with the lead reference
       const reportData = {
-        id: reportId, 
+        id: reportId,
+        lead_id: lead.id, 
         contact_name: lead.name,
         company_name: lead.company_name,
         email: lead.email,
         phone_number: lead.phone_number || null,
         calculator_inputs: jsonInputs,
         calculator_results: jsonResults,
-        report_date: new Date().toISOString()
+        report_date: new Date().toISOString(),
+        version: nextVersion
       };
       
       console.log('[CALCULATOR REPORT] Saving report to database with ID:', reportData.id);
       console.log('[CALCULATOR REPORT] Report data tierKey:', tierKey);
       console.log('[CALCULATOR REPORT] Report data aiType:', aiType);
       console.log('[CALCULATOR REPORT] Report data additionalVoiceMinutes:', additionalVoiceMinutes);
+      console.log('[CALCULATOR REPORT] Report version:', nextVersion);
       
       try {
         const { error } = await supabase
@@ -212,12 +230,7 @@ export const generateAndDownloadReport = async (lead: Lead) => {
           .insert(reportData);
           
         if (error) {
-          // If there's a foreign key violation error, just log it but continue
-          if (error.code === '23503') {
-            console.error('[CALCULATOR REPORT] Foreign key constraint error, skipping database save:', error);
-          } else {
-            console.error('[CALCULATOR REPORT] Error saving report to database:', error);
-          }
+          console.error('[CALCULATOR REPORT] Error saving report to database:', error);
         } else {
           console.log('[CALCULATOR REPORT] Report saved to database successfully with ID:', reportData.id);
         }
@@ -228,9 +241,10 @@ export const generateAndDownloadReport = async (lead: Lead) => {
       console.warn('[CALCULATOR REPORT] Cannot save report - failed to generate report ID');
     }
     
-    // Save file with proper naming
+    // Save file with proper naming and version number
     const safeCompanyName = getSafeFileName(lead);
-    doc.save(`${safeCompanyName}-ChatSites-ROI-Report.pdf`);
+    const versionLabel = nextVersion ? `-v${nextVersion}` : '';
+    doc.save(`${safeCompanyName}-ChatSites-ROI-Report${versionLabel}.pdf`);
     
     return true;
   } catch (error) {

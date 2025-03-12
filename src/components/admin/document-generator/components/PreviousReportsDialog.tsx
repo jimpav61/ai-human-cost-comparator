@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from "react";
 import { 
   Dialog, 
@@ -19,6 +20,7 @@ import { getSafeFileName } from "@/components/admin/document-generator/hooks/rep
 
 interface ReportRecord {
   id: string;
+  lead_id: string;
   contact_name: string;
   company_name: string;
   email: string;
@@ -26,6 +28,7 @@ interface ReportRecord {
   calculator_inputs: any;
   calculator_results: any;
   report_date: string;
+  version: number;
 }
 
 interface PreviousReportsDialogProps {
@@ -48,17 +51,17 @@ export const PreviousReportsDialog = ({ lead, isOpen, onClose }: PreviousReports
     setIsLoading(true);
     
     try {
-      console.log("Loading reports for lead by ID only:", lead.id);
+      console.log("Loading reports for lead ID:", lead.id);
       
-      // Only search by lead ID
+      // Search by lead_id instead of id
       let { data: reportsByLeadId, error: idError } = await supabase
         .from('generated_reports')
         .select('*')
-        .eq('id', lead.id)
+        .eq('lead_id', lead.id)
         .order('report_date', { ascending: false });
         
       if (idError) {
-        console.error("Error fetching reports by ID:", idError);
+        console.error("Error fetching reports by lead ID:", idError);
         toast({
           title: "Error",
           description: "Failed to load report history. Please try again.",
@@ -154,13 +157,14 @@ export const PreviousReportsDialog = ({ lead, isOpen, onClose }: PreviousReports
         aiType: aiTypeDisplay
       });
       
-      // Format the date
+      // Format the date and include version in the filename
       const reportDate = new Date(report.report_date);
       const formattedDate = format(reportDate, 'yyyyMMdd-HHmm');
+      const versionLabel = report.version ? `-v${report.version}` : '';
       
-      // Create filename with date to distinguish between versions
+      // Create filename with date and version to distinguish between versions
       const safeCompanyName = getSafeFileName(lead);
-      doc.save(`${safeCompanyName}-ChatSites-ROI-Report-${formattedDate}.pdf`);
+      doc.save(`${safeCompanyName}-ChatSites-ROI-Report-${formattedDate}${versionLabel}.pdf`);
       
       toast({
         title: "Report Downloaded",
@@ -203,13 +207,18 @@ export const PreviousReportsDialog = ({ lead, isOpen, onClose }: PreviousReports
           ) : (
             <div className="space-y-4">
               {reports.map((report, index) => (
-                <div key={report.id + index} className="border rounded-lg p-4">
+                <div key={report.id} className="border rounded-lg p-4">
                   <div className="flex justify-between items-start">
                     <div>
                       <h3 className="font-medium">{report.company_name}</h3>
                       <div className="flex items-center text-sm text-gray-600 mt-1">
                         <Calendar className="h-4 w-4 mr-1" />
                         <span>{format(new Date(report.report_date), 'PPP p')}</span>
+                        {report.version && (
+                          <span className="ml-2 bg-slate-100 text-slate-700 text-xs px-2 py-0.5 rounded-full">
+                            Version {report.version}
+                          </span>
+                        )}
                       </div>
                       <div className="mt-2 text-sm">
                         <span className="font-medium">Plan: </span>

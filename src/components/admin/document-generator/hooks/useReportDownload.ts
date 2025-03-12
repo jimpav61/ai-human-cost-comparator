@@ -20,9 +20,24 @@ export const useReportDownload = () => {
       console.log("---------- ADMIN REPORT DOWNLOAD ATTEMPT ----------");
       console.log("Lead data for report:", lead);
       
-      // Important: Use the lead's ID as the report ID to ensure proper association
-      const reportId = lead.id;
-      console.log("Using lead ID as report ID:", reportId);
+      // Get the next version number for reports for this lead
+      const { data: existingReports, error: countError } = await supabase
+        .from('generated_reports')
+        .select('version')
+        .eq('lead_id', lead.id)
+        .order('version', { ascending: false })
+        .limit(1);
+        
+      let nextVersion = 1;
+      if (!countError && existingReports && existingReports.length > 0) {
+        nextVersion = (existingReports[0].version || 0) + 1;
+      }
+      
+      console.log("Creating new report version:", nextVersion);
+      
+      // Generate a new unique ID for this report version
+      const reportId = crypto.randomUUID();
+      console.log("Generated new report ID:", reportId);
       
       // Ensure we're using the latest lead data for the report
       console.log("Generating new report with latest lead data");
@@ -180,52 +195,31 @@ export const useReportDownload = () => {
         const jsonInputs = toJson(adjustedInputs);
         const jsonResults = toJson(typedCalculatorResults);
         
-        // Create the report data - use lead.id as the report ID
+        // Create the report data with the generated UUID and lead reference
         const reportData = {
-          id: reportId, // Using the lead ID as the report ID
+          id: reportId,
+          lead_id: lead.id,
           contact_name: lead.name,
           company_name: lead.company_name,
           email: lead.email,
           phone_number: lead.phone_number || null,
           calculator_inputs: jsonInputs,
           calculator_results: jsonResults,
-          report_date: new Date().toISOString()
+          report_date: new Date().toISOString(),
+          version: nextVersion
         };
         
-        console.log("Saving new report to database with ID (lead.id):", reportData.id);
+        console.log("Saving new report version to database:", reportData);
         
-        // Check if a report with this ID already exists
-        const { data: existingReport } = await supabase
+        // Insert the new report version
+        const { error } = await supabase
           .from('generated_reports')
-          .select('id')
-          .eq('id', reportId)
-          .single();
+          .insert(reportData);
           
-        if (existingReport) {
-          // If it exists, update it
-          console.log("Updating existing report with ID:", reportId);
-          const { error } = await supabase
-            .from('generated_reports')
-            .update(reportData)
-            .eq('id', reportId);
-            
-          if (error) {
-            console.error("Error updating report in database:", error);
-          } else {
-            console.log("Report updated successfully with ID:", reportId);
-          }
+        if (error) {
+          console.error("Error saving report to database:", error);
         } else {
-          // If it doesn't exist, insert it
-          console.log("Inserting new report with ID:", reportId);
-          const { error } = await supabase
-            .from('generated_reports')
-            .insert(reportData);
-            
-          if (error) {
-            console.error("Error saving report to database:", error);
-          } else {
-            console.log("Report saved successfully with ID:", reportId);
-          }
+          console.log("Report saved successfully with ID:", reportData.id, "and version:", nextVersion);
         }
       } catch (dbError) {
         console.error("Database operation error:", dbError);
@@ -233,7 +227,8 @@ export const useReportDownload = () => {
       
       // Save the PDF for download
       const safeCompanyName = getSafeFileName(lead);
-      doc.save(`${safeCompanyName}-ChatSites-ROI-Report.pdf`);
+      const versionLabel = nextVersion ? `-v${nextVersion}` : '';
+      doc.save(`${safeCompanyName}-ChatSites-ROI-Report${versionLabel}.pdf`);
       
       toast({
         title: "Report Downloaded",
