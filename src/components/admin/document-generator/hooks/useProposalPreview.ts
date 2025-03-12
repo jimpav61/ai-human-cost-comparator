@@ -184,7 +184,8 @@ export const useProposalPreview = () => {
                          aiType === 'both' ? 'Text & Basic Voice' : 
                          aiType === 'both-premium' ? 'Text & Conversational Voice' : 'Text Only';
     
-    // Calculate pricing details
+    // Use existing pricing data from calculator_results
+    // No recalculation needed, just extract what we have
     const basePrice = 
       aiTier === 'starter' ? 99 :
       aiTier === 'growth' ? 229 :
@@ -206,7 +207,7 @@ export const useProposalPreview = () => {
     const today = new Date();
     const formattedDate = `${today.getMonth() + 1}/${today.getDate()}/${today.getFullYear()}`;
     
-    // Get ROI metrics from calculator results
+    // Get ROI metrics from calculator results - use existing values without recalculation
     const humanCostMonthly = lead.calculator_results?.humanCostMonthly || 15000;
     const monthlySavings = lead.calculator_results?.monthlySavings || (humanCostMonthly - totalPrice);
     const yearlySavings = lead.calculator_results?.yearlySavings || (monthlySavings * 12);
@@ -804,7 +805,7 @@ startxref
         throw new Error("Lead is missing required calculator data");
       }
       
-      // Generate a professional proposal
+      // Generate a professional proposal using existing data (no recalculation)
       const proposalContent = generateProfessionalProposal(lead);
       
       // Save the proposal content to the database for future editing

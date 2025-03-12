@@ -34,50 +34,21 @@ export const useProposalSend = () => {
         console.log("Set default callVolume to 0");
       }
       
-      // CRITICAL FIX: Make sure the aiTier and aiType from inputs match what's in results
-      // This ensures the proposal and calculator report use the same data
-      if (leadToSend.calculator_results) {
-        // Set the correct tier in calculator_inputs based on results
-        if (leadToSend.calculator_results.tierKey) {
+      // Ensure that aiTier and aiType are consistent
+      // No need to recalculate - just make sure the data is consistent
+      if (leadToSend.calculator_results && leadToSend.calculator_inputs) {
+        // Make sure calculator_inputs.aiTier and calculator_results.tierKey are in sync
+        if (leadToSend.calculator_results.tierKey && 
+            leadToSend.calculator_inputs.aiTier !== leadToSend.calculator_results.tierKey) {
+          console.log("Syncing aiTier from calculator_results:", leadToSend.calculator_results.tierKey);
           leadToSend.calculator_inputs.aiTier = leadToSend.calculator_results.tierKey;
-          console.log("Setting aiTier from calculator_results:", leadToSend.calculator_inputs.aiTier);
         }
         
-        // Set the correct AI type in calculator_inputs based on results
-        if (leadToSend.calculator_results.aiType) {
+        // Make sure calculator_inputs.aiType and calculator_results.aiType are in sync
+        if (leadToSend.calculator_results.aiType && 
+            leadToSend.calculator_inputs.aiType !== leadToSend.calculator_results.aiType) {
+          console.log("Syncing aiType from calculator_results:", leadToSend.calculator_results.aiType);
           leadToSend.calculator_inputs.aiType = leadToSend.calculator_results.aiType;
-          console.log("Setting aiType from calculator_results:", leadToSend.calculator_inputs.aiType);
-        }
-        
-        // CRITICAL FIX: Ensure monthly total cost is calculated correctly in calculator_results
-        // Make sure base price is correct according to tier
-        const tierBasePrices = {
-          starter: 99,
-          growth: 229,
-          premium: 429
-        };
-        
-        const tier = leadToSend.calculator_inputs.aiTier;
-        
-        if (tier && tierBasePrices[tier]) {
-          leadToSend.calculator_results.basePriceMonthly = tierBasePrices[tier];
-          console.log("Updated basePriceMonthly to match tier:", leadToSend.calculator_results.basePriceMonthly);
-        }
-        
-        // Calculate additional voice cost
-        const additionalVoiceMinutes = leadToSend.calculator_inputs.callVolume || 0;
-        const additionalVoiceCost = tier !== 'starter' ? additionalVoiceMinutes * 0.12 : 0;
-        
-        // Update voice cost in results
-        if (leadToSend.calculator_results.aiCostMonthly) {
-          leadToSend.calculator_results.aiCostMonthly.voice = additionalVoiceCost;
-          leadToSend.calculator_results.aiCostMonthly.chatbot = leadToSend.calculator_results.basePriceMonthly;
-          // Recalculate total based on base + voice
-          leadToSend.calculator_results.aiCostMonthly.total = 
-            leadToSend.calculator_results.basePriceMonthly + additionalVoiceCost;
-          
-          console.log("Updated voice cost and total cost in results:", 
-            leadToSend.calculator_results.aiCostMonthly);
         }
       }
       
