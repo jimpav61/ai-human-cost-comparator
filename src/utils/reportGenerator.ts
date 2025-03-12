@@ -42,6 +42,20 @@ export const generateAndDownloadReport = async (lead: Lead) => {
     const rawCalculatorResults = lead.calculator_results as unknown as Record<string, any>;
     const calculatorInputs = lead.calculator_inputs as unknown as Record<string, any>;
     
+    // CRITICAL: Extract and ensure additionalVoiceMinutes is available and numeric
+    let additionalVoiceMinutes = 0;
+    
+    // First try to get it from calculator_results
+    if (rawCalculatorResults && 'additionalVoiceMinutes' in rawCalculatorResults) {
+      additionalVoiceMinutes = Number(rawCalculatorResults.additionalVoiceMinutes) || 0;
+      console.log("[CALCULATOR REPORT] Found additionalVoiceMinutes in results:", additionalVoiceMinutes);
+    } 
+    // Then try callVolume from calculator_inputs as a fallback
+    else if (calculatorInputs && 'callVolume' in calculatorInputs) {
+      additionalVoiceMinutes = Number(calculatorInputs.callVolume) || 0;
+      console.log("[CALCULATOR REPORT] Using callVolume from inputs:", additionalVoiceMinutes);
+    }
+    
     // CRITICAL: Ensure 1:1 replacement model by forcing numEmployees to 1
     if (calculatorInputs) {
       calculatorInputs.numEmployees = 1;
@@ -88,7 +102,7 @@ export const generateAndDownloadReport = async (lead: Lead) => {
       tierKey: (rawCalculatorResults?.tierKey || calculatorInputs?.aiTier || 'growth') as "starter" | "growth" | "premium",
       aiType: rawCalculatorResults?.aiType || calculatorInputs?.aiType || 'chatbot',
       includedVoiceMinutes: Number(rawCalculatorResults?.includedVoiceMinutes) || (calculatorInputs?.aiTier === 'starter' ? 0 : 600),
-      additionalVoiceMinutes: Number(calculatorInputs?.callVolume) || 0
+      additionalVoiceMinutes: additionalVoiceMinutes
     };
     
     // Format tier and AI type display names
@@ -114,7 +128,7 @@ export const generateAndDownloadReport = async (lead: Lead) => {
       industry: lead.industry || 'Other',
       employeeCount: Number(lead.employee_count) || 5,
       results: calculatorResults,
-      additionalVoiceMinutes: Number(calculatorInputs?.callVolume) || 0,
+      additionalVoiceMinutes: additionalVoiceMinutes,
       includedVoiceMinutes: aiTier === 'starter' ? 0 : 600,
       businessSuggestions: [
         {
@@ -159,6 +173,9 @@ export const generateAndDownloadReport = async (lead: Lead) => {
         calculatorInputs.numEmployees = 1;
       }
       
+      // Make sure additionalVoiceMinutes is in calculator_results before saving
+      rawCalculatorResults.additionalVoiceMinutes = additionalVoiceMinutes;
+      
       // Convert complex objects to JSON-compatible format
       const jsonInputs = toJson(calculatorInputs);
       const jsonResults = toJson(rawCalculatorResults);
@@ -176,6 +193,7 @@ export const generateAndDownloadReport = async (lead: Lead) => {
       };
       
       console.log('[CALCULATOR REPORT] Saving report to database with ID:', reportData.id);
+      console.log('[CALCULATOR REPORT] Report data additionalVoiceMinutes:', additionalVoiceMinutes);
       
       try {
         const { error } = await supabase

@@ -1,3 +1,4 @@
+
 import { useState } from "react";
 import { Lead } from "@/types/leads";
 import { toast } from "@/hooks/use-toast";
@@ -16,6 +17,7 @@ export const useReportDownload = () => {
     try {
       setIsLoading(true);
       console.log("---------- ADMIN REPORT DOWNLOAD ATTEMPT ----------");
+      console.log("Lead data for report:", lead);
       console.log("Searching for report with lead ID:", lead.id);
       
       let { data: existingReport, error } = await supabase
@@ -61,7 +63,19 @@ export const useReportDownload = () => {
       console.log("Report calculator results:", calculatorResults);
       console.log("Report calculator inputs:", calculatorInputs);
       
-      // CRITICAL: Ensure 1:1 replacement model
+      // CRITICAL: Ensure we use the correct value for additionalVoiceMinutes
+      // First check directly in calculator_results, then try callVolume in calculator_inputs
+      let additionalVoiceMinutes = 0;
+      
+      if (calculatorResults && 'additionalVoiceMinutes' in calculatorResults) {
+        additionalVoiceMinutes = Number(calculatorResults.additionalVoiceMinutes);
+        console.log("Found additionalVoiceMinutes in results:", additionalVoiceMinutes);
+      } else if (calculatorInputs && 'callVolume' in calculatorInputs) {
+        additionalVoiceMinutes = Number(calculatorInputs.callVolume);
+        console.log("Using callVolume from inputs as additionalVoiceMinutes:", additionalVoiceMinutes);
+      }
+      
+      // Ensure 1:1 replacement model
       // Force numEmployees to 1 for calculation
       if (calculatorInputs) {
         calculatorInputs.numEmployees = 1;
@@ -81,8 +95,8 @@ export const useReportDownload = () => {
         }
       }
       
-      const aiTier = calculatorInputs?.aiTier || 'growth';
-      const aiType = calculatorInputs?.aiType || 'chatbot';
+      const aiTier = calculatorInputs?.aiTier || calculatorResults?.tierKey || 'growth';
+      const aiType = calculatorInputs?.aiType || calculatorResults?.aiType || 'chatbot';
       
       const tierName = aiTier === 'starter' ? 'Starter Plan' : 
                       aiTier === 'growth' ? 'Growth Plan' : 
@@ -123,6 +137,7 @@ export const useReportDownload = () => {
       
       const typedCalculatorResults = ensureCalculationResults(partialResults);
       
+      // CRITICAL: Make sure additionalVoiceMinutes is included in PDF generation
       const doc = generatePDF({
         contactInfo: existingReport.contact_name || 'Valued Client',
         companyName: existingReport.company_name || 'Your Company',
@@ -131,7 +146,7 @@ export const useReportDownload = () => {
         industry: lead.industry || 'Other',
         employeeCount: Number(lead.employee_count) || 5,
         results: typedCalculatorResults,
-        additionalVoiceMinutes: Number(calculatorInputs?.callVolume) || 0,
+        additionalVoiceMinutes: additionalVoiceMinutes,
         includedVoiceMinutes: aiTier === 'starter' ? 0 : 600,
         businessSuggestions: [
           {
@@ -195,4 +210,3 @@ export const useReportDownload = () => {
     handleDownloadReport
   };
 };
-

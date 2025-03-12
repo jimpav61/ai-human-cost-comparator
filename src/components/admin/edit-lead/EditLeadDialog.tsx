@@ -115,7 +115,7 @@ export const EditLeadDialog = ({ lead, isOpen, onClose, onSave }: EditLeadDialog
         console.log("Reset callVolume to 0 for starter plan");
       }
 
-      // Important: Make sure the calculationResults have the right additionalVoiceMinutes
+      // CRITICAL: Make sure the results have the correct additionalVoiceMinutes
       // This ensures the PDF generator has the correct data
       if (calculationResults) {
         calculationResults.additionalVoiceMinutes = calculatorInputs.callVolume;
@@ -137,7 +137,11 @@ export const EditLeadDialog = ({ lead, isOpen, onClose, onSave }: EditLeadDialog
         calculator_results: calculationResults
       };
 
-      console.log("Saving updated lead:", updatedLead);
+      console.log("Saving updated lead with calculationResults:", updatedLead.calculator_results);
+      console.log("Saving updated lead with callVolume/additionalVoiceMinutes:", 
+        updatedLead.calculator_inputs.callVolume,
+        updatedLead.calculator_results?.additionalVoiceMinutes);
+      
       onSave(updatedLead);
       
       toast({
@@ -161,6 +165,11 @@ export const EditLeadDialog = ({ lead, isOpen, onClose, onSave }: EditLeadDialog
     console.log("EditLeadDialog mounted/updated. isOpen:", isOpen);
     console.log("Current calculator inputs:", calculatorInputs);
     console.log("Current calculation results:", calculationResults);
+    
+    // Specifically check callVolume and additionalVoiceMinutes
+    console.log("Current callVolume:", calculatorInputs.callVolume);
+    console.log("Current additionalVoiceMinutes:", calculationResults?.additionalVoiceMinutes);
+    
     return () => console.log("EditLeadDialog unmounted");
   }, [isOpen, calculatorInputs, calculationResults]);
 

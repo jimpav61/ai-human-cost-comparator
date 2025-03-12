@@ -12,7 +12,8 @@ export const addCostBreakdownSection = (
   console.log("Cost Breakdown values for PDF:", {
     basePriceMonthly: results.basePriceMonthly,
     voiceCost: results.aiCostMonthly.voice,
-    totalMonthlyCost: results.aiCostMonthly.total
+    totalMonthlyCost: results.aiCostMonthly.total,
+    additionalVoiceMinutes: results.additionalVoiceMinutes
   });
   
   // Cost Breakdown Section
@@ -30,7 +31,17 @@ export const addCostBreakdownSection = (
   
   // Add voice cost if applicable - only show when there's an actual voice cost
   if (results.aiCostMonthly.voice > 0) {
-    tableRows.push(['Voice AI Service', formatCurrency(results.aiCostMonthly.voice)]);
+    // Show detailed breakdown if we have additional minutes
+    if (results.additionalVoiceMinutes && results.additionalVoiceMinutes > 0) {
+      const minuteRate = 0.12; // $0.12 per minute
+      const additionalCost = results.additionalVoiceMinutes * minuteRate;
+      tableRows.push([
+        `Voice AI (${results.additionalVoiceMinutes} additional minutes)`,
+        formatCurrency(additionalCost)
+      ]);
+    } else {
+      tableRows.push(['Voice AI Service', formatCurrency(results.aiCostMonthly.voice)]);
+    }
   }
   
   // Add total - use the pre-calculated total

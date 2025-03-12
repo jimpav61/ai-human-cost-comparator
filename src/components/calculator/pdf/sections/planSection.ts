@@ -53,7 +53,8 @@ export const addPlanSection = (
     currentY += 7;
   }
   
-  // Add voice minutes details if there are any additional minutes
+  // CRITICAL: Add voice minutes details if there are any additional minutes
+  // This is the key section we need to fix for the additional voice minutes
   if (additionalMinutes > 0) {
     doc.setFontSize(10);
     doc.setTextColor(100, 100, 100);
