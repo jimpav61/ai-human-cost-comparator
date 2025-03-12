@@ -5,7 +5,8 @@ import { supabase } from "@/integrations/supabase/client";
 import { getSafeFileName } from "./report-generator/saveReport";
 import { generatePDF } from "@/components/calculator/pdf";
 import { CalculationResults } from "@/hooks/calculator/types";
-import { ensureCalculationResults, ensureCalculatorInputs } from "@/hooks/calculator/supabase-types";
+import { ensureCalculatorInputs } from "@/hooks/calculator/supabase-types";
+import { ensureCalculationResults } from "@/components/calculator/pdf/types";
 import { performCalculations } from "@/hooks/calculator/calculations";
 
 export const useReportDownload = () => {
@@ -194,3 +195,4 @@ export const useReportDownload = () => {
     handleDownloadReport
   };
 };
+
