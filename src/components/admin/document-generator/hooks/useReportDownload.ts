@@ -5,7 +5,7 @@ import { toast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 import { getSafeFileName } from "./report-generator/saveReport";
 import { generatePDF } from "@/components/calculator/pdf";
-import { CalculationResults } from "@/hooks/calculator/types";
+import { CalculationResults, CalculatorInputs } from "@/hooks/calculator/types";
 import { ensureCalculatorInputs, toJson } from "@/hooks/calculator/supabase-types";
 
 export const useReportDownload = () => {
@@ -39,16 +39,17 @@ export const useReportDownload = () => {
       // IMPORTANT: Use the exact lead data without modifying anything
       console.log("Generating new report with exact lead data");
       
-      // Extract data directly from lead without modifications
-      const calculatorInputs = lead.calculator_inputs || {};
-      const calculatorResults = lead.calculator_results || {};
+      // Extract data directly from lead without modifications and ensure they're typed correctly
+      const calculatorInputs: CalculatorInputs = lead.calculator_inputs || {};
+      const calculatorResults: CalculationResults = lead.calculator_results || {};
       
       // CRITICAL: Don't modify any values, use them exactly as is
-      const aiTier = calculatorResults.tierKey || calculatorInputs.aiTier || 'growth';
-      const aiType = calculatorResults.aiType || calculatorInputs.aiType || 'chatbot';
+      // Use optional chaining and nullish coalescing to safely access properties
+      const aiTier = calculatorResults?.tierKey || calculatorInputs?.aiTier || 'growth';
+      const aiType = calculatorResults?.aiType || calculatorInputs?.aiType || 'chatbot';
       const additionalVoiceMinutes = 
-        calculatorResults.additionalVoiceMinutes !== undefined ? Number(calculatorResults.additionalVoiceMinutes) :
-        calculatorInputs.callVolume !== undefined ? Number(calculatorInputs.callVolume) : 0;
+        calculatorResults?.additionalVoiceMinutes !== undefined ? Number(calculatorResults.additionalVoiceMinutes) :
+        calculatorInputs?.callVolume !== undefined ? Number(calculatorInputs.callVolume) : 0;
       
       console.log("Using exact original values:");
       console.log("tierKey:", aiTier);
@@ -74,7 +75,7 @@ export const useReportDownload = () => {
         phoneNumber: lead.phone_number || '',
         industry: lead.industry || 'Other',
         employeeCount: Number(lead.employee_count) || 5,
-        results: calculatorResults as CalculationResults,
+        results: calculatorResults,
         additionalVoiceMinutes,
         includedVoiceMinutes: aiTier === 'starter' ? 0 : 600,
         businessSuggestions: [
