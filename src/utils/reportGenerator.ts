@@ -1,3 +1,4 @@
+
 import { generatePDF } from "@/components/calculator/pdf";
 import { Lead } from "@/types/leads";
 import { getSafeFileName } from "@/components/admin/document-generator/hooks/report-generator/saveReport";
@@ -182,7 +183,12 @@ export const generateAndDownloadReport = async (lead: Lead) => {
           .insert(reportData);
           
         if (error) {
-          console.error('[CALCULATOR REPORT] Error saving report to database:', error);
+          // If there's a foreign key violation error, just log it but continue
+          if (error.code === '23503') {
+            console.error('[CALCULATOR REPORT] Foreign key constraint error, skipping database save:', error);
+          } else {
+            console.error('[CALCULATOR REPORT] Error saving report to database:', error);
+          }
         } else {
           console.log('[CALCULATOR REPORT] Report saved to database successfully with ID:', reportData.id);
         }
