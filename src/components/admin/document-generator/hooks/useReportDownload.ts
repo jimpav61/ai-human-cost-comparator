@@ -5,8 +5,7 @@ import { toast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 import { getSafeFileName } from "./report-generator/saveReport";
 import { generatePDF } from "@/components/calculator/pdf";
-import { CalculationResults, CalculatorInputs } from "@/hooks/calculator/types";
-import { ensureCalculatorInputs, toJson } from "@/hooks/calculator/supabase-types";
+import { toJson } from "@/hooks/calculator/supabase-types";
 
 export const useReportDownload = () => {
   const [isLoading, setIsLoading] = useState(false);
@@ -36,38 +35,7 @@ export const useReportDownload = () => {
       const reportId = crypto.randomUUID();
       console.log("Generated new report ID:", reportId);
       
-      // IMPORTANT: Use the exact lead data without modifying anything
-      console.log("Generating new report with exact lead data");
-      
-      // Extract data directly from lead without modifications and ensure they're typed correctly
-      const calculatorInputs: CalculatorInputs = lead.calculator_inputs || {};
-      const calculatorResults: CalculationResults = lead.calculator_results || {};
-      
-      // CRITICAL: Don't modify any values, use them exactly as is
-      // Use optional chaining and nullish coalescing to safely access properties
-      const aiTier = calculatorResults?.tierKey || calculatorInputs?.aiTier || 'growth';
-      const aiType = calculatorResults?.aiType || calculatorInputs?.aiType || 'chatbot';
-      const additionalVoiceMinutes = 
-        calculatorResults?.additionalVoiceMinutes !== undefined ? Number(calculatorResults.additionalVoiceMinutes) :
-        calculatorInputs?.callVolume !== undefined ? Number(calculatorInputs.callVolume) : 0;
-      
-      console.log("Using exact original values:");
-      console.log("tierKey:", aiTier);
-      console.log("aiType:", aiType);
-      console.log("additionalVoiceMinutes:", additionalVoiceMinutes);
-      
-      // Format tier and AI type display names
-      const tierName = aiTier === 'starter' ? 'Starter Plan' : 
-                      aiTier === 'growth' ? 'Growth Plan' : 
-                      aiTier === 'premium' ? 'Premium Plan' : 'Growth Plan';
-                      
-      const aiTypeDisplay = aiType === 'chatbot' ? 'Text Only' : 
-                          aiType === 'voice' ? 'Basic Voice' : 
-                          aiType === 'conversationalVoice' ? 'Conversational Voice' : 
-                          aiType === 'both' ? 'Text & Basic Voice' : 
-                          aiType === 'both-premium' ? 'Text & Conversational Voice' : 'Text Only';
-      
-      // Generate the PDF with exact original values
+      // Generate the PDF WITHOUT modifying any data
       const doc = generatePDF({
         contactInfo: lead.name || 'Valued Client',
         companyName: lead.company_name || 'Your Company',
@@ -75,9 +43,9 @@ export const useReportDownload = () => {
         phoneNumber: lead.phone_number || '',
         industry: lead.industry || 'Other',
         employeeCount: Number(lead.employee_count) || 5,
-        results: calculatorResults,
-        additionalVoiceMinutes,
-        includedVoiceMinutes: aiTier === 'starter' ? 0 : 600,
+        results: lead.calculator_results,
+        additionalVoiceMinutes: lead.calculator_results.additionalVoiceMinutes || 0,
+        includedVoiceMinutes: lead.calculator_results.tierKey === 'starter' ? 0 : 600,
         businessSuggestions: [
           {
             title: "Automate Common Customer Inquiries",
@@ -106,15 +74,21 @@ export const useReportDownload = () => {
             capabilities: ["Answer product questions", "Provide pricing information", "Schedule demonstrations with sales team"]
           }
         ],
-        tierName,
-        aiType: aiTypeDisplay
+        tierName: lead.calculator_results.tierKey === 'starter' ? 'Starter Plan' : 
+                 lead.calculator_results.tierKey === 'growth' ? 'Growth Plan' : 
+                 lead.calculator_results.tierKey === 'premium' ? 'Premium Plan' : 'Growth Plan',
+        aiType: lead.calculator_results.aiType === 'chatbot' ? 'Text Only' : 
+                lead.calculator_results.aiType === 'voice' ? 'Basic Voice' : 
+                lead.calculator_results.aiType === 'conversationalVoice' ? 'Conversational Voice' : 
+                lead.calculator_results.aiType === 'both' ? 'Text & Basic Voice' : 
+                lead.calculator_results.aiType === 'both-premium' ? 'Text & Conversational Voice' : 'Text Only'
       });
       
-      // Save a copy of this report to the database with EXACT original values
+      // Save a copy of this report to the database without modifying the data
       try {
         // Simply convert to JSON without modifying
-        const jsonInputs = toJson(calculatorInputs);
-        const jsonResults = toJson(calculatorResults);
+        const jsonInputs = toJson(lead.calculator_inputs);
+        const jsonResults = toJson(lead.calculator_results);
         
         // Create the report data with the generated UUID and lead reference
         const reportData = {
