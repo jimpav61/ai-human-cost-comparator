@@ -6,10 +6,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { getSafeFileName } from "./report-generator/saveReport";
 import { generatePDF } from "@/components/calculator/pdf";
 import { CalculationResults } from "@/hooks/calculator/types";
-import { ensureCalculatorInputs } from "@/hooks/calculator/supabase-types";
-import { ensureCalculationResults } from "@/components/calculator/pdf/types";
-import { performCalculations } from "@/hooks/calculator/calculations";
-import { toJson } from "@/hooks/calculator/supabase-types";
+import { ensureCalculatorInputs, toJson } from "@/hooks/calculator/supabase-types";
 
 export const useReportDownload = () => {
   const [isLoading, setIsLoading] = useState(false);
@@ -39,144 +36,24 @@ export const useReportDownload = () => {
       const reportId = crypto.randomUUID();
       console.log("Generated new report ID:", reportId);
       
-      // Ensure we're using the latest lead data for the report
-      console.log("Generating new report with latest lead data");
+      // IMPORTANT: Use the exact lead data without modifying anything
+      console.log("Generating new report with exact lead data");
       
-      // Ensure calculator_inputs and calculator_results are properly prepared
+      // Extract data directly from lead without modifications
       const calculatorInputs = lead.calculator_inputs || {};
       const calculatorResults = lead.calculator_results || {};
       
-      // Extract key data points with type checking
-      const aiTier = 
-        (calculatorInputs && typeof calculatorInputs === 'object' && 'aiTier' in calculatorInputs) ? 
-          calculatorInputs.aiTier as string : 
-        (calculatorResults && typeof calculatorResults === 'object' && 'tierKey' in calculatorResults) ? 
-          calculatorResults.tierKey as string : 
-        'growth';
-        
-      const aiType = 
-        (calculatorInputs && typeof calculatorInputs === 'object' && 'aiType' in calculatorInputs) ? 
-          calculatorInputs.aiType as string : 
-        (calculatorResults && typeof calculatorResults === 'object' && 'aiType' in calculatorResults) ? 
-          calculatorResults.aiType as string : 
-        'chatbot';
+      // CRITICAL: Don't modify any values, use them exactly as is
+      const aiTier = calculatorResults.tierKey || calculatorInputs.aiTier || 'growth';
+      const aiType = calculatorResults.aiType || calculatorInputs.aiType || 'chatbot';
+      const additionalVoiceMinutes = 
+        calculatorResults.additionalVoiceMinutes !== undefined ? Number(calculatorResults.additionalVoiceMinutes) :
+        calculatorInputs.callVolume !== undefined ? Number(calculatorInputs.callVolume) : 0;
       
-      // CRITICAL FIX: Properly extract additional voice minutes
-      let additionalVoiceMinutes = 0;
-      
-      // First try to get from calculator_results.additionalVoiceMinutes (most authoritative)
-      if (calculatorResults && typeof calculatorResults === 'object' && 'additionalVoiceMinutes' in calculatorResults) {
-        additionalVoiceMinutes = Number(calculatorResults.additionalVoiceMinutes);
-        console.log("Using additionalVoiceMinutes from calculator_results:", additionalVoiceMinutes);
-      } 
-      // Then try calculator_inputs.callVolume as fallback
-      else if (calculatorInputs && typeof calculatorInputs === 'object' && 'callVolume' in calculatorInputs) {
-        if (typeof calculatorInputs.callVolume === 'number') {
-          additionalVoiceMinutes = calculatorInputs.callVolume;
-        } else if (typeof calculatorInputs.callVolume === 'string') {
-          additionalVoiceMinutes = parseInt(calculatorInputs.callVolume, 10) || 0;
-        }
-        console.log("Using callVolume from calculator_inputs:", additionalVoiceMinutes);
-      }
-      
-      console.log("Using tierKey:", aiTier);
-      console.log("Using aiType:", aiType);
-      console.log("Using additionalVoiceMinutes:", additionalVoiceMinutes);
-      
-      // Ensure 1:1 replacement model by setting numEmployees to 1
-      const adjustedInputs = { ...calculatorInputs, numEmployees: 1 };
-      
-      // Set proper pricing based on tier
-      let setupFee = 0;
-      let basePrice = 0;
-      
-      // Assign proper pricing values based on tier
-      if (aiTier === 'starter') {
-        setupFee = 249;
-        basePrice = 99;
-      } else if (aiTier === 'growth') {
-        setupFee = 749;
-        basePrice = 229;
-      } else if (aiTier === 'premium') {
-        setupFee = 1149;
-        basePrice = 429;
-      }
-      
-      // Calculate additional voice cost using the proper rate
-      const additionalVoiceCost = additionalVoiceMinutes * 0.12;
-      
-      // Create a proper typed object for the calculator results to use in recalculation
-      let typedCalculatorResults: CalculationResults = {
-        aiCostMonthly: {
-          voice: additionalVoiceCost,
-          chatbot: basePrice,
-          total: basePrice + additionalVoiceCost,
-          setupFee: setupFee
-        },
-        basePriceMonthly: basePrice,
-        humanCostMonthly: 0, // Will be recalculated
-        monthlySavings: 0, // Will be recalculated
-        yearlySavings: 0, // Will be recalculated
-        savingsPercentage: 0, // Will be recalculated
-        breakEvenPoint: {
-          voice: 0,
-          chatbot: 0
-        },
-        humanHours: {
-          dailyPerEmployee: 0,
-          weeklyTotal: 0,
-          monthlyTotal: 0,
-          yearlyTotal: 0
-        },
-        annualPlan: basePrice * 10, // 10 months equivalent for annual plan
-        includedVoiceMinutes: aiTier === 'starter' ? 0 : 600,
-        tierKey: aiTier as 'starter' | 'growth' | 'premium',
-        aiType: aiType as 'voice' | 'chatbot' | 'both' | 'conversationalVoice' | 'both-premium',
-        additionalVoiceMinutes: additionalVoiceMinutes
-      };
-      
-      // Use values from calculatorResults if they exist and are not zero
-      const typedResults = calculatorResults as Record<string, any>;
-      
-      if (typedResults.aiCostMonthly && 
-          typeof typedResults.aiCostMonthly === 'object' && 
-          'setupFee' in typedResults.aiCostMonthly && 
-          typedResults.aiCostMonthly.setupFee > 0) {
-        typedCalculatorResults.aiCostMonthly.setupFee = typedResults.aiCostMonthly.setupFee;
-      }
-      
-      if (typedResults.basePriceMonthly && 
-          typeof typedResults.basePriceMonthly === 'number' && 
-          typedResults.basePriceMonthly > 0) {
-        typedCalculatorResults.basePriceMonthly = typedResults.basePriceMonthly;
-      }
-      
-      if (typedResults.annualPlan && 
-          typeof typedResults.annualPlan === 'number' && 
-          typedResults.annualPlan > 0) {
-        typedCalculatorResults.annualPlan = typedResults.annualPlan;
-      }
-      
-      // Make sure humanCostMonthly is properly set
-      if (typedResults.humanCostMonthly && 
-          typeof typedResults.humanCostMonthly === 'number' && 
-          typedResults.humanCostMonthly > 0) {
-        typedCalculatorResults.humanCostMonthly = typedResults.humanCostMonthly;
-      } else {
-        // If no humanCostMonthly is set, let's use a default
-        typedCalculatorResults.humanCostMonthly = typedCalculatorResults.basePriceMonthly * 3; // 3x the base price as a default
-      }
-      
-      // Recalculate savings based on human cost and AI cost
-      const aiTotalCost = typedCalculatorResults.basePriceMonthly + typedCalculatorResults.aiCostMonthly.voice;
-      typedCalculatorResults.aiCostMonthly.total = aiTotalCost;
-      typedCalculatorResults.monthlySavings = typedCalculatorResults.humanCostMonthly - aiTotalCost;
-      typedCalculatorResults.yearlySavings = typedCalculatorResults.monthlySavings * 12;
-      typedCalculatorResults.savingsPercentage = 
-        (typedCalculatorResults.monthlySavings / typedCalculatorResults.humanCostMonthly) * 100;
-      
-      // CRITICAL: Make sure the additionalVoiceMinutes is set correctly
-      typedCalculatorResults.additionalVoiceMinutes = additionalVoiceMinutes;
+      console.log("Using exact original values:");
+      console.log("tierKey:", aiTier);
+      console.log("aiType:", aiType);
+      console.log("additionalVoiceMinutes:", additionalVoiceMinutes);
       
       // Format tier and AI type display names
       const tierName = aiTier === 'starter' ? 'Starter Plan' : 
@@ -184,12 +61,12 @@ export const useReportDownload = () => {
                       aiTier === 'premium' ? 'Premium Plan' : 'Growth Plan';
                       
       const aiTypeDisplay = aiType === 'chatbot' ? 'Text Only' : 
-                            aiType === 'voice' ? 'Basic Voice' : 
-                            aiType === 'conversationalVoice' ? 'Conversational Voice' : 
-                            aiType === 'both' ? 'Text & Basic Voice' : 
-                            aiType === 'both-premium' ? 'Text & Conversational Voice' : 'Text Only';
+                          aiType === 'voice' ? 'Basic Voice' : 
+                          aiType === 'conversationalVoice' ? 'Conversational Voice' : 
+                          aiType === 'both' ? 'Text & Basic Voice' : 
+                          aiType === 'both-premium' ? 'Text & Conversational Voice' : 'Text Only';
       
-      // Generate the PDF - ensure additionalVoiceMinutes is passed to the PDF generator
+      // Generate the PDF with exact original values
       const doc = generatePDF({
         contactInfo: lead.name || 'Valued Client',
         companyName: lead.company_name || 'Your Company',
@@ -197,8 +74,8 @@ export const useReportDownload = () => {
         phoneNumber: lead.phone_number || '',
         industry: lead.industry || 'Other',
         employeeCount: Number(lead.employee_count) || 5,
-        results: typedCalculatorResults,
-        additionalVoiceMinutes: additionalVoiceMinutes,
+        results: calculatorResults as CalculationResults,
+        additionalVoiceMinutes,
         includedVoiceMinutes: aiTier === 'starter' ? 0 : 600,
         businessSuggestions: [
           {
@@ -228,22 +105,14 @@ export const useReportDownload = () => {
             capabilities: ["Answer product questions", "Provide pricing information", "Schedule demonstrations with sales team"]
           }
         ],
-        tierName: tierName,
+        tierName,
         aiType: aiTypeDisplay
       });
       
-      // Save a copy of this report to the database
+      // Save a copy of this report to the database with EXACT original values
       try {
-        // Convert calculator data to JSON format
-        const jsonInputs = toJson(adjustedInputs);
-        
-        // CRITICAL: Make sure additionalVoiceMinutes is included in the calculator_results
-        if (typeof calculatorResults === 'object') {
-          (calculatorResults as any).additionalVoiceMinutes = additionalVoiceMinutes;
-          (calculatorResults as any).aiType = aiType;
-          (calculatorResults as any).tierKey = aiTier;
-        }
-        
+        // Simply convert to JSON without modifying
+        const jsonInputs = toJson(calculatorInputs);
         const jsonResults = toJson(calculatorResults);
         
         // Create the report data with the generated UUID and lead reference
