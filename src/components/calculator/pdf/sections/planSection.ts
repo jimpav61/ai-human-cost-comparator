@@ -27,6 +27,8 @@ export const addPlanSection = (
   // Use the proper fee (either passed value or tier-based)
   const fee = typeof setupFee === 'number' ? setupFee : tierBasedSetupFee;
   const voiceMinutes = typeof includedVoiceMinutes === 'number' ? includedVoiceMinutes : 600;
+  
+  // CRITICAL FIX: Ensure additionalMinutes is a number, default to 0
   const additionalMinutes = typeof additionalVoiceMinutes === 'number' ? additionalVoiceMinutes : 0;
   
   doc.setFontSize(14);
@@ -42,6 +44,7 @@ export const addPlanSection = (
   const voiceCapability = tierKey === 'starter' ? 'No voice capabilities' : 
                         `Includes ${voiceMinutes} free voice minutes per month`;
   
+  // Add the plan name with proper AI type display
   doc.text(`${tierName} (${aiType})`, 20, currentY);
   currentY += 7;
   

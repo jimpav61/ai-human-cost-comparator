@@ -42,6 +42,7 @@ export const generateProposalPdf = (lead: Lead): string => {
     }
     
     // CRITICAL FIX: Ensure additionalVoiceMinutes in results is aligned with callVolume in inputs
+    // This is key to fixing the PDF generation issues with voice minutes
     if ('additionalVoiceMinutes' in sanitizedLead.calculator_results) {
       const additionalVoiceMinutes = sanitizedLead.calculator_results.additionalVoiceMinutes || 0;
       if (sanitizedLead.calculator_inputs.callVolume !== additionalVoiceMinutes) {

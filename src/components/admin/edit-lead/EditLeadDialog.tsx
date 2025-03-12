@@ -1,3 +1,4 @@
+
 import { useEffect } from 'react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
 import { EditLeadTabs } from "./EditLeadTabs";
@@ -17,14 +18,16 @@ interface EditLeadDialogProps {
 export const EditLeadDialog = ({ lead, isOpen, onClose, onSave }: EditLeadDialogProps) => {
   console.log("EditLeadDialog rendering. isOpen:", isOpen, "lead:", lead);
   
-  // Detailed logging of calculator data for debugging
+  // Detailed debugging of calculator data
   console.log("Initial calculator_results:", JSON.stringify(lead.calculator_results, null, 2));
   console.log("Initial calculator_inputs:", JSON.stringify(lead.calculator_inputs, null, 2));
   
-  // Specifically log the voice minutes value since it's the main issue
-  if (lead.calculator_results && 'additionalVoiceMinutes' in lead.calculator_results) {
-    console.log("Found additionalVoiceMinutes:", lead.calculator_results.additionalVoiceMinutes);
-  }
+  // Explicitly extract critical values from calculator_results first (preferred source)
+  let tierFromResults = lead.calculator_results?.tierKey || null;
+  let aiTypeFromResults = lead.calculator_results?.aiType || null;
+  let additionalVoiceMinutes = lead.calculator_results?.additionalVoiceMinutes || 0;
+  
+  console.log("Extracted from results - tier:", tierFromResults, "aiType:", aiTypeFromResults, "additionalVoiceMinutes:", additionalVoiceMinutes);
 
   // Use custom hooks to manage state and logic
   const { formData, handleBasicInfoChange, setFormData } = useLeadForm(lead);
@@ -50,6 +53,25 @@ export const EditLeadDialog = ({ lead, isOpen, onClose, onSave }: EditLeadDialog
       handleBasicInfoChange('employee_count', calculatorInputs.numEmployees);
     }
   }, [calculatorInputs.numEmployees, formData.employee_count, handleBasicInfoChange]);
+
+  // CRITICAL: Ensure calculator data is properly synchronized after initialization
+  useEffect(() => {
+    // This is needed to ensure the calculator data properly reflects the stored results
+    if (tierFromResults && tierFromResults !== calculatorInputs.aiTier) {
+      console.log(`Forcing aiTier to match results: ${tierFromResults}`);
+      handleCalculatorInputChange('aiTier', tierFromResults);
+    }
+    
+    if (aiTypeFromResults && aiTypeFromResults !== calculatorInputs.aiType) {
+      console.log(`Forcing aiType to match results: ${aiTypeFromResults}`);
+      handleCalculatorInputChange('aiType', aiTypeFromResults);
+    }
+    
+    if (additionalVoiceMinutes > 0 && additionalVoiceMinutes !== calculatorInputs.callVolume) {
+      console.log(`Forcing callVolume to match additionalVoiceMinutes: ${additionalVoiceMinutes}`);
+      handleCalculatorInputChange('callVolume', additionalVoiceMinutes);
+    }
+  }, [tierFromResults, aiTypeFromResults, additionalVoiceMinutes, calculatorInputs, handleCalculatorInputChange]);
 
   // Handle save button click
   const handleSave = () => {

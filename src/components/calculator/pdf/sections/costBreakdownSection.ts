@@ -13,7 +13,9 @@ export const addCostBreakdownSection = (
     basePriceMonthly: results.basePriceMonthly,
     voiceCost: results.aiCostMonthly.voice,
     totalMonthlyCost: results.aiCostMonthly.total,
-    additionalVoiceMinutes: results.additionalVoiceMinutes
+    additionalVoiceMinutes: results.additionalVoiceMinutes,
+    tierKey: results.tierKey,
+    aiType: results.aiType
   });
   
   // Cost Breakdown Section
@@ -27,7 +29,10 @@ export const addCostBreakdownSection = (
   const tableRows = [];
   
   // Always add the base AI service
-  tableRows.push(['AI Service Base', formatCurrency(results.basePriceMonthly)]);
+  const baseLabel = results.tierKey === 'premium' ? 'Premium AI Service Base' : 
+                  results.tierKey === 'growth' ? 'Growth AI Service Base' : 
+                  'Starter AI Service Base';
+  tableRows.push([baseLabel, formatCurrency(results.basePriceMonthly)]);
   
   // Add voice cost if applicable - only show when there's an actual voice cost
   if (results.aiCostMonthly.voice > 0 || (results.additionalVoiceMinutes && results.additionalVoiceMinutes > 0)) {

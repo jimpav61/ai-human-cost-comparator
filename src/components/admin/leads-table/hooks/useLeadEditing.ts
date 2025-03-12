@@ -1,3 +1,4 @@
+
 import { useState } from "react";
 import { Lead } from "@/types/leads";
 import { supabase } from "@/integrations/supabase/client";
@@ -22,6 +23,27 @@ export function useLeadEditing(onLeadUpdated?: () => void) {
     
     if (!preparedLead.calculator_results || typeof preparedLead.calculator_results !== 'object') {
       preparedLead.calculator_results = getDefaultCalculationResults();
+    }
+    
+    // CRITICAL: Extract key data from calculator_results first (it's more authoritative)
+    const resultsData = preparedLead.calculator_results;
+    if (resultsData) {
+      console.log("Found calculator_results with tierKey:", resultsData.tierKey);
+      console.log("Found calculator_results with aiType:", resultsData.aiType);
+      console.log("Found calculator_results with additionalVoiceMinutes:", resultsData.additionalVoiceMinutes);
+      
+      // Ensure calculator_inputs matches calculator_results values
+      if (resultsData.tierKey && preparedLead.calculator_inputs) {
+        preparedLead.calculator_inputs.aiTier = resultsData.tierKey;
+      }
+      
+      if (resultsData.aiType && preparedLead.calculator_inputs) {
+        preparedLead.calculator_inputs.aiType = resultsData.aiType;
+      }
+      
+      if (typeof resultsData.additionalVoiceMinutes === 'number' && preparedLead.calculator_inputs) {
+        preparedLead.calculator_inputs.callVolume = resultsData.additionalVoiceMinutes;
+      }
     }
     
     // Before setting the editing lead, ensure callVolume is properly extracted from calculator_inputs
