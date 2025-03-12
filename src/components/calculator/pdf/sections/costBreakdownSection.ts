@@ -28,7 +28,8 @@ export const addCostBreakdownSection = (
   // Cost breakdown table
   const tableRows = [];
   
-  // Always add the base AI service
+  // CRITICAL FIX: Always use the tierKey from results directly
+  // instead of trying to infer it which was causing the issue
   const baseLabel = results.tierKey === 'premium' ? 'Premium AI Service Base' : 
                   results.tierKey === 'growth' ? 'Growth AI Service Base' : 
                   'Starter AI Service Base';

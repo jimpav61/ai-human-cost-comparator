@@ -11,10 +11,12 @@ export const generateProposalPdf = (lead: Lead): string => {
   console.log("Lead data:", lead.id, lead.company_name);
   console.log("Lead calculator_results:", lead.calculator_results);
   
-  // Make sure we have proper results data by creating a deep clone
+  // CRITICAL FIX: Make sure we have proper results data by creating a deep clone 
+  // AND ensuring we preserve the exact tierKey from calculator_results
   const sanitizedLead = JSON.parse(JSON.stringify(lead));
   
   // Explicitly log the important fields for debugging
+  console.log("BEFORE SYNC - tierKey:", sanitizedLead.calculator_results?.tierKey);
   console.log("BEFORE SYNC - aiTier:", sanitizedLead.calculator_inputs?.aiTier);
   console.log("BEFORE SYNC - aiType:", sanitizedLead.calculator_inputs?.aiType);
   console.log("BEFORE SYNC - callVolume:", sanitizedLead.calculator_inputs?.callVolume);
@@ -58,6 +60,7 @@ export const generateProposalPdf = (lead: Lead): string => {
     }
   }
   
+  console.log("AFTER SYNC - tierKey:", sanitizedLead.calculator_results?.tierKey);
   console.log("AFTER SYNC - aiTier:", sanitizedLead.calculator_inputs?.aiTier);
   console.log("AFTER SYNC - aiType:", sanitizedLead.calculator_inputs?.aiType);
   console.log("AFTER SYNC - callVolume:", sanitizedLead.calculator_inputs?.callVolume);

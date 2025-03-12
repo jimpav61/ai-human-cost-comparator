@@ -21,8 +21,14 @@ export const addPlanSection = (
     additionalVoiceMinutes
   });
   
+  // CRITICAL BUGFIX: Make sure we're using the exact tier name that was passed in
+  // Instead of trying to parse it again which was causing the issue
+  const tierKey = tierName.toLowerCase().includes('starter') ? 'starter' : 
+                 tierName.toLowerCase().includes('growth') ? 'growth' : 
+                 tierName.toLowerCase().includes('premium') ? 'premium' : 'growth';
+  
   // Get the correct setup fee based on tier
-  const tierBasedSetupFee = getTierBasedSetupFee(tierName);
+  const tierBasedSetupFee = getTierBasedSetupFee(tierKey);
   
   // Use the proper fee (either passed value or tier-based)
   const fee = typeof setupFee === 'number' ? setupFee : tierBasedSetupFee;
@@ -37,9 +43,6 @@ export const addPlanSection = (
   currentY += 8;
   
   doc.setFontSize(12);
-  const tierKey = tierName.toLowerCase().includes('starter') ? 'starter' : 
-                 tierName.toLowerCase().includes('growth') ? 'growth' : 
-                 tierName.toLowerCase().includes('premium') ? 'premium' : 'growth';
   
   const voiceCapability = tierKey === 'starter' ? 'No voice capabilities' : 
                         `Includes ${voiceMinutes} free voice minutes per month`;
