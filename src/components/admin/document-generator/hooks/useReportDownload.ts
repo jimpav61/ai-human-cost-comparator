@@ -48,20 +48,24 @@ export const useReportDownload = () => {
       
       // Extract key data points with type checking
       const aiTier = 
-        (calculatorInputs && 'aiTier' in calculatorInputs) ? calculatorInputs.aiTier : 
-        (calculatorResults && 'tierKey' in calculatorResults) ? calculatorResults.tierKey : 
+        (calculatorInputs && typeof calculatorInputs === 'object' && 'aiTier' in calculatorInputs) ? 
+          calculatorInputs.aiTier as string : 
+        (calculatorResults && typeof calculatorResults === 'object' && 'tierKey' in calculatorResults) ? 
+          calculatorResults.tierKey as string : 
         'growth';
         
       const aiType = 
-        (calculatorInputs && 'aiType' in calculatorInputs) ? calculatorInputs.aiType : 
-        (calculatorResults && 'aiType' in calculatorResults) ? calculatorResults.aiType : 
+        (calculatorInputs && typeof calculatorInputs === 'object' && 'aiType' in calculatorInputs) ? 
+          calculatorInputs.aiType as string : 
+        (calculatorResults && typeof calculatorResults === 'object' && 'aiType' in calculatorResults) ? 
+          calculatorResults.aiType as string : 
         'chatbot';
       
       // Determine additional voice minutes
       let additionalVoiceMinutes = 0;
-      if (calculatorResults && 'additionalVoiceMinutes' in calculatorResults) {
+      if (calculatorResults && typeof calculatorResults === 'object' && 'additionalVoiceMinutes' in calculatorResults) {
         additionalVoiceMinutes = Number(calculatorResults.additionalVoiceMinutes);
-      } else if (calculatorInputs && 'callVolume' in calculatorInputs) {
+      } else if (calculatorInputs && typeof calculatorInputs === 'object' && 'callVolume' in calculatorInputs) {
         additionalVoiceMinutes = Number(calculatorInputs.callVolume);
       }
       
@@ -76,7 +80,7 @@ export const useReportDownload = () => {
       let setupFee = 0;
       let basePrice = 0;
       
-      // Assign proper pricing values based on tier
+      // Assign proper pricing values based on tier - UPDATED PREMIUM PRICE TO 429
       if (aiTier === 'starter') {
         setupFee = 499;
         basePrice = 149;
@@ -85,7 +89,7 @@ export const useReportDownload = () => {
         basePrice = 229;
       } else if (aiTier === 'premium') {
         setupFee = 1499;
-        basePrice = 399;
+        basePrice = 429; // Updated from 399 to 429
       }
       
       // Create a proper typed object for the calculator results to use in recalculation
@@ -119,16 +123,25 @@ export const useReportDownload = () => {
       };
       
       // Use values from calculatorResults if they exist and are not zero
-      if (calculatorResults?.aiCostMonthly?.setupFee > 0) {
-        typedCalculatorResults.aiCostMonthly.setupFee = calculatorResults.aiCostMonthly.setupFee;
+      const typedResults = calculatorResults as Record<string, any>;
+      
+      if (typedResults.aiCostMonthly && 
+          typeof typedResults.aiCostMonthly === 'object' && 
+          'setupFee' in typedResults.aiCostMonthly && 
+          typedResults.aiCostMonthly.setupFee > 0) {
+        typedCalculatorResults.aiCostMonthly.setupFee = typedResults.aiCostMonthly.setupFee;
       }
       
-      if (calculatorResults?.basePriceMonthly > 0) {
-        typedCalculatorResults.basePriceMonthly = calculatorResults.basePriceMonthly;
+      if (typedResults.basePriceMonthly && 
+          typeof typedResults.basePriceMonthly === 'number' && 
+          typedResults.basePriceMonthly > 0) {
+        typedCalculatorResults.basePriceMonthly = typedResults.basePriceMonthly;
       }
       
-      if (calculatorResults?.annualPlan > 0) {
-        typedCalculatorResults.annualPlan = calculatorResults.annualPlan;
+      if (typedResults.annualPlan && 
+          typeof typedResults.annualPlan === 'number' && 
+          typedResults.annualPlan > 0) {
+        typedCalculatorResults.annualPlan = typedResults.annualPlan;
       }
       
       // Recalculate results to ensure consistency
@@ -137,8 +150,10 @@ export const useReportDownload = () => {
         const recalculatedResults = performCalculations(validInputs, {});
         
         // Make sure humanCostMonthly is properly set
-        if (calculatorResults.humanCostMonthly && calculatorResults.humanCostMonthly > 0) {
-          typedCalculatorResults.humanCostMonthly = calculatorResults.humanCostMonthly;
+        if (typedResults.humanCostMonthly && 
+            typeof typedResults.humanCostMonthly === 'number' && 
+            typedResults.humanCostMonthly > 0) {
+          typedCalculatorResults.humanCostMonthly = typedResults.humanCostMonthly;
         } else {
           // If no humanCostMonthly is set, let's use the recalculated value or set a default
           typedCalculatorResults.humanCostMonthly = recalculatedResults.humanCostMonthly > 0 ? 

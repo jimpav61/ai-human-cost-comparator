@@ -24,7 +24,7 @@ export const addCostSummarySection = (
   } else if (results.tierKey === 'growth') {
     basePrice = 229;
   } else if (results.tierKey === 'premium') {
-    basePrice = 399;
+    basePrice = 429; // Updated from 399 to 429
   } else {
     basePrice = 229; // Default to growth
   }
