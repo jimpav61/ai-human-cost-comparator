@@ -89,7 +89,9 @@ export const generateFromInputs = async (lead: Lead): Promise<void> => {
     },
     annualPlan: annualPrice,
     tierKey: tierToUse, // Add the tier key to be used in recommendedSolution
-    basePriceMonthly: baseMonthlyPrice // Add the missing required property
+    basePriceMonthly: baseMonthlyPrice, // Add the missing required property
+    includedVoiceMinutes: includedVoiceMinutes, // Add the missing includedVoiceMinutes property
+    additionalVoiceMinutes: inputs.callVolume || 0 // Add the additionalVoiceMinutes property
   };
   
   // Get display names based on tier and aiType
