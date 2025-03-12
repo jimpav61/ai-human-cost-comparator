@@ -1,3 +1,4 @@
+
 import { serve } from "https://deno.land/std@0.177.0/http/server.ts";
 import { corsHeaders } from "../_shared/cors.ts";
 
@@ -28,6 +29,18 @@ serve(async (req) => {
     console.log("Request data keys:", Object.keys(requestData));
     
     const { lead, preview, saveRevision, returnContent } = requestData;
+
+    // Log the exact calculator results being used
+    console.log("RECEIVED CALCULATOR RESULTS:", JSON.stringify(lead.calculator_results, null, 2));
+    console.log("Calculator results tier:", lead.calculator_results?.tierKey);
+    console.log("Calculator results aiType:", lead.calculator_results?.aiType);
+    console.log("Calculator results monthly costs:", lead.calculator_results?.aiCostMonthly);
+    console.log("Calculator results savings:", {
+      monthly: lead.calculator_results?.monthlySavings,
+      yearly: lead.calculator_results?.yearlySavings,
+      percentage: lead.calculator_results?.savingsPercentage
+    });
+    
     // Support preview parameter in both URL and request body
     const isPreviewMode = isPreview || preview === true;
     // Flag to determine if we should return the raw content instead of PDF
