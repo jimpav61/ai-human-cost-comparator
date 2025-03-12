@@ -39,26 +39,18 @@ serve(async (req) => {
       }
     }
     
-    // CRITICAL: Ensure calculator_inputs is an object not a string
-    if (typeof lead.calculator_inputs === 'string') {
-      try {
-        lead.calculator_inputs = JSON.parse(lead.calculator_inputs);
-        console.log("Successfully parsed calculator_inputs from string to object");
-      } catch (e) {
-        console.error("Error parsing calculator_inputs:", e);
-        // Don't throw, just log - we might not need this for proposal generation
-      }
-    }
+    // NEW: Make a copy of the lead object with all data intact and ensure values are available
+    console.log("Using EXACT calculator_results values without recalculation");
     
-    // DEBUG: Log key values from calculator results we'll use in the proposal
-    console.log("CALCULATOR RESULTS DEBUGGING:");
+    // DEBUG: Log key values we'll use in the proposal
+    console.log("CRITICAL VALUES:");
     console.log("humanCostMonthly:", lead.calculator_results.humanCostMonthly);
     console.log("aiCostMonthly.total:", lead.calculator_results.aiCostMonthly?.total);
     console.log("monthlySavings:", lead.calculator_results.monthlySavings);
     console.log("yearlySavings:", lead.calculator_results.yearlySavings);
     console.log("savingsPercentage:", lead.calculator_results.savingsPercentage);
     
-    // Generate the PDF using exact values from calculator_results
+    // Generate the PDF using the template approach with exact values
     const pdfContent = generateProfessionalProposal(lead);
     
     // Return the PDF content
@@ -66,7 +58,7 @@ serve(async (req) => {
       JSON.stringify({ 
         success: true, 
         pdf: pdfContent,
-        message: "Proposal generated successfully"
+        message: "Proposal generated successfully with template approach"
       }),
       {
         headers: {

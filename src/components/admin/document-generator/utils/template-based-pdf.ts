@@ -1,12 +1,13 @@
 
-import { formatCurrency } from "../_shared/utils.ts";
+import { Lead } from "@/types/leads";
+import { formatCurrency } from "@/utils/formatters";
 
 /**
- * Generates a professional, multi-page proposal PDF with lead data
- * Using EXACT values from calculator_results without modification
+ * Template-based PDF generator that uses direct value replacement
+ * without complex transformations or recalculations
  */
-export function generateProfessionalProposal(lead: any) {
-  console.log("==== GENERATING PROPOSAL WITH TEMPLATE-BASED APPROACH ====");
+export function generateTemplateBasedPdf(lead: Lead): string {
+  console.log("=== GENERATING PROPOSAL WITH TEMPLATE-BASED APPROACH ===");
   console.log("Lead ID:", lead.id);
   console.log("Company name:", lead.company_name);
   
@@ -14,24 +15,27 @@ export function generateProfessionalProposal(lead: any) {
   console.log("FULL CALCULATOR RESULTS:", JSON.stringify(lead.calculator_results, null, 2));
   
   // Extract data directly from lead without any adjustments
+  const calculatorResults = lead.calculator_results || {};
+  
+  // Company information - use exactly what's in the lead
   const companyName = lead.company_name || 'Client';
   const contactName = lead.name || 'Valued Client';
   const email = lead.email || 'client@example.com';
   const phoneNumber = lead.phone_number || 'Not provided';
   const industry = lead.industry || 'Technology';
   
-  // CRITICAL: Direct extraction of values without any processing or recalculation
-  const calculatorResults = lead.calculator_results || {};
+  // Extract plan/pricing information DIRECTLY without recalculation
   const tierKey = calculatorResults.tierKey || 'growth';
   const aiType = calculatorResults.aiType || 'both';
+  
+  // CRITICAL: Take financial values EXACTLY as stored, with no modifications
   const basePriceMonthly = calculatorResults.basePriceMonthly || 229;
   const humanCostMonthly = calculatorResults.humanCostMonthly || 0;
   const monthlySavings = calculatorResults.monthlySavings || 0;
   const yearlySavings = calculatorResults.yearlySavings || 0;
   const savingsPercentage = calculatorResults.savingsPercentage || 0;
-  const annualPlan = calculatorResults.annualPlan || 2290;
   
-  // Extract the aiCostMonthly structure exactly as is
+  // Get the aiCostMonthly structure exactly as stored
   const aiCostMonthly = calculatorResults.aiCostMonthly || {
     voice: 0,
     chatbot: 229,
@@ -39,59 +43,52 @@ export function generateProfessionalProposal(lead: any) {
     setupFee: 749
   };
   
-  // Log all extracted values for debugging
+  // Print all values to ensure they're being used correctly
   console.log("TEMPLATE VALUES:", {
-    tierKey,
-    aiType,
-    basePriceMonthly,
+    companyName,
+    contactName,
     humanCostMonthly,
+    basePriceMonthly,
     monthlySavings,
     yearlySavings,
     savingsPercentage,
-    annualPlan,
+    tierKey,
+    aiType,
     aiCostMonthly
   });
   
-  // Get display names based on tier
+  // Simple lookup tables for tier and AI type display names
   const tierName = tierKey === 'starter' ? 'Starter Plan' : 
                   tierKey === 'growth' ? 'Growth Plan' : 
                   tierKey === 'premium' ? 'Premium Plan' : 'Growth Plan';
   
-  // Set AI type display based on stored value
   const aiTypeDisplay = aiType === 'chatbot' ? 'Text Only' : 
                       aiType === 'voice' ? 'Basic Voice' : 
                       aiType === 'conversationalVoice' ? 'Conversational Voice' : 
                       aiType === 'both' ? 'Text & Basic Voice' : 
                       aiType === 'both-premium' ? 'Text & Conversational Voice' : 'Text Only';
-
-  // Use exact values from calculator_results
+  
+  // Get additional values directly from the calculator data
   const setupFee = aiCostMonthly.setupFee;
   const totalMonthlyCost = aiCostMonthly.total;
+  const voiceCost = aiCostMonthly.voice || 0;
   const additionalVoiceMinutes = lead.calculator_inputs?.callVolume || 0;
+  const annualPlan = calculatorResults.annualPlan || 0;
   
-  // Calculate ROI details with exact values
-  const breakEvenPoint = Math.ceil(setupFee / monthlySavings) || 1; // Avoid division by zero
+  // Derived values for ROI calculations
+  const breakEvenPoint = monthlySavings > 0 ? Math.ceil(setupFee / monthlySavings) : 1;
   const firstYearROI = monthlySavings > 0 ? Math.round((yearlySavings - setupFee) / setupFee * 100) : 0;
   const fiveYearSavings = yearlySavings * 5;
   
-  // Generate current date for the proposal
+  // Format date for proposal
   const today = new Date();
   const formattedDate = `${today.toLocaleString('default', { month: 'long' })} ${today.getDate()}, ${today.getFullYear()}`;
   
   // Brand Colors
-  const brandRed = "#ff432a";  // Main brand color
+  const brandRed = "#ff432a";
   
-  // Log financial values that will appear in the PDF
-  console.log("FINANCIAL SECTION VALUES:", {
-    humanCostMonthly: formatCurrency(humanCostMonthly),
-    aiCostTotal: formatCurrency(totalMonthlyCost),
-    monthlySavings: formatCurrency(monthlySavings),
-    yearlySavings: formatCurrency(yearlySavings),
-    savingsPercentage: Math.round(savingsPercentage),
-    setupFee: formatCurrency(setupFee)
-  });
-  
-  // Create a template-based PDF content
+  // Now let's create the PDF template with placeholders
+  // This is our static template - we'll just replace the values directly
   let pdfTemplate = `
 %PDF-1.7
 1 0 obj
@@ -306,7 +303,7 @@ ${brandRed} rg
 (\\267 ${aiTypeDisplay} Interface ${tierKey !== 'starter' ? 'with speech recognition and synthesis' : ''}) Tj
 0 -20 Td`;
 
-  // Add voice information - handle both starter and non-starter tiers
+  // Add voice information based on tier and type
   if (tierKey === 'starter') {
     pdfTemplate += `
 (\\267 No voice capabilities included in this tier) Tj
@@ -389,7 +386,7 @@ ${brandRed} rg
 ($${setupFee.toFixed(2)} one-time) Tj
 -190 -25 Td`;
 
-  // Handle voice minutes information  
+  // Handle voice minutes information 
   if (tierKey === 'starter') {
     pdfTemplate += `
 (Voice Capabilities:) Tj
@@ -642,6 +639,6 @@ startxref
 %%EOF
 `;
 
-  console.log("==== TEMPLATE-BASED PDF GENERATION COMPLETE ====");
+  console.log("==== PDF GENERATION COMPLETE ====");
   return pdfTemplate;
 }
