@@ -42,7 +42,7 @@ export const generateAndDownloadReport = async (lead: Lead) => {
     const rawCalculatorResults = lead.calculator_results as unknown as Record<string, any>;
     const calculatorInputs = lead.calculator_inputs as unknown as Record<string, any>;
     
-    // CRITICAL: Extract and ensure additionalVoiceMinutes is available and numeric
+    // CRITICAL FIX: Extract and ensure additionalVoiceMinutes is available and numeric
     let additionalVoiceMinutes = 0;
     
     // First try to get it from calculator_results
@@ -55,6 +55,13 @@ export const generateAndDownloadReport = async (lead: Lead) => {
       additionalVoiceMinutes = Number(calculatorInputs.callVolume) || 0;
       console.log("[CALCULATOR REPORT] Using callVolume from inputs:", additionalVoiceMinutes);
     }
+    
+    // CRITICAL FIX: Ensure we use the correct tierKey and aiType
+    let tierKey = rawCalculatorResults?.tierKey || calculatorInputs?.aiTier || 'growth';
+    let aiType = rawCalculatorResults?.aiType || calculatorInputs?.aiType || 'chatbot';
+    
+    console.log("[CALCULATOR REPORT] Using tierKey:", tierKey);
+    console.log("[CALCULATOR REPORT] Using aiType:", aiType);
     
     // CRITICAL: Ensure 1:1 replacement model by forcing numEmployees to 1
     if (calculatorInputs) {
@@ -99,19 +106,17 @@ export const generateAndDownloadReport = async (lead: Lead) => {
         yearlyTotal: Number(rawCalculatorResults?.humanHours?.yearlyTotal) || 0
       },
       annualPlan: Number(rawCalculatorResults?.annualPlan) || 0,
-      tierKey: (rawCalculatorResults?.tierKey || calculatorInputs?.aiTier || 'growth') as "starter" | "growth" | "premium",
-      aiType: rawCalculatorResults?.aiType || calculatorInputs?.aiType || 'chatbot',
-      includedVoiceMinutes: Number(rawCalculatorResults?.includedVoiceMinutes) || (calculatorInputs?.aiTier === 'starter' ? 0 : 600),
+      // CRITICAL FIX: Use the exact tier key and AI type from the lead data
+      tierKey: tierKey as "starter" | "growth" | "premium",
+      aiType: aiType,
+      includedVoiceMinutes: Number(rawCalculatorResults?.includedVoiceMinutes) || (tierKey === 'starter' ? 0 : 600),
       additionalVoiceMinutes: additionalVoiceMinutes
     };
     
     // Format tier and AI type display names
-    const aiTier = calculatorInputs?.aiTier || 'growth';
-    const aiType = calculatorInputs?.aiType || 'chatbot';
-    
-    const tierName = aiTier === 'starter' ? 'Starter Plan' : 
-                    aiTier === 'growth' ? 'Growth Plan' : 
-                    aiTier === 'premium' ? 'Premium Plan' : 'Growth Plan';
+    const tierName = tierKey === 'starter' ? 'Starter Plan' : 
+                    tierKey === 'growth' ? 'Growth Plan' : 
+                    tierKey === 'premium' ? 'Premium Plan' : 'Growth Plan';
                     
     const aiTypeDisplay = aiType === 'chatbot' ? 'Text Only' : 
                           aiType === 'voice' ? 'Basic Voice' : 
@@ -129,7 +134,7 @@ export const generateAndDownloadReport = async (lead: Lead) => {
       employeeCount: Number(lead.employee_count) || 5,
       results: calculatorResults,
       additionalVoiceMinutes: additionalVoiceMinutes,
-      includedVoiceMinutes: aiTier === 'starter' ? 0 : 600,
+      includedVoiceMinutes: tierKey === 'starter' ? 0 : 600,
       businessSuggestions: [
         {
           title: "Automate Common Customer Inquiries",
@@ -175,6 +180,9 @@ export const generateAndDownloadReport = async (lead: Lead) => {
       
       // Make sure additionalVoiceMinutes is in calculator_results before saving
       rawCalculatorResults.additionalVoiceMinutes = additionalVoiceMinutes;
+      // Make sure tierKey and aiType are preserved exactly as used
+      rawCalculatorResults.tierKey = tierKey;
+      rawCalculatorResults.aiType = aiType;
       
       // Convert complex objects to JSON-compatible format
       const jsonInputs = toJson(calculatorInputs);
@@ -193,6 +201,8 @@ export const generateAndDownloadReport = async (lead: Lead) => {
       };
       
       console.log('[CALCULATOR REPORT] Saving report to database with ID:', reportData.id);
+      console.log('[CALCULATOR REPORT] Report data tierKey:', tierKey);
+      console.log('[CALCULATOR REPORT] Report data aiType:', aiType);
       console.log('[CALCULATOR REPORT] Report data additionalVoiceMinutes:', additionalVoiceMinutes);
       
       try {
