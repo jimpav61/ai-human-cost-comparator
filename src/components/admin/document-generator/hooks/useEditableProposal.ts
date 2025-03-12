@@ -1,4 +1,3 @@
-
 import { useState } from "react";
 import { Lead } from "@/types/leads";
 import { ProposalRevision } from "./useProposalRevisions";
@@ -193,7 +192,8 @@ export const useEditableProposal = () => {
           monthlyTotal: 0,
           yearlyTotal: 0
         },
-        annualPlan: 0
+        annualPlan: 0,
+        includedVoiceMinutes: 0
       };
     }
     
@@ -204,8 +204,9 @@ export const useEditableProposal = () => {
     updatedLead.calculator_results.basePriceMonthly = pricing.basePrice;
     updatedLead.calculator_results.aiCostMonthly.total = pricing.totalPrice;
     
-    // Add the missing property to fix the TypeScript error
+    // Set included voice minutes based on tier
     updatedLead.calculator_results.includedVoiceMinutes = pricing.includedMinutes;
+    updatedLead.calculator_results.additionalVoiceMinutes = editingCallVolume;
     
     return updatedLead;
   };

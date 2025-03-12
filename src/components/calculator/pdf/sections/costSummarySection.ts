@@ -68,6 +68,8 @@ export const addCostSummarySection = (
   });
   
   // Get the new Y position after the table is drawn
-  const finalY = (doc.lastAutoTable?.finalY || startY) + 15;
+  // Fix: jspdf-autotable doesn't add lastAutoTable to the document directly
+  // Instead, get the final Y position from the previous table that was generated
+  const finalY = ((doc as any).__autoTableLastFinalY || startY) + 15;
   return finalY;
 };

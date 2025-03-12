@@ -66,7 +66,8 @@ export function getDefaultCalculationResults(): CalculationResults {
       monthlyTotal: 0,
       yearlyTotal: 0
     },
-    annualPlan: 2290 // Default to growth tier annual plan
+    annualPlan: 2290, // Default to growth tier annual plan
+    includedVoiceMinutes: 600 // Default for growth tier
   };
 }
 
@@ -103,7 +104,9 @@ export function ensureCompleteCalculatorResults(results: any): CalculationResult
     annualPlan: results.annualPlan ?? defaultResults.annualPlan,
     tierKey: results.tierKey || (results.basePriceMonthly === 99 ? 'starter' : 
                                 results.basePriceMonthly === 429 ? 'premium' : 'growth'),
-    aiType: results.aiType || 'both'
+    aiType: results.aiType || 'both',
+    includedVoiceMinutes: results.includedVoiceMinutes ?? (results.tierKey === 'starter' ? 0 : 600),
+    additionalVoiceMinutes: results.additionalVoiceMinutes
   };
 }
 

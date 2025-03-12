@@ -85,7 +85,9 @@ export const generateAndDownloadReport = async (lead: Lead) => {
       },
       annualPlan: Number(rawCalculatorResults?.annualPlan) || 0,
       tierKey: (rawCalculatorResults?.tierKey || calculatorInputs?.aiTier || 'growth') as "starter" | "growth" | "premium",
-      aiType: rawCalculatorResults?.aiType || calculatorInputs?.aiType || 'chatbot'
+      aiType: rawCalculatorResults?.aiType || calculatorInputs?.aiType || 'chatbot',
+      includedVoiceMinutes: Number(rawCalculatorResults?.includedVoiceMinutes) || (calculatorInputs?.aiTier === 'starter' ? 0 : 600),
+      additionalVoiceMinutes: Number(calculatorInputs?.callVolume) || 0
     };
     
     // Format tier and AI type display names
