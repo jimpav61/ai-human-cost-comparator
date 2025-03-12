@@ -1,11 +1,10 @@
-
 import { generatePDF } from "@/components/calculator/pdf";
 import { Lead } from "@/types/leads";
 import { getSafeFileName } from "@/components/admin/document-generator/hooks/report-generator/saveReport";
 import { toast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 import { CalculationResults } from "@/hooks/calculator/types";
-import { toJson } from "@/hooks/calculator/supabase-types";
+import { toJson, ensureCalculatorInputs } from "@/hooks/calculator/supabase-types";
 import { performCalculations } from "@/hooks/calculator/calculations";
 
 /**
@@ -46,9 +45,9 @@ export const generateAndDownloadReport = async (lead: Lead) => {
     if (calculatorInputs) {
       calculatorInputs.numEmployees = 1;
       
-      // Recalculate with 1:1 replacement model
       try {
-        const recalculatedResults = performCalculations(calculatorInputs, {});
+        const validInputs = ensureCalculatorInputs(calculatorInputs);
+        const recalculatedResults = performCalculations(validInputs, {});
         console.log("[CALCULATOR REPORT] Recalculated results with 1:1 replacement model:", recalculatedResults);
         // Update raw results with recalculated values
         rawCalculatorResults.humanCostMonthly = recalculatedResults.humanCostMonthly;

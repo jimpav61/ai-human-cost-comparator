@@ -1,4 +1,3 @@
-
 import { useState } from "react";
 import { Lead } from "@/types/leads";
 import { toast } from "@/hooks/use-toast";
@@ -6,7 +5,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { getSafeFileName } from "./report-generator/saveReport";
 import { generatePDF } from "@/components/calculator/pdf";
 import { CalculationResults } from "@/hooks/calculator/types";
-import { ensureCalculationResults } from "@/components/calculator/pdf/types";
+import { ensureCalculationResults, ensureCalculatorInputs } from "@/hooks/calculator/supabase-types";
 import { performCalculations } from "@/hooks/calculator/calculations";
 
 export const useReportDownload = () => {
@@ -61,14 +60,15 @@ export const useReportDownload = () => {
       console.log("Report calculator results:", calculatorResults);
       console.log("Report calculator inputs:", calculatorInputs);
       
-      // CRITICAL: Ensure we're using the 1:1 replacement model
+      // CRITICAL: Ensure 1:1 replacement model
       // Force numEmployees to 1 for calculation
       if (calculatorInputs) {
         calculatorInputs.numEmployees = 1;
         
         // Recalculate using the 1:1 replacement model
         try {
-          const recalculatedResults = performCalculations(calculatorInputs, {});
+          const validInputs = ensureCalculatorInputs(calculatorInputs);
+          const recalculatedResults = performCalculations(validInputs, {});
           console.log("Recalculated results with 1:1 replacement model:", recalculatedResults);
           calculatorResults.humanCostMonthly = recalculatedResults.humanCostMonthly;
           calculatorResults.monthlySavings = recalculatedResults.monthlySavings;

@@ -1,4 +1,3 @@
-
 import { CalculatorInputs, CalculationResults } from "./types";
 
 /**
@@ -105,5 +104,26 @@ export function ensureCompleteCalculatorResults(results: any): CalculationResult
     tierKey: results.tierKey || (results.basePriceMonthly === 99 ? 'starter' : 
                                 results.basePriceMonthly === 429 ? 'premium' : 'growth'),
     aiType: results.aiType || 'both'
+  };
+}
+
+/**
+ * Ensures calculator inputs conform to required type
+ */
+export function ensureCalculatorInputs(inputs: Record<string, any>): CalculatorInputs {
+  if (!inputs) {
+    return getDefaultCalculatorInputs();
+  }
+
+  return {
+    aiType: inputs.aiType || 'chatbot',
+    aiTier: inputs.aiTier || 'growth',
+    role: inputs.role || 'customerService',
+    numEmployees: typeof inputs.numEmployees === 'number' ? inputs.numEmployees : 1,
+    callVolume: typeof inputs.callVolume === 'number' ? inputs.callVolume : 0,
+    avgCallDuration: typeof inputs.avgCallDuration === 'number' ? inputs.avgCallDuration : 0,
+    chatVolume: typeof inputs.chatVolume === 'number' ? inputs.chatVolume : 2000,
+    avgChatLength: typeof inputs.avgChatLength === 'number' ? inputs.avgChatLength : 0,
+    avgChatResolutionTime: typeof inputs.avgChatResolutionTime === 'number' ? inputs.avgChatResolutionTime : 0
   };
 }
