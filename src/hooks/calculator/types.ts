@@ -1,4 +1,3 @@
-
 import { AIRates } from '@/constants/pricing';
 
 export interface CalculatorInputs {
@@ -7,10 +6,10 @@ export interface CalculatorInputs {
   role: 'customerService' | 'sales' | 'technicalSupport' | 'generalAdmin';
   numEmployees: number;
   callVolume: number;
-  avgCallDuration: number; // Keep for backward compatibility, but no longer used
+  avgCallDuration: number;
   chatVolume: number;
-  avgChatLength: number; // Keep for backward compatibility, but no longer used
-  avgChatResolutionTime: number; // Keep for backward compatibility, but no longer used
+  avgChatLength: number;
+  avgChatResolutionTime: number;
 }
 
 export interface CalculationResults {
@@ -20,7 +19,7 @@ export interface CalculationResults {
     total: number;
     setupFee: number;
   };
-  basePriceMonthly: number; // Base price field
+  basePriceMonthly: number;
   humanCostMonthly: number;
   monthlySavings: number;
   yearlySavings: number;
@@ -36,11 +35,10 @@ export interface CalculationResults {
     yearlyTotal: number;
   };
   annualPlan: number;
-  // Adding these properties for proposal generator compatibility
   tierKey?: 'starter' | 'growth' | 'premium';
   aiType?: 'voice' | 'chatbot' | 'both' | 'conversationalVoice' | 'both-premium';
-  // Add the missing property that caused the TypeScript error
-  includedVoiceMinutes?: number;
+  includedVoiceMinutes: number;
+  additionalVoiceMinutes?: number;
 }
 
 export type CalculatorState = CalculationResults;
