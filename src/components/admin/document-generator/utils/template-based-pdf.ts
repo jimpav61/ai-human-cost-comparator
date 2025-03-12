@@ -1,3 +1,4 @@
+
 import { Lead } from "@/types/leads";
 import { formatCurrency } from "@/utils/formatters";
 import { CalculationResults } from "@/hooks/calculator/types";
@@ -15,11 +16,40 @@ export function generateTemplateBasedPdf(lead: Lead): string {
   // Log the entire calculator_results for debugging
   console.log("FULL CALCULATOR RESULTS:", JSON.stringify(lead.calculator_results, null, 2));
   
-  // Extract data directly from lead without any adjustments
-  // Use ensureCompleteCalculatorResults to make sure we have default values for all properties
-  const calculatorResults = lead.calculator_results 
-    ? ensureCompleteCalculatorResults(lead.calculator_results) 
-    : ensureCompleteCalculatorResults({});
+  // Create default CalculationResults structure
+  const defaultResults: CalculationResults = {
+    aiCostMonthly: {
+      voice: 0,
+      chatbot: 229,
+      total: 229,
+      setupFee: 749
+    },
+    basePriceMonthly: 229,
+    humanCostMonthly: 0,
+    monthlySavings: 0,
+    yearlySavings: 0,
+    savingsPercentage: 0,
+    breakEvenPoint: {
+      voice: 0,
+      chatbot: 0
+    },
+    humanHours: {
+      dailyPerEmployee: 8,
+      weeklyTotal: 40,
+      monthlyTotal: 160,
+      yearlyTotal: 1920
+    },
+    annualPlan: 2290,
+    tierKey: "growth",
+    aiType: "both",
+    includedVoiceMinutes: 600,
+    additionalVoiceMinutes: 0
+  };
+
+  // Extract data directly from lead, using ensureCompleteCalculatorResults
+  const calculatorResults: CalculationResults = lead.calculator_results 
+    ? ensureCompleteCalculatorResults(lead.calculator_results as Partial<CalculationResults>) 
+    : defaultResults;
   
   // Company information - use exactly what's in the lead
   const companyName = lead.company_name || 'Client';
