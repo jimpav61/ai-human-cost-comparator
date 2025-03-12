@@ -20,8 +20,9 @@ export const useReportDownload = () => {
       console.log("---------- ADMIN REPORT DOWNLOAD ATTEMPT ----------");
       console.log("Lead data for report:", lead);
       
-      // Generate a new report ID
-      const reportId = crypto.randomUUID();
+      // Important: Use the lead's ID as the report ID to ensure proper association
+      const reportId = lead.id;
+      console.log("Using lead ID as report ID:", reportId);
       
       // Ensure we're using the latest lead data for the report
       console.log("Generating new report with latest lead data");
@@ -179,9 +180,9 @@ export const useReportDownload = () => {
         const jsonInputs = toJson(adjustedInputs);
         const jsonResults = toJson(typedCalculatorResults);
         
-        // Create the report data
+        // Create the report data - use lead.id as the report ID
         const reportData = {
-          id: reportId,
+          id: reportId, // Using the lead ID as the report ID
           contact_name: lead.name,
           company_name: lead.company_name,
           email: lead.email,
@@ -191,16 +192,40 @@ export const useReportDownload = () => {
           report_date: new Date().toISOString()
         };
         
-        console.log("Saving new report to database with ID:", reportData.id);
+        console.log("Saving new report to database with ID (lead.id):", reportData.id);
         
-        const { error } = await supabase
+        // Check if a report with this ID already exists
+        const { data: existingReport } = await supabase
           .from('generated_reports')
-          .insert(reportData);
+          .select('id')
+          .eq('id', reportId)
+          .single();
           
-        if (error) {
-          console.error("Error saving report to database:", error);
+        if (existingReport) {
+          // If it exists, update it
+          console.log("Updating existing report with ID:", reportId);
+          const { error } = await supabase
+            .from('generated_reports')
+            .update(reportData)
+            .eq('id', reportId);
+            
+          if (error) {
+            console.error("Error updating report in database:", error);
+          } else {
+            console.log("Report updated successfully with ID:", reportId);
+          }
         } else {
-          console.log("Report saved successfully with ID:", reportId);
+          // If it doesn't exist, insert it
+          console.log("Inserting new report with ID:", reportId);
+          const { error } = await supabase
+            .from('generated_reports')
+            .insert(reportData);
+            
+          if (error) {
+            console.error("Error saving report to database:", error);
+          } else {
+            console.log("Report saved successfully with ID:", reportId);
+          }
         }
       } catch (dbError) {
         console.error("Database operation error:", dbError);

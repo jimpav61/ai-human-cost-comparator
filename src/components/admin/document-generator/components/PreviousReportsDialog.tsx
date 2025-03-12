@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from "react";
 import { 
   Dialog, 
@@ -49,9 +48,9 @@ export const PreviousReportsDialog = ({ lead, isOpen, onClose }: PreviousReports
     setIsLoading(true);
     
     try {
-      console.log("Loading reports for lead:", lead.email);
+      console.log("Loading reports for lead by ID only:", lead.id);
       
-      // First try finding by lead ID
+      // Only search by lead ID
       let { data: reportsByLeadId, error: idError } = await supabase
         .from('generated_reports')
         .select('*')
@@ -60,44 +59,16 @@ export const PreviousReportsDialog = ({ lead, isOpen, onClose }: PreviousReports
         
       if (idError) {
         console.error("Error fetching reports by ID:", idError);
-      }
-      
-      // Then try finding by email and company name
-      let { data: reportsByEmail, error: emailError } = await supabase
-        .from('generated_reports')
-        .select('*')
-        .eq('email', lead.email)
-        .eq('company_name', lead.company_name)
-        .order('report_date', { ascending: false });
-      
-      if (emailError) {
-        console.error("Error fetching reports by email:", emailError);
-      }
-      
-      // Combine results, removing duplicates
-      const combinedReports = [];
-      const reportIds = new Set();
-      
-      if (reportsByLeadId?.length) {
-        reportsByLeadId.forEach(report => {
-          if (!reportIds.has(report.id)) {
-            reportIds.add(report.id);
-            combinedReports.push(report);
-          }
+        toast({
+          title: "Error",
+          description: "Failed to load report history. Please try again.",
+          variant: "destructive",
         });
+        setReports([]);
+      } else {
+        console.log(`Found ${reportsByLeadId?.length || 0} reports for lead ${lead.name} with ID ${lead.id}`);
+        setReports(reportsByLeadId || []);
       }
-      
-      if (reportsByEmail?.length) {
-        reportsByEmail.forEach(report => {
-          if (!reportIds.has(report.id)) {
-            reportIds.add(report.id);
-            combinedReports.push(report);
-          }
-        });
-      }
-      
-      console.log(`Found ${combinedReports.length} reports for lead ${lead.name}`);
-      setReports(combinedReports);
       
     } catch (error) {
       console.error("Error loading reports:", error);
@@ -106,6 +77,7 @@ export const PreviousReportsDialog = ({ lead, isOpen, onClose }: PreviousReports
         description: "Failed to load report history. Please try again.",
         variant: "destructive",
       });
+      setReports([]);
     } finally {
       setIsLoading(false);
     }
