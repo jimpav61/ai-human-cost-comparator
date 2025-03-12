@@ -17,6 +17,8 @@ interface EditLeadDialogProps {
 
 export const EditLeadDialog = ({ lead, isOpen, onClose, onSave }: EditLeadDialogProps) => {
   console.log("EditLeadDialog rendering. isOpen:", isOpen, "lead:", lead);
+  // Log calculator results for debugging
+  console.log("Initial calculator_results:", lead.calculator_results);
 
   // Use custom hooks to manage state and logic
   const { formData, handleBasicInfoChange, setFormData } = useLeadForm(lead);

@@ -80,76 +80,29 @@ export function useLeadCalculator(lead: Lead) {
       return mergedInputs;
     }
     
-    // Try to infer calculator inputs from calculator_results if available
+    // If we don't have calculator_inputs, try to extract values from calculator_results
     if (hasValidResults) {
-      const results = lead.calculator_results as any;
-      if (results.basePriceMonthly) {
-        // Determine tier from base price
-        let detectedTier: 'starter' | 'growth' | 'premium' = 'starter';
-        
-        // Map the base price to tier
-        if (results.basePriceMonthly === 229) {
-          detectedTier = 'growth';
-        } else if (results.basePriceMonthly === 429) {
-          detectedTier = 'premium';
-        } else if (results.basePriceMonthly === 99) {
-          detectedTier = 'starter';
-        }
-        
-        console.log("Detected tier from base price:", detectedTier, "Base price:", results.basePriceMonthly);
-        
-        // Determine appropriate AI type based on tier and voice costs
-        let detectedAiType: 'chatbot' | 'voice' | 'both' | 'conversationalVoice' | 'both-premium' = 'chatbot';
-        
-        // If there are voice costs, determine the AI type accordingly
-        if (results.aiCostMonthly && results.aiCostMonthly.voice > 0) {
-          // If premium tier, use premium voice capabilities
-          if (detectedTier === 'premium') {
-            detectedAiType = 'both-premium';
-          } else if (detectedTier === 'growth') {
-            detectedAiType = 'both';
-          }
-        } else {
-          // No voice costs - use chatbot for starter, and tier-appropriate defaults for others
-          if (detectedTier === 'growth') {
-            detectedAiType = 'both';
-          } else if (detectedTier === 'premium') {
-            detectedAiType = 'both-premium';
-          } else {
-            detectedAiType = 'chatbot';
-          }
-        }
-        
-        // Get chat volume and voice volume if available
-        const chatVolume = results.chatVolume || defaultCalculatorInputs.chatVolume;
-        
-        // CRITICAL FIX: Extract callVolume from voice cost by calculating reverse from cost
-        // and explicitly ensure it's a number
-        let callVolume = 0;
-        if (results.aiCostMonthly && results.aiCostMonthly.voice > 0) {
-          callVolume = Math.ceil(results.aiCostMonthly.voice / 0.12); // Calculate call volume from voice cost
-        } else if (lead.calculator_inputs && lead.calculator_inputs.callVolume) {
-          // If we have the callVolume in inputs, use that (properly converted to a number)
-          if (typeof lead.calculator_inputs.callVolume === 'string') {
-            callVolume = parseInt(lead.calculator_inputs.callVolume, 10) || 0;
-          } else if (typeof lead.calculator_inputs.callVolume === 'number') {
-            callVolume = lead.calculator_inputs.callVolume;
-          }
-        }
-        
-        // Update inputs with the detected values
-        const updatedInputs: CalculatorInputs = {
-          ...defaultCalculatorInputs,
-          aiTier: detectedTier,
-          aiType: detectedAiType,
-          numEmployees: lead.employee_count || defaultCalculatorInputs.numEmployees,
-          chatVolume: chatVolume,
-          callVolume: callVolume
-        };
-        
-        console.log("Detected inputs from results:", updatedInputs);
-        return updatedInputs;
-      }
+      // IMPORTANT CHANGE: Extract values from calculator_results
+      const results = lead.calculator_results;
+      
+      // Get tier directly from results when available
+      const tierKey = results.tierKey || 'growth';
+      const aiType = results.aiType || 'both';
+      
+      // CRITICAL FIX: Extract additional voice minutes from results
+      const additionalVoiceMinutes = results.additionalVoiceMinutes || 0;
+      
+      // Create calculator inputs from the results
+      const inputsFromResults: CalculatorInputs = {
+        ...defaultCalculatorInputs,
+        aiTier: validateAiTier(tierKey),
+        aiType: validateAiType(aiType),
+        callVolume: additionalVoiceMinutes, // Use additionalVoiceMinutes as callVolume
+        numEmployees: lead.employee_count || defaultCalculatorInputs.numEmployees
+      };
+      
+      console.log("Constructed calculator inputs from results:", inputsFromResults);
+      return inputsFromResults;
     }
     
     // If no valid inputs or results, use default inputs with employee count from lead
@@ -204,11 +157,12 @@ export function useLeadCalculator(lead: Lead) {
     
     console.log("Lead change: hasValidInputs=", hasValidInputs, "hasValidResults=", hasValidResults);
     
-    // Ensure we always have valid calculator inputs when lead changes
     if (hasValidInputs) {
+      // Get AI type from inputs, ensure it's a valid value
       const aiTypeFromInputs = lead.calculator_inputs.aiType as string;
       const validatedAiType = validateAiType(aiTypeFromInputs);
       
+      // Get tier from inputs, ensure it's a valid value
       const aiTierFromInputs = lead.calculator_inputs.aiTier as string;
       const validatedAiTier = validateAiTier(aiTierFromInputs);
       
@@ -220,6 +174,15 @@ export function useLeadCalculator(lead: Lead) {
         callVolume = 0;
       }
       
+      // FIX: If we have calculator_results, check if it has additionalVoiceMinutes
+      // and use that value if calculator_inputs.callVolume is missing or zero
+      if (hasValidResults && lead.calculator_results.additionalVoiceMinutes && 
+          (!callVolume || callVolume === 0)) {
+        callVolume = lead.calculator_results.additionalVoiceMinutes;
+        console.log("Using additionalVoiceMinutes from calculator_results:", callVolume);
+      }
+      
+      // Merge with defaults to ensure all properties exist
       const mergedInputs: CalculatorInputs = { 
         ...defaultCalculatorInputs, 
         ...lead.calculator_inputs,
@@ -231,74 +194,33 @@ export function useLeadCalculator(lead: Lead) {
       
       console.log("Updated calculator inputs from lead change:", mergedInputs);
       setCalculatorInputs(mergedInputs);
-    } else if (hasValidResults) {
-      // If no calculator_inputs but we have results, try to determine tier from base price
-      const results = lead.calculator_results as any;
-      if (results.basePriceMonthly) {
-        // Determine tier from base price
-        let detectedTier: 'starter' | 'growth' | 'premium' = 'starter';
-        
-        // Map the base price to tier
-        if (results.basePriceMonthly === 229) {
-          detectedTier = 'growth';
-        } else if (results.basePriceMonthly === 429) {
-          detectedTier = 'premium';
-        } else if (results.basePriceMonthly === 99) {
-          detectedTier = 'starter';
-        }
-        
-        console.log("Lead change: Detected tier from base price:", detectedTier, "Base price:", results.basePriceMonthly);
-        
-        // Determine appropriate AI type based on tier and voice costs
-        let detectedAiType: 'chatbot' | 'voice' | 'both' | 'conversationalVoice' | 'both-premium' = 'chatbot';
-        
-        // If there are voice costs, determine the AI type accordingly
-        if (results.aiCostMonthly && results.aiCostMonthly.voice > 0) {
-          // If premium tier, use premium voice capabilities
-          if (detectedTier === 'premium') {
-            detectedAiType = 'both-premium';
-          } else if (detectedTier === 'growth') {
-            detectedAiType = 'both';
-          }
-        } else {
-          // No voice costs - use chatbot for starter, and tier-appropriate defaults for others
-          if (detectedTier === 'growth') {
-            detectedAiType = 'both';
-          } else if (detectedTier === 'premium') {
-            detectedAiType = 'both-premium';
-          } else {
-            detectedAiType = 'chatbot';
-          }
-        }
-        
-        // Get chat volume and voice volume if available
-        const chatVolume = results.chatVolume || defaultCalculatorInputs.chatVolume;
-        
-        // CRITICAL FIX: Extract callVolume from voice cost and ensure it's a number
-        let callVolume = 0;
-        if (results.aiCostMonthly && results.aiCostMonthly.voice > 0) {
-          callVolume = Math.ceil(results.aiCostMonthly.voice / 0.12); // Calculate call volume from voice cost
-        }
-        
-        // Update inputs with the detected values
-        const updatedInputs: CalculatorInputs = {
-          ...defaultCalculatorInputs,
-          aiTier: detectedTier,
-          aiType: detectedAiType,
-          numEmployees: lead.employee_count || defaultCalculatorInputs.numEmployees,
-          chatVolume: chatVolume,
-          callVolume: callVolume
-        };
-        
-        console.log("Lead change: Detected inputs from results:", updatedInputs);
-        setCalculatorInputs(updatedInputs);
-      } else {
-        setCalculatorInputs({
-          ...defaultCalculatorInputs,
-          numEmployees: lead.employee_count || defaultCalculatorInputs.numEmployees
-        });
-      }
-    } else {
+    } 
+    // If no valid calculator inputs but we have results
+    else if (hasValidResults) {
+      // IMPORTANT CHANGE: Extract values from calculator_results
+      const results = lead.calculator_results;
+      
+      // Get tier directly from results when available
+      const tierKey = results.tierKey || 'growth';
+      const aiType = results.aiType || 'both';
+      
+      // CRITICAL FIX: Extract additional voice minutes from results
+      const additionalVoiceMinutes = results.additionalVoiceMinutes || 0;
+      
+      // Create calculator inputs from the results
+      const inputsFromResults: CalculatorInputs = {
+        ...defaultCalculatorInputs,
+        aiTier: validateAiTier(tierKey),
+        aiType: validateAiType(aiType),
+        callVolume: additionalVoiceMinutes, // Use additionalVoiceMinutes as callVolume
+        numEmployees: lead.employee_count || defaultCalculatorInputs.numEmployees
+      };
+      
+      console.log("Constructed calculator inputs from results:", inputsFromResults);
+      setCalculatorInputs(inputsFromResults);
+    }
+    else {
+      // If no valid inputs or results, use default inputs with employee count from lead
       setCalculatorInputs({
         ...defaultCalculatorInputs,
         numEmployees: lead.employee_count || defaultCalculatorInputs.numEmployees

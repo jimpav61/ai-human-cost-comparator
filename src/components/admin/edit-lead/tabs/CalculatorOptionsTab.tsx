@@ -26,6 +26,10 @@ export const CalculatorOptionsTab = ({
   const currentTier = calculatorInputs?.aiTier || 'starter';
   const currentAIType = calculatorInputs?.aiType || 'chatbot';
   
+  // Log for debugging
+  console.log("CalculatorOptionsTab calculatorInputs:", calculatorInputs);
+  console.log("CalculatorOptionsTab calculationResults:", calculationResults);
+  
   // Ensure callVolume is a number
   let currentCallVolume = calculatorInputs?.callVolume;
   if (typeof currentCallVolume === 'string') {
