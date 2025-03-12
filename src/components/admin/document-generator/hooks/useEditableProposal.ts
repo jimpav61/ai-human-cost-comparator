@@ -19,7 +19,8 @@ export const useEditableProposal = () => {
   
   // Form state for proposal editing
   const [editingAiTier, setEditingAiTier] = useState<"starter" | "growth" | "premium">("growth");
-  const [editingAiType, setEditingAiType] = useState<string>("both");
+  // Ensure aiType is properly typed for strict type checking
+  const [editingAiType, setEditingAiType] = useState<"voice" | "chatbot" | "both" | "conversationalVoice" | "both-premium">("both");
   const [editingCallVolume, setEditingCallVolume] = useState(0);
   const [proposalTitle, setProposalTitle] = useState("");
   const [proposalNotes, setProposalNotes] = useState("");
@@ -27,7 +28,17 @@ export const useEditableProposal = () => {
   // Initialize form state from lead data
   const initializeFromLead = (lead: Lead) => {
     setEditingAiTier((lead.calculator_inputs?.aiTier as any) || 'growth');
-    setEditingAiType((lead.calculator_inputs?.aiType as any) || 'both');
+    
+    // Ensure aiType is properly set with type checking
+    const aiType = lead.calculator_inputs?.aiType;
+    if (aiType === 'voice' || aiType === 'chatbot' || aiType === 'both' || 
+        aiType === 'conversationalVoice' || aiType === 'both-premium') {
+      setEditingAiType(aiType);
+    } else {
+      // Default to 'both' if the value is invalid
+      setEditingAiType('both');
+    }
+    
     setEditingCallVolume(
       typeof lead.calculator_inputs?.callVolume === 'number' 
         ? lead.calculator_inputs.callVolume 
@@ -56,7 +67,16 @@ export const useEditableProposal = () => {
     try {
       const notesData = JSON.parse(version.notes || "{}");
       if (notesData.aiTier) setEditingAiTier(notesData.aiTier as any);
-      if (notesData.aiType) setEditingAiType(notesData.aiType as any);
+      
+      // Handle aiType with proper type checking
+      if (notesData.aiType) {
+        const aiType = notesData.aiType;
+        if (aiType === 'voice' || aiType === 'chatbot' || aiType === 'both' || 
+            aiType === 'conversationalVoice' || aiType === 'both-premium') {
+          setEditingAiType(aiType);
+        }
+      }
+      
       if (notesData.callVolume !== undefined) setEditingCallVolume(notesData.callVolume);
     } catch (e) {
       // If notes isn't JSON, just continue with existing data
@@ -99,7 +119,7 @@ export const useEditableProposal = () => {
   };
   
   // Handle AI type change with proper tier adjustment
-  const handleAITypeChange = (newType: string) => {
+  const handleAITypeChange = (newType: "voice" | "chatbot" | "both" | "conversationalVoice" | "both-premium") => {
     setEditingAiType(newType);
     
     // Update tier based on AI type
