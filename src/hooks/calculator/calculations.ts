@@ -1,4 +1,3 @@
-
 import { HUMAN_HOURLY_RATES } from '@/constants/pricing';
 import { CalculatorInputs, CalculationResults } from './types';
 
@@ -160,6 +159,10 @@ export function calculateAICosts(inputs: CalculatorInputs, aiRates: any) {
   const totalMonthlyCost = tierBase + additionalVoiceCost;
   console.log("Total monthly cost:", totalMonthlyCost);
   
+  // Calculate included voice minutes based on tier
+  const includedVoiceMinutes = inputs.aiTier === 'starter' ? 0 : 600;
+  console.log("Included voice minutes:", includedVoiceMinutes);
+  
   return {
     tierBase,
     additionalVoiceCost,
@@ -207,7 +210,7 @@ export function performCalculations(
   inputs: CalculatorInputs, 
   aiRates: any
 ): CalculationResults {
-  console.log("Performing full calculations with inputs:", inputs, "Using one employee replacement model");
+  console.log("Performing full calculations with inputs:", inputs);
   
   const validatedInputs = validateInputs(inputs);
   const humanHours = calculateHumanResources(validatedInputs);
@@ -215,9 +218,6 @@ export function performCalculations(
   const aiCosts = calculateAICosts(validatedInputs, aiRates);
   const savings = calculateSavings(humanCosts.monthlyHumanCost, aiCosts.totalMonthlyCost);
   const breakEvenPoint = calculateBreakEvenPoints(validatedInputs, humanCosts, aiCosts);
-  
-  // Calculate included voice minutes based on tier
-  const includedVoiceMinutes = validatedInputs.aiTier === 'starter' ? 0 : 600;
   
   const results: CalculationResults = {
     aiCostMonthly: {
@@ -236,10 +236,10 @@ export function performCalculations(
     annualPlan: aiCosts.annualPlan,
     tierKey: validatedInputs.aiTier,
     aiType: validatedInputs.aiType,
-    includedVoiceMinutes: includedVoiceMinutes,
+    includedVoiceMinutes: aiCosts.includedVoiceMinutes,
     additionalVoiceMinutes: aiCosts.extraVoiceMinutes
   };
   
-  console.log("Final calculation results (one employee replacement model):", results);
+  console.log("Final calculation results:", results);
   return results;
 }
