@@ -42,6 +42,7 @@ export const generateAndDownloadReport = async (lead: Lead) => {
     const rawCalculatorResults = lead.calculator_results as unknown as Record<string, any>;
     const calculatorInputs = lead.calculator_inputs as unknown as Record<string, any>;
     
+    // Extract key data from the lead
     // CRITICAL FIX: Extract and ensure additionalVoiceMinutes is available and numeric
     let additionalVoiceMinutes = 0;
     

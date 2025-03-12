@@ -1,8 +1,10 @@
+
 import { Lead } from "@/types/leads";
 import { DocumentGeneratorProps } from "./types";
 import { DownloadReportButton } from "./components/DownloadReportButton";
 import { PreviewProposalButton } from "./components/PreviewProposalButton";
 import { SendProposalButton } from "./components/SendProposalButton";
+import { PreviousReportsButton } from "./components/PreviousReportsButton";
 import { useState, useEffect } from "react";
 
 interface ExtendedDocumentGeneratorProps extends DocumentGeneratorProps {
@@ -107,6 +109,10 @@ export const DocumentGenerator = ({ lead, onLeadUpdated }: ExtendedDocumentGener
   
   return (
     <div className="flex flex-wrap gap-2 justify-end">
+      <PreviousReportsButton 
+        lead={currentLead} 
+      />
+      
       <DownloadReportButton 
         lead={currentLead} 
       />

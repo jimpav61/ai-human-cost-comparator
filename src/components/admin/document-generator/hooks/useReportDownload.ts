@@ -9,6 +9,7 @@ import { CalculationResults } from "@/hooks/calculator/types";
 import { ensureCalculatorInputs } from "@/hooks/calculator/supabase-types";
 import { ensureCalculationResults } from "@/components/calculator/pdf/types";
 import { performCalculations } from "@/hooks/calculator/calculations";
+import { toJson } from "@/hooks/calculator/supabase-types";
 
 export const useReportDownload = () => {
   const [isLoading, setIsLoading] = useState(false);
@@ -18,86 +19,60 @@ export const useReportDownload = () => {
       setIsLoading(true);
       console.log("---------- ADMIN REPORT DOWNLOAD ATTEMPT ----------");
       console.log("Lead data for report:", lead);
-      console.log("Searching for report with lead ID:", lead.id);
       
-      let { data: existingReport, error } = await supabase
-        .from('generated_reports')
-        .select('*')
-        .eq('id', lead.id)
-        .maybeSingle();
+      // Generate a new report ID
+      const reportId = crypto.randomUUID();
       
-      if (!existingReport && !error) {
-        console.log("No report found by lead ID, trying to find by email:", lead.email);
-        const { data: reportsByEmail, error: emailError } = await supabase
-          .from('generated_reports')
-          .select('*')
-          .eq('email', lead.email)
-          .eq('company_name', lead.company_name);
-          
-        if (emailError) {
-          console.error("Error in fallback query:", emailError);
-        } else if (reportsByEmail && reportsByEmail.length > 0) {
-          console.log(`Found ${reportsByEmail.length} reports by email and company name`);
-          existingReport = reportsByEmail.sort((a, b) => 
-            new Date(b.report_date).getTime() - new Date(a.report_date).getTime()
-          )[0];
-        }
-      }
+      // Ensure we're using the latest lead data for the report
+      console.log("Generating new report with latest lead data");
       
-      if (error) {
-        console.error("Database query error:", error);
-        throw new Error(`Database error: ${error.message}`);
-      }
+      // Ensure calculator_inputs and calculator_results are properly prepared
+      const calculatorInputs = lead.calculator_inputs || {};
+      const calculatorResults = lead.calculator_results || {};
       
-      console.log("Database query response:", existingReport ? "Report found" : "No report found");
+      // Extract key data points
+      const aiTier = calculatorInputs.aiTier || calculatorResults.tierKey || 'growth';
+      const aiType = calculatorInputs.aiType || calculatorResults.aiType || 'chatbot';
       
-      if (!existingReport) {
-        throw new Error("No saved report found for this lead.");
-      }
-      
-      console.log("Generating PDF from saved report data");
-      
-      const calculatorResults = existingReport.calculator_results as Record<string, any>;
-      const calculatorInputs = existingReport.calculator_inputs as Record<string, any>;
-      
-      console.log("Report calculator results:", calculatorResults);
-      console.log("Report calculator inputs:", calculatorInputs);
-      
-      // CRITICAL: Ensure we use the correct value for additionalVoiceMinutes
-      // First check directly in calculator_results, then try callVolume in calculator_inputs
+      // Determine additional voice minutes
       let additionalVoiceMinutes = 0;
-      
-      if (calculatorResults && 'additionalVoiceMinutes' in calculatorResults) {
+      if ('additionalVoiceMinutes' in calculatorResults) {
         additionalVoiceMinutes = Number(calculatorResults.additionalVoiceMinutes);
-        console.log("Found additionalVoiceMinutes in results:", additionalVoiceMinutes);
-      } else if (calculatorInputs && 'callVolume' in calculatorInputs) {
+      } else if ('callVolume' in calculatorInputs) {
         additionalVoiceMinutes = Number(calculatorInputs.callVolume);
-        console.log("Using callVolume from inputs as additionalVoiceMinutes:", additionalVoiceMinutes);
       }
       
-      // Ensure 1:1 replacement model
-      // Force numEmployees to 1 for calculation
-      if (calculatorInputs) {
-        calculatorInputs.numEmployees = 1;
+      console.log("Using tierKey:", aiTier);
+      console.log("Using aiType:", aiType);
+      console.log("Using additionalVoiceMinutes:", additionalVoiceMinutes);
+      
+      // Ensure 1:1 replacement model by setting numEmployees to 1
+      const adjustedInputs = { ...calculatorInputs, numEmployees: 1 };
+      
+      // Recalculate results to ensure consistency
+      try {
+        const validInputs = ensureCalculatorInputs(adjustedInputs);
+        const recalculatedResults = performCalculations(validInputs, {});
         
-        // Recalculate using the 1:1 replacement model
-        try {
-          const validInputs = ensureCalculatorInputs(calculatorInputs);
-          const recalculatedResults = performCalculations(validInputs, {});
-          console.log("Recalculated results with 1:1 replacement model:", recalculatedResults);
-          calculatorResults.humanCostMonthly = recalculatedResults.humanCostMonthly;
-          calculatorResults.monthlySavings = recalculatedResults.monthlySavings;
-          calculatorResults.yearlySavings = recalculatedResults.yearlySavings;
-          calculatorResults.savingsPercentage = recalculatedResults.savingsPercentage;
-        } catch (calcError) {
-          console.error("Error recalculating results:", calcError);
-          // Continue with existing results if recalculation fails
-        }
+        // Update calculator_results with recalculated values
+        calculatorResults.humanCostMonthly = recalculatedResults.humanCostMonthly;
+        calculatorResults.monthlySavings = recalculatedResults.monthlySavings;
+        calculatorResults.yearlySavings = recalculatedResults.yearlySavings;
+        calculatorResults.savingsPercentage = recalculatedResults.savingsPercentage;
+        
+        // Make sure aiType and tierKey are set correctly
+        calculatorResults.aiType = aiType;
+        calculatorResults.tierKey = aiTier;
+        calculatorResults.additionalVoiceMinutes = additionalVoiceMinutes;
+      } catch (calcError) {
+        console.error("Error recalculating results:", calcError);
+        // Continue with existing results if recalculation fails
       }
       
-      const aiTier = calculatorInputs?.aiTier || calculatorResults?.tierKey || 'growth';
-      const aiType = calculatorInputs?.aiType || calculatorResults?.aiType || 'chatbot';
+      // Create a typed CalculationResults object
+      const typedCalculatorResults = ensureCalculationResults(calculatorResults);
       
+      // Format tier and AI type display names
       const tierName = aiTier === 'starter' ? 'Starter Plan' : 
                       aiTier === 'growth' ? 'Growth Plan' : 
                       aiTier === 'premium' ? 'Premium Plan' : 'Growth Plan';
@@ -108,41 +83,12 @@ export const useReportDownload = () => {
                             aiType === 'both' ? 'Text & Basic Voice' : 
                             aiType === 'both-premium' ? 'Text & Conversational Voice' : 'Text Only';
       
-      const partialResults: Partial<CalculationResults> = {
-        aiCostMonthly: {
-          voice: Number(calculatorResults?.aiCostMonthly?.voice) || 0,
-          chatbot: Number(calculatorResults?.aiCostMonthly?.chatbot) || 0,
-          total: Number(calculatorResults?.aiCostMonthly?.total) || 0,
-          setupFee: Number(calculatorResults?.aiCostMonthly?.setupFee) || 0
-        },
-        basePriceMonthly: Number(calculatorResults?.basePriceMonthly) || 0,
-        humanCostMonthly: Number(calculatorResults?.humanCostMonthly) || 0,
-        monthlySavings: Number(calculatorResults?.monthlySavings) || 0,
-        yearlySavings: Number(calculatorResults?.yearlySavings) || 0,
-        savingsPercentage: Number(calculatorResults?.savingsPercentage) || 0,
-        breakEvenPoint: {
-          voice: Number(calculatorResults?.breakEvenPoint?.voice) || 0,
-          chatbot: Number(calculatorResults?.breakEvenPoint?.chatbot) || 0
-        },
-        humanHours: {
-          dailyPerEmployee: Number(calculatorResults?.humanHours?.dailyPerEmployee) || 0,
-          weeklyTotal: Number(calculatorResults?.humanHours?.weeklyTotal) || 0,
-          monthlyTotal: Number(calculatorResults?.humanHours?.monthlyTotal) || 0,
-          yearlyTotal: Number(calculatorResults?.humanHours?.yearlyTotal) || 0
-        },
-        annualPlan: Number(calculatorResults?.annualPlan) || 0,
-        tierKey: (aiTier as "starter" | "growth" | "premium"),
-        aiType: (aiType as "voice" | "chatbot" | "both" | "conversationalVoice" | "both-premium")
-      };
-      
-      const typedCalculatorResults = ensureCalculationResults(partialResults);
-      
-      // CRITICAL: Make sure additionalVoiceMinutes is included in PDF generation
+      // Generate the PDF
       const doc = generatePDF({
-        contactInfo: existingReport.contact_name || 'Valued Client',
-        companyName: existingReport.company_name || 'Your Company',
-        email: existingReport.email || 'client@example.com',
-        phoneNumber: existingReport.phone_number || '',
+        contactInfo: lead.name || 'Valued Client',
+        companyName: lead.company_name || 'Your Company',
+        email: lead.email || 'client@example.com',
+        phoneNumber: lead.phone_number || '',
         industry: lead.industry || 'Other',
         employeeCount: Number(lead.employee_count) || 5,
         results: typedCalculatorResults,
@@ -180,23 +126,56 @@ export const useReportDownload = () => {
         aiType: aiTypeDisplay
       });
       
+      // Save a copy of this report to the database
+      try {
+        // Convert calculator data to JSON format
+        const jsonInputs = toJson(adjustedInputs);
+        const jsonResults = toJson(calculatorResults);
+        
+        // Create the report data
+        const reportData = {
+          id: reportId,
+          contact_name: lead.name,
+          company_name: lead.company_name,
+          email: lead.email,
+          phone_number: lead.phone_number || null,
+          calculator_inputs: jsonInputs,
+          calculator_results: jsonResults,
+          report_date: new Date().toISOString()
+        };
+        
+        console.log("Saving new report to database with ID:", reportData.id);
+        
+        const { error } = await supabase
+          .from('generated_reports')
+          .insert(reportData);
+          
+        if (error) {
+          console.error("Error saving report to database:", error);
+        } else {
+          console.log("Report saved successfully with ID:", reportId);
+        }
+      } catch (dbError) {
+        console.error("Database operation error:", dbError);
+      }
+      
+      // Save the PDF for download
       const safeCompanyName = getSafeFileName(lead);
-      console.log("Report download successful, saving as:", `${safeCompanyName}-ChatSites-ROI-Report.pdf`);
       doc.save(`${safeCompanyName}-ChatSites-ROI-Report.pdf`);
       
       toast({
         title: "Report Downloaded",
-        description: "The saved report has been successfully downloaded.",
+        description: "The latest report has been successfully downloaded.",
         duration: 1000,
       });
       
     } catch (error) {
       console.error("Error downloading report:", error);
       toast({
-        title: "Report Not Found",
+        title: "Error",
         description: error instanceof Error 
           ? error.message 
-          : "No saved report exists for this lead.",
+          : "Failed to generate report.",
         variant: "destructive",
       });
     } finally {
