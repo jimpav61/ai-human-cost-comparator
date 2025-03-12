@@ -30,15 +30,22 @@ export const useReportDownload = () => {
       const calculatorInputs = lead.calculator_inputs || {};
       const calculatorResults = lead.calculator_results || {};
       
-      // Extract key data points
-      const aiTier = calculatorInputs.aiTier || calculatorResults.tierKey || 'growth';
-      const aiType = calculatorInputs.aiType || calculatorResults.aiType || 'chatbot';
+      // Extract key data points with type checking
+      const aiTier = 
+        (calculatorInputs && 'aiTier' in calculatorInputs) ? calculatorInputs.aiTier : 
+        (calculatorResults && 'tierKey' in calculatorResults) ? calculatorResults.tierKey : 
+        'growth';
+        
+      const aiType = 
+        (calculatorInputs && 'aiType' in calculatorInputs) ? calculatorInputs.aiType : 
+        (calculatorResults && 'aiType' in calculatorResults) ? calculatorResults.aiType : 
+        'chatbot';
       
       // Determine additional voice minutes
       let additionalVoiceMinutes = 0;
-      if ('additionalVoiceMinutes' in calculatorResults) {
+      if (calculatorResults && 'additionalVoiceMinutes' in calculatorResults) {
         additionalVoiceMinutes = Number(calculatorResults.additionalVoiceMinutes);
-      } else if ('callVolume' in calculatorInputs) {
+      } else if (calculatorInputs && 'callVolume' in calculatorInputs) {
         additionalVoiceMinutes = Number(calculatorInputs.callVolume);
       }
       
@@ -55,15 +62,17 @@ export const useReportDownload = () => {
         const recalculatedResults = performCalculations(validInputs, {});
         
         // Update calculator_results with recalculated values
-        calculatorResults.humanCostMonthly = recalculatedResults.humanCostMonthly;
-        calculatorResults.monthlySavings = recalculatedResults.monthlySavings;
-        calculatorResults.yearlySavings = recalculatedResults.yearlySavings;
-        calculatorResults.savingsPercentage = recalculatedResults.savingsPercentage;
-        
-        // Make sure aiType and tierKey are set correctly
-        calculatorResults.aiType = aiType;
-        calculatorResults.tierKey = aiTier;
-        calculatorResults.additionalVoiceMinutes = additionalVoiceMinutes;
+        if (calculatorResults) {
+          calculatorResults.humanCostMonthly = recalculatedResults.humanCostMonthly;
+          calculatorResults.monthlySavings = recalculatedResults.monthlySavings;
+          calculatorResults.yearlySavings = recalculatedResults.yearlySavings;
+          calculatorResults.savingsPercentage = recalculatedResults.savingsPercentage;
+          
+          // Make sure aiType and tierKey are set correctly
+          calculatorResults.aiType = aiType;
+          calculatorResults.tierKey = aiTier;
+          calculatorResults.additionalVoiceMinutes = additionalVoiceMinutes;
+        }
       } catch (calcError) {
         console.error("Error recalculating results:", calcError);
         // Continue with existing results if recalculation fails
