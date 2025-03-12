@@ -113,10 +113,15 @@ export function useLeadCalculator(lead: Lead) {
         // Ensure numEmployees is always a number
         updatedInputs[field] = typeof value === 'string' ? (parseInt(value, 10) || 1) : value;
       }
-      else {
-        // For all other fields, just set the value directly
-        updatedInputs[field] = value;
+      else if (field === 'chatVolume') {
+        // Ensure chatVolume is always a number
+        updatedInputs[field] = typeof value === 'string' ? (parseInt(value, 10) || 0) : value;
       }
+      else if (Object.prototype.hasOwnProperty.call(prev, field)) {
+        // For all other fields that exist in the calculatorInputs type, set the value directly
+        (updatedInputs as any)[field] = value;
+      }
+      // We don't handle unknown fields to avoid the 'never' type error
       
       return updatedInputs;
     });
