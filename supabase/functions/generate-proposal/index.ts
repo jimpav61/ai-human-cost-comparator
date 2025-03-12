@@ -75,22 +75,22 @@ serve(async (req) => {
       throw new Error("Lead is missing required calculator results");
     }
     
-    // Create a deep clone to prevent reference issues
-    const processedLead = JSON.parse(JSON.stringify(lead));
-    console.log("Processed lead data for proposal generation:", JSON.stringify(processedLead, null, 2));
-    
     if (isPreviewMode) {
       // In preview mode, generate and return the PDF directly
       console.log("Generating preview PDF for download");
       
       try {
         // Get company name from lead data for the filename
-        const companyName = processedLead.company_name || 'Client';
+        const companyName = lead.company_name || 'Client';
         // Sanitize company name for filename
         const safeCompanyName = companyName.replace(/[^a-z0-9]/gi, '-').toLowerCase();
         
+        // Do not clone the lead - use the original data exactly as received
+        console.log("Using exact lead data for proposal generation (no cloning)");
+        console.log("Lead calculator_results for PDF generation:", JSON.stringify(lead.calculator_results, null, 2));
+        
         // Create a professional multi-page proposal PDF with actual lead data
-        const pdfContent = generateProfessionalProposal(processedLead);
+        const pdfContent = generateProfessionalProposal(lead);
         
         // If returnContent flag is set, return the raw content instead of PDF 
         if (shouldReturnContent) {
@@ -100,7 +100,7 @@ serve(async (req) => {
               proposalContent: pdfContent,
               title: `Proposal for ${companyName}`,
               notes: `Generated proposal for ${companyName} on ${new Date().toLocaleString()}`,
-              leadId: processedLead.id
+              leadId: lead.id
             }),
             {
               headers: {
@@ -168,7 +168,7 @@ serve(async (req) => {
       return new Response(
         JSON.stringify({
           success: true,
-          message: "Proposal has been sent to " + processedLead.email,
+          message: "Proposal has been sent to " + lead.email,
           timestamp: new Date().toISOString(),
         }),
         {
@@ -202,34 +202,45 @@ serve(async (req) => {
 });
 
 // Function to generate a professional, multi-page proposal PDF with lead data
+// COMPLETE REWRITE TO USE EXACT VALUES WITHOUT MODIFICATION
 function generateProfessionalProposal(lead) {
-  // Extract required data - use exact values from calculator_results
+  console.log("==== GENERATING PROPOSAL WITH EXACT LEAD DATA ====");
+  console.log("Lead ID:", lead.id);
+  console.log("Company name:", lead.company_name);
+  
+  // Extract data directly from lead without any adjustments
   const companyName = lead.company_name || 'Client';
   const contactName = lead.name || 'Valued Client';
   const email = lead.email || 'client@example.com';
   const phoneNumber = lead.phone_number || 'Not provided';
   const industry = lead.industry || 'Technology';
   const employeeCount = lead.employee_count || '10';
-
-  // Always use exact calculator_results values without recalculation
-  const {
-    tierKey = 'growth',
-    aiType = 'both',
-    basePriceMonthly = 229,
-    humanCostMonthly = 0,
-    monthlySavings = 0,
-    yearlySavings = 0,
-    savingsPercentage = 0,
-    annualPlan = 2290,
-    aiCostMonthly = {
-      voice: 0,
-      chatbot: 229,
-      total: 229,
-      setupFee: 749
-    }
-  } = lead.calculator_results || {};
-
-  console.log("Using exact calculator results values:", {
+  
+  // Log all the calculator results we're using EXACTLY AS PROVIDED
+  const calculatorResults = lead.calculator_results || {};
+  console.log("USING EXACT CALCULATOR RESULTS:", JSON.stringify(calculatorResults, null, 2));
+  
+  // Direct extraction of values without any processing
+  // If a value doesn't exist, use a sensible default but DO NOT RECALCULATE
+  const tierKey = calculatorResults.tierKey || 'growth';
+  const aiType = calculatorResults.aiType || 'both';
+  const basePriceMonthly = calculatorResults.basePriceMonthly || 229;
+  const humanCostMonthly = calculatorResults.humanCostMonthly || 0;
+  const monthlySavings = calculatorResults.monthlySavings || 0;
+  const yearlySavings = calculatorResults.yearlySavings || 0;
+  const savingsPercentage = calculatorResults.savingsPercentage || 0;
+  const annualPlan = calculatorResults.annualPlan || 2290;
+  
+  // Extract the aiCostMonthly structure exactly as is
+  const aiCostMonthly = calculatorResults.aiCostMonthly || {
+    voice: 0,
+    chatbot: 229,
+    total: 229,
+    setupFee: 749
+  };
+  
+  // Log all extracted values for debugging
+  console.log("EXTRACTED VALUES FOR PDF:", {
     tierKey,
     aiType,
     basePriceMonthly,
@@ -240,7 +251,7 @@ function generateProfessionalProposal(lead) {
     annualPlan,
     aiCostMonthly
   });
-
+  
   // Get display names based on tier
   const tierName = tierKey === 'starter' ? 'Starter Plan' : 
                   tierKey === 'growth' ? 'Growth Plan' : 
@@ -279,6 +290,16 @@ function generateProfessionalProposal(lead) {
   // Brand Colors
   const brandRed = "#ff432a";  // Main brand color
   const brandDarkBlue = "#1a202c"; // Dark blue for headings
+  
+  // Log final values used for financial section
+  console.log("FINANCIAL SECTION VALUES:", {
+    humanCostMonthly: formatCurrency(humanCostMonthly),
+    aiCostTotal: formatCurrency(totalMonthlyCost),
+    monthlySavings: formatCurrency(monthlySavings),
+    yearlySavings: formatCurrency(yearlySavings),
+    savingsPercentage: Math.round(savingsPercentage),
+    setupFee: formatCurrency(setupFee)
+  });
   
   let pdfContent = `
 %PDF-1.7
@@ -571,7 +592,7 @@ ${brandRed} rg
 /F1 13 Tf
 (Monthly Base Price:) Tj
 190 0 Td
-($${(totalMonthlyCost - (additionalVoiceMinutes * 0.12)).toFixed(2)}/month) Tj
+($${basePriceMonthly.toFixed(2)}/month) Tj
 -190 -25 Td
 (Setup and Onboarding Fee:) Tj
 190 0 Td
@@ -832,5 +853,6 @@ startxref
 %%EOF
   `;
   
+  console.log("==== PDF GENERATION COMPLETE ====");
   return pdfContent;
 }
