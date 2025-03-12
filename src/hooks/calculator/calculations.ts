@@ -46,35 +46,20 @@ export function validateInputs(inputs: CalculatorInputs): CalculatorInputs {
     }
   }
   
-  // Ensure callVolume is a number
-  let callVolume = inputs.callVolume;
-  if (typeof callVolume === 'string') {
-    callVolume = parseInt(callVolume, 10) || 0;
-    console.log("Converted callVolume from string to number:", callVolume);
-  } else if (typeof callVolume !== 'number') {
-    callVolume = 0;
-    console.log("callVolume was not a number or string, set to default:", callVolume);
-  }
-  
-  // Make sure starter plan has 0 call volume
-  if (aiTier === 'starter' && callVolume > 0) {
-    callVolume = 0;
-    console.log("Starter plan cannot have call volume - reset to 0");
-  }
-  
+  // CRITICAL: Always calculate based on replacing ONE employee, regardless of total employees
   const validatedInputs = {
     aiType: aiType,
     aiTier: aiTier,
     role: inputs.role || 'customerService',
-    numEmployees: inputs.numEmployees || 5,
-    callVolume: callVolume,
-    avgCallDuration: 0, // No longer used in calculations
+    numEmployees: 1, // Force to 1 for calculations
+    callVolume: inputs.callVolume || 0,
+    avgCallDuration: 0,
     chatVolume: inputs.chatVolume || 2000,
-    avgChatLength: 0, // No longer used in calculations
-    avgChatResolutionTime: 0 // No longer used in calculations
+    avgChatLength: 0,
+    avgChatResolutionTime: 0
   };
   
-  console.log("Validated calculator inputs:", validatedInputs);
+  console.log("Validated calculator inputs (forcing 1:1 replacement):", validatedInputs);
   return validatedInputs;
 }
 
