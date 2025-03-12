@@ -1,11 +1,12 @@
 
 import { supabase } from "@/integrations/supabase/client";
+import { CalculatorInputs, CalculationResults } from "@/hooks/calculator/types";
 import { Lead } from "@/types/leads";
-import { CalculationResults } from "@/hooks/calculator/types";
-import { toJson, ensureCompleteCalculatorResults } from "@/hooks/calculator/supabase-types";
+import { Json } from "@/integrations/supabase/types";
+import { ensureCalculatorInputs, ensureCompleteCalculatorResults } from "@/hooks/calculator/supabase-types";
 
 /**
- * Saves calculator results to the lead record in Supabase
+ * Saves calculator results to the lead document in Supabase
  * This ensures the exact calculator values are persisted
  */
 export async function saveCalculatorResults(leadId: string, calculatorResults: CalculationResults) {
@@ -22,7 +23,7 @@ export async function saveCalculatorResults(leadId: string, calculatorResults: C
     const { error } = await supabase
       .from('leads')
       .update({
-        calculator_results: toJson(resultsToSave),
+        calculator_results: resultsToSave,
         updated_at: new Date().toISOString()
       })
       .eq('id', leadId);
@@ -52,7 +53,7 @@ export async function getCalculatorResults(leadId: string): Promise<CalculationR
       .from('leads')
       .select('calculator_results')
       .eq('id', leadId)
-      .single();
+      .maybeSingle();
     
     if (error) throw error;
     
@@ -61,7 +62,7 @@ export async function getCalculatorResults(leadId: string): Promise<CalculationR
       return null;
     }
     
-    // Ensure we have complete calculator results
+    // Convert the JSON data to CalculationResults type
     return ensureCompleteCalculatorResults(lead.calculator_results);
   } catch (error) {
     console.error('Error retrieving calculator results:', error);
@@ -70,48 +71,59 @@ export async function getCalculatorResults(leadId: string): Promise<CalculationR
 }
 
 /**
- * Gets a complete lead with validated calculator results
+ * Safely convert Json type from Supabase to CalculatorInputs
  */
-export async function getLeadWithCalculatorResults(leadId: string): Promise<Lead | null> {
-  if (!leadId) {
-    console.error('Missing lead ID');
-    throw new Error('Missing lead ID');
-  }
+function convertJsonToCalculatorInputs(jsonData: Json): CalculatorInputs {
+  // Use the ensureCalculatorInputs helper from supabase-types
+  return ensureCalculatorInputs(typeof jsonData === 'string' ? JSON.parse(jsonData) : jsonData);
+}
 
+/**
+ * Retrieves a lead with properly typed calculator data
+ */
+export async function getLeadWithCalculatorData(leadId: string): Promise<Lead | null> {
   try {
-    const { data: lead, error } = await supabase
+    const { data, error } = await supabase
       .from('leads')
       .select('*')
       .eq('id', leadId)
-      .single();
+      .maybeSingle();
     
     if (error) throw error;
+    if (!data) return null;
     
-    if (!lead) {
-      console.error(`No lead found with ID ${leadId}`);
-      return null;
-    }
-
-    // Create a properly typed lead object
-    const typedLead: Lead = {
-      ...lead,
-      calculator_results: ensureCompleteCalculatorResults(lead.calculator_results || {})
+    // Convert the JSON data to the correct types
+    const lead: Lead = {
+      id: data.id,
+      name: data.name,
+      company_name: data.company_name,
+      email: data.email,
+      phone_number: data.phone_number,
+      website: data.website || '',
+      industry: data.industry || '',
+      employee_count: data.employee_count || 0,
+      calculator_inputs: convertJsonToCalculatorInputs(data.calculator_inputs),
+      calculator_results: ensureCompleteCalculatorResults(data.calculator_results),
+      proposal_sent: data.proposal_sent || false,
+      created_at: data.created_at || '',
+      updated_at: data.updated_at || '',
+      form_completed: data.form_completed || false
     };
     
-    return typedLead;
+    return lead;
   } catch (error) {
-    console.error('Error retrieving lead:', error);
+    console.error('Error retrieving lead with calculator data:', error);
     throw error;
   }
 }
 
 /**
- * Generates a proposal using the saved calculator results by calling the edge function
+ * Generates a proposal using the saved calculator results
  */
-export async function generateProposalFromSavedData(leadId: string): Promise<string | null> {
+export async function generateProposalFromSavedData(leadId: string) {
   try {
-    // Get the lead with calculator results
-    const lead = await getLeadWithCalculatorResults(leadId);
+    // Get the lead with proper type conversions
+    const lead = await getLeadWithCalculatorData(leadId);
     
     if (!lead) {
       throw new Error('Lead not found');
@@ -121,33 +133,49 @@ export async function generateProposalFromSavedData(leadId: string): Promise<str
       throw new Error('No calculator results found for this lead');
     }
     
-    console.log('Generating proposal with lead data:', JSON.stringify(lead, null, 2));
-    
-    // Call the edge function with the lead data
-    const { data, error } = await supabase.functions.invoke('generate-proposal', {
-      body: { lead }
+    // Call the proposal generator API with the retrieved data
+    const response = await fetch('/api/generate-proposal', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({ lead }),
     });
     
-    if (error) throw error;
-    
-    if (!data || !data.pdf) {
-      throw new Error('Failed to generate proposal PDF');
+    if (!response.ok) {
+      const errorData = await response.json();
+      throw new Error(errorData.error || 'Failed to generate proposal');
     }
     
-    console.log('Proposal generated successfully');
+    const proposalData = await response.json();
     
-    // Update the lead to mark proposal as sent
+    // Update the lead to indicate proposal was generated
     await supabase
       .from('leads')
-      .update({ 
+      .update({
         proposal_sent: true,
         updated_at: new Date().toISOString()
       })
       .eq('id', leadId);
     
-    return data.pdf;
+    return proposalData;
   } catch (error) {
     console.error('Error generating proposal from saved data:', error);
     throw error;
   }
+}
+
+/**
+ * Debug utility to log calculator results at key points
+ */
+export function debugLogCalculatorResults(stage: string, calculatorResults: CalculationResults) {
+  console.log(`=== CALCULATOR RESULTS AT ${stage.toUpperCase()} ===`);
+  console.log(JSON.stringify({
+    tierKey: calculatorResults.tierKey,
+    setupFee: calculatorResults.aiCostMonthly?.setupFee,
+    basePriceMonthly: calculatorResults.basePriceMonthly,
+    humanCostMonthly: calculatorResults.humanCostMonthly,
+    monthlySavings: calculatorResults.monthlySavings,
+    additionalVoiceCost: calculatorResults.aiCostMonthly?.voice
+  }, null, 2));
 }

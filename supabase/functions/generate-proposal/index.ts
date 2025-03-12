@@ -5,7 +5,6 @@
 import { serve } from "https://deno.land/std@0.186.0/http/server.ts";
 import { corsHeaders } from "../_shared/cors.ts";
 import { generateProfessionalProposal } from "./pdf-generator.ts";
-import { handleProposalRequest } from "./handlers.ts";
 
 serve(async (req) => {
   // Handle CORS preflight requests
@@ -24,8 +23,29 @@ serve(async (req) => {
     console.log("Calculator inputs type:", typeof lead.calculator_inputs);
     console.log("Calculator results type:", typeof lead.calculator_results);
     
-    if (typeof lead.calculator_results !== 'object') {
-      throw new Error(`Invalid calculator_results: ${JSON.stringify(lead.calculator_results)}`);
+    if (!lead.calculator_results || typeof lead.calculator_results !== 'object') {
+      // If calculator_results is a string, try to parse it
+      if (typeof lead.calculator_results === 'string') {
+        try {
+          lead.calculator_results = JSON.parse(lead.calculator_results);
+          console.log("Successfully parsed calculator_results from string to object");
+        } catch (e) {
+          throw new Error(`Invalid calculator_results: Failed to parse string: ${e.message}`);
+        }
+      } else {
+        throw new Error(`Invalid calculator_results: ${JSON.stringify(lead.calculator_results)}`);
+      }
+    }
+    
+    // If calculator_inputs is a string, parse it
+    if (typeof lead.calculator_inputs === 'string') {
+      try {
+        lead.calculator_inputs = JSON.parse(lead.calculator_inputs);
+        console.log("Successfully parsed calculator_inputs from string to object");
+      } catch (e) {
+        console.error("Error parsing calculator_inputs:", e);
+        // Don't throw, just log - we might not need this for proposal generation
+      }
     }
     
     // Log the calculator results for debugging
