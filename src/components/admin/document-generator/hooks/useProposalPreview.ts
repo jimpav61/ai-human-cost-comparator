@@ -2,6 +2,7 @@ import { useState } from "react";
 import { Lead } from "@/types/leads";
 import { toast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
+import { CalculationResults } from "@/hooks/calculator/types";
 
 export const useProposalPreview = () => {
   const [isLoading, setIsLoading] = useState(false);
@@ -158,7 +159,10 @@ export const useProposalPreview = () => {
     }
   };
   
-  // Generate a complete professional PDF proposal
+  /**
+   * Generates a professional, multi-page proposal PDF with lead data
+   * Using exact values from calculator_results without modification
+   */
   const generateProfessionalProposal = (lead: Lead) => {
     // Extract lead information
     const companyName = lead.company_name || 'Client';
@@ -169,7 +173,10 @@ export const useProposalPreview = () => {
     
     // CRITICAL: Extract values directly from calculator_results without any recalculation
     // Ensure we're using the exact values from the calculator
-    const calculatorResults = lead.calculator_results || {};
+    // Add default empty object with proper type checking
+    const calculatorResults: Partial<CalculationResults> = lead.calculator_results || {};
+    
+    console.log("PROPOSAL GENERATION: Full calculator results:", JSON.stringify(calculatorResults, null, 2));
     
     // Extract AI tier information from calculator inputs
     const aiTier = lead.calculator_inputs?.aiTier || 'growth';
@@ -188,10 +195,12 @@ export const useProposalPreview = () => {
                          aiType === 'both-premium' ? 'Text & Conversational Voice' : 'Text Only';
     
     // CRITICAL: Use exact values from calculator_results without any processing
-    const basePrice = calculatorResults.basePriceMonthly || 
-      (aiTier === 'starter' ? 99 :
-      aiTier === 'growth' ? 229 :
-      aiTier === 'premium' ? 429 : 229);
+    // Use proper null checks and provide fallback values
+    const basePrice = calculatorResults.basePriceMonthly !== undefined 
+      ? calculatorResults.basePriceMonthly
+      : (aiTier === 'starter' ? 99 :
+         aiTier === 'growth' ? 229 :
+         aiTier === 'premium' ? 429 : 229);
     
     const includedMinutes = aiTier === 'starter' ? 0 : 600;
     const callVolume = typeof lead.calculator_inputs?.callVolume === 'number' 
@@ -199,31 +208,55 @@ export const useProposalPreview = () => {
       : 0;
     
     // Use exact voice cost from calculator_results if available
-    const additionalVoiceCost = calculatorResults.aiCostMonthly?.voice || 
-      (aiTier !== 'starter' ? callVolume * 0.12 : 0);
+    const additionalVoiceCost = calculatorResults.aiCostMonthly?.voice !== undefined
+      ? calculatorResults.aiCostMonthly.voice
+      : (aiTier !== 'starter' ? callVolume * 0.12 : 0);
     
     // Use exact total cost from calculator_results if available
-    const totalPrice = calculatorResults.aiCostMonthly?.total || (basePrice + additionalVoiceCost);
+    const totalPrice = calculatorResults.aiCostMonthly?.total !== undefined
+      ? calculatorResults.aiCostMonthly.total
+      : (basePrice + additionalVoiceCost);
     
     // Get setup fee from calculator_results
-    const setupFee = calculatorResults.aiCostMonthly?.setupFee || 
-      (aiTier === 'starter' ? 249 : 
-      aiTier === 'growth' ? 749 : 
-      aiTier === 'premium' ? 1149 : 749);
+    const setupFee = calculatorResults.aiCostMonthly?.setupFee !== undefined
+      ? calculatorResults.aiCostMonthly.setupFee
+      : (aiTier === 'starter' ? 249 : 
+         aiTier === 'growth' ? 749 : 
+         aiTier === 'premium' ? 1149 : 749);
     
     // Format date for the proposal
     const today = new Date();
     const formattedDate = `${today.getMonth() + 1}/${today.getDate()}/${today.getFullYear()}`;
     
     // CRITICAL: Use exact values from calculator_results for ROI metrics
-    const humanCostMonthly = calculatorResults.humanCostMonthly || 15000;
-    const monthlySavings = calculatorResults.monthlySavings || (humanCostMonthly - totalPrice);
-    const yearlySavings = calculatorResults.yearlySavings || (monthlySavings * 12);
-    const savingsPercentage = calculatorResults.savingsPercentage || 
-      (humanCostMonthly > 0 ? Math.round((monthlySavings / humanCostMonthly) * 100) : 80);
+    const humanCostMonthly = calculatorResults.humanCostMonthly !== undefined
+      ? calculatorResults.humanCostMonthly
+      : 15000;
+    
+    const monthlySavings = calculatorResults.monthlySavings !== undefined
+      ? calculatorResults.monthlySavings
+      : (humanCostMonthly - totalPrice);
+    
+    const yearlySavings = calculatorResults.yearlySavings !== undefined
+      ? calculatorResults.yearlySavings
+      : (monthlySavings * 12);
+    
+    const savingsPercentage = calculatorResults.savingsPercentage !== undefined
+      ? calculatorResults.savingsPercentage
+      : (humanCostMonthly > 0 ? Math.round((monthlySavings / humanCostMonthly) * 100) : 80);
     
     // Brand Colors
     const brandRed = "#ff432a";  // Main brand color
+    
+    // Log final values used for financial section
+    console.log("FINANCIAL SECTION VALUES:", {
+      humanCostMonthly: humanCostMonthly,
+      aiCostTotal: totalPrice,
+      monthlySavings: monthlySavings,
+      yearlySavings: yearlySavings,
+      savingsPercentage: Math.round(savingsPercentage),
+      setupFee: setupFee
+    });
     
     // Generate PDF content (multipage professional proposal)
     // Changed from const to let to fix the TypeScript errors
@@ -780,12 +813,7 @@ startxref
 %%EOF
   `;
     
-    console.log("generateProfessionalProposal: Using exact values from calculator!");
-    console.log("humanCostMonthly:", humanCostMonthly);
-    console.log("totalPrice:", totalPrice);
-    console.log("monthlySavings:", monthlySavings);
-    console.log("yearlySavings:", yearlySavings);
-    
+    console.log("==== PDF GENERATION COMPLETE ====");
     return pdfContent;
   };
   
@@ -907,18 +935,3 @@ startxref
   };
   
   return {
-    isLoading,
-    editableProposal,
-    setEditableProposal,
-    handlePreviewProposal,
-    getProposalRevisions,
-    getLatestProposalRevision,
-    saveProposalRevision,
-    updateProposalRevision,
-    currentRevision,
-    setCurrentRevision,
-    showPdfPreview,
-    setShowPdfPreview,
-    generateProfessionalProposal
-  };
-};
