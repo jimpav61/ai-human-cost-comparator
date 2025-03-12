@@ -1,11 +1,10 @@
-
 import { serve } from "https://deno.land/std@0.177.0/http/server.ts";
 import { corsHeaders } from "../_shared/cors.ts";
 
 console.log("Proposal generation function loaded");
 
 serve(async (req) => {
-  // Handle CORS preflight requests - make sure this is properly handled
+  // Handle CORS preflight requests
   if (req.method === "OPTIONS") {
     console.log("CORS preflight request received");
     return new Response(null, {
@@ -57,9 +56,6 @@ serve(async (req) => {
     // Log calculator data to troubleshoot
     console.log("Lead calculator_inputs:", JSON.stringify(lead.calculator_inputs, null, 2));
     console.log("Lead calculator_results:", JSON.stringify(lead.calculator_results, null, 2));
-    console.log("AI Tier:", lead.calculator_inputs?.aiTier);
-    console.log("AI Type:", lead.calculator_inputs?.aiType);
-    console.log("Additional Voice Minutes:", lead.calculator_inputs?.callVolume);
     
     // Ensure calculator data exists and is properly formatted
     if (!lead.calculator_inputs || typeof lead.calculator_inputs !== 'object') {
@@ -70,31 +66,9 @@ serve(async (req) => {
       lead.calculator_results = {};
     }
     
-    // Ensure critical values are properly set
-    if (!lead.calculator_inputs.aiTier) {
-      lead.calculator_inputs.aiTier = lead.calculator_results?.tierKey || 'growth';
-      console.log("Set missing aiTier from calculator_results:", lead.calculator_inputs.aiTier);
-    }
-    
-    if (!lead.calculator_inputs.aiType) {
-      lead.calculator_inputs.aiType = lead.calculator_results?.aiType || 'both';
-      console.log("Set missing aiType from calculator_results:", lead.calculator_inputs.aiType);
-    }
-    
-    // Make sure callVolume is a number
-    if (typeof lead.calculator_inputs.callVolume === 'string') {
-      lead.calculator_inputs.callVolume = parseInt(lead.calculator_inputs.callVolume, 10) || 0;
-      console.log("Converted callVolume from string to number:", lead.calculator_inputs.callVolume);
-    } else if (lead.calculator_inputs.callVolume === undefined || lead.calculator_inputs.callVolume === null) {
-      lead.calculator_inputs.callVolume = 0;
-      console.log("Set default callVolume to 0");
-    }
-    
-    // Force callVolume to 0 for starter plan
-    if (lead.calculator_inputs.aiTier === 'starter') {
-      lead.calculator_inputs.callVolume = 0;
-      console.log("Reset callVolume to 0 for starter plan");
-    }
+    // Process lead data with the same logic used in report generation
+    const processedLead = await processLeadData(lead);
+    console.log("Processed lead data for proposal generation:", JSON.stringify(processedLead, null, 2));
     
     if (isPreviewMode) {
       // In preview mode, generate and return the PDF directly
@@ -102,12 +76,12 @@ serve(async (req) => {
       
       try {
         // Get company name from lead data for the filename
-        const companyName = lead.company_name || 'Client';
+        const companyName = processedLead.company_name || 'Client';
         // Sanitize company name for filename
         const safeCompanyName = companyName.replace(/[^a-z0-9]/gi, '-').toLowerCase();
         
         // Create a professional multi-page proposal PDF with actual lead data
-        const pdfContent = generateProfessionalProposal(lead);
+        const pdfContent = generateProfessionalProposal(processedLead);
         
         // If returnContent flag is set, return the raw content instead of PDF
         if (shouldReturnContent) {
@@ -117,7 +91,7 @@ serve(async (req) => {
               proposalContent: pdfContent,
               title: `Proposal for ${companyName}`,
               notes: `Generated proposal for ${companyName} on ${new Date().toLocaleString()}`,
-              leadId: lead.id
+              leadId: processedLead.id
             }),
             {
               headers: {
@@ -185,7 +159,7 @@ serve(async (req) => {
       return new Response(
         JSON.stringify({
           success: true,
-          message: "Proposal has been sent to " + lead.email,
+          message: "Proposal has been sent to " + processedLead.email,
           timestamp: new Date().toISOString(),
         }),
         {
@@ -218,6 +192,255 @@ serve(async (req) => {
   }
 });
 
+// Process lead data with the same logic used in report generation
+async function processLeadData(lead) {
+  console.log("Processing lead data for proposal generation");
+  
+  // Ensure we have a deep copy to prevent reference issues
+  const processedLead = JSON.parse(JSON.stringify(lead));
+  
+  // Set default calculator inputs if not present
+  if (!processedLead.calculator_inputs || Object.keys(processedLead.calculator_inputs).length === 0) {
+    console.log("Creating default calculator_inputs");
+    processedLead.calculator_inputs = {
+      aiTier: processedLead.calculator_results?.tierKey || 'growth',
+      aiType: processedLead.calculator_results?.aiType || 'both',
+      callVolume: 0,
+      role: 'customerService',
+      numEmployees: 1, // Always use 1 employee for 1:1 replacement
+      chatVolume: 2000,
+      avgCallDuration: 0,
+      avgChatLength: 0,
+      avgChatResolutionTime: 0
+    };
+  }
+  
+  // Always set numEmployees to 1 for the 1:1 replacement model
+  if (processedLead.calculator_inputs) {
+    processedLead.calculator_inputs.numEmployees = 1;
+    console.log("Set numEmployees to 1 for 1:1 replacement model");
+  }
+  
+  // Ensure callVolume is a number
+  if (processedLead.calculator_inputs && typeof processedLead.calculator_inputs.callVolume === 'string') {
+    processedLead.calculator_inputs.callVolume = parseInt(processedLead.calculator_inputs.callVolume, 10) || 0;
+    console.log("Converted callVolume from string to number:", processedLead.calculator_inputs.callVolume);
+  }
+  
+  // Recalculate results using 1:1 replacement model
+  if (processedLead.calculator_inputs) {
+    try {
+      console.log("Recalculating results with 1:1 replacement model");
+      processedLead.calculator_results = performCalculations(processedLead.calculator_inputs);
+      console.log("Recalculated results:", processedLead.calculator_results);
+    } catch (error) {
+      console.error("Error recalculating results:", error);
+    }
+  }
+  
+  return processedLead;
+}
+
+// ===== CALCULATION FUNCTIONS FROM calculator/calculations.ts =====
+// These were copied directly from the report generator's calculation logic
+
+// Constants for time calculations
+const HOURS_PER_SHIFT = 8;
+const DAYS_PER_WEEK = 5;
+const WEEKS_PER_YEAR = 52;
+const MONTHS_PER_YEAR = 12;
+
+// Hardcoded base prices to ensure consistency
+const HARDCODED_BASE_PRICES = {
+  starter: 99,
+  growth: 229,
+  premium: 429
+};
+
+// Human hourly rates for each role
+const HUMAN_HOURLY_RATES = {
+  customerService: 22,
+  sales: 28,
+  technicalSupport: 30,
+  generalAdmin: 24
+};
+
+// Validate calculator inputs and provide defaults
+function validateInputs(inputs) {
+  console.log("Validating calculator inputs:", inputs);
+  
+  // Ensure aiType is consistent with aiTier
+  let aiType = inputs.aiType || 'chatbot';
+  const aiTier = inputs.aiTier || 'starter';
+  
+  // Force consistent AI type values based on tier
+  if (aiTier === 'starter' && aiType !== 'chatbot') {
+    aiType = 'chatbot';
+    console.log("Starter plan can only use chatbot - corrected aiType to:", aiType);
+  } else if (aiTier === 'premium') {
+    if (aiType === 'voice') {
+      aiType = 'conversationalVoice';
+      console.log("Premium plan upgraded voice to conversational - corrected aiType to:", aiType);
+    } else if (aiType === 'both') {
+      aiType = 'both-premium';
+      console.log("Premium plan upgraded voice features - corrected aiType to:", aiType);
+    }
+  } else if (aiTier === 'growth') {
+    if (aiType === 'conversationalVoice') {
+      aiType = 'voice';
+      console.log("Growth plan can only use basic voice - corrected aiType to:", aiType);
+    } else if (aiType === 'both-premium') {
+      aiType = 'both';
+      console.log("Growth plan can only use basic voice features - corrected aiType to:", aiType);
+    }
+  }
+  
+  // CRITICAL: Always calculate based on replacing ONE employee, regardless of total employees
+  const validatedInputs = {
+    aiType: aiType,
+    aiTier: aiTier,
+    role: inputs.role || 'customerService',
+    numEmployees: 1, // Force to 1 for calculations
+    callVolume: inputs.callVolume || 0,
+    avgCallDuration: 0,
+    chatVolume: inputs.chatVolume || 2000,
+    avgChatLength: 0,
+    avgChatResolutionTime: 0
+  };
+  
+  console.log("Validated calculator inputs (forcing 1:1 replacement):", validatedInputs);
+  return validatedInputs;
+}
+
+// Calculate human resource metrics based on total employees minus one (replaced by AI)
+function calculateHumanResources(inputs) {
+  // Always calculate for ONE employee only, regardless of total employees
+  const employeesAfterAI = 1; // We're replacing exactly one employee
+  const dailyHoursPerEmployee = HOURS_PER_SHIFT;
+  const weeklyHoursPerEmployee = dailyHoursPerEmployee * DAYS_PER_WEEK;
+  const weeklyTotalHours = weeklyHoursPerEmployee * employeesAfterAI;
+  const monthlyTotalHours = (weeklyTotalHours * WEEKS_PER_YEAR) / MONTHS_PER_YEAR;
+  const yearlyTotalHours = weeklyTotalHours * WEEKS_PER_YEAR;
+  
+  return {
+    dailyPerEmployee: dailyHoursPerEmployee,
+    weeklyTotal: weeklyTotalHours,
+    monthlyTotal: monthlyTotalHours,
+    yearlyTotal: yearlyTotalHours
+  };
+}
+
+// Calculate human resource costs based on remaining employees after AI replacement
+function calculateHumanCosts(inputs, monthlyHours) {
+  const baseHourlyRate = HUMAN_HOURLY_RATES[inputs.role];
+  const hourlyRateWithBenefits = baseHourlyRate * 1.3; // Add 30% for benefits
+  const monthlyHumanCost = hourlyRateWithBenefits * monthlyHours;
+  
+  return {
+    hourlyRate: baseHourlyRate,
+    hourlyRateWithBenefits,
+    monthlyHumanCost
+  };
+}
+
+// Calculate AI costs and pricing details
+function calculateAICosts(inputs) {
+  console.log("Calculating AI costs with inputs:", inputs);
+  
+  // Get the exact fixed price for the selected tier
+  const tierBase = HARDCODED_BASE_PRICES[inputs.aiTier];
+  console.log("Tier base price:", tierBase, "for tier:", inputs.aiTier);
+  
+  // Calculate additional voice costs - input field is now the ADDITIONAL minutes
+  let additionalVoiceCost = 0;
+  const includedVoiceMinutes = inputs.aiTier === 'starter' ? 0 : 600;
+  
+  // inputs.callVolume now directly represents the additional minutes
+  const extraVoiceMinutes = inputs.callVolume;
+  console.log("Extra voice minutes:", extraVoiceMinutes, "Included minutes:", includedVoiceMinutes);
+  
+  if (extraVoiceMinutes > 0 && inputs.aiTier !== 'starter') {
+    // Always use 12¢ per minute for additional voice minutes
+    const additionalMinuteRate = 0.12;
+    additionalVoiceCost = extraVoiceMinutes * additionalMinuteRate;
+    console.log("Additional voice cost:", additionalVoiceCost);
+  }
+  
+  // Calculate setup fee
+  const setupFee = inputs.aiTier === 'starter' ? 499 : inputs.aiTier === 'growth' ? 749 : 999;
+  
+  // Calculate annual plan price
+  const annualPlan = inputs.aiTier === 'starter' ? 990 : inputs.aiTier === 'growth' ? 2290 : 4290;
+  
+  // Total monthly cost
+  const totalMonthlyCost = tierBase + additionalVoiceCost;
+  console.log("Total monthly cost:", totalMonthlyCost);
+  
+  return {
+    tierBase,
+    additionalVoiceCost,
+    setupFee,
+    annualPlan,
+    totalMonthlyCost,
+    extraVoiceMinutes
+  };
+}
+
+// Calculate savings and percentages based on one employee replacement
+function calculateSavings(humanCost, aiCost) {
+  const monthlySavings = humanCost - aiCost;
+  const yearlySavings = monthlySavings * 12;
+  const savingsPercentage = humanCost > 0 ? (monthlySavings / humanCost) * 100 : 0;
+  
+  return {
+    monthlySavings,
+    yearlySavings,
+    savingsPercentage
+  };
+}
+
+// Calculate breakeven points
+function calculateBreakEvenPoints(inputs, humanCosts, aiCosts) {
+  return {
+    voice: aiCosts.extraVoiceMinutes,
+    chatbot: Math.ceil(aiCosts.totalMonthlyCost / ((humanCosts.hourlyRateWithBenefits) / 60))
+  };
+}
+
+// Perform the full calculation and return the results
+function performCalculations(inputs) {
+  console.log("Performing full calculations with inputs:", inputs, "Using one employee replacement model");
+  
+  const validatedInputs = validateInputs(inputs);
+  const humanHours = calculateHumanResources(validatedInputs);
+  const humanCosts = calculateHumanCosts(validatedInputs, humanHours.monthlyTotal);
+  const aiCosts = calculateAICosts(validatedInputs);
+  const savings = calculateSavings(humanCosts.monthlyHumanCost, aiCosts.totalMonthlyCost);
+  const breakEvenPoint = calculateBreakEvenPoints(validatedInputs, humanCosts, aiCosts);
+  
+  const results = {
+    aiCostMonthly: {
+      voice: aiCosts.additionalVoiceCost,
+      chatbot: aiCosts.tierBase,
+      total: aiCosts.totalMonthlyCost,
+      setupFee: aiCosts.setupFee
+    },
+    basePriceMonthly: aiCosts.tierBase,
+    humanCostMonthly: humanCosts.monthlyHumanCost,
+    monthlySavings: savings.monthlySavings,
+    yearlySavings: savings.yearlySavings,
+    savingsPercentage: savings.savingsPercentage,
+    breakEvenPoint: breakEvenPoint,
+    humanHours: humanHours,
+    annualPlan: aiCosts.annualPlan,
+    tierKey: validatedInputs.aiTier,
+    aiType: validatedInputs.aiType
+  };
+  
+  console.log("Final calculation results (one employee replacement model):", results);
+  return results;
+}
+
 // Function to generate a professional, multi-page proposal PDF with lead data
 function generateProfessionalProposal(lead) {
   // Extract required data
@@ -228,45 +451,9 @@ function generateProfessionalProposal(lead) {
   const industry = lead.industry || 'Technology';
   const employeeCount = lead.employee_count || '10';
   
-  // Log complete lead data for debugging
-  console.log("Full lead data for proposal generation:", JSON.stringify(lead, null, 2));
-  
   // Get calculator data if available
-  let calculatorInputs = {};
-  let calculatorResults = {};
-  
-  // First try to access calculator_inputs/results directly
-  if (lead.calculator_inputs) {
-    calculatorInputs = lead.calculator_inputs;
-    console.log("Found calculator inputs in lead:", JSON.stringify(calculatorInputs, null, 2));
-  }
-  
-  if (lead.calculator_results) {
-    calculatorResults = lead.calculator_results;
-    console.log("Found calculator results in lead:", JSON.stringify(calculatorResults, null, 2));
-  }
-  
-  // Enhanced parsing for calculator inputs and results
-  // Handle case where they might be strings
-  if (typeof calculatorInputs === 'string') {
-    try {
-      calculatorInputs = JSON.parse(calculatorInputs);
-      console.log("Parsed calculator_inputs from string:", JSON.stringify(calculatorInputs, null, 2));
-    } catch (e) {
-      console.error("Error parsing calculator_inputs:", e);
-      calculatorInputs = {};
-    }
-  }
-  
-  if (typeof calculatorResults === 'string') {
-    try {
-      calculatorResults = JSON.parse(calculatorResults);
-      console.log("Parsed calculator_results from string:", JSON.stringify(calculatorResults, null, 2));
-    } catch (e) {
-      console.error("Error parsing calculator_results:", e);
-      calculatorResults = {};
-    }
-  }
+  const calculatorInputs = lead.calculator_inputs || {};
+  const calculatorResults = lead.calculator_results || {};
   
   // Determine AI plan details from inputs
   // Default to growth plan if no tier is specified
@@ -301,7 +488,7 @@ function generateProfessionalProposal(lead) {
     aiTypeDisplay = 'Text & Basic Voice';
   }
   
-  // Get setup fees - use the results first, then fall back to defaults
+  // Get setup fees
   const setupFee = calculatorResults.aiCostMonthly?.setupFee ||
                   (aiTier === 'starter' ? 249 :
                    aiTier === 'growth' ? 749 :
@@ -310,71 +497,41 @@ function generateProfessionalProposal(lead) {
   // Get voice details - different for each tier
   const includedVoiceMinutes = aiTier === 'starter' ? 0 : 600;
   
-  // Improved call volume extraction with better type handling
+  // Get additional voice minutes from calculator inputs
   let additionalVoiceMinutes = 0;
-  
   if (aiTier !== 'starter') {
-    // First check if callVolume exists as a direct property
-    if (calculatorInputs && 'callVolume' in calculatorInputs) {
-      // Handle different types - ensure we have a number
-      if (typeof calculatorInputs.callVolume === 'string') {
-        additionalVoiceMinutes = parseInt(calculatorInputs.callVolume, 10) || 0;
-      } else if (typeof calculatorInputs.callVolume === 'number') {
-        additionalVoiceMinutes = calculatorInputs.callVolume;
-      }
-      
+    if (calculatorInputs && typeof calculatorInputs.callVolume !== 'undefined') {
+      additionalVoiceMinutes = Number(calculatorInputs.callVolume);
       console.log("Using additional voice minutes from inputs:", additionalVoiceMinutes);
-    } else {
-      // Try to calculate from voice costs in results
-      if (calculatorResults.aiCostMonthly && calculatorResults.aiCostMonthly.voice > 0) {
-        // If we have voice costs in the results, calculate the minutes (at 12¢ per minute)
-        additionalVoiceMinutes = Math.round(calculatorResults.aiCostMonthly.voice / 0.12);
-        console.log("Calculated additional voice minutes from costs:", additionalVoiceMinutes);
-      }
     }
   }
   
   console.log("Final additional voice minutes:", additionalVoiceMinutes);
   
-  // CRITICAL FIX: DIRECTLY USE EXACT VALUES FROM CALCULATOR_RESULTS
-  // Don't recalculate anything - ensure the values exactly match those in the report
-  console.log("DIRECT EXTRACTION - Using exact values from calculator_results");
-  
-  // Base costs and pricing - USING EXACT VALUES FROM RESULTS
+  // Use exact values from calculator_results
   const humanCostMonthly = calculatorResults.humanCostMonthly !== undefined 
     ? calculatorResults.humanCostMonthly 
     : 5000; // Single employee cost fallback
-  console.log("Using humanCostMonthly:", humanCostMonthly);
   
-  // Use exact aiCostMonthly from calculator_results for the total monthly AI cost
   const totalMonthlyCost = calculatorResults.aiCostMonthly?.total !== undefined
     ? calculatorResults.aiCostMonthly.total
-    : (aiTier === 'starter' ? 99 : aiTier === 'growth' ? 229 : 429);
-  console.log("Using totalMonthlyCost:", totalMonthlyCost);
+    : (aiTier === 'starter' ? 99 : aiTier === 'growth' ? 229 : 429) + (additionalVoiceMinutes * 0.12);
   
-  // Use exact monthlySavings from calculator_results for savings
   const monthlySavings = calculatorResults.monthlySavings !== undefined
     ? calculatorResults.monthlySavings
     : (humanCostMonthly - totalMonthlyCost);
-  console.log("Using monthlySavings:", monthlySavings);
   
-  // Use exact yearlySavings from calculator_results for yearly savings
   const yearlySavings = calculatorResults.yearlySavings !== undefined
     ? calculatorResults.yearlySavings
     : (monthlySavings * 12);
-  console.log("Using yearlySavings:", yearlySavings);
   
-  // Use exact savingsPercentage from calculator_results for the percentage
   const savingsPercentage = calculatorResults.savingsPercentage !== undefined
     ? calculatorResults.savingsPercentage
     : (humanCostMonthly > 0 ? Math.round((monthlySavings / humanCostMonthly) * 100) : 50);
-  console.log("Using savingsPercentage:", savingsPercentage);
   
-  // Annual plan cost - use results or calculate from monthly
   const annualPlan = calculatorResults.annualPlan !== undefined
     ? calculatorResults.annualPlan
-    : (totalMonthlyCost * 10); // Annual plan is typically 10 months pricing
-  console.log("Using annualPlan:", annualPlan);
+    : (totalMonthlyCost * 10);
   
   // Log the final values for the proposal to verify correct usage
   console.log("FINAL PROPOSAL VALUES:");
@@ -385,6 +542,7 @@ function generateProfessionalProposal(lead) {
   console.log("savingsPercentage:", savingsPercentage);
   console.log("setupFee:", setupFee);
   console.log("annualPlan:", annualPlan);
+  console.log("additionalVoiceMinutes:", additionalVoiceMinutes);
   
   // Calculate ROI details with proper values
   const breakEvenPoint = Math.ceil(setupFee / (monthlySavings || 1000));
@@ -408,8 +566,8 @@ function generateProfessionalProposal(lead) {
   const brandRed = "#ff432a";  // Main brand color
   const brandDarkBlue = "#1a202c"; // Dark blue for headings
   
-  // Generate PDF content - the template is kept mostly the same, 
-  // but values are now directly from calculator_results
+  // KEEP THE EXACT SAME PDF GENERATION CODE TO MAINTAIN THE SAME FORMATTING
+  // ... keep existing code for PDF generation
   let pdfContent = `
 %PDF-1.7
 1 0 obj
@@ -534,7 +692,7 @@ ${brandRed} rg
 0 -25 Td
 /F1 12 Tf
 
-(\\267 Reduction in operational costs by up to ${savingsPercentage}%) Tj
+(\\267 Reduction in operational costs by up to ${Math.round(savingsPercentage)}%) Tj
 0 -20 Td
 (\\267 Estimated annual savings of ${formatCurrency(yearlySavings)}) Tj
 0 -20 Td
@@ -782,7 +940,7 @@ ${brandRed} rg
 (Savings Percentage:) Tj
 190 0 Td
 ${brandRed} rg
-(${savingsPercentage}%) Tj
+(${Math.round(savingsPercentage)}%) Tj
 0 0 0 rg
 -190 -45 Td
 
@@ -963,17 +1121,4 @@ startxref
   `;
   
   return pdfContent;
-
-  function formatCurrency(value) {
-    return new Intl.NumberFormat('en-US', {
-      style: 'currency',
-      currency: 'USD',
-      maximumFractionDigits: 0
-    }).format(value);
-  }
-  
-  function formatNumber(value) {
-    return new Intl.NumberFormat('en-US').format(value);
-  }
 }
-
