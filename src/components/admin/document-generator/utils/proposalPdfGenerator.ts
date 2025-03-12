@@ -1,4 +1,3 @@
-
 import { Lead } from "@/types/leads";
 import { CalculationResults } from "@/hooks/calculator/types";
 
@@ -14,92 +13,38 @@ export const generateProposalPdf = (lead: Lead) => {
   const phoneNumber = lead.phone_number || 'Not provided';
   const industry = lead.industry || 'Technology';
   
-  // CRITICAL: Extract values directly from calculator_results without any recalculation
-  // Ensure we're using the exact values from the calculator
-  // Add default empty object with proper type checking
-  const calculatorResults: Partial<CalculationResults> = lead.calculator_results || {};
+  // CRITICAL: Use exact calculator results without any processing
+  const calculatorResults = lead.calculator_results;
   
-  console.log("PROPOSAL GENERATION: Full calculator results:", JSON.stringify(calculatorResults, null, 2));
-  
-  // Extract AI tier information from calculator inputs
+  // Extract AI tier and type directly from calculator inputs
   const aiTier = lead.calculator_inputs?.aiTier || 'growth';
   const aiType = lead.calculator_inputs?.aiType || 'both';
   
-  // Get tier display name
+  // Get display names directly from saved values
   const tierName = aiTier === 'starter' ? 'Starter Plan' : 
-                  aiTier === 'growth' ? 'Growth Plan' : 
-                  aiTier === 'premium' ? 'Premium Plan' : 'Growth Plan';
+                  aiTier === 'growth' ? 'Growth Plan' : 'Premium Plan';
   
-  // Get AI type display name
   const aiTypeDisplay = aiType === 'chatbot' ? 'Text Only' : 
                        aiType === 'voice' ? 'Basic Voice' : 
                        aiType === 'conversationalVoice' ? 'Conversational Voice' : 
                        aiType === 'both' ? 'Text & Basic Voice' : 
                        aiType === 'both-premium' ? 'Text & Conversational Voice' : 'Text Only';
   
-  // CRITICAL: Use exact values from calculator_results without any processing
-  // Use proper null checks and provide fallback values
-  const basePrice = calculatorResults.basePriceMonthly !== undefined 
-    ? calculatorResults.basePriceMonthly
-    : (aiTier === 'starter' ? 99 :
-       aiTier === 'growth' ? 229 :
-       aiTier === 'premium' ? 429 : 229);
-  
+  // Use exact values from calculator_results - no fallbacks or recalculations
+  const basePrice = calculatorResults.basePriceMonthly;
+  const totalPrice = calculatorResults.aiCostMonthly.total;
+  const setupFee = calculatorResults.aiCostMonthly.setupFee;
+  const humanCostMonthly = calculatorResults.humanCostMonthly;
+  const monthlySavings = calculatorResults.monthlySavings;
+  const yearlySavings = calculatorResults.yearlySavings;
+  const savingsPercentage = calculatorResults.savingsPercentage;
+  const annualPlan = calculatorResults.annualPlan;
+  const voiceCost = calculatorResults.aiCostMonthly.voice;
   const includedMinutes = aiTier === 'starter' ? 0 : 600;
-  const callVolume = typeof lead.calculator_inputs?.callVolume === 'number' 
-    ? lead.calculator_inputs.callVolume 
-    : 0;
-  
-  // Use exact voice cost from calculator_results if available
-  const additionalVoiceCost = calculatorResults.aiCostMonthly?.voice !== undefined
-    ? calculatorResults.aiCostMonthly.voice
-    : (aiTier !== 'starter' ? callVolume * 0.12 : 0);
-  
-  // Use exact total cost from calculator_results if available
-  const totalPrice = calculatorResults.aiCostMonthly?.total !== undefined
-    ? calculatorResults.aiCostMonthly.total
-    : (basePrice + additionalVoiceCost);
-  
-  // Get setup fee from calculator_results
-  const setupFee = calculatorResults.aiCostMonthly?.setupFee !== undefined
-    ? calculatorResults.aiCostMonthly.setupFee
-    : (aiTier === 'starter' ? 249 : 
-       aiTier === 'growth' ? 749 : 
-       aiTier === 'premium' ? 1149 : 749);
-  
-  // Format date for the proposal
-  const today = new Date();
-  const formattedDate = `${today.getMonth() + 1}/${today.getDate()}/${today.getFullYear()}`;
-  
-  // CRITICAL: Use exact values from calculator_results for ROI metrics
-  const humanCostMonthly = calculatorResults.humanCostMonthly !== undefined
-    ? calculatorResults.humanCostMonthly
-    : 15000;
-  
-  const monthlySavings = calculatorResults.monthlySavings !== undefined
-    ? calculatorResults.monthlySavings
-    : (humanCostMonthly - totalPrice);
-  
-  const yearlySavings = calculatorResults.yearlySavings !== undefined
-    ? calculatorResults.yearlySavings
-    : (monthlySavings * 12);
-  
-  const savingsPercentage = calculatorResults.savingsPercentage !== undefined
-    ? calculatorResults.savingsPercentage
-    : (humanCostMonthly > 0 ? Math.round((monthlySavings / humanCostMonthly) * 100) : 80);
-  
+  const callVolume = lead.calculator_inputs?.callVolume || 0;
+
   // Brand Colors
-  const brandRed = "#ff432a";  // Main brand color
-  
-  // Log final values used for financial section
-  console.log("FINANCIAL SECTION VALUES:", {
-    humanCostMonthly: humanCostMonthly,
-    aiCostTotal: totalPrice,
-    monthlySavings: monthlySavings,
-    yearlySavings: yearlySavings,
-    savingsPercentage: Math.round(savingsPercentage),
-    setupFee: setupFee
-  });
+  const brandRed = "#ff432a";
   
   // Generate PDF content
   return generatePdfContent({
@@ -116,14 +61,14 @@ export const generateProposalPdf = (lead: Lead) => {
     basePrice,
     includedMinutes,
     callVolume,
-    additionalVoiceCost,
+    voiceCost,
     totalPrice,
     setupFee,
-    formattedDate,
     humanCostMonthly,
     monthlySavings,
     yearlySavings,
-    savingsPercentage
+    savingsPercentage,
+    annualPlan
   });
 };
 
@@ -141,14 +86,14 @@ interface PdfContentParams {
   basePrice: number;
   includedMinutes: number;
   callVolume: number;
-  additionalVoiceCost: number;
+  voiceCost: number;
   totalPrice: number;
   setupFee: number;
-  formattedDate: string;
   humanCostMonthly: number;
   monthlySavings: number;
   yearlySavings: number;
   savingsPercentage: number;
+  annualPlan: boolean;
 }
 
 // Function to generate the actual PDF content
@@ -166,14 +111,14 @@ function generatePdfContent(params: PdfContentParams): string {
     basePrice,
     includedMinutes,
     callVolume,
-    additionalVoiceCost,
+    voiceCost,
     totalPrice,
     setupFee,
-    formattedDate,
     humanCostMonthly,
     monthlySavings,
     yearlySavings,
-    savingsPercentage
+    savingsPercentage,
+    annualPlan
   } = params;
 
   let pdfContent = `
@@ -407,7 +352,7 @@ ${brandRed} rg
       pdfContent += `
 (\\267 ${callVolume} additional voice minutes at $0.12/minute) Tj
 0 -20 Td
-(\\267 Additional voice cost: $${additionalVoiceCost.toFixed(2)}/month) Tj
+(\\267 Additional voice cost: $${voiceCost.toFixed(2)}/month) Tj
 0 -20 Td`;
     } else {
       pdfContent += `
@@ -498,7 +443,7 @@ ${brandRed} rg
 -190 -25 Td
 (Additional Voice Cost:) Tj
 190 0 Td
-($${additionalVoiceCost.toFixed(2)}/month) Tj
+($${voiceCost.toFixed(2)}/month) Tj
 -190 -25 Td`;
     } else {
       pdfContent += `
