@@ -732,4 +732,3 @@ startxref
   console.log("==== PDF GENERATION COMPLETE ====");
   return pdfContent;
 }
-
