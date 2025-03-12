@@ -39,6 +39,8 @@ export interface CalculationResults {
   // Adding these properties for proposal generator compatibility
   tierKey?: 'starter' | 'growth' | 'premium';
   aiType?: 'voice' | 'chatbot' | 'both' | 'conversationalVoice' | 'both-premium';
+  // Add the missing property that caused the TypeScript error
+  includedVoiceMinutes?: number;
 }
 
 export type CalculatorState = CalculationResults;

@@ -203,6 +203,8 @@ export const useEditableProposal = () => {
     updatedLead.calculator_results.aiType = editingAiType;
     updatedLead.calculator_results.basePriceMonthly = pricing.basePrice;
     updatedLead.calculator_results.aiCostMonthly.total = pricing.totalPrice;
+    
+    // Add the missing property to fix the TypeScript error
     updatedLead.calculator_results.includedVoiceMinutes = pricing.includedMinutes;
     
     return updatedLead;
