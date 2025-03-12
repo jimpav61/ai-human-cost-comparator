@@ -6,7 +6,6 @@ import { supabase } from "@/integrations/supabase/client";
 import { getSafeFileName } from "./report-generator/saveReport";
 import { generatePDF } from "@/components/calculator/pdf";
 import { toJson } from "@/hooks/calculator/supabase-types";
-import { CalculationResults } from "@/hooks/calculator/types";
 
 export const useReportDownload = () => {
   const [isLoading, setIsLoading] = useState(false);
@@ -36,11 +35,7 @@ export const useReportDownload = () => {
       const reportId = crypto.randomUUID();
       console.log("Generated new report ID:", reportId);
       
-      // Use the exact input data from the lead record without modifying anything
-      const results = lead.calculator_results as CalculationResults;
-      const inputs = lead.calculator_inputs || {};
-      
-      // Generate the PDF WITHOUT modifying any data
+      // Generate the PDF using exactly the data from the lead
       const doc = generatePDF({
         contactInfo: lead.name || 'Valued Client',
         companyName: lead.company_name || 'Your Company',
@@ -48,9 +43,7 @@ export const useReportDownload = () => {
         phoneNumber: lead.phone_number || '',
         industry: lead.industry || 'Other',
         employeeCount: Number(lead.employee_count) || 5,
-        results: results,
-        additionalVoiceMinutes: results?.additionalVoiceMinutes || inputs?.callVolume || 0,
-        includedVoiceMinutes: results?.tierKey === 'starter' ? 0 : 600,
+        results: lead.calculator_results,
         businessSuggestions: [
           {
             title: "Automate Common Customer Inquiries",
@@ -79,23 +72,21 @@ export const useReportDownload = () => {
             capabilities: ["Answer product questions", "Provide pricing information", "Schedule demonstrations with sales team"]
           }
         ],
-        tierName: results?.tierKey === 'starter' ? 'Starter Plan' : 
-                 results?.tierKey === 'growth' ? 'Growth Plan' : 
-                 results?.tierKey === 'premium' ? 'Premium Plan' : 'Growth Plan',
-        aiType: results?.aiType === 'chatbot' ? 'Text Only' : 
-                results?.aiType === 'voice' ? 'Basic Voice' : 
-                results?.aiType === 'conversationalVoice' ? 'Conversational Voice' : 
-                results?.aiType === 'both' ? 'Text & Basic Voice' : 
-                results?.aiType === 'both-premium' ? 'Text & Conversational Voice' : 'Text Only'
+        tierName: lead.calculator_results.tierKey === 'starter' ? 'Starter Plan' : 
+                 lead.calculator_results.tierKey === 'growth' ? 'Growth Plan' : 
+                 lead.calculator_results.tierKey === 'premium' ? 'Premium Plan' : 'Growth Plan',
+        aiType: lead.calculator_results.aiType === 'chatbot' ? 'Text Only' : 
+                lead.calculator_results.aiType === 'voice' ? 'Basic Voice' : 
+                lead.calculator_results.aiType === 'conversationalVoice' ? 'Conversational Voice' : 
+                lead.calculator_results.aiType === 'both' ? 'Text & Basic Voice' : 
+                lead.calculator_results.aiType === 'both-premium' ? 'Text & Conversational Voice' : 'Text Only'
       });
       
-      // Save a copy of this report to the database without modifying the data
+      // Save a copy of this report to the database
       try {
-        // Simply convert to JSON without modifying
         const jsonInputs = toJson(lead.calculator_inputs);
         const jsonResults = toJson(lead.calculator_results);
         
-        // Create the report data with the generated UUID and lead reference
         const reportData = {
           id: reportId,
           lead_id: lead.id,
@@ -111,7 +102,6 @@ export const useReportDownload = () => {
         
         console.log("Saving new report version to database:", reportData);
         
-        // Insert the new report version
         const { error } = await supabase
           .from('generated_reports')
           .insert(reportData);
