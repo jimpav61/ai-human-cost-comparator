@@ -26,7 +26,7 @@ export const generateProposalPdf = (lead: Lead): string => {
     console.log("Converted callVolume from string to number:", sanitizedLead.calculator_inputs.callVolume);
   }
   
-  // Extract tier and type from results to ensure consistency
+  // Critical fix: Always prioritize calculator_results values for consistency
   if (sanitizedLead.calculator_results && sanitizedLead.calculator_inputs) {
     const tierKey = sanitizedLead.calculator_results.tierKey;
     const aiType = sanitizedLead.calculator_results.aiType;
@@ -41,19 +41,26 @@ export const generateProposalPdf = (lead: Lead): string => {
       sanitizedLead.calculator_inputs.aiType = aiType;
     }
     
-    // CRITICAL FIX: Copy additionalVoiceMinutes to callVolume - this is a source of confusion
+    // CRITICAL FIX: Ensure additionalVoiceMinutes in results is aligned with callVolume in inputs
     if ('additionalVoiceMinutes' in sanitizedLead.calculator_results) {
       const additionalVoiceMinutes = sanitizedLead.calculator_results.additionalVoiceMinutes || 0;
       if (sanitizedLead.calculator_inputs.callVolume !== additionalVoiceMinutes) {
+        // We prioritize the value in calculator_results over calculator_inputs
         console.log(`Syncing calculator_inputs.callVolume (${sanitizedLead.calculator_inputs.callVolume}) to match results.additionalVoiceMinutes (${additionalVoiceMinutes})`);
         sanitizedLead.calculator_inputs.callVolume = additionalVoiceMinutes;
       }
+    }
+    // If no additionalVoiceMinutes in results, copy it from callVolume
+    else if ('callVolume' in sanitizedLead.calculator_inputs) {
+      console.log(`Setting missing additionalVoiceMinutes from callVolume (${sanitizedLead.calculator_inputs.callVolume})`);
+      sanitizedLead.calculator_results.additionalVoiceMinutes = sanitizedLead.calculator_inputs.callVolume;
     }
   }
   
   console.log("AFTER SYNC - aiTier:", sanitizedLead.calculator_inputs?.aiTier);
   console.log("AFTER SYNC - aiType:", sanitizedLead.calculator_inputs?.aiType);
   console.log("AFTER SYNC - callVolume:", sanitizedLead.calculator_inputs?.callVolume);
+  console.log("AFTER SYNC - additionalVoiceMinutes:", sanitizedLead.calculator_results?.additionalVoiceMinutes);
   
   // Use our template-based approach that directly uses stored values
   return generateTemplateBasedPdf(sanitizedLead);

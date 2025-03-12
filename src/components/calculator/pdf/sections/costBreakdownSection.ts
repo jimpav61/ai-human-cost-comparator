@@ -30,7 +30,7 @@ export const addCostBreakdownSection = (
   tableRows.push(['AI Service Base', formatCurrency(results.basePriceMonthly)]);
   
   // Add voice cost if applicable - only show when there's an actual voice cost
-  if (results.aiCostMonthly.voice > 0) {
+  if (results.aiCostMonthly.voice > 0 || (results.additionalVoiceMinutes && results.additionalVoiceMinutes > 0)) {
     // Show detailed breakdown if we have additional minutes
     if (results.additionalVoiceMinutes && results.additionalVoiceMinutes > 0) {
       const minuteRate = 0.12; // $0.12 per minute

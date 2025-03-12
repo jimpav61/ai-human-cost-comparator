@@ -1,4 +1,3 @@
-
 import { useEffect } from 'react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
 import { EditLeadTabs } from "./EditLeadTabs";
@@ -118,6 +117,7 @@ export const EditLeadDialog = ({ lead, isOpen, onClose, onSave }: EditLeadDialog
       // CRITICAL: Make sure the results have the correct additionalVoiceMinutes
       // This ensures the PDF generator has the correct data
       if (calculationResults) {
+        // Explicitly set values from inputs to results to ensure sync
         calculationResults.additionalVoiceMinutes = calculatorInputs.callVolume;
         calculationResults.tierKey = aiTier;
         calculationResults.aiType = aiType;

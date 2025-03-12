@@ -38,12 +38,12 @@ export function useLeadCalculator(lead: Lead) {
     const leadClone = JSON.parse(JSON.stringify(lead));
     console.log("INIT useLeadCalculator with lead:", leadClone.id);
     
+    // CRITICAL FIX: ALWAYS prioritize calculator_results over calculator_inputs
     // Check if lead has valid calculator_results                      
     const hasValidResults = leadClone.calculator_results && 
                            typeof leadClone.calculator_results === 'object' && 
                            Object.keys(leadClone.calculator_results).length > 0;
     
-    // CRITICAL: Always prioritize getting values from calculator_results as they are the source of truth
     if (hasValidResults) {
       console.log("Initializing from calculator_results:", leadClone.calculator_results);
       
@@ -52,7 +52,6 @@ export function useLeadCalculator(lead: Lead) {
       const aiType = leadClone.calculator_results.aiType || 'both';
       
       // CRITICAL: Extract additional voice minutes from calculator_results
-      // This is the most important fix - we need to get additionalVoiceMinutes
       let additionalVoiceMinutes = 0;
       if ('additionalVoiceMinutes' in leadClone.calculator_results) {
         additionalVoiceMinutes = leadClone.calculator_results.additionalVoiceMinutes;
@@ -152,12 +151,12 @@ export function useLeadCalculator(lead: Lead) {
     const leadClone = JSON.parse(JSON.stringify(lead));
     console.log("Lead changed in useLeadCalculator:", leadClone.id);
     
+    // CRITICAL FIX: ALWAYS prioritize calculator_results over calculator_inputs
     // Check if lead has valid calculator_results                      
     const hasValidResults = leadClone.calculator_results && 
                            typeof leadClone.calculator_results === 'object' && 
                            Object.keys(leadClone.calculator_results).length > 0;
     
-    // CRITICAL FIX: Always prioritize getting values from calculator_results
     if (hasValidResults) {
       console.log("Updating from calculator_results:", leadClone.calculator_results);
       
