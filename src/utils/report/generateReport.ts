@@ -22,7 +22,21 @@ export async function generateAndSaveReport(lead: Lead): Promise<ReportGeneratio
       };
     }
 
-    const reportId = await saveReportData(lead);
+    // Verify bucket exists before proceeding
+    const bucketAccessible = await verifyReportsBucket();
+    if (!bucketAccessible) {
+      console.error("Report generator: Reports bucket is not accessible");
+      return {
+        success: false,
+        message: "Reports storage bucket is not accessible. Please check Supabase configuration."
+      };
+    }
+
+    // Ensure lead has valid ID
+    const validatedLead = ensureLeadHasValidId(lead);
+    console.log("Report generator: Validated lead ID:", validatedLead.id);
+
+    const reportId = await saveReportData(validatedLead);
     if (!reportId) {
       return {
         success: false,
@@ -32,11 +46,30 @@ export async function generateAndSaveReport(lead: Lead): Promise<ReportGeneratio
 
     // Generate and save PDF
     try {
-      const pdfDoc = generateReportPDF(lead);
+      const pdfDoc = generateReportPDF(validatedLead);
       
       // Save PDF to Supabase storage
       const pdfBlob = await convertPDFToBlob(pdfDoc);
+      
+      // Extra validation for PDF blob
+      if (!pdfBlob || pdfBlob.size === 0) {
+        console.error("Report generator: Generated PDF blob is invalid or empty");
+        return {
+          success: false,
+          message: "Failed to generate valid PDF"
+        };
+      }
+      
       const pdfUrl = await savePDFToStorage(reportId, pdfBlob);
+      
+      if (!pdfUrl) {
+        console.error("Report generator: Failed to save PDF to storage");
+        return {
+          success: true,  // Still return success since report data was saved
+          message: "Report data saved, but PDF storage failed",
+          reportId
+        };
+      }
       
       console.log("Report successfully saved to storage with URL:", pdfUrl);
       
@@ -80,6 +113,7 @@ export function generateAndDownloadReport(lead: Lead): boolean {
     
     // Ensure lead has a valid UUID - replace temp-id with a real UUID
     const leadWithValidId = ensureLeadHasValidId(lead);
+    console.log("Using lead with validated ID:", leadWithValidId.id);
     
     // Generate PDF
     const pdfDoc = generateReportPDF(leadWithValidId);
@@ -90,18 +124,27 @@ export function generateAndDownloadReport(lead: Lead): boolean {
     // Save/download the document for the user
     pdfDoc.save(`${safeFileName}-ChatSites-ROI-Report.pdf`);
     
-    // Save to database and storage
-    saveReportToStorageWithRetry(leadWithValidId, pdfDoc)
-      .then(result => {
-        if (result.success) {
-          console.log("Front-end report saved to database and storage successfully:", result);
-        } else {
-          console.error("Failed to save front-end report:", result.message);
-        }
-      })
-      .catch(error => {
-        console.error("Error in saveReportToStorageWithRetry:", error);
-      });
+    // Try to save to database and storage in the background
+    console.log("Attempting to save report to storage in the background...");
+    verifyReportsBucket().then(bucketAccessible => {
+      if (!bucketAccessible) {
+        console.error("Cannot save report to storage - bucket not accessible");
+        return;
+      }
+      
+      // Attempt to save to storage
+      saveReportToStorageWithRetry(leadWithValidId, pdfDoc)
+        .then(result => {
+          if (result.success) {
+            console.log("Front-end report saved to database and storage successfully:", result);
+          } else {
+            console.error("Failed to save front-end report:", result.message);
+          }
+        })
+        .catch(error => {
+          console.error("Error in saveReportToStorageWithRetry:", error);
+        });
+    });
     
     return true;
   } catch (error) {

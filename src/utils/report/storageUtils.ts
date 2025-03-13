@@ -13,21 +13,23 @@ export async function verifyReportsBucket(): Promise<boolean> {
   try {
     console.log("Verifying 'reports' bucket is accessible...");
     
-    // Check if the bucket exists by trying to access it
-    const { data, error } = await supabase.storage.getBucket('reports');
+    // Check if the bucket exists by trying to list files in it
+    const { data, error } = await supabase.storage.from('reports').list();
     
     if (error) {
-      console.error("Error verifying 'reports' bucket:", error);
+      console.error("Error accessing 'reports' bucket:", error);
       
       // Additional debug info about error type
       if (error.message.includes("row-level security policy")) {
-        console.error("CRITICAL: RLS policy is preventing bucket access");
+        console.error("CRITICAL: RLS policy is preventing bucket access. Please check the Supabase storage bucket 'reports' has proper RLS policies.");
+      } else if (error.message.includes("does not exist")) {
+        console.error("CRITICAL: The 'reports' bucket does not exist. Please create it in the Supabase dashboard.");
       }
       
       return false;
     }
     
-    console.log("Successfully verified 'reports' bucket exists with settings:", data);
+    console.log("Successfully verified 'reports' bucket exists and is accessible. Files count:", data?.length);
     
     // Bucket exists and is accessible
     return true;
@@ -56,9 +58,9 @@ export async function saveReportData(lead: Lead): Promise<string | null> {
     const reportData: ReportData = {
       id: reportId,
       lead_id: lead.id,
-      company_name: lead.company_name,
-      contact_name: lead.name,
-      email: lead.email,
+      company_name: lead.company_name || "Unknown Company",
+      contact_name: lead.name || "Unknown Contact",
+      email: lead.email || "unknown@example.com",
       phone_number: lead.phone_number || null,
       calculator_inputs: toJson(lead.calculator_inputs),
       calculator_results: toJson(lead.calculator_results),
@@ -98,7 +100,7 @@ export async function savePDFToStorage(reportId: string, pdfBlob: Blob): Promise
     // Verify the bucket is accessible before attempting upload
     const bucketAccessible = await verifyReportsBucket();
     if (!bucketAccessible) {
-      console.error("Cannot save PDF - reports bucket is not accessible");
+      console.error("Cannot save PDF - reports bucket is not accessible. Please check your Supabase storage configuration.");
       return null;
     }
     
@@ -129,6 +131,7 @@ export async function savePDFToStorage(reportId: string, pdfBlob: Blob): Promise
       // Add more detailed error diagnostics
       if (error.message.includes("row-level security policy")) {
         console.error("CRITICAL: RLS policy is preventing upload - check Supabase storage bucket permissions");
+        console.error("Ensure the 'reports' bucket has RLS policies allowing uploads from authenticated users");
       } else if (error.message.includes("bucket") && error.message.includes("not found")) {
         console.error("CRITICAL: Bucket 'reports' does not exist - it must be created in the Supabase dashboard");
       }
@@ -224,6 +227,7 @@ export async function saveReportToStorageWithRetry(
       
       // More detailed error analysis
       if (error.message.includes("row-level security policy")) {
+        console.error("CRITICAL: RLS policy is preventing upload. You need to set the 'reports' bucket to public and configure proper RLS policies.");
         return { 
           success: false, 
           message: `Storage permission denied: RLS policy is preventing upload`,
