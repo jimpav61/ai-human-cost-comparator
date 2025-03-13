@@ -21,58 +21,103 @@ export const useReportDownload = () => {
         throw new Error("Lead ID is missing");
       }
       
-      // First, try to find the report in the database
-      const reportResults = await findReportForLead(lead);
+      // First, try to find the report in the database with a more streamlined approach
+      const { data: reportResults, error: searchError } = await supabase
+        .from('generated_reports')
+        .select('*')
+        .eq('lead_id', lead.id)
+        .order('report_date', { ascending: false })
+        .limit(1);
+      
+      if (searchError) {
+        console.error('Error searching for reports:', searchError);
+        throw new Error('Failed to search for reports');
+      }
       
       if (reportResults && reportResults.length > 0) {
-        const report = reportResults[0]; // Use the first match
+        const report = reportResults[0];
+        console.log('Found report for lead:', report.id);
         
-        // Check if we have a stored PDF file for this report
-        if (report.pdf_url) {
-          console.log('SUCCESS: Found stored PDF file, downloading directly:', report.pdf_url);
+        // Look for stored PDF in Supabase storage
+        const pdfFileName = `${report.id}.pdf`;
+        console.log('Checking for PDF file:', pdfFileName);
+        
+        try {
+          // Try to get the public URL directly
+          const { data: urlData } = await supabase.storage
+            .from('reports')
+            .getPublicUrl(pdfFileName);
           
-          // Verify the URL is accessible
-          try {
-            const response = await fetch(report.pdf_url, { method: 'HEAD' });
-            if (!response.ok) {
-              console.error(`PDF URL verification failed with status ${response.status}`);
-              throw new Error(`PDF file not accessible (status ${response.status})`);
+          if (urlData && urlData.publicUrl) {
+            console.log('Found stored PDF, downloading from:', urlData.publicUrl);
+            
+            // Verify the URL is accessible
+            try {
+              const response = await fetch(urlData.publicUrl, { method: 'HEAD' });
+              
+              if (response.ok) {
+                // Trigger direct download of the PDF using the URL
+                const link = document.createElement('a');
+                link.href = urlData.publicUrl;
+                const safeCompanyName = getSafeFileName(lead);
+                link.download = `${safeCompanyName}-ChatSites-ROI-Report.pdf`;
+                document.body.appendChild(link);
+                link.click();
+                document.body.removeChild(link);
+                
+                toast({
+                  title: "Report Downloaded",
+                  description: "The original report has been successfully downloaded.",
+                  duration: 1000,
+                });
+                
+                setIsLoading(false);
+                return;
+              } else {
+                console.log(`PDF URL check failed with status ${response.status}. Generating new PDF.`);
+              }
+            } catch (checkError) {
+              console.error("Error verifying PDF URL:", checkError);
             }
-          } catch (checkError) {
-            console.error("Error verifying PDF URL:", checkError);
-            throw new Error("PDF file could not be verified. Generating new report instead...");
           }
-          
-          // Trigger direct download of the PDF using the URL
-          const link = document.createElement('a');
-          link.href = report.pdf_url;
-          const safeCompanyName = getSafeFileName(lead);
-          link.download = `${safeCompanyName}-ChatSites-ROI-Report.pdf`;
-          document.body.appendChild(link);
-          link.click();
-          document.body.removeChild(link);
-          
-          toast({
-            title: "Report Downloaded",
-            description: "The original report has been successfully downloaded.",
-            duration: 1000,
-          });
-          
-          return;
+        } catch (storageError) {
+          console.error('Error checking stored PDF:', storageError);
         }
         
-        // If no stored PDF is found, fall back to generating it from the saved data
-        console.log('No stored PDF found, generating from saved report data');
-        await generateAndDownloadPDF(report, lead);
+        // If stored PDF not found or not accessible, generate from report data
+        console.log('No stored PDF found or not accessible, generating from report data');
+        await generateAndUploadPDF(report, lead);
+        setIsLoading(false);
         return;
       }
       
-      // If we get here, no reports were found using any method
-      console.error('All search approaches failed. No reports found for lead:', lead.id);
+      // If no reports were found, generate a new one if we have calculator data
+      if (lead.calculator_results) {
+        console.log('No reports found, generating new report from lead data');
+        
+        // Create a temporary report object
+        const tempReport = {
+          id: lead.id,
+          lead_id: lead.id,
+          company_name: lead.company_name,
+          contact_name: lead.name,
+          email: lead.email,
+          phone_number: lead.phone_number,
+          calculator_inputs: lead.calculator_inputs,
+          calculator_results: lead.calculator_results
+        };
+        
+        await generateAndUploadPDF(tempReport, lead);
+        setIsLoading(false);
+        return;
+      }
+      
+      // If we get here, no reports were found and no calculator data exists
+      console.error('No reports found and no calculator data available for lead:', lead.id);
       
       toast({
         title: "No Report Available",
-        description: "No report was found for this lead. Please generate a report first.",
+        description: "No report data was found for this lead. Please generate a report first.",
         variant: "warning",
       });
       
@@ -91,134 +136,10 @@ export const useReportDownload = () => {
     }
   };
   
-  // Helper function to find reports for a lead
-  const findReportForLead = async (lead: Lead) => {
-    // Try multiple approaches to find reports for this lead - for maximum reliability
-    console.log('Searching for reports for lead:', lead.id);
-    const searchResults = [];
-    
-    // First approach: Try by lead_id (direct match)
-    console.log('Approach 1: Searching for reports with lead_id =', lead.id);
-    const { data: directMatches, error: directError } = await supabase
-      .from('generated_reports')
-      .select('*')
-      .eq('lead_id', lead.id);
-    
-    if (directError) {
-      console.error('Error in direct lead_id search:', directError);
-    }
-    
-    if (directMatches && directMatches.length > 0) {
-      console.log('SUCCESS: Found reports through direct lead_id match:', directMatches.length);
-      searchResults.push(...directMatches);
-    }
-    
-    // Second approach: Try by report ID = lead ID (legacy approach)
-    console.log('Approach 2: Checking if lead ID matches any report ID');
-    const { data: idMatch, error: idError } = await supabase
-      .from('generated_reports')
-      .select('*')
-      .eq('id', lead.id)
-      .maybeSingle();
-    
-    if (idError) {
-      console.error('Error in report ID search:', idError);
-    }
-    
-    if (idMatch) {
-      console.log('SUCCESS: Found report where ID matches lead ID');
-      if (!searchResults.some(r => r.id === idMatch.id)) {
-        searchResults.push(idMatch);
-      }
-    }
-    
-    // Third approach: Try by email
-    console.log('Approach 3: Searching for reports with email =', lead.email);
-    const { data: emailMatches, error: emailError } = await supabase
-      .from('generated_reports')
-      .select('*')
-      .eq('email', lead.email);
-    
-    if (emailError) {
-      console.error('Error in email search:', emailError);
-    }
-    
-    if (emailMatches && emailMatches.length > 0) {
-      console.log('SUCCESS: Found reports through email match:', emailMatches.length);
-      emailMatches.forEach(match => {
-        if (!searchResults.some(r => r.id === match.id)) {
-          searchResults.push(match);
-        }
-      });
-    }
-    
-    // Fourth approach: Try by company name
-    if (lead.company_name) {
-      console.log('Approach 4: Searching for reports with company_name similar to', lead.company_name);
-      const { data: companyMatches, error: companyError } = await supabase
-        .from('generated_reports')
-        .select('*')
-        .ilike('company_name', `%${lead.company_name}%`);
-      
-      if (companyError) {
-        console.error('Error in company name search:', companyError);
-      }
-      
-      if (companyMatches && companyMatches.length > 0) {
-        console.log('SUCCESS: Found reports through company name match:', companyMatches.length);
-        companyMatches.forEach(match => {
-          if (!searchResults.some(r => r.id === match.id)) {
-            searchResults.push(match);
-          }
-        });
-      }
-    }
-    
-    // Check for stored PDF files for each report
-    for (const report of searchResults) {
-      try {
-        // CRITICAL: Use correct file path format
-        const pdfFileName = `${report.id}.pdf`;
-        
-        console.log(`Checking for PDF file: ${pdfFileName} in 'reports' bucket`);
-        
-        // First check if the file exists in storage
-        const { data: fileData, error: fileError } = await supabase.storage
-          .from('reports')
-          .list('', {
-            search: pdfFileName,
-            limit: 1
-          });
-          
-        if (fileError) {
-          console.error("Error listing files:", fileError);
-        } else if (fileData && fileData.length > 0) {
-          console.log(`Found file in storage: ${fileData[0].name}`);
-          
-          // Now get the public URL
-          const { data } = await supabase.storage
-            .from('reports')
-            .getPublicUrl(pdfFileName);
-          
-          if (data) {
-            console.log(`Found stored PDF for report ${report.id}`);
-            report.pdf_url = data.publicUrl;
-          }
-        } else {
-          console.log(`No file found for ${pdfFileName}`);
-        }
-      } catch (fileCheckError) {
-        console.error("Error checking for PDF file:", fileCheckError);
-      }
-    }
-    
-    return searchResults;
-  };
-  
-  // Helper function to generate and download PDF from a report
-  const generateAndDownloadPDF = async (report: any, lead: Lead) => {
+  // Helper function to generate and upload PDF from a report
+  const generateAndUploadPDF = async (report: any, lead: Lead) => {
     try {
-      console.log('Generating PDF from report:', {
+      console.log('Generating and uploading PDF for report:', {
         reportId: report.id, 
         leadId: report.lead_id,
         company: report.company_name
@@ -228,67 +149,20 @@ export const useReportDownload = () => {
       const safeCompanyName = getSafeFileName(lead);
       const fileName = `${safeCompanyName}-ChatSites-ROI-Report.pdf`;
       
-      // Parse calculator results from JSON string if needed
-      let calculatorResultsData;
-      if (typeof report.calculator_results === 'string') {
-        try {
-          calculatorResultsData = JSON.parse(report.calculator_results);
-        } catch (e) {
-          console.error('Error parsing calculator_results JSON:', e);
-          calculatorResultsData = report.calculator_results;
-        }
-      } else {
-        calculatorResultsData = report.calculator_results;
-      }
-      
-      // CRITICAL FIX: Properly extract and handle the voice minutes data
-      let calculatorInputsData;
-      if (typeof report.calculator_inputs === 'string') {
-        try {
-          calculatorInputsData = JSON.parse(report.calculator_inputs);
-        } catch (e) {
-          console.error('Error parsing calculator_inputs JSON:', e);
-          calculatorInputsData = report.calculator_inputs;
-        }
-      } else {
-        calculatorInputsData = report.calculator_inputs;
-      }
+      // Parse calculator results and inputs from JSON strings if needed
+      let calculatorResultsData = ensureJsonParsed(report.calculator_results);
+      let calculatorInputsData = ensureJsonParsed(report.calculator_inputs);
       
       // Validate and ensure the calculator results have the correct structure
       const validatedResults = ensureCompleteCalculatorResults(calculatorResultsData);
       
-      // CRITICAL FIX: Ensure additionalVoiceMinutes is properly set from different possible sources
-      let additionalVoiceMinutes = 0;
-      
-      // First check if additionalVoiceMinutes is in validatedResults
-      if (typeof validatedResults.additionalVoiceMinutes === 'number') {
-        additionalVoiceMinutes = validatedResults.additionalVoiceMinutes;
-      } 
-      // Then check calculator inputs callVolume (this is the source in the front-end)
-      else if (calculatorInputsData && typeof calculatorInputsData.callVolume === 'number') {
-        additionalVoiceMinutes = calculatorInputsData.callVolume;
-        // Also add it to validatedResults for consistency
-        validatedResults.additionalVoiceMinutes = additionalVoiceMinutes;
-      }
-      // Handle string values
-      else if (calculatorInputsData && typeof calculatorInputsData.callVolume === 'string') {
-        additionalVoiceMinutes = parseInt(calculatorInputsData.callVolume, 10) || 0;
-        // Also add it to validatedResults for consistency
-        validatedResults.additionalVoiceMinutes = additionalVoiceMinutes;
-      }
-      
+      // Extract and handle voice minutes data
+      let additionalVoiceMinutes = getAdditionalVoiceMinutes(validatedResults, calculatorInputsData);
       console.log('Using additional voice minutes:', additionalVoiceMinutes);
       
       // Determine tier and AI type display names
-      const tierName = validatedResults.tierKey === 'starter' ? 'Starter Plan' : 
-                     validatedResults.tierKey === 'growth' ? 'Growth Plan' : 
-                     validatedResults.tierKey === 'premium' ? 'Premium Plan' : 'Growth Plan';
-                     
-      const aiType = validatedResults.aiType === 'chatbot' ? 'Text Only' : 
-                   validatedResults.aiType === 'voice' ? 'Basic Voice' : 
-                   validatedResults.aiType === 'conversationalVoice' ? 'Conversational Voice' : 
-                   validatedResults.aiType === 'both' ? 'Text & Basic Voice' : 
-                   validatedResults.aiType === 'both-premium' ? 'Text & Conversational Voice' : 'Text Only';
+      const tierName = getTierName(validatedResults.tierKey);
+      const aiType = getAiTypeName(validatedResults.aiType);
       
       // Generate the PDF using the stored calculator results
       const doc = generatePDF({
@@ -301,41 +175,31 @@ export const useReportDownload = () => {
         results: validatedResults,
         additionalVoiceMinutes: additionalVoiceMinutes,
         includedVoiceMinutes: validatedResults.includedVoiceMinutes || 600,
-        businessSuggestions: [
-          {
-            title: "Automate Common Customer Inquiries",
-            description: "Implement an AI chatbot to handle frequently asked questions, reducing wait times and freeing up human agents."
-          },
-          {
-            title: "Enhance After-Hours Support",
-            description: "Deploy voice AI to provide 24/7 customer service without increasing staffing costs."
-          },
-          {
-            title: "Streamline Onboarding Process",
-            description: "Use AI assistants to guide new customers through product setup and initial questions."
-          }
-        ],
-        aiPlacements: [
-          {
-            role: "Front-line Customer Support",
-            capabilities: ["Handle basic inquiries", "Process simple requests", "Collect customer information"]
-          },
-          {
-            role: "Technical Troubleshooting",
-            capabilities: ["Guide users through common issues", "Recommend solutions based on symptoms", "Escalate complex problems to human agents"]
-          },
-          {
-            role: "Sales Assistant",
-            capabilities: ["Answer product questions", "Provide pricing information", "Schedule demonstrations with sales team"]
-          }
-        ],
+        businessSuggestions: getBusinessSuggestions(),
+        aiPlacements: getAiPlacements(),
         tierName: tierName,
         aiType: aiType
       });
       
-      // Save the PDF with the proper name - fixed output type
+      // Save the PDF locally
       doc.save(fileName);
-      console.log('Report download successful, saved as:', fileName);
+      console.log('PDF generated and saved locally as:', fileName);
+      
+      // Also upload to Supabase storage
+      try {
+        // Get the PDF as binary data
+        const pdfBlob = await docToBlob(doc);
+        
+        // Upload to Supabase storage
+        const storageResponse = await uploadPdfToStorage(report.id, pdfBlob);
+        
+        if (storageResponse) {
+          console.log('PDF successfully uploaded to Supabase storage at:', storageResponse);
+        }
+      } catch (uploadError) {
+        console.error('Error uploading PDF to storage:', uploadError);
+        // Don't throw the error, as we've already given the user the local download
+      }
       
       toast({
         title: "Report Downloaded",
@@ -347,6 +211,164 @@ export const useReportDownload = () => {
       throw new Error('Failed to generate PDF from report data');
     }
   };
+  
+  // Helper function to parse JSON if needed
+  const ensureJsonParsed = (data: any) => {
+    if (typeof data === 'string') {
+      try {
+        return JSON.parse(data);
+      } catch (e) {
+        console.error('Error parsing JSON:', e);
+        return data;
+      }
+    }
+    return data;
+  };
+  
+  // Helper function to get additional voice minutes from different possible sources
+  const getAdditionalVoiceMinutes = (validatedResults: any, calculatorInputsData: any) => {
+    // First check if additionalVoiceMinutes is in validatedResults
+    if (typeof validatedResults.additionalVoiceMinutes === 'number') {
+      return validatedResults.additionalVoiceMinutes;
+    } 
+    // Then check calculator inputs callVolume
+    else if (calculatorInputsData && typeof calculatorInputsData.callVolume === 'number') {
+      // Also add it to validatedResults for consistency
+      validatedResults.additionalVoiceMinutes = calculatorInputsData.callVolume;
+      return calculatorInputsData.callVolume;
+    }
+    // Handle string values
+    else if (calculatorInputsData && typeof calculatorInputsData.callVolume === 'string') {
+      const minutes = parseInt(calculatorInputsData.callVolume, 10) || 0;
+      // Also add it to validatedResults for consistency
+      validatedResults.additionalVoiceMinutes = minutes;
+      return minutes;
+    }
+    return 0;
+  };
+  
+  // Helper function to get tier name display
+  const getTierName = (tierKey: string) => {
+    return tierKey === 'starter' ? 'Starter Plan' : 
+           tierKey === 'growth' ? 'Growth Plan' : 
+           tierKey === 'premium' ? 'Premium Plan' : 'Growth Plan';
+  };
+  
+  // Helper function to get AI type display name
+  const getAiTypeName = (aiType: string) => {
+    return aiType === 'chatbot' ? 'Text Only' : 
+           aiType === 'voice' ? 'Basic Voice' : 
+           aiType === 'conversationalVoice' ? 'Conversational Voice' : 
+           aiType === 'both' ? 'Text & Basic Voice' : 
+           aiType === 'both-premium' ? 'Text & Conversational Voice' : 'Text Only';
+  };
+  
+  // Helper function to convert jsPDF doc to Blob
+  const docToBlob = async (doc: any): Promise<Blob> => {
+    return new Promise((resolve, reject) => {
+      try {
+        const pdfOutput = doc.output('blob');
+        resolve(pdfOutput);
+      } catch (e) {
+        reject(e);
+      }
+    });
+  };
+  
+  // Helper function to upload PDF to Supabase storage
+  const uploadPdfToStorage = async (reportId: string, pdfBlob: Blob): Promise<string | null> => {
+    try {
+      // Ensure the reports bucket exists
+      await ensureReportsBucketExists();
+      
+      // Upload the PDF file
+      const filePath = `${reportId}.pdf`;
+      console.log('Uploading PDF to storage path:', filePath);
+      
+      const { data, error } = await supabase.storage
+        .from('reports')
+        .upload(filePath, pdfBlob, {
+          contentType: 'application/pdf',
+          upsert: true,
+          cacheControl: '3600'
+        });
+      
+      if (error) {
+        console.error('Error uploading to storage:', error);
+        return null;
+      }
+      
+      // Get the public URL
+      const { data: urlData } = await supabase.storage
+        .from('reports')
+        .getPublicUrl(filePath);
+      
+      console.log('Storage upload successful, public URL:', urlData?.publicUrl);
+      return urlData?.publicUrl || null;
+    } catch (error) {
+      console.error('Unexpected error in upload process:', error);
+      return null;
+    }
+  };
+  
+  // Helper function to ensure the reports bucket exists
+  const ensureReportsBucketExists = async () => {
+    try {
+      // Check if bucket exists
+      const { data: buckets } = await supabase.storage.listBuckets();
+      const bucketExists = buckets?.some(b => b.name === 'reports');
+      
+      if (!bucketExists) {
+        console.log('Reports bucket does not exist, creating it...');
+        
+        // Create the bucket
+        const { error } = await supabase.storage.createBucket('reports', {
+          public: true,
+          fileSizeLimit: 10485760 // 10MB
+        });
+        
+        if (error) {
+          console.error('Error creating reports bucket:', error);
+        } else {
+          console.log('Reports bucket created successfully');
+        }
+      }
+    } catch (error) {
+      console.error('Error checking/creating bucket:', error);
+    }
+  };
+  
+  // Return standard business suggestions for the report
+  const getBusinessSuggestions = () => [
+    {
+      title: "Automate Common Customer Inquiries",
+      description: "Implement an AI chatbot to handle frequently asked questions, reducing wait times and freeing up human agents."
+    },
+    {
+      title: "Enhance After-Hours Support",
+      description: "Deploy voice AI to provide 24/7 customer service without increasing staffing costs."
+    },
+    {
+      title: "Streamline Onboarding Process",
+      description: "Use AI assistants to guide new customers through product setup and initial questions."
+    }
+  ];
+  
+  // Return standard AI placements for the report
+  const getAiPlacements = () => [
+    {
+      role: "Front-line Customer Support",
+      capabilities: ["Handle basic inquiries", "Process simple requests", "Collect customer information"]
+    },
+    {
+      role: "Technical Troubleshooting",
+      capabilities: ["Guide users through common issues", "Recommend solutions based on symptoms", "Escalate complex problems to human agents"]
+    },
+    {
+      role: "Sales Assistant",
+      capabilities: ["Answer product questions", "Provide pricing information", "Schedule demonstrations with sales team"]
+    }
+  ];
   
   return {
     isLoading,
