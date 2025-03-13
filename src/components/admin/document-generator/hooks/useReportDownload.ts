@@ -16,7 +16,7 @@ export const useReportDownload = () => {
       console.log('---------- ADMIN REPORT DOWNLOAD ATTEMPT ----------');
       console.log('Lead ID for report download:', lead.id);
       
-      // Search ONLY by lead ID - no other criteria
+      // IMPORTANT: Search ONLY by lead ID - no other criteria
       const { data: reports, error: fetchError } = await supabase
         .from('generated_reports')
         .select('*')
