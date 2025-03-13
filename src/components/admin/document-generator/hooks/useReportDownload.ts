@@ -25,10 +25,14 @@ export const useReportDownload = () => {
         .limit(1);
       
       if (fetchError) {
+        console.error('Fetch error:', fetchError);
         throw new Error(`Failed to fetch report: ${fetchError.message}`);
       }
       
+      console.log('Reports query result:', reports);
+      
       if (!reports || reports.length === 0) {
+        console.error('No reports found for lead ID:', lead.id);
         toast({
           title: "No Report Available",
           description: "No report was found for this lead. Please generate a report first.",
