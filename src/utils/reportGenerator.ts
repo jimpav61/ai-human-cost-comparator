@@ -5,6 +5,8 @@ import { ensureCompleteCalculatorResults } from "@/hooks/calculator/supabase-typ
 import { generatePDF } from "@/components/calculator/pdf";
 import { supabase } from "@/integrations/supabase/client";
 import { jsPDF } from "jspdf";
+import { toast } from "@/hooks/use-toast";
+import { toJson } from "@/hooks/calculator/supabase-types";
 
 /**
  * Generate a PDF report for a lead and save it
@@ -69,6 +71,51 @@ export async function generateAndSaveReport(lead: Lead): Promise<{
 }
 
 /**
+ * Generate and immediately download a report without saving to database
+ * Used in the customer-facing calculator
+ */
+export function generateAndDownloadReport(lead: Lead): boolean {
+  try {
+    console.log("Generating and downloading report for lead:", lead.id);
+    
+    if (!lead || !lead.company_name || !lead.calculator_results) {
+      console.error("Missing required data for report generation");
+      return false;
+    }
+    
+    // Generate PDF
+    const pdfDoc = generateReportPDF(lead);
+    
+    // Create safe filename
+    const safeFileName = getSafeFileName(lead);
+    
+    // Save/download the document
+    pdfDoc.save(`${safeFileName}-ChatSites-ROI-Report.pdf`);
+    
+    // Also save to database and storage in the background
+    generateAndSaveReport(lead)
+      .then(result => {
+        console.log("Report saved to database and storage:", result);
+      })
+      .catch(error => {
+        console.error("Failed to save report to database:", error);
+      });
+    
+    return true;
+  } catch (error) {
+    console.error("Error generating report:", error);
+    return false;
+  }
+}
+
+/**
+ * Create a safe filename from the lead company name
+ */
+function getSafeFileName(lead: Lead): string {
+  return lead.company_name ? lead.company_name.replace(/[^\w\s-]/gi, '') : 'Client';
+}
+
+/**
  * Save report data to the database
  */
 async function saveReportData(lead: Lead): Promise<string | null> {
@@ -81,8 +128,8 @@ async function saveReportData(lead: Lead): Promise<string | null> {
       contact_name: lead.name,
       email: lead.email,
       phone_number: lead.phone_number || null,
-      calculator_inputs: lead.calculator_inputs,
-      calculator_results: lead.calculator_results,
+      calculator_inputs: toJson(lead.calculator_inputs),
+      calculator_results: toJson(lead.calculator_results),
       report_date: new Date().toISOString(),
       version: 1 // Default to version 1
     };

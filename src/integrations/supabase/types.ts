@@ -266,6 +266,10 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      create_reports_bucket: {
+        Args: Record<PropertyKey, never>
+        Returns: undefined
+      }
       get_next_proposal_version: {
         Args: {
           p_lead_id: string
