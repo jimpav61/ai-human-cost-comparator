@@ -5,6 +5,8 @@ import { toast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 import { getSafeFileName } from "./report-generator/saveReport";
 import { generatePDF } from "@/components/calculator/pdf";
+import { CalculationResults } from "@/hooks/calculator/types";
+import { ensureCompleteCalculatorResults } from "@/hooks/calculator/supabase-types";
 
 export const useReportDownload = () => {
   const [isLoading, setIsLoading] = useState(false);
@@ -39,13 +41,19 @@ export const useReportDownload = () => {
       const versionLabel = latestReport.version ? `-v${latestReport.version}` : '';
       const fileName = `${safeCompanyName}-ChatSites-ROI-Report${versionLabel}.pdf`;
       
-      // Extract the stored calculator data
-      const calculatorResults = latestReport.calculator_results;
-      const calculatorInputs = latestReport.calculator_inputs;
+      // Extract the stored calculator data and ensure it's parsed correctly from JSON
+      const calculatorResults = typeof latestReport.calculator_results === 'string' 
+        ? JSON.parse(latestReport.calculator_results) 
+        : latestReport.calculator_results;
       
       if (!calculatorResults) {
         throw new Error("Report data is incomplete. Please generate a new report.");
       }
+      
+      console.log('Parsed calculator results:', calculatorResults);
+      
+      // Ensure the calculator results have the correct structure
+      const validatedResults: CalculationResults = ensureCompleteCalculatorResults(calculatorResults);
       
       // Generate the PDF using the stored calculator results
       const doc = generatePDF({
@@ -55,9 +63,9 @@ export const useReportDownload = () => {
         phoneNumber: latestReport.phone_number || lead.phone_number || '',
         industry: lead.industry || 'Other',
         employeeCount: Number(lead.employee_count) || 5,
-        results: calculatorResults,
-        additionalVoiceMinutes: calculatorResults.additionalVoiceMinutes || 0,
-        includedVoiceMinutes: calculatorResults.includedVoiceMinutes || 600,
+        results: validatedResults,
+        additionalVoiceMinutes: validatedResults.additionalVoiceMinutes || 0,
+        includedVoiceMinutes: validatedResults.includedVoiceMinutes || 600,
         businessSuggestions: [
           {
             title: "Automate Common Customer Inquiries",
@@ -86,14 +94,14 @@ export const useReportDownload = () => {
             capabilities: ["Answer product questions", "Provide pricing information", "Schedule demonstrations with sales team"]
           }
         ],
-        tierName: calculatorResults.tierKey === 'starter' ? 'Starter Plan' : 
-                 calculatorResults.tierKey === 'growth' ? 'Growth Plan' : 
-                 calculatorResults.tierKey === 'premium' ? 'Premium Plan' : 'Growth Plan',
-        aiType: calculatorResults.aiType === 'chatbot' ? 'Text Only' : 
-               calculatorResults.aiType === 'voice' ? 'Basic Voice' : 
-               calculatorResults.aiType === 'conversationalVoice' ? 'Conversational Voice' : 
-               calculatorResults.aiType === 'both' ? 'Text & Basic Voice' : 
-               calculatorResults.aiType === 'both-premium' ? 'Text & Conversational Voice' : 'Text Only'
+        tierName: validatedResults.tierKey === 'starter' ? 'Starter Plan' : 
+                 validatedResults.tierKey === 'growth' ? 'Growth Plan' : 
+                 validatedResults.tierKey === 'premium' ? 'Premium Plan' : 'Growth Plan',
+        aiType: validatedResults.aiType === 'chatbot' ? 'Text Only' : 
+               validatedResults.aiType === 'voice' ? 'Basic Voice' : 
+               validatedResults.aiType === 'conversationalVoice' ? 'Conversational Voice' : 
+               validatedResults.aiType === 'both' ? 'Text & Basic Voice' : 
+               validatedResults.aiType === 'both-premium' ? 'Text & Conversational Voice' : 'Text Only'
       });
       
       // Save the PDF with the proper name
