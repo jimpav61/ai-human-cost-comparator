@@ -21,7 +21,6 @@ export const useReportDownload = () => {
         .from('generated_reports')
         .select('*')
         .eq('lead_id', lead.id)
-        .order('version', { ascending: false })
         .limit(1);
       
       if (fetchError) {
@@ -45,12 +44,11 @@ export const useReportDownload = () => {
       
       console.log('Database query response: Report found');
       const latestReport = reports[0];
-      console.log('Found latest report:', latestReport.id, 'version:', latestReport.version);
+      console.log('Found report:', latestReport.id);
       
       // Generate safe filename for the report
       const safeCompanyName = getSafeFileName(lead);
-      const versionLabel = latestReport.version ? `-v${latestReport.version}` : '';
-      const fileName = `${safeCompanyName}-ChatSites-ROI-Report${versionLabel}.pdf`;
+      const fileName = `${safeCompanyName}-ChatSites-ROI-Report.pdf`;
       
       console.log('Generating PDF from saved report data');
       
