@@ -16,9 +16,38 @@ export async function generateAndSaveReport(lead: Lead): Promise<ReportGeneratio
     // Validate input data
     if (!lead || !lead.company_name || !lead.calculator_results) {
       console.error("Report generator: Missing required data");
+      toast({
+        title: "Missing Data",
+        description: "Cannot generate report: missing required lead data",
+        variant: "destructive"
+      });
       return {
         success: false,
         message: "Missing required data for report generation"
+      };
+    }
+
+    // Check authentication
+    const {
+      data: { session },
+    } = await supabase.auth.getSession();
+    
+    if (!session) {
+      console.warn("User is not authenticated - report will be generated for download only");
+      // Continue with PDF generation for download only
+      const validatedLead = ensureLeadHasValidId(lead);
+      const pdfDoc = generateReportPDF(validatedLead);
+      pdfDoc.save(`${getSafeFileName(validatedLead)}-ChatSites-ROI-Report.pdf`);
+      
+      toast({
+        title: "Report Generated",
+        description: "Report was generated for download only as you're not logged in",
+        variant: "default"
+      });
+      
+      return {
+        success: true,
+        message: "Report generated for download only (not logged in)"
       };
     }
 
@@ -26,6 +55,17 @@ export async function generateAndSaveReport(lead: Lead): Promise<ReportGeneratio
     const bucketAccessible = await verifyReportsBucket();
     if (!bucketAccessible) {
       console.error("Report generator: Reports bucket is not accessible");
+      toast({
+        title: "Storage Error",
+        description: "Reports storage is not accessible. Report will be generated for download only.",
+        variant: "default"
+      });
+      
+      // Still generate PDF for download even if we can't save to storage
+      const validatedLead = ensureLeadHasValidId(lead);
+      const pdfDoc = generateReportPDF(validatedLead);
+      pdfDoc.save(`${getSafeFileName(validatedLead)}-ChatSites-ROI-Report.pdf`);
+      
       return {
         success: false,
         message: "Reports storage bucket is not accessible. Please check Supabase configuration."
@@ -38,6 +78,16 @@ export async function generateAndSaveReport(lead: Lead): Promise<ReportGeneratio
 
     const reportId = await saveReportData(validatedLead);
     if (!reportId) {
+      toast({
+        title: "Database Error",
+        description: "Failed to save report data. Report will be generated for download only.",
+        variant: "default"
+      });
+      
+      // Still generate PDF for download
+      const pdfDoc = generateReportPDF(validatedLead);
+      pdfDoc.save(`${getSafeFileName(validatedLead)}-ChatSites-ROI-Report.pdf`);
+      
       return {
         success: false,
         message: "Failed to save report data"
@@ -54,6 +104,11 @@ export async function generateAndSaveReport(lead: Lead): Promise<ReportGeneratio
       // Extra validation for PDF blob
       if (!pdfBlob || pdfBlob.size === 0) {
         console.error("Report generator: Generated PDF blob is invalid or empty");
+        toast({
+          title: "PDF Error",
+          description: "Failed to generate valid PDF file",
+          variant: "destructive"
+        });
         return {
           success: false,
           message: "Failed to generate valid PDF"
@@ -64,6 +119,15 @@ export async function generateAndSaveReport(lead: Lead): Promise<ReportGeneratio
       
       if (!pdfUrl) {
         console.error("Report generator: Failed to save PDF to storage");
+        toast({
+          title: "Storage Warning",
+          description: "Report data saved, but PDF storage failed. Report is available for download.",
+          variant: "default"
+        });
+        
+        // Still allow user to download the PDF
+        pdfDoc.save(`${getSafeFileName(validatedLead)}-ChatSites-ROI-Report.pdf`);
+        
         return {
           success: true,  // Still return success since report data was saved
           message: "Report data saved, but PDF storage failed",
@@ -72,6 +136,11 @@ export async function generateAndSaveReport(lead: Lead): Promise<ReportGeneratio
       }
       
       console.log("Report successfully saved to storage with URL:", pdfUrl);
+      toast({
+        title: "Success",
+        description: "Report generated and saved successfully",
+        variant: "default"
+      });
       
       return {
         success: true,
@@ -81,6 +150,11 @@ export async function generateAndSaveReport(lead: Lead): Promise<ReportGeneratio
       };
     } catch (pdfError) {
       console.error("Report generator: PDF generation failed", pdfError);
+      toast({
+        title: "PDF Error",
+        description: "Failed to generate PDF. Please try again.",
+        variant: "destructive"
+      });
       
       // Even if PDF generation fails, we still saved the report data
       return {
@@ -91,6 +165,11 @@ export async function generateAndSaveReport(lead: Lead): Promise<ReportGeneratio
     }
   } catch (error) {
     console.error("Report generator: Unexpected error", error);
+    toast({
+      title: "Error",
+      description: error instanceof Error ? error.message : "Unknown error in report generation",
+      variant: "destructive"
+    });
     return {
       success: false,
       message: error instanceof Error ? error.message : "Unknown error in report generation"
@@ -108,6 +187,11 @@ export function generateAndDownloadReport(lead: Lead): boolean {
     
     if (!lead || !lead.company_name || !lead.calculator_results) {
       console.error("Missing required data for report generation");
+      toast({
+        title: "Missing Data",
+        description: "Cannot generate report: company name or calculator results missing",
+        variant: "destructive"
+      });
       return false;
     }
     
@@ -124,31 +208,51 @@ export function generateAndDownloadReport(lead: Lead): boolean {
     // Save/download the document for the user
     pdfDoc.save(`${safeFileName}-ChatSites-ROI-Report.pdf`);
     
+    toast({
+      title: "Success",
+      description: "ROI Report downloaded successfully",
+      variant: "default"
+    });
+    
     // Try to save to database and storage in the background
     console.log("Attempting to save report to storage in the background...");
-    verifyReportsBucket().then(bucketAccessible => {
-      if (!bucketAccessible) {
-        console.error("Cannot save report to storage - bucket not accessible");
+    
+    // Check if user is authenticated before attempting to save
+    supabase.auth.getSession().then(({ data: { session }}) => {
+      if (!session) {
+        console.log("User is not authenticated - skipping report storage");
         return;
       }
       
-      // Attempt to save to storage
-      saveReportToStorageWithRetry(leadWithValidId, pdfDoc)
-        .then(result => {
-          if (result.success) {
-            console.log("Front-end report saved to database and storage successfully:", result);
-          } else {
-            console.error("Failed to save front-end report:", result.message);
-          }
-        })
-        .catch(error => {
-          console.error("Error in saveReportToStorageWithRetry:", error);
-        });
+      verifyReportsBucket().then(bucketAccessible => {
+        if (!bucketAccessible) {
+          console.error("Cannot save report to storage - bucket not accessible");
+          return;
+        }
+        
+        // Attempt to save to storage
+        saveReportToStorageWithRetry(leadWithValidId, pdfDoc)
+          .then(result => {
+            if (result.success) {
+              console.log("Front-end report saved to database and storage successfully:", result);
+            } else {
+              console.error("Failed to save front-end report:", result.message);
+            }
+          })
+          .catch(error => {
+            console.error("Error in saveReportToStorageWithRetry:", error);
+          });
+      });
     });
     
     return true;
   } catch (error) {
     console.error("Error generating report:", error);
+    toast({
+      title: "Error",
+      description: "Failed to generate report. Please try again.",
+      variant: "destructive"
+    });
     return false;
   }
 }

@@ -5,6 +5,7 @@ import { jsPDF } from "jspdf";
 import { ReportData, ReportGenerationResult } from "./types";
 import { convertPDFToBlob } from "./pdfUtils";
 import { toJson } from "@/hooks/calculator/supabase-types";
+import { toast } from "@/components/ui/use-toast";
 
 /**
  * Verify the reports bucket exists and is accessible
@@ -22,8 +23,18 @@ export async function verifyReportsBucket(): Promise<boolean> {
       // Additional debug info about error type
       if (error.message.includes("row-level security policy")) {
         console.error("CRITICAL: RLS policy is preventing bucket access. Please check the Supabase storage bucket 'reports' has proper RLS policies.");
+        toast({
+          title: "Storage Access Error",
+          description: "Unable to access reports storage due to permission issues. Please contact support.",
+          variant: "destructive"
+        });
       } else if (error.message.includes("does not exist")) {
         console.error("CRITICAL: The 'reports' bucket does not exist. Please create it in the Supabase dashboard.");
+        toast({
+          title: "Storage Configuration Error",
+          description: "The reports storage bucket does not exist. Please contact support.",
+          variant: "destructive"
+        });
       }
       
       return false;
@@ -35,6 +46,11 @@ export async function verifyReportsBucket(): Promise<boolean> {
     return true;
   } catch (error) {
     console.error("Unexpected error verifying 'reports' bucket:", error);
+    toast({
+      title: "Storage Error",
+      description: "Unexpected error accessing storage. Please try again later.",
+      variant: "destructive"
+    });
     return false;
   }
 }
@@ -70,6 +86,21 @@ export async function saveReportData(lead: Lead): Promise<string | null> {
 
     console.log("Saving report data:", reportData);
 
+    // Check if user is authenticated
+    const {
+      data: { session },
+    } = await supabase.auth.getSession();
+    
+    if (!session) {
+      console.error("User is not authenticated - report data cannot be saved to database");
+      toast({
+        title: "Authentication Required",
+        description: "You must be logged in to save report data",
+        variant: "destructive"
+      });
+      return null;
+    }
+
     // Save to database
     const { data, error } = await supabase
       .from('generated_reports')
@@ -79,6 +110,11 @@ export async function saveReportData(lead: Lead): Promise<string | null> {
 
     if (error) {
       console.error("Failed to save report to database:", error);
+      toast({
+        title: "Database Error",
+        description: "Failed to save report data. Please try again.",
+        variant: "destructive"
+      });
       return null;
     }
 
@@ -86,6 +122,11 @@ export async function saveReportData(lead: Lead): Promise<string | null> {
     return data.id;
   } catch (error) {
     console.error("Unexpected error saving report:", error);
+    toast({
+      title: "Error",
+      description: "Unexpected error saving report data. Please try again.",
+      variant: "destructive"
+    });
     return null;
   }
 }
@@ -101,6 +142,26 @@ export async function savePDFToStorage(reportId: string, pdfBlob: Blob): Promise
     const bucketAccessible = await verifyReportsBucket();
     if (!bucketAccessible) {
       console.error("Cannot save PDF - reports bucket is not accessible. Please check your Supabase storage configuration.");
+      toast({
+        title: "Storage Error",
+        description: "Unable to access storage. Please try again later.",
+        variant: "destructive"
+      });
+      return null;
+    }
+    
+    // Check authentication before uploading
+    const {
+      data: { session },
+    } = await supabase.auth.getSession();
+    
+    if (!session) {
+      console.error("User is not authenticated - cannot upload PDF to storage");
+      toast({
+        title: "Authentication Required",
+        description: "You must be logged in to upload files",
+        variant: "destructive"
+      });
       return null;
     }
     
@@ -113,6 +174,11 @@ export async function savePDFToStorage(reportId: string, pdfBlob: Blob): Promise
     // Ensure PDF blob is valid
     if (!pdfBlob || pdfBlob.size === 0) {
       console.error("Invalid PDF blob - empty or missing");
+      toast({
+        title: "Report Error",
+        description: "Could not generate a valid PDF file",
+        variant: "destructive"
+      });
       return null;
     }
     
@@ -132,8 +198,24 @@ export async function savePDFToStorage(reportId: string, pdfBlob: Blob): Promise
       if (error.message.includes("row-level security policy")) {
         console.error("CRITICAL: RLS policy is preventing upload - check Supabase storage bucket permissions");
         console.error("Ensure the 'reports' bucket has RLS policies allowing uploads from authenticated users");
+        toast({
+          title: "Permission Error",
+          description: "Storage permissions preventing upload. Please contact support.",
+          variant: "destructive"
+        });
       } else if (error.message.includes("bucket") && error.message.includes("not found")) {
         console.error("CRITICAL: Bucket 'reports' does not exist - it must be created in the Supabase dashboard");
+        toast({
+          title: "Configuration Error",
+          description: "Storage bucket does not exist. Please contact support.",
+          variant: "destructive"
+        });
+      } else if (error.message.includes("not authenticated")) {
+        toast({
+          title: "Authentication Error",
+          description: "You must be logged in to upload files",
+          variant: "destructive"
+        });
       }
       
       return null;
@@ -148,6 +230,11 @@ export async function savePDFToStorage(reportId: string, pdfBlob: Blob): Promise
     
     if (!urlData || !urlData.publicUrl) {
       console.error("Failed to get public URL for PDF");
+      toast({
+        title: "Storage Error",
+        description: "Could not retrieve file URL after upload",
+        variant: "destructive"
+      });
       return null;
     }
     
@@ -158,6 +245,11 @@ export async function savePDFToStorage(reportId: string, pdfBlob: Blob): Promise
       const response = await fetch(urlData.publicUrl, { method: 'HEAD' });
       if (!response.ok) {
         console.error(`PDF URL check failed with status ${response.status}`);
+        toast({
+          title: "Warning",
+          description: "Report was saved but may not be accessible. Please try downloading again.",
+          variant: "destructive"
+        });
       } else {
         console.log("PDF URL was successfully verified as accessible");
       }
@@ -168,6 +260,11 @@ export async function savePDFToStorage(reportId: string, pdfBlob: Blob): Promise
     return urlData.publicUrl;
   } catch (error) {
     console.error("Unexpected error saving PDF to storage:", error);
+    toast({
+      title: "Upload Error",
+      description: "Unexpected error uploading file. Please try again.",
+      variant: "destructive"
+    });
     return null;
   }
 }
@@ -191,12 +288,53 @@ export async function saveReportToStorageWithRetry(
       lead.id = newLeadId;
     }
     
+    // Check user authentication
+    const {
+      data: { session },
+    } = await supabase.auth.getSession();
+    
+    if (!session) {
+      console.error("User is not authenticated - trying to continue with public access");
+      // We can still try to generate the PDF for download even if we can't save to storage
+      toast({
+        title: "Authentication Notice",
+        description: "Report will be generated for download only as you're not logged in",
+        variant: "default"
+      });
+      // We'll continue to generate PDF for download even if we can't save to storage
+    }
+    
     // Verify the bucket is accessible
     const bucketAccessible = await verifyReportsBucket();
     if (!bucketAccessible) {
+      toast({
+        title: "Storage Error",
+        description: "Reports storage is not accessible - report will be available for download only",
+        variant: "default"
+      });
       return {
         success: false,
-        message: "Reports bucket is not accessible - check Supabase storage permissions"
+        message: "Reports bucket is not accessible - check Supabase storage permissions",
+        reportId: undefined
+      };
+    }
+    
+    // If not authenticated, still allow PDF generation but don't try to save to DB
+    if (!session) {
+      // Just return success with no storage
+      const pdfBlob = await convertPDFToBlob(pdfDoc);
+      if (!pdfBlob || pdfBlob.size === 0) {
+        return {
+          success: false,
+          message: "Failed to generate valid PDF",
+          reportId: undefined
+        };
+      }
+      
+      return {
+        success: true,
+        message: "Report generated for download only (not logged in)",
+        reportId: undefined
       };
     }
     
@@ -213,6 +351,20 @@ export async function saveReportToStorageWithRetry(
     const pdfBlob = await convertPDFToBlob(pdfDoc);
     console.log("PDF converted to blob, size:", pdfBlob.size, "bytes");
     
+    if (!pdfBlob || pdfBlob.size === 0) {
+      console.error("Invalid PDF blob - empty or zero size");
+      toast({
+        title: "PDF Error",
+        description: "Could not generate a valid PDF file",
+        variant: "destructive"
+      });
+      return {
+        success: false,
+        message: "Generated PDF is invalid or empty",
+        reportId
+      };
+    }
+    
     // Upload PDF directly
     const { data, error } = await supabase.storage
       .from('reports')
@@ -228,12 +380,31 @@ export async function saveReportToStorageWithRetry(
       // More detailed error analysis
       if (error.message.includes("row-level security policy")) {
         console.error("CRITICAL: RLS policy is preventing upload. You need to set the 'reports' bucket to public and configure proper RLS policies.");
+        toast({
+          title: "Permission Error",
+          description: "Storage permissions preventing upload. Please contact support.",
+          variant: "destructive"
+        });
         return { 
           success: false, 
           message: `Storage permission denied: RLS policy is preventing upload`,
           reportId 
         };
       }
+      
+      if (error.message.includes("not authenticated")) {
+        toast({
+          title: "Authentication Error",
+          description: "You must be logged in to upload files",
+          variant: "destructive"
+        });
+      }
+      
+      toast({
+        title: "Upload Error",
+        description: "Failed to save PDF to storage. Report will be available for download only.",
+        variant: "default"
+      });
       
       return { 
         success: false, 
@@ -262,6 +433,11 @@ export async function saveReportToStorageWithRetry(
       const response = await fetch(urlData.publicUrl, { method: 'HEAD' });
       if (!response.ok) {
         console.warn(`Public URL check failed with status ${response.status}`);
+        toast({
+          title: "Warning",
+          description: "Report was saved but may not be accessible online. It's still available for download.",
+          variant: "default"
+        });
       } else {
         console.log("Public URL verified accessible");
       }
@@ -271,6 +447,12 @@ export async function saveReportToStorageWithRetry(
     
     console.log("Successfully saved report to storage with URL:", urlData.publicUrl);
     
+    toast({
+      title: "Success",
+      description: "Report successfully generated and saved",
+      variant: "default"
+    });
+    
     return {
       success: true,
       message: "Report successfully generated and stored",
@@ -279,6 +461,12 @@ export async function saveReportToStorageWithRetry(
     };
   } catch (error) {
     console.error(`Error in saveReportToStorageWithRetry (attempts left: ${retries}):`, error);
+    
+    toast({
+      title: "Error",
+      description: "Unexpected error saving report. Please try again.",
+      variant: "destructive"
+    });
     
     // Retry logic
     if (retries > 0) {
