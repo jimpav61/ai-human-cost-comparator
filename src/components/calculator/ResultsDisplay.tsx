@@ -38,9 +38,9 @@ export const ResultsDisplay: React.FC<ResultsDisplayProps> = ({
   }, [inputs, results, pricingDetails, leadData]);
   
   // Create a Lead object from the leadData and calculator results
-  // Ensure ID is preserved for exact lookup later
+  // Use a real UUID if no ID exists
   const leadForReport: Lead = {
-    id: leadData.id || 'temp-id',
+    id: leadData.id || crypto.randomUUID(),
     name: leadData.name,
     company_name: leadData.companyName,
     email: leadData.email,
