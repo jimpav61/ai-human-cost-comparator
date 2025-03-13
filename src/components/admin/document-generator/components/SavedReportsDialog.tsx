@@ -37,7 +37,26 @@ export const SavedReportsDialog = ({ lead, isOpen, onClose }: SavedReportsDialog
       
       console.log("Found report data for download:", reportData);
       
-      // Create a temporary lead object with the saved report data
+      // If there's a stored PDF file, download it directly
+      if (reportData.pdf_url) {
+        console.log("Using stored PDF file:", reportData.pdf_url);
+        
+        // Create an anchor element and trigger download
+        const link = document.createElement('a');
+        link.href = reportData.pdf_url;
+        link.download = `${getSafeFileName(lead)}-ChatSites-ROI-Report.pdf`;
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+        
+        toast({
+          title: "Success",
+          description: "Saved report downloaded successfully",
+        });
+        return;
+      }
+      
+      // Fallback: Create a temporary lead object with the saved report data
       const tempLead: Lead = {
         ...lead,
         calculator_inputs: reportData.calculator_inputs,

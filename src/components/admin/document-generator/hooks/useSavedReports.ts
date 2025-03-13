@@ -13,6 +13,7 @@ export interface SavedReport {
   calculator_inputs: any;
   calculator_results: any;
   lead_id: string | null; // Updated to allow null since some existing reports might not have lead_id
+  pdf_url?: string; // Add field for PDF URL if available
 }
 
 export const useSavedReports = (leadId?: string) => {
@@ -95,6 +96,28 @@ export const useSavedReports = (leadId?: string) => {
             searchResults.push(match);
           }
         });
+      }
+      
+      // Also check storage for PDF files
+      if (searchResults.length > 0) {
+        // Check for stored PDF files for each report
+        for (const report of searchResults) {
+          try {
+            const pdfFileName = `reports/${report.id}.pdf`;
+            
+            // Check if file exists in storage
+            const { data: fileData, error: fileError } = await supabase.storage
+              .from('reports')
+              .getPublicUrl(pdfFileName);
+            
+            if (!fileError && fileData) {
+              console.log(`📊 REPORT FINDER: Found stored PDF for report ${report.id}`);
+              report.pdf_url = fileData.publicUrl;
+            }
+          } catch (fileCheckError) {
+            console.error("Error checking for PDF file:", fileCheckError);
+          }
+        }
       }
       
       // Show search summary

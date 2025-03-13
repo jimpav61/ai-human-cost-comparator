@@ -21,92 +21,42 @@ export const useReportDownload = () => {
         throw new Error("Lead ID is missing");
       }
       
-      // Try multiple approaches to find reports for this lead - for maximum reliability
+      // First, try to find the report in the database
+      const reportResults = await findReportForLead(lead);
       
-      // First approach: Try by lead_id (direct match)
-      console.log('Approach 1: Searching for reports with lead_id =', lead.id);
-      const { data: directMatches, error: directError } = await supabase
-        .from('generated_reports')
-        .select('*')
-        .eq('lead_id', lead.id);
-      
-      if (directError) {
-        console.error('Error in direct lead_id search:', directError);
-      }
-      
-      if (directMatches && directMatches.length > 0) {
-        console.log('SUCCESS: Found reports through direct lead_id match:', directMatches.length);
-        const report = directMatches[0]; // Use the first match
-        await generateAndDownloadPDF(report, lead);
-        return;
-      }
-      
-      // Second approach: Try by report ID = lead ID (legacy approach)
-      console.log('Approach 2: Checking if lead ID matches any report ID');
-      const { data: idMatch, error: idError } = await supabase
-        .from('generated_reports')
-        .select('*')
-        .eq('id', lead.id)
-        .maybeSingle();
-      
-      if (idError) {
-        console.error('Error in report ID search:', idError);
-      }
-      
-      if (idMatch) {
-        console.log('SUCCESS: Found report where ID matches lead ID');
-        await generateAndDownloadPDF(idMatch, lead);
-        return;
-      }
-      
-      // Third approach: Try by email
-      console.log('Approach 3: Searching for reports with email =', lead.email);
-      const { data: emailMatches, error: emailError } = await supabase
-        .from('generated_reports')
-        .select('*')
-        .eq('email', lead.email);
-      
-      if (emailError) {
-        console.error('Error in email search:', emailError);
-      }
-      
-      if (emailMatches && emailMatches.length > 0) {
-        console.log('SUCCESS: Found reports through email match:', emailMatches.length);
-        const report = emailMatches[0]; // Use the first match
-        await generateAndDownloadPDF(report, lead);
-        return;
-      }
-      
-      // Fourth approach: Try by company name
-      if (lead.company_name) {
-        console.log('Approach 4: Searching for reports with company_name similar to', lead.company_name);
-        const { data: companyMatches, error: companyError } = await supabase
-          .from('generated_reports')
-          .select('*')
-          .ilike('company_name', `%${lead.company_name}%`);
+      if (reportResults && reportResults.length > 0) {
+        const report = reportResults[0]; // Use the first match
         
-        if (companyError) {
-          console.error('Error in company name search:', companyError);
-        }
-        
-        if (companyMatches && companyMatches.length > 0) {
-          console.log('SUCCESS: Found reports through company name match:', companyMatches.length);
-          const report = companyMatches[0]; // Use the first match
-          await generateAndDownloadPDF(report, lead);
+        // Check if we have a stored PDF file for this report
+        if (report.pdf_url) {
+          console.log('SUCCESS: Found stored PDF file, downloading directly:', report.pdf_url);
+          
+          // Trigger direct download of the PDF using the URL
+          const link = document.createElement('a');
+          link.href = report.pdf_url;
+          const safeCompanyName = getSafeFileName(lead);
+          link.download = `${safeCompanyName}-ChatSites-ROI-Report.pdf`;
+          document.body.appendChild(link);
+          link.click();
+          document.body.removeChild(link);
+          
+          toast({
+            title: "Report Downloaded",
+            description: "The original report has been successfully downloaded.",
+            duration: 1000,
+          });
+          
           return;
         }
+        
+        // If no stored PDF is found, fall back to generating it from the saved data
+        console.log('No stored PDF found, generating from saved report data');
+        await generateAndDownloadPDF(report, lead);
+        return;
       }
       
       // If we get here, no reports were found using any method
       console.error('All search approaches failed. No reports found for lead:', lead.id);
-      
-      // Show the first 10 reports in the database for debugging
-      const { data: sampleReports } = await supabase
-        .from('generated_reports')
-        .select('id, lead_id, company_name, email')
-        .limit(10);
-      
-      console.log('Sample reports in database:', sampleReports);
       
       toast({
         title: "No Report Available",
@@ -127,6 +77,111 @@ export const useReportDownload = () => {
       setIsLoading(false);
       console.log("---------- ADMIN REPORT DOWNLOAD ATTEMPT ENDED ----------");
     }
+  };
+  
+  // Helper function to find reports for a lead
+  const findReportForLead = async (lead: Lead) => {
+    // Try multiple approaches to find reports for this lead - for maximum reliability
+    console.log('Searching for reports for lead:', lead.id);
+    const searchResults = [];
+    
+    // First approach: Try by lead_id (direct match)
+    console.log('Approach 1: Searching for reports with lead_id =', lead.id);
+    const { data: directMatches, error: directError } = await supabase
+      .from('generated_reports')
+      .select('*')
+      .eq('lead_id', lead.id);
+    
+    if (directError) {
+      console.error('Error in direct lead_id search:', directError);
+    }
+    
+    if (directMatches && directMatches.length > 0) {
+      console.log('SUCCESS: Found reports through direct lead_id match:', directMatches.length);
+      searchResults.push(...directMatches);
+    }
+    
+    // Second approach: Try by report ID = lead ID (legacy approach)
+    console.log('Approach 2: Checking if lead ID matches any report ID');
+    const { data: idMatch, error: idError } = await supabase
+      .from('generated_reports')
+      .select('*')
+      .eq('id', lead.id)
+      .maybeSingle();
+    
+    if (idError) {
+      console.error('Error in report ID search:', idError);
+    }
+    
+    if (idMatch) {
+      console.log('SUCCESS: Found report where ID matches lead ID');
+      if (!searchResults.some(r => r.id === idMatch.id)) {
+        searchResults.push(idMatch);
+      }
+    }
+    
+    // Third approach: Try by email
+    console.log('Approach 3: Searching for reports with email =', lead.email);
+    const { data: emailMatches, error: emailError } = await supabase
+      .from('generated_reports')
+      .select('*')
+      .eq('email', lead.email);
+    
+    if (emailError) {
+      console.error('Error in email search:', emailError);
+    }
+    
+    if (emailMatches && emailMatches.length > 0) {
+      console.log('SUCCESS: Found reports through email match:', emailMatches.length);
+      emailMatches.forEach(match => {
+        if (!searchResults.some(r => r.id === match.id)) {
+          searchResults.push(match);
+        }
+      });
+    }
+    
+    // Fourth approach: Try by company name
+    if (lead.company_name) {
+      console.log('Approach 4: Searching for reports with company_name similar to', lead.company_name);
+      const { data: companyMatches, error: companyError } = await supabase
+        .from('generated_reports')
+        .select('*')
+        .ilike('company_name', `%${lead.company_name}%`);
+      
+      if (companyError) {
+        console.error('Error in company name search:', companyError);
+      }
+      
+      if (companyMatches && companyMatches.length > 0) {
+        console.log('SUCCESS: Found reports through company name match:', companyMatches.length);
+        companyMatches.forEach(match => {
+          if (!searchResults.some(r => r.id === match.id)) {
+            searchResults.push(match);
+          }
+        });
+      }
+    }
+    
+    // Check for stored PDF files for each report
+    for (const report of searchResults) {
+      try {
+        const pdfFileName = `reports/${report.id}.pdf`;
+        
+        // Check if file exists in storage
+        const { data: fileData, error: fileError } = await supabase.storage
+          .from('reports')
+          .getPublicUrl(pdfFileName);
+        
+        if (!fileError && fileData) {
+          console.log(`Found stored PDF for report ${report.id}`);
+          report.pdf_url = fileData.publicUrl;
+        }
+      } catch (fileCheckError) {
+        console.error("Error checking for PDF file:", fileCheckError);
+      }
+    }
+    
+    return searchResults;
   };
   
   // Helper function to generate and download PDF from a report

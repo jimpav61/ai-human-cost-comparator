@@ -234,6 +234,65 @@ export const generateAndDownloadReport = async (lead: Lead) => {
           console.error('[CALCULATOR REPORT] Error saving report to database:', error);
         } else {
           console.log('[CALCULATOR REPORT] Report saved to database successfully with ID:', reportData.id);
+          
+          // IMPORTANT NEW STEP: Save the PDF to Supabase Storage
+          try {
+            console.log('[CALCULATOR REPORT] Saving PDF to storage');
+            
+            // First check if reports bucket exists, create it if not
+            const { data: buckets } = await supabase.storage.listBuckets();
+            const reportsBucketExists = buckets?.some(bucket => bucket.name === 'reports');
+            
+            if (!reportsBucketExists) {
+              console.log('[CALCULATOR REPORT] Creating reports bucket');
+              try {
+                const { error: bucketError } = await supabase.storage.createBucket('reports', {
+                  public: true,
+                  fileSizeLimit: 10485760, // 10MB
+                });
+                
+                if (bucketError) {
+                  console.error('[CALCULATOR REPORT] Error creating reports bucket:', bucketError);
+                } else {
+                  console.log('[CALCULATOR REPORT] Reports bucket created successfully');
+                }
+              } catch (bucketCreateError) {
+                console.error('[CALCULATOR REPORT] Bucket creation error:', bucketCreateError);
+              }
+            }
+            
+            // Get the PDF as a blob
+            const pdfBlob = await new Promise<Blob>((resolve) => {
+              // Convert the document to Blob format
+              doc.output('blob', (blob: Blob) => {
+                resolve(blob);
+              });
+            });
+            
+            // Upload the PDF to Supabase Storage
+            const filePath = `reports/${reportId}.pdf`;
+            const { error: uploadError } = await supabase.storage
+              .from('reports')
+              .upload(filePath, pdfBlob, {
+                contentType: 'application/pdf',
+                upsert: true
+              });
+            
+            if (uploadError) {
+              console.error('[CALCULATOR REPORT] Error uploading PDF to storage:', uploadError);
+            } else {
+              console.log('[CALCULATOR REPORT] PDF saved to storage successfully at path:', filePath);
+              
+              // Get the public URL for the uploaded file
+              const { data: urlData } = await supabase.storage
+                .from('reports')
+                .getPublicUrl(filePath);
+              
+              console.log('[CALCULATOR REPORT] Stored PDF public URL:', urlData?.publicUrl);
+            }
+          } catch (storageError) {
+            console.error('[CALCULATOR REPORT] Storage operation error:', storageError);
+          }
         }
       } catch (dbError) {
         console.error('[CALCULATOR REPORT] Database operation error:', dbError);
