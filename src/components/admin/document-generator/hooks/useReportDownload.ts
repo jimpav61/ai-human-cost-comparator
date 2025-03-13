@@ -215,6 +215,9 @@ export const useReportDownload = () => {
         // Get the PDF as binary data
         const pdfBlob = await docToBlob(doc);
         
+        // First ensure the bucket exists
+        await ensureReportsBucketExists();
+        
         // Upload to Supabase storage
         const storageResponse = await uploadPdfToStorage(report.id, pdfBlob);
         
@@ -234,6 +237,40 @@ export const useReportDownload = () => {
     } catch (error) {
       console.error('Error generating PDF:', error);
       throw new Error('Failed to generate PDF from report data');
+    }
+  };
+  
+  // Helper function to ensure the reports bucket exists
+  const ensureReportsBucketExists = async (): Promise<void> => {
+    try {
+      // Check if the bucket exists
+      const { data: buckets, error: listError } = await supabase.storage.listBuckets();
+      
+      if (listError) {
+        console.error("Error checking buckets:", listError);
+        return;
+      }
+      
+      const reportsBucketExists = buckets?.some(bucket => bucket.name === 'reports');
+      
+      if (!reportsBucketExists) {
+        console.log("Reports bucket doesn't exist, creating it...");
+        
+        const { error: createError } = await supabase.storage.createBucket('reports', {
+          public: true,
+          fileSizeLimit: 5242880 // 5MB limit
+        });
+        
+        if (createError) {
+          console.error("Failed to create reports bucket:", createError);
+        } else {
+          console.log("Successfully created reports bucket");
+        }
+      } else {
+        console.log("Reports bucket already exists");
+      }
+    } catch (error) {
+      console.error("Error ensuring reports bucket exists:", error);
     }
   };
   

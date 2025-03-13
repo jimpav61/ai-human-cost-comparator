@@ -45,6 +45,8 @@ export async function generateAndSaveReport(lead: Lead): Promise<{
       const pdfBlob = await convertPDFToBlob(pdfDoc);
       const pdfUrl = await savePDFToStorage(reportId, pdfBlob);
       
+      console.log("Report successfully saved to storage with URL:", pdfUrl);
+      
       return {
         success: true,
         message: "Report generated and saved successfully",
@@ -89,22 +91,110 @@ export function generateAndDownloadReport(lead: Lead): boolean {
     // Create safe filename
     const safeFileName = getSafeFileName(lead);
     
-    // Save/download the document
+    // Save/download the document for the user
     pdfDoc.save(`${safeFileName}-ChatSites-ROI-Report.pdf`);
     
-    // Also save to database and storage in the background
-    generateAndSaveReport(lead)
+    // CRITICAL FIX: Save to database and storage in the background with robust error handling
+    // This is the part that was failing before
+    saveReportToStorageWithRetry(lead, pdfDoc)
       .then(result => {
-        console.log("Report saved to database and storage:", result);
+        console.log("Front-end report saved to database and storage:", result);
       })
       .catch(error => {
-        console.error("Failed to save report to database:", error);
+        console.error("Failed to save front-end report to storage:", error);
       });
     
     return true;
   } catch (error) {
     console.error("Error generating report:", error);
     return false;
+  }
+}
+
+/**
+ * Improved function to save reports to storage with retry logic
+ */
+async function saveReportToStorageWithRetry(lead: Lead, pdfDoc: jsPDF, retries = 3): Promise<{
+  success: boolean; 
+  reportId?: string;
+  pdfUrl?: string;
+}> {
+  try {
+    console.log("Saving front-end report to storage for lead:", lead.id);
+    
+    // First save report data to DB to get reportId
+    const reportId = await saveReportData(lead);
+    if (!reportId) {
+      throw new Error("Failed to save report data to database");
+    }
+    
+    // Convert PDF to blob for storage
+    const pdfBlob = await convertPDFToBlob(pdfDoc);
+    
+    // Ensure reports bucket exists
+    await ensureReportsBucketExists();
+    
+    // Save PDF to storage with the reportId
+    const pdfUrl = await savePDFToStorage(reportId, pdfBlob);
+    
+    if (!pdfUrl) {
+      throw new Error("Failed to get URL after storage upload");
+    }
+    
+    console.log("Front-end report successfully saved to storage with URL:", pdfUrl);
+    
+    return {
+      success: true,
+      reportId,
+      pdfUrl
+    };
+  } catch (error) {
+    console.error(`Error saving report to storage (attempts left: ${retries}):`, error);
+    
+    // Retry logic
+    if (retries > 0) {
+      console.log(`Retrying report storage (${retries} attempts left)...`);
+      await new Promise(resolve => setTimeout(resolve, 1000)); // Wait 1 second before retry
+      return saveReportToStorageWithRetry(lead, pdfDoc, retries - 1);
+    }
+    
+    throw error;
+  }
+}
+
+/**
+ * Ensure the reports bucket exists before trying to upload
+ */
+async function ensureReportsBucketExists(): Promise<void> {
+  try {
+    // Check if the bucket exists
+    const { data: buckets, error: listError } = await supabase.storage.listBuckets();
+    
+    if (listError) {
+      console.error("Error checking buckets:", listError);
+      return;
+    }
+    
+    const reportsBucketExists = buckets?.some(bucket => bucket.name === 'reports');
+    
+    if (!reportsBucketExists) {
+      console.log("Reports bucket doesn't exist, creating it...");
+      
+      const { error: createError } = await supabase.storage.createBucket('reports', {
+        public: true,
+        fileSizeLimit: 5242880 // 5MB limit
+      });
+      
+      if (createError) {
+        console.error("Failed to create reports bucket:", createError);
+      } else {
+        console.log("Successfully created reports bucket");
+      }
+    } else {
+      console.log("Reports bucket already exists");
+    }
+  } catch (error) {
+    console.error("Error ensuring reports bucket exists:", error);
   }
 }
 
@@ -219,12 +309,9 @@ function generateReportPDF(lead: Lead): jsPDF {
 async function convertPDFToBlob(pdfDoc: jsPDF): Promise<Blob> {
   return new Promise((resolve, reject) => {
     try {
-      // Output the PDF as an array buffer
-      const pdfOutput = pdfDoc.output('arraybuffer');
-      
-      // Create a Blob from the array buffer
-      const blob = new Blob([pdfOutput], { type: 'application/pdf' });
-      resolve(blob);
+      // Output the PDF as a blob directly
+      const pdfOutput = pdfDoc.output('blob');
+      resolve(pdfOutput);
     } catch (error) {
       reject(error);
     }
@@ -238,35 +325,11 @@ async function savePDFToStorage(reportId: string, pdfBlob: Blob): Promise<string
   try {
     console.log("Saving PDF to storage for report ID:", reportId);
     
-    // CRITICAL: The file path should NOT include 'reports/' prefix in the path because
+    // The file path should NOT include 'reports/' prefix in the path because
     // we're already specifying 'reports' as the bucket name
     const filePath = `${reportId}.pdf`;
     
     console.log("Uploading to bucket 'reports' with path:", filePath);
-    
-    // Double check bucket exists
-    try {
-      const { data: buckets } = await supabase.storage.listBuckets();
-      const reportsBucketExists = buckets?.some(bucket => bucket.name === 'reports');
-      console.log("Available buckets:", buckets?.map(b => b.name).join(', '));
-      
-      if (!reportsBucketExists) {
-        console.error("Reports bucket doesn't exist! Attempting to create it...");
-        
-        // Try to create the bucket if it doesn't exist
-        const { error: createError } = await supabase.storage.createBucket('reports', {
-          public: true
-        });
-        
-        if (createError) {
-          console.error("Failed to create reports bucket:", createError);
-        } else {
-          console.log("Successfully created reports bucket");
-        }
-      }
-    } catch (bucketError) {
-      console.error("Error checking/creating bucket:", bucketError);
-    }
     
     // Upload the PDF to Supabase storage
     const { data, error } = await supabase.storage
