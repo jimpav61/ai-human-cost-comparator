@@ -16,12 +16,11 @@ export const useReportDownload = () => {
       console.log('---------- ADMIN REPORT DOWNLOAD ATTEMPT ----------');
       console.log('Lead ID for report download:', lead.id);
       
-      // Query for reports with this lead ID, ordering by creation date to get the latest first
+      // Query for reports with this lead ID, without any ordering
       const { data: reports, error: fetchError } = await supabase
         .from('generated_reports')
         .select('*')
-        .eq('lead_id', lead.id)
-        .order('report_date', { ascending: false });
+        .eq('lead_id', lead.id);
       
       if (fetchError) {
         console.error('Fetch error:', fetchError);
@@ -51,13 +50,13 @@ export const useReportDownload = () => {
         return;
       }
       
-      // Get the latest report
-      const latestReport = reports[0];
+      // Get the report (first one if multiple exist)
+      const report = reports[0];
       console.log('Using report:', {
-        id: latestReport.id,
-        leadId: latestReport.lead_id,
-        companyName: latestReport.company_name,
-        contactName: latestReport.contact_name
+        id: report.id,
+        leadId: report.lead_id,
+        companyName: report.company_name,
+        contactName: report.contact_name
       });
       
       // Generate safe filename for the report
@@ -68,16 +67,16 @@ export const useReportDownload = () => {
       
       // Parse calculator results from JSON string if needed
       let calculatorResultsData;
-      if (typeof latestReport.calculator_results === 'string') {
+      if (typeof report.calculator_results === 'string') {
         try {
-          calculatorResultsData = JSON.parse(latestReport.calculator_results);
+          calculatorResultsData = JSON.parse(report.calculator_results);
           console.log('Parsed calculator results from JSON string');
         } catch (e) {
           console.error('Error parsing calculator_results JSON:', e);
-          calculatorResultsData = latestReport.calculator_results;
+          calculatorResultsData = report.calculator_results;
         }
       } else {
-        calculatorResultsData = latestReport.calculator_results;
+        calculatorResultsData = report.calculator_results;
       }
       
       console.log('Calculator results data type:', typeof calculatorResultsData);
@@ -87,10 +86,10 @@ export const useReportDownload = () => {
       
       // Generate the PDF using the stored calculator results
       const doc = generatePDF({
-        contactInfo: latestReport.contact_name || lead.name || 'Valued Client',
-        companyName: latestReport.company_name || lead.company_name || 'Your Company',
-        email: latestReport.email || lead.email || 'client@example.com',
-        phoneNumber: latestReport.phone_number || lead.phone_number || '',
+        contactInfo: report.contact_name || lead.name || 'Valued Client',
+        companyName: report.company_name || lead.company_name || 'Your Company',
+        email: report.email || lead.email || 'client@example.com',
+        phoneNumber: report.phone_number || lead.phone_number || '',
         industry: lead.industry || 'Other',
         employeeCount: Number(lead.employee_count) || 5,
         results: validatedResults,
