@@ -4,6 +4,7 @@ import { Lead } from "@/types/leads";
 import { toast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 import { getSafeFileName } from "./report-generator/saveReport";
+import { generatePDF } from "@/components/calculator/pdf";
 
 export const useReportDownload = () => {
   const [isLoading, setIsLoading] = useState(false);
@@ -38,25 +39,65 @@ export const useReportDownload = () => {
       const versionLabel = latestReport.version ? `-v${latestReport.version}` : '';
       const fileName = `${safeCompanyName}-ChatSites-ROI-Report${versionLabel}.pdf`;
       
-      // Create a blob URL to download the report
-      // Note: This assumes the report content is stored in the database
-      // If reports are stored as files, you'd need to fetch from storage instead
+      // Extract the stored calculator data
+      const calculatorResults = latestReport.calculator_results;
+      const calculatorInputs = latestReport.calculator_inputs;
       
-      // For now, we simply create a dummy download that redirects to a reload
-      // of the calculator page for this lead
+      if (!calculatorResults) {
+        throw new Error("Report data is incomplete. Please generate a new report.");
+      }
       
-      // NOTE: In a real implementation, we would fetch the actual PDF file
-      // from a file storage service or generate it from stored data.
-      // This would require either:
-      // 1. Storing the PDF file in Supabase Storage when generated
-      // 2. Storing enough data to regenerate the exact same PDF
+      // Generate the PDF using the stored calculator results
+      const doc = generatePDF({
+        contactInfo: latestReport.contact_name || lead.name || 'Valued Client',
+        companyName: latestReport.company_name || lead.company_name || 'Your Company',
+        email: latestReport.email || lead.email || 'client@example.com',
+        phoneNumber: latestReport.phone_number || lead.phone_number || '',
+        industry: lead.industry || 'Other',
+        employeeCount: Number(lead.employee_count) || 5,
+        results: calculatorResults,
+        additionalVoiceMinutes: calculatorResults.additionalVoiceMinutes || 0,
+        includedVoiceMinutes: calculatorResults.includedVoiceMinutes || 600,
+        businessSuggestions: [
+          {
+            title: "Automate Common Customer Inquiries",
+            description: "Implement an AI chatbot to handle frequently asked questions, reducing wait times and freeing up human agents."
+          },
+          {
+            title: "Enhance After-Hours Support",
+            description: "Deploy voice AI to provide 24/7 customer service without increasing staffing costs."
+          },
+          {
+            title: "Streamline Onboarding Process",
+            description: "Use AI assistants to guide new customers through product setup and initial questions."
+          }
+        ],
+        aiPlacements: [
+          {
+            role: "Front-line Customer Support",
+            capabilities: ["Handle basic inquiries", "Process simple requests", "Collect customer information"]
+          },
+          {
+            role: "Technical Troubleshooting",
+            capabilities: ["Guide users through common issues", "Recommend solutions based on symptoms", "Escalate complex problems to human agents"]
+          },
+          {
+            role: "Sales Assistant",
+            capabilities: ["Answer product questions", "Provide pricing information", "Schedule demonstrations with sales team"]
+          }
+        ],
+        tierName: calculatorResults.tierKey === 'starter' ? 'Starter Plan' : 
+                 calculatorResults.tierKey === 'growth' ? 'Growth Plan' : 
+                 calculatorResults.tierKey === 'premium' ? 'Premium Plan' : 'Growth Plan',
+        aiType: calculatorResults.aiType === 'chatbot' ? 'Text Only' : 
+               calculatorResults.aiType === 'voice' ? 'Basic Voice' : 
+               calculatorResults.aiType === 'conversationalVoice' ? 'Conversational Voice' : 
+               calculatorResults.aiType === 'both' ? 'Text & Basic Voice' : 
+               calculatorResults.aiType === 'both-premium' ? 'Text & Conversational Voice' : 'Text Only'
+      });
       
-      // For this implementation, we'll assume the PDF is not directly available,
-      // so we'll redirect to the calculator page where a report can be generated
-      
-      // Simulate a download by opening a new window to the calculator
-      const calculatorUrl = `/calculator?leadId=${lead.id}`;
-      window.open(calculatorUrl, '_blank');
+      // Save the PDF with the proper name
+      doc.save(fileName);
       
       toast({
         title: "Report Downloaded",
