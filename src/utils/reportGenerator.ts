@@ -238,18 +238,43 @@ async function savePDFToStorage(reportId: string, pdfBlob: Blob): Promise<string
   try {
     console.log("Saving PDF to storage for report ID:", reportId);
     
-    // IMPORTANT: The file path should NOT include 'reports/' prefix in the path because
+    // CRITICAL: The file path should NOT include 'reports/' prefix in the path because
     // we're already specifying 'reports' as the bucket name
     const filePath = `${reportId}.pdf`;
     
     console.log("Uploading to bucket 'reports' with path:", filePath);
+    
+    // Double check bucket exists
+    try {
+      const { data: buckets } = await supabase.storage.listBuckets();
+      const reportsBucketExists = buckets?.some(bucket => bucket.name === 'reports');
+      console.log("Available buckets:", buckets?.map(b => b.name).join(', '));
+      
+      if (!reportsBucketExists) {
+        console.error("Reports bucket doesn't exist! Attempting to create it...");
+        
+        // Try to create the bucket if it doesn't exist
+        const { error: createError } = await supabase.storage.createBucket('reports', {
+          public: true
+        });
+        
+        if (createError) {
+          console.error("Failed to create reports bucket:", createError);
+        } else {
+          console.log("Successfully created reports bucket");
+        }
+      }
+    } catch (bucketError) {
+      console.error("Error checking/creating bucket:", bucketError);
+    }
     
     // Upload the PDF to Supabase storage
     const { data, error } = await supabase.storage
       .from('reports')
       .upload(filePath, pdfBlob, {
         contentType: 'application/pdf',
-        upsert: true
+        upsert: true,
+        cacheControl: '3600'
       });
     
     if (error) {
@@ -268,6 +293,19 @@ async function savePDFToStorage(reportId: string, pdfBlob: Blob): Promise<string
     }
     
     console.log("PDF saved to storage with URL:", urlData.publicUrl);
+    
+    // Verify the URL is accessible
+    try {
+      const response = await fetch(urlData.publicUrl, { method: 'HEAD' });
+      if (!response.ok) {
+        console.error(`PDF URL check failed with status ${response.status}`);
+      } else {
+        console.log("PDF URL was successfully verified as accessible");
+      }
+    } catch (checkError) {
+      console.error("Error verifying PDF URL:", checkError);
+    }
+    
     return urlData.publicUrl;
   } catch (error) {
     console.error("Unexpected error saving PDF to storage:", error);

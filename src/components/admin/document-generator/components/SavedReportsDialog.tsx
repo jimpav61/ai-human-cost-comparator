@@ -41,6 +41,18 @@ export const SavedReportsDialog = ({ lead, isOpen, onClose }: SavedReportsDialog
       if (reportData.pdf_url) {
         console.log("Using stored PDF file:", reportData.pdf_url);
         
+        // Attempt to verify the URL is accessible before triggering download
+        try {
+          const response = await fetch(reportData.pdf_url, { method: 'HEAD' });
+          if (!response.ok) {
+            console.error(`PDF URL returned ${response.status}: ${reportData.pdf_url}`);
+            throw new Error(`PDF file not found (status ${response.status})`);
+          }
+        } catch (fetchError) {
+          console.error("Error checking PDF URL:", fetchError);
+          throw new Error("PDF file could not be accessed. Regenerating report...");
+        }
+        
         // Create an anchor element and trigger download
         const link = document.createElement('a');
         link.href = reportData.pdf_url;
@@ -57,6 +69,7 @@ export const SavedReportsDialog = ({ lead, isOpen, onClose }: SavedReportsDialog
       }
       
       // Fallback: Create a temporary lead object with the saved report data
+      console.log("No PDF URL found, regenerating report from saved data");
       const tempLead: Lead = {
         ...lead,
         calculator_inputs: reportData.calculator_inputs,
@@ -78,9 +91,29 @@ export const SavedReportsDialog = ({ lead, isOpen, onClose }: SavedReportsDialog
       console.error("Error downloading report:", error);
       toast({
         title: "Error",
-        description: "Failed to download report. Please try again.",
+        description: error instanceof Error ? error.message : "Failed to download report. Please try again.",
         variant: "destructive",
       });
+      
+      // If direct download failed, try regenerating a new report
+      if (report && downloadLoading) {
+        try {
+          console.log("Attempting fallback to generate new report...");
+          const tempLead: Lead = {
+            ...lead,
+            calculator_inputs: report.calculator_inputs,
+            calculator_results: report.calculator_results,
+            name: report.contact_name || lead.name,
+            company_name: report.company_name || lead.company_name,
+            email: report.email || lead.email,
+            phone_number: report.phone_number || lead.phone_number,
+          };
+          
+          generateAndDownloadReport(tempLead);
+        } catch (fallbackError) {
+          console.error("Fallback generation also failed:", fallbackError);
+        }
+      }
     } finally {
       setDownloadLoading(null);
     }

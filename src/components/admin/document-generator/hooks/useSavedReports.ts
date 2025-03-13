@@ -103,19 +103,35 @@ export const useSavedReports = (leadId?: string) => {
         // Check for stored PDF files for each report
         for (const report of searchResults) {
           try {
-            // FIXED: Use correct file path format without 'reports/' prefix
+            // CRITICAL FIX: Use correct file path format
             const pdfFileName = `${report.id}.pdf`;
             
             console.log("📊 REPORT FINDER: Checking for PDF file:", pdfFileName);
             
-            // Check if file exists in storage
-            const { data } = await supabase.storage
+            // Need to first check if file exists before getting public URL
+            const { data: fileData, error: fileError } = await supabase.storage
               .from('reports')
-              .getPublicUrl(pdfFileName);
-            
-            if (data) {
-              console.log(`📊 REPORT FINDER: Found stored PDF for report ${report.id}`);
-              report.pdf_url = data.publicUrl;
+              .list('', {
+                search: pdfFileName,
+                limit: 1
+              });
+              
+            if (fileError) {
+              console.error("📊 REPORT FINDER: Error checking file existence:", fileError);
+            } else if (fileData && fileData.length > 0) {
+              console.log(`📊 REPORT FINDER: Found file in storage: ${fileData[0].name}`);
+              
+              // Now get the public URL
+              const { data: urlData } = await supabase.storage
+                .from('reports')
+                .getPublicUrl(pdfFileName);
+              
+              if (urlData && urlData.publicUrl) {
+                console.log(`📊 REPORT FINDER: Generated public URL for report ${report.id}`);
+                report.pdf_url = urlData.publicUrl;
+              }
+            } else {
+              console.log(`📊 REPORT FINDER: No file found for ${pdfFileName}`);
             }
           } catch (fileCheckError) {
             console.error("Error checking for PDF file:", fileCheckError);

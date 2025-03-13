@@ -31,6 +31,18 @@ export const useReportDownload = () => {
         if (report.pdf_url) {
           console.log('SUCCESS: Found stored PDF file, downloading directly:', report.pdf_url);
           
+          // Verify the URL is accessible
+          try {
+            const response = await fetch(report.pdf_url, { method: 'HEAD' });
+            if (!response.ok) {
+              console.error(`PDF URL verification failed with status ${response.status}`);
+              throw new Error(`PDF file not accessible (status ${response.status})`);
+            }
+          } catch (checkError) {
+            console.error("Error verifying PDF URL:", checkError);
+            throw new Error("PDF file could not be verified. Generating new report instead...");
+          }
+          
           // Trigger direct download of the PDF using the URL
           const link = document.createElement('a');
           link.href = report.pdf_url;
@@ -165,19 +177,35 @@ export const useReportDownload = () => {
     // Check for stored PDF files for each report
     for (const report of searchResults) {
       try {
-        // FIXED: Use correct file path format without 'reports/' prefix
+        // CRITICAL: Use correct file path format
         const pdfFileName = `${report.id}.pdf`;
         
         console.log(`Checking for PDF file: ${pdfFileName} in 'reports' bucket`);
         
-        // Check if file exists in storage - fixed API call
-        const { data } = await supabase.storage
+        // First check if the file exists in storage
+        const { data: fileData, error: fileError } = await supabase.storage
           .from('reports')
-          .getPublicUrl(pdfFileName);
-        
-        if (data) {
-          console.log(`Found stored PDF for report ${report.id}`);
-          report.pdf_url = data.publicUrl;
+          .list('', {
+            search: pdfFileName,
+            limit: 1
+          });
+          
+        if (fileError) {
+          console.error("Error listing files:", fileError);
+        } else if (fileData && fileData.length > 0) {
+          console.log(`Found file in storage: ${fileData[0].name}`);
+          
+          // Now get the public URL
+          const { data } = await supabase.storage
+            .from('reports')
+            .getPublicUrl(pdfFileName);
+          
+          if (data) {
+            console.log(`Found stored PDF for report ${report.id}`);
+            report.pdf_url = data.publicUrl;
+          }
+        } else {
+          console.log(`No file found for ${pdfFileName}`);
         }
       } catch (fileCheckError) {
         console.error("Error checking for PDF file:", fileCheckError);
