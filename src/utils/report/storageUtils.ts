@@ -7,86 +7,32 @@ import { convertPDFToBlob } from "./pdfUtils";
 import { toJson } from "@/hooks/calculator/supabase-types";
 
 /**
- * Create or get the reports bucket, ensuring it exists and is properly configured
+ * Verify the reports bucket exists and is accessible
  */
-export async function createOrGetReportsBucket(): Promise<boolean> {
+export async function verifyReportsBucket(): Promise<boolean> {
   try {
-    console.log("Checking if 'reports' bucket exists...");
+    console.log("Verifying 'reports' bucket is accessible...");
     
-    // Check if the bucket exists
-    const { data: buckets, error: listError } = await supabase.storage.listBuckets();
-    
-    if (listError) {
-      console.error("Error listing buckets:", listError);
-      throw new Error(`Failed to list buckets: ${listError.message}`);
-    }
-    
-    const reportsBucket = buckets?.find(bucket => bucket.name === 'reports');
-    
-    if (reportsBucket) {
-      console.log("'reports' bucket already exists");
-      
-      // Check if the bucket is public
-      const { data: bucketData, error: bucketError } = await supabase.storage.getBucket('reports');
-      if (bucketError) {
-        console.error("Error checking bucket details:", bucketError);
-        return false;
-      }
-      
-      if (!bucketData.public) {
-        console.log("'reports' bucket is not public, updating...");
-        const { error: updateError } = await supabase.storage.updateBucket('reports', {
-          public: true,
-          fileSizeLimit: 10485760 // 10MB limit
-        });
-        
-        if (updateError) {
-          console.error("Failed to update bucket to public:", updateError);
-          return false;
-        }
-        
-        console.log("Successfully updated 'reports' bucket to public");
-      }
-      
-      return true;
-    }
-    
-    // Bucket doesn't exist, try to create it
-    console.log("'reports' bucket doesn't exist. Creating...");
-    const { data, error } = await supabase.storage.createBucket('reports', {
-      public: true,
-      fileSizeLimit: 10485760 // 10MB limit
-    });
+    // Check if the bucket exists by trying to access it
+    const { data, error } = await supabase.storage.getBucket('reports');
     
     if (error) {
-      console.error("Failed to create 'reports' bucket:", error);
-      throw new Error(`Failed to create reports bucket: ${error.message}`);
-    }
-    
-    console.log("Successfully created 'reports' bucket");
-    
-    // Wait a moment to ensure the bucket is registered
-    await new Promise(resolve => setTimeout(resolve, 1000));
-    
-    // Make another API call to confirm bucket exists
-    const { data: checkData, error: checkError } = await supabase.storage.getBucket('reports');
-    
-    if (checkError) {
-      console.error("Error confirming bucket creation:", checkError);
-      return false;
-    } else {
-      console.log("Bucket creation confirmed:", checkData);
-      // Double-check bucket is public
-      if (!checkData.public) {
-        console.warn("New bucket not public, trying to update...");
-        await supabase.storage.updateBucket('reports', { public: true });
+      console.error("Error verifying 'reports' bucket:", error);
+      
+      // Additional debug info about error type
+      if (error.message.includes("row-level security policy")) {
+        console.error("CRITICAL: RLS policy is preventing bucket access");
       }
-      return true;
+      
+      return false;
     }
     
+    console.log("Successfully verified 'reports' bucket exists with settings:", data);
+    
+    // Bucket exists and is accessible
+    return true;
   } catch (error) {
-    console.error("Error in createOrGetReportsBucket:", error);
-    // Log the error but return false to indicate failure
+    console.error("Unexpected error verifying 'reports' bucket:", error);
     return false;
   }
 }
@@ -98,6 +44,13 @@ export async function saveReportData(lead: Lead): Promise<string | null> {
   try {
     // Generate a new UUID for the report
     const reportId = crypto.randomUUID();
+    
+    // Ensure the lead ID is valid UUID
+    if (!lead.id || lead.id.startsWith('temp-')) {
+      console.warn(`Invalid lead ID format detected: ${lead.id}, this may cause issues with storage references`);
+      lead.id = crypto.randomUUID();
+      console.log(`Assigned new valid UUID to lead: ${lead.id}`);
+    }
     
     // Prepare report data
     const reportData: ReportData = {
@@ -142,10 +95,10 @@ export async function savePDFToStorage(reportId: string, pdfBlob: Blob): Promise
   try {
     console.log("Saving PDF to storage for report ID:", reportId);
     
-    // Ensure the bucket exists
-    const bucketExists = await createOrGetReportsBucket();
-    if (!bucketExists) {
-      console.error("Cannot save PDF - reports bucket creation failed");
+    // Verify the bucket is accessible before attempting upload
+    const bucketAccessible = await verifyReportsBucket();
+    if (!bucketAccessible) {
+      console.error("Cannot save PDF - reports bucket is not accessible");
       return null;
     }
     
@@ -172,6 +125,14 @@ export async function savePDFToStorage(reportId: string, pdfBlob: Blob): Promise
     
     if (error) {
       console.error("Failed to upload PDF to storage:", error);
+      
+      // Add more detailed error diagnostics
+      if (error.message.includes("row-level security policy")) {
+        console.error("CRITICAL: RLS policy is preventing upload - check Supabase storage bucket permissions");
+      } else if (error.message.includes("bucket") && error.message.includes("not found")) {
+        console.error("CRITICAL: Bucket 'reports' does not exist - it must be created in the Supabase dashboard");
+      }
+      
       return null;
     }
     
@@ -220,12 +181,19 @@ export async function saveReportToStorageWithRetry(
   try {
     console.log("Saving front-end report to storage for lead:", lead.id);
     
-    // First ensure the reports bucket exists
-    const bucketExists = await createOrGetReportsBucket();
-    if (!bucketExists) {
+    // First ensure the lead ID is a valid UUID (not temp)
+    if (!lead.id || lead.id.startsWith('temp-')) {
+      const newLeadId = crypto.randomUUID();
+      console.log(`Replacing invalid lead ID: ${lead.id} with valid UUID: ${newLeadId}`);
+      lead.id = newLeadId;
+    }
+    
+    // Verify the bucket is accessible
+    const bucketAccessible = await verifyReportsBucket();
+    if (!bucketAccessible) {
       return {
         success: false,
-        message: "Failed to create or verify reports bucket"
+        message: "Reports bucket is not accessible - check Supabase storage permissions"
       };
     }
     
@@ -253,6 +221,16 @@ export async function saveReportToStorageWithRetry(
     
     if (error) {
       console.error("Error uploading PDF to storage:", error);
+      
+      // More detailed error analysis
+      if (error.message.includes("row-level security policy")) {
+        return { 
+          success: false, 
+          message: `Storage permission denied: RLS policy is preventing upload`,
+          reportId 
+        };
+      }
+      
       return { 
         success: false, 
         message: `Storage upload failed: ${error.message}`,
