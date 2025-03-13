@@ -236,14 +236,15 @@ async function convertPDFToBlob(pdfDoc: jsPDF): Promise<Blob> {
  */
 async function savePDFToStorage(reportId: string, pdfBlob: Blob): Promise<string | null> {
   try {
-    console.log("Saving PDF to storage for report:", reportId);
+    console.log("Saving PDF to storage for report ID:", reportId);
     
-    // Make sure the path is correct - don't include the bucket name as part of the path
-    const filePath = `reports/${reportId}.pdf`;
+    // IMPORTANT: The file path should NOT include 'reports/' prefix in the path because
+    // we're already specifying 'reports' as the bucket name
+    const filePath = `${reportId}.pdf`;
     
-    console.log("Uploading to path:", filePath);
+    console.log("Uploading to bucket 'reports' with path:", filePath);
     
-    // Upload the PDF to Supabase storage - using the correct path format
+    // Upload the PDF to Supabase storage
     const { data, error } = await supabase.storage
       .from('reports')
       .upload(filePath, pdfBlob, {

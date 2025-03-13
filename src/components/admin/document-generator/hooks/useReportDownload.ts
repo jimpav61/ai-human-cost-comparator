@@ -165,7 +165,10 @@ export const useReportDownload = () => {
     // Check for stored PDF files for each report
     for (const report of searchResults) {
       try {
-        const pdfFileName = `reports/${report.id}.pdf`;
+        // FIXED: Use correct file path format without 'reports/' prefix
+        const pdfFileName = `${report.id}.pdf`;
+        
+        console.log(`Checking for PDF file: ${pdfFileName} in 'reports' bucket`);
         
         // Check if file exists in storage - fixed API call
         const { data } = await supabase.storage
