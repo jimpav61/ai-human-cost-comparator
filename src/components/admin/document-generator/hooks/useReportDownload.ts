@@ -15,6 +15,8 @@ export const useReportDownload = () => {
       setIsLoading(true);
       console.log('---------- ADMIN REPORT DOWNLOAD ATTEMPT ----------');
       console.log('Lead ID for report download:', lead.id);
+      console.log('Lead calculator_inputs:', lead.calculator_inputs);
+      console.log('Lead calculator_results:', lead.calculator_results);
       
       // Check if lead ID exists
       if (!lead.id) {
@@ -153,12 +155,35 @@ export const useReportDownload = () => {
       let calculatorResultsData = ensureJsonParsed(report.calculator_results);
       let calculatorInputsData = ensureJsonParsed(report.calculator_inputs);
       
+      console.log('Calculator results data:', calculatorResultsData);
+      console.log('Calculator inputs data:', calculatorInputsData);
+      
       // Validate and ensure the calculator results have the correct structure
       const validatedResults = ensureCompleteCalculatorResults(calculatorResultsData);
       
-      // Extract and handle voice minutes data
-      let additionalVoiceMinutes = getAdditionalVoiceMinutes(validatedResults, calculatorInputsData);
-      console.log('Using additional voice minutes:', additionalVoiceMinutes);
+      // CRITICAL FIX: Ensure additionalVoiceMinutes is correctly handled
+      let additionalVoiceMinutes = 0;
+      
+      // Check all possible sources for additionalVoiceMinutes
+      if (typeof validatedResults.additionalVoiceMinutes === 'number') {
+        additionalVoiceMinutes = validatedResults.additionalVoiceMinutes;
+        console.log('Using additionalVoiceMinutes from validatedResults:', additionalVoiceMinutes);
+      } 
+      // Check calculator inputs callVolume
+      else if (calculatorInputsData && typeof calculatorInputsData.callVolume === 'number') {
+        additionalVoiceMinutes = calculatorInputsData.callVolume;
+        console.log('Using callVolume as additionalVoiceMinutes:', additionalVoiceMinutes);
+      }
+      // Handle string values in callVolume
+      else if (calculatorInputsData && typeof calculatorInputsData.callVolume === 'string' && calculatorInputsData.callVolume !== '') {
+        additionalVoiceMinutes = parseInt(calculatorInputsData.callVolume, 10) || 0;
+        console.log('Parsed callVolume string as additionalVoiceMinutes:', additionalVoiceMinutes);
+      }
+      
+      // Inject the additionalVoiceMinutes into validated results to ensure it's used in PDF generation
+      validatedResults.additionalVoiceMinutes = additionalVoiceMinutes;
+      
+      console.log('Final additionalVoiceMinutes value being used:', additionalVoiceMinutes);
       
       // Determine tier and AI type display names
       const tierName = getTierName(validatedResults.tierKey);
@@ -225,28 +250,6 @@ export const useReportDownload = () => {
     return data;
   };
   
-  // Helper function to get additional voice minutes from different possible sources
-  const getAdditionalVoiceMinutes = (validatedResults: any, calculatorInputsData: any) => {
-    // First check if additionalVoiceMinutes is in validatedResults
-    if (typeof validatedResults.additionalVoiceMinutes === 'number') {
-      return validatedResults.additionalVoiceMinutes;
-    } 
-    // Then check calculator inputs callVolume
-    else if (calculatorInputsData && typeof calculatorInputsData.callVolume === 'number') {
-      // Also add it to validatedResults for consistency
-      validatedResults.additionalVoiceMinutes = calculatorInputsData.callVolume;
-      return calculatorInputsData.callVolume;
-    }
-    // Handle string values
-    else if (calculatorInputsData && typeof calculatorInputsData.callVolume === 'string') {
-      const minutes = parseInt(calculatorInputsData.callVolume, 10) || 0;
-      // Also add it to validatedResults for consistency
-      validatedResults.additionalVoiceMinutes = minutes;
-      return minutes;
-    }
-    return 0;
-  };
-  
   // Helper function to get tier name display
   const getTierName = (tierKey: string) => {
     return tierKey === 'starter' ? 'Starter Plan' : 
@@ -278,9 +281,6 @@ export const useReportDownload = () => {
   // Helper function to upload PDF to Supabase storage
   const uploadPdfToStorage = async (reportId: string, pdfBlob: Blob): Promise<string | null> => {
     try {
-      // Ensure the reports bucket exists
-      await ensureReportsBucketExists();
-      
       // Upload the PDF file
       const filePath = `${reportId}.pdf`;
       console.log('Uploading PDF to storage path:', filePath);
@@ -308,33 +308,6 @@ export const useReportDownload = () => {
     } catch (error) {
       console.error('Unexpected error in upload process:', error);
       return null;
-    }
-  };
-  
-  // Helper function to ensure the reports bucket exists
-  const ensureReportsBucketExists = async () => {
-    try {
-      // Check if bucket exists
-      const { data: buckets } = await supabase.storage.listBuckets();
-      const bucketExists = buckets?.some(b => b.name === 'reports');
-      
-      if (!bucketExists) {
-        console.log('Reports bucket does not exist, creating it...');
-        
-        // Create the bucket
-        const { error } = await supabase.storage.createBucket('reports', {
-          public: true,
-          fileSizeLimit: 10485760 // 10MB
-        });
-        
-        if (error) {
-          console.error('Error creating reports bucket:', error);
-        } else {
-          console.log('Reports bucket created successfully');
-        }
-      }
-    } catch (error) {
-      console.error('Error checking/creating bucket:', error);
     }
   };
   
