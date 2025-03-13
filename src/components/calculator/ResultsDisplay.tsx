@@ -5,7 +5,7 @@ import { ResultsDetailView } from './ResultsDetailView';
 import { calculatePricingDetails, getTierDisplayName, getAITypeDisplay } from './pricingDetailsCalculator';
 import type { CalculationResults, CalculatorInputs } from '@/hooks/useCalculator';
 import type { LeadData } from './types';
-import { generateAndDownloadReport } from '@/utils/reportGenerator';
+import { generateAndDownloadReport } from '@/utils/report/generateReport';
 import { Lead } from '@/types/leads';
 import { toast } from '@/components/ui/use-toast';
 

@@ -2,7 +2,7 @@
 import { Lead } from "@/types/leads";
 import { FileBarChart } from "lucide-react";
 import { DownloadButton } from "./DownloadButton";
-import { generateAndDownloadReport } from "@/utils/reportGenerator";
+import { generateAndDownloadReport } from "@/utils/report/generateReport";
 import { useDownloadState } from "../hooks/useDownloadState";
 
 interface ReportGeneratorProps {

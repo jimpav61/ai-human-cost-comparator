@@ -1,4 +1,3 @@
-
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
 import { Lead } from "@/types/leads";
 import { useSavedReports } from "../hooks/useSavedReports";
@@ -6,8 +5,8 @@ import { format } from "date-fns";
 import { Download, FileBarChart, Loader2 } from "lucide-react";
 import { toast } from "@/hooks/use-toast";
 import { useState } from "react";
-import { generateAndDownloadReport } from "@/utils/reportGenerator";
-import { getSafeFileName } from "../hooks/report-generator/saveReport";
+import { generateAndDownloadReport } from "@/utils/report/generateReport";
+import { getSafeFileName } from "@/utils/report/validation";
 
 interface SavedReportsDialogProps {
   lead: Lead;
@@ -19,7 +18,6 @@ export const SavedReportsDialog = ({ lead, isOpen, onClose }: SavedReportsDialog
   const { reports, isLoading } = useSavedReports(lead.id);
   const [downloadLoading, setDownloadLoading] = useState<string | null>(null);
   
-  // Get the single report if available
   const report = reports.length > 0 ? reports[0] : null;
 
   const handleDownloadSavedReport = async (reportId: string) => {
@@ -28,7 +26,6 @@ export const SavedReportsDialog = ({ lead, isOpen, onClose }: SavedReportsDialog
       
       console.log("Downloading saved report with ID:", reportId);
       
-      // Find the matching report data
       const reportData = reports.find(r => r.id === reportId);
       
       if (!reportData) {
@@ -37,11 +34,9 @@ export const SavedReportsDialog = ({ lead, isOpen, onClose }: SavedReportsDialog
       
       console.log("Found report data for download:", reportData);
       
-      // If there's a stored PDF file, download it directly
       if (reportData.pdf_url) {
         console.log("Using stored PDF file:", reportData.pdf_url);
         
-        // Attempt to verify the URL is accessible before triggering download
         try {
           const response = await fetch(reportData.pdf_url, { method: 'HEAD' });
           if (!response.ok) {
@@ -53,7 +48,6 @@ export const SavedReportsDialog = ({ lead, isOpen, onClose }: SavedReportsDialog
           throw new Error("PDF file could not be accessed. Regenerating report...");
         }
         
-        // Create an anchor element and trigger download
         const link = document.createElement('a');
         link.href = reportData.pdf_url;
         link.download = `${getSafeFileName(lead)}-ChatSites-ROI-Report.pdf`;
@@ -68,7 +62,6 @@ export const SavedReportsDialog = ({ lead, isOpen, onClose }: SavedReportsDialog
         return;
       }
       
-      // Fallback: Create a temporary lead object with the saved report data
       console.log("No PDF URL found, regenerating report from saved data");
       const tempLead: Lead = {
         ...lead,
@@ -80,7 +73,6 @@ export const SavedReportsDialog = ({ lead, isOpen, onClose }: SavedReportsDialog
         phone_number: reportData.phone_number || lead.phone_number,
       };
       
-      // Use the report generator utility with the exact saved data
       generateAndDownloadReport(tempLead);
       
       toast({
@@ -95,7 +87,6 @@ export const SavedReportsDialog = ({ lead, isOpen, onClose }: SavedReportsDialog
         variant: "destructive",
       });
       
-      // If direct download failed, try regenerating a new report
       if (report && downloadLoading) {
         try {
           console.log("Attempting fallback to generate new report...");
@@ -121,7 +112,6 @@ export const SavedReportsDialog = ({ lead, isOpen, onClose }: SavedReportsDialog
 
   const handleGenerateNewReport = () => {
     try {
-      // Only try to generate a new report if we have calculator inputs and results
       if (!lead.calculator_inputs || Object.keys(lead.calculator_inputs).length === 0 ||
           !lead.calculator_results || Object.keys(lead.calculator_results).length === 0) {
         toast({
@@ -132,7 +122,6 @@ export const SavedReportsDialog = ({ lead, isOpen, onClose }: SavedReportsDialog
         return;
       }
       
-      // Generate a new report based on current lead data
       generateAndDownloadReport(lead);
     } catch (error) {
       console.error("Error generating new report:", error);
