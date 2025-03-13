@@ -16,29 +16,30 @@ export const useReportDownload = () => {
       console.log('---------- ADMIN REPORT DOWNLOAD ATTEMPT ----------');
       console.log('Lead ID for report download:', lead.id);
       
-      // Search for any reports associated with this lead
+      // Query for reports with this lead ID, ordering by creation date to get the latest first
       const { data: reports, error: fetchError } = await supabase
         .from('generated_reports')
         .select('*')
-        .eq('lead_id', lead.id);
+        .eq('lead_id', lead.id)
+        .order('report_date', { ascending: false });
       
       if (fetchError) {
         console.error('Fetch error:', fetchError);
         throw new Error(`Failed to fetch report: ${fetchError.message}`);
       }
       
-      console.log('Reports query result:', reports);
+      console.log('Reports found:', reports ? reports.length : 0);
       
       if (!reports || reports.length === 0) {
         console.error('No reports found for lead ID:', lead.id);
         
-        // Additional debug info
+        // Show all reports for debugging
         const { data: allReports } = await supabase
           .from('generated_reports')
-          .select('id, lead_id')
-          .limit(10);
+          .select('id, lead_id, company_name')
+          .limit(20);
         
-        console.log('Sample of all reports in DB:', allReports);
+        console.log('First 20 reports in database:', allReports);
         
         toast({
           title: "No Report Available",
@@ -50,14 +51,13 @@ export const useReportDownload = () => {
         return;
       }
       
-      // Use the most recent report (assuming it's the first in the array)
-      console.log('Database query response: Report found');
+      // Get the latest report
       const latestReport = reports[0];
-      console.log('Found report details:', {
-        reportId: latestReport.id,
+      console.log('Using report:', {
+        id: latestReport.id,
         leadId: latestReport.lead_id,
-        contactName: latestReport.contact_name,
-        companyName: latestReport.company_name
+        companyName: latestReport.company_name,
+        contactName: latestReport.contact_name
       });
       
       // Generate safe filename for the report
@@ -80,11 +80,7 @@ export const useReportDownload = () => {
         calculatorResultsData = latestReport.calculator_results;
       }
       
-      console.log('Report calculator results type:', typeof calculatorResultsData);
-      
-      if (latestReport.calculator_inputs) {
-        console.log('Report calculator inputs type:', typeof latestReport.calculator_inputs);
-      }
+      console.log('Calculator results data type:', typeof calculatorResultsData);
       
       // Validate and ensure the calculator results have the correct structure
       const validatedResults = ensureCompleteCalculatorResults(calculatorResultsData);
