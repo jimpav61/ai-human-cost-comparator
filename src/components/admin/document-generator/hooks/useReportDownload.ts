@@ -16,12 +16,11 @@ export const useReportDownload = () => {
       console.log('---------- ADMIN REPORT DOWNLOAD ATTEMPT ----------');
       console.log('Lead ID for report download:', lead.id);
       
-      // IMPORTANT: Search ONLY by lead ID - no other criteria
+      // Search for any reports associated with this lead
       const { data: reports, error: fetchError } = await supabase
         .from('generated_reports')
         .select('*')
-        .eq('lead_id', lead.id)
-        .limit(1);
+        .eq('lead_id', lead.id);
       
       if (fetchError) {
         console.error('Fetch error:', fetchError);
@@ -32,6 +31,15 @@ export const useReportDownload = () => {
       
       if (!reports || reports.length === 0) {
         console.error('No reports found for lead ID:', lead.id);
+        
+        // Additional debug info
+        const { data: allReports } = await supabase
+          .from('generated_reports')
+          .select('id, lead_id')
+          .limit(10);
+        
+        console.log('Sample of all reports in DB:', allReports);
+        
         toast({
           title: "No Report Available",
           description: "No report was found for this lead. Please generate a report first.",
@@ -42,9 +50,15 @@ export const useReportDownload = () => {
         return;
       }
       
+      // Use the most recent report (assuming it's the first in the array)
       console.log('Database query response: Report found');
       const latestReport = reports[0];
-      console.log('Found report:', latestReport.id);
+      console.log('Found report details:', {
+        reportId: latestReport.id,
+        leadId: latestReport.lead_id,
+        contactName: latestReport.contact_name,
+        companyName: latestReport.company_name
+      });
       
       // Generate safe filename for the report
       const safeCompanyName = getSafeFileName(lead);
@@ -66,10 +80,10 @@ export const useReportDownload = () => {
         calculatorResultsData = latestReport.calculator_results;
       }
       
-      console.log('Report calculator results:', calculatorResultsData);
+      console.log('Report calculator results type:', typeof calculatorResultsData);
       
       if (latestReport.calculator_inputs) {
-        console.log('Report calculator inputs:', latestReport.calculator_inputs);
+        console.log('Report calculator inputs type:', typeof latestReport.calculator_inputs);
       }
       
       // Validate and ensure the calculator results have the correct structure

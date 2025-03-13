@@ -13,7 +13,10 @@ interface DownloadReportButtonProps {
 export const DownloadReportButton = ({ lead, disabled }: DownloadReportButtonProps) => {
   const { isLoading, handleDownloadReport } = useReportDownload();
   
-  const onClick = () => handleDownloadReport(lead);
+  const onClick = () => {
+    console.log("Download report button clicked for lead:", lead.id);
+    handleDownloadReport(lead);
+  };
   
   return (
     <Button
