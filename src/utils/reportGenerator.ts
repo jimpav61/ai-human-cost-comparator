@@ -155,7 +155,8 @@ async function saveReportToStorageWithRetry(lead: Lead, pdfDoc: jsPDF, retries =
       console.error("Error uploading PDF to storage:", error);
       
       // If error is related to bucket not existing, try to create it
-      if (error.message.includes("bucket") || error.statusCode === 404) {
+      // Check error message for bucket-related issues instead of statusCode
+      if (error.message.includes("bucket") || error.message.includes("404")) {
         console.log("Attempting to create bucket via supabase.createBucket");
         const { error: bucketError } = await supabase.storage.createBucket('reports', {
           public: true
