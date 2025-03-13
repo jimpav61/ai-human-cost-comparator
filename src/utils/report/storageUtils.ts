@@ -1,4 +1,3 @@
-
 import { Lead } from "@/types/leads";
 import { supabase } from "@/integrations/supabase/client";
 import { jsPDF } from "jspdf";
@@ -237,6 +236,7 @@ export async function saveReportToStorageWithRetry(
     
     return {
       success: true,
+      message: "Report successfully generated and stored",
       reportId,
       pdfUrl: urlData.publicUrl
     };
