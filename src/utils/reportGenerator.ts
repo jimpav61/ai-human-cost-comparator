@@ -94,26 +94,37 @@ export function generateAndDownloadReport(lead: Lead): boolean {
     // Save/download the document for the user
     pdfDoc.save(`${safeFileName}-ChatSites-ROI-Report.pdf`);
     
-    // Critical Fix for Storage Issues:
-    // Now properly save to database and storage with auth bypass
-    // We'll use a more robust approach to ensure the PDF is saved to storage
-    saveReportToStorageWithRetry(lead, pdfDoc)
-      .then(result => {
-        if (result.success) {
-          console.log("Front-end report saved to database and storage successfully:", result);
-        } else {
-          console.error("Failed to save front-end report:", result.message);
-        }
-      })
-      .catch(error => {
-        console.error("Error in saveReportToStorageWithRetry:", error);
-      });
+    // Only try to save to database if we have a valid UUID
+    if (lead.id && isValidUUID(lead.id)) {
+      // Save to database and storage
+      saveReportToStorageWithRetry(lead, pdfDoc)
+        .then(result => {
+          if (result.success) {
+            console.log("Front-end report saved to database and storage successfully:", result);
+          } else {
+            console.error("Failed to save front-end report:", result.message);
+          }
+        })
+        .catch(error => {
+          console.error("Error in saveReportToStorageWithRetry:", error);
+        });
+    } else {
+      console.log("Skipping database save for temporary lead ID:", lead.id);
+    }
     
     return true;
   } catch (error) {
     console.error("Error generating report:", error);
     return false;
   }
+}
+
+/**
+ * Check if a string is a valid UUID
+ */
+function isValidUUID(id: string): boolean {
+  const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
+  return uuidRegex.test(id);
 }
 
 /**
@@ -129,6 +140,14 @@ async function saveReportToStorageWithRetry(lead: Lead, pdfDoc: jsPDF, retries =
   try {
     console.log("Saving front-end report to storage for lead:", lead.id);
     
+    // Skip invalid UUIDs (like temp-id)
+    if (!isValidUUID(lead.id)) {
+      return {
+        success: false,
+        message: `Invalid lead ID format: ${lead.id}. Cannot save to database.`
+      };
+    }
+    
     // First save report data to DB to get reportId
     const reportId = await saveReportData(lead);
     if (!reportId) {
@@ -138,11 +157,13 @@ async function saveReportToStorageWithRetry(lead: Lead, pdfDoc: jsPDF, retries =
       };
     }
     
+    // Ensure reports bucket exists before uploading
+    await ensureReportsBucketExists();
+    
     // Convert PDF to blob for storage
     const pdfBlob = await convertPDFToBlob(pdfDoc);
     
-    // Upload PDF directly without checking bucket
-    // This is a more direct approach that should work even without auth
+    // Upload PDF directly
     const { data, error } = await supabase.storage
       .from('reports')
       .upload(`${reportId}.pdf`, pdfBlob, {
@@ -153,48 +174,11 @@ async function saveReportToStorageWithRetry(lead: Lead, pdfDoc: jsPDF, retries =
     
     if (error) {
       console.error("Error uploading PDF to storage:", error);
-      
-      // If error is related to bucket not existing, try to create it
-      // Check error message for bucket-related issues instead of statusCode
-      if (error.message.includes("bucket") || error.message.includes("404")) {
-        console.log("Attempting to create bucket via supabase.createBucket");
-        const { error: bucketError } = await supabase.storage.createBucket('reports', {
-          public: true
-        });
-        
-        if (bucketError) {
-          console.error("Failed to create bucket:", bucketError);
-          return { 
-            success: false, 
-            message: `Failed to create storage bucket: ${bucketError.message}`,
-            reportId 
-          };
-        }
-        
-        // Try upload again after creating bucket
-        const { data: retryData, error: retryError } = await supabase.storage
-          .from('reports')
-          .upload(`${reportId}.pdf`, pdfBlob, {
-            contentType: 'application/pdf',
-            upsert: true,
-            cacheControl: '3600'
-          });
-          
-        if (retryError) {
-          console.error("Failed retry upload after creating bucket:", retryError);
-          return { 
-            success: false, 
-            message: `Upload failed after bucket creation: ${retryError.message}`,
-            reportId 
-          };
-        }
-      } else {
-        return { 
-          success: false, 
-          message: `Storage upload failed: ${error.message}`,
-          reportId 
-        };
-      }
+      return { 
+        success: false, 
+        message: `Storage upload failed: ${error.message}`,
+        reportId 
+      };
     }
     
     // Get public URL
@@ -248,6 +232,44 @@ async function saveReportToStorageWithRetry(lead: Lead, pdfDoc: jsPDF, retries =
 }
 
 /**
+ * Ensure that the reports bucket exists, creating it if necessary
+ */
+async function ensureReportsBucketExists(): Promise<void> {
+  try {
+    console.log("Ensuring 'reports' bucket exists...");
+    
+    // Check if the bucket exists
+    const { data: buckets, error: listError } = await supabase.storage.listBuckets();
+    
+    if (listError) {
+      console.error("Error listing buckets:", listError);
+      // Try creating anyway
+    } else {
+      const bucketExists = buckets?.some(bucket => bucket.name === 'reports');
+      
+      if (bucketExists) {
+        console.log("'reports' bucket already exists");
+        return;
+      }
+    }
+    
+    // Bucket doesn't exist or we couldn't check, try to create it
+    console.log("Attempting to create 'reports' bucket");
+    const { data, error } = await supabase.storage.createBucket('reports', {
+      public: true
+    });
+    
+    if (error) {
+      console.error("Failed to create 'reports' bucket:", error);
+    } else {
+      console.log("Successfully created 'reports' bucket");
+    }
+  } catch (error) {
+    console.error("Error in ensureReportsBucketExists:", error);
+  }
+}
+
+/**
  * Create a safe filename from the lead company name
  */
 function getSafeFileName(lead: Lead): string {
@@ -259,6 +281,12 @@ function getSafeFileName(lead: Lead): string {
  */
 async function saveReportData(lead: Lead): Promise<string | null> {
   try {
+    // Skip invalid UUIDs (like temp-id)
+    if (!isValidUUID(lead.id)) {
+      console.error("Invalid lead ID format:", lead.id);
+      return null;
+    }
+    
     // Prepare report data
     const reportData = {
       id: crypto.randomUUID(), // Generate a new UUID for the report
@@ -373,6 +401,9 @@ async function convertPDFToBlob(pdfDoc: jsPDF): Promise<Blob> {
 async function savePDFToStorage(reportId: string, pdfBlob: Blob): Promise<string | null> {
   try {
     console.log("Saving PDF to storage for report ID:", reportId);
+    
+    // Ensure the bucket exists
+    await ensureReportsBucketExists();
     
     // The file path in storage
     const filePath = `${reportId}.pdf`;
