@@ -57,7 +57,42 @@ export async function saveReportData(lead: Lead): Promise<string | null> {
       return null;
     }
 
-    // Save to database
+    // First, check if the lead needs to be created in the database
+    // This fixes the foreign key constraint issue
+    const leadExists = await checkLeadExists(lead.id);
+    
+    if (!leadExists && session) {
+      console.log(`Lead with ID ${lead.id} does not exist in database. Creating it first...`);
+      const { error: leadError } = await supabase
+        .from('leads')
+        .insert({
+          id: lead.id,
+          name: lead.name || "Unknown User",
+          company_name: lead.company_name || "Unknown Company",
+          email: lead.email || "unknown@example.com",
+          phone_number: lead.phone_number || null,
+          website: lead.website || null,
+          industry: lead.industry || null,
+          employee_count: lead.employee_count || 0,
+          calculator_inputs: toJson(lead.calculator_inputs),
+          calculator_results: toJson(lead.calculator_results),
+          form_completed: true
+        });
+        
+      if (leadError) {
+        console.error("Failed to create lead record:", leadError);
+        toast({
+          title: "Database Error",
+          description: "Failed to create necessary lead record. Please try again.",
+          variant: "destructive"
+        });
+        return null;
+      }
+      
+      console.log(`Successfully created lead record with ID: ${lead.id}`);
+    }
+
+    // Now save the report after ensuring the lead exists
     const { data, error } = await supabase
       .from('generated_reports')
       .insert(reportData)
@@ -84,5 +119,28 @@ export async function saveReportData(lead: Lead): Promise<string | null> {
       variant: "destructive"
     });
     return null;
+  }
+}
+
+/**
+ * Check if a lead with the given ID exists in the database
+ */
+async function checkLeadExists(leadId: string): Promise<boolean> {
+  try {
+    const { data, error } = await supabase
+      .from('leads')
+      .select('id')
+      .eq('id', leadId)
+      .maybeSingle();
+      
+    if (error) {
+      console.error("Error checking if lead exists:", error);
+      return false;
+    }
+    
+    return !!data;
+  } catch (error) {
+    console.error("Unexpected error checking lead existence:", error);
+    return false;
   }
 }
