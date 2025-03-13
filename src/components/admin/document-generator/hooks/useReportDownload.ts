@@ -30,7 +30,15 @@ export const useReportDownload = () => {
       }
       
       if (!reports || reports.length === 0) {
-        throw new Error("No report found for this lead. Please generate a report first.");
+        // Handle case where no report exists yet - show a toast instead of throwing an error
+        console.log('No report found for this lead.');
+        toast({
+          title: "No Report Available",
+          description: "No report has been generated for this lead yet. Please generate a report first.",
+          variant: "warning",
+        });
+        setIsLoading(false);
+        return;
       }
       
       const latestReport = reports[0];

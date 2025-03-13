@@ -1,7 +1,7 @@
 
 import React from "react";
 import { Button } from "@/components/ui/button";
-import { FileBarChart } from "lucide-react";
+import { FileBarChart, Loader2 } from "lucide-react";
 import { Lead } from "@/types/leads";
 import { useReportDownload } from "../hooks/useReportDownload";
 
@@ -23,8 +23,17 @@ export const DownloadReportButton = ({ lead, disabled }: DownloadReportButtonPro
       size="sm"
       className="whitespace-nowrap"
     >
-      <FileBarChart className="h-4 w-4 mr-1" />
-      <span>{isLoading ? "Downloading..." : "Report"}</span>
+      {isLoading ? (
+        <>
+          <Loader2 className="h-4 w-4 mr-1 animate-spin" />
+          <span>Loading...</span>
+        </>
+      ) : (
+        <>
+          <FileBarChart className="h-4 w-4 mr-1" />
+          <span>Report</span>
+        </>
+      )}
     </Button>
   );
 };
