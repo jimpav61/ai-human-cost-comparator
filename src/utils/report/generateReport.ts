@@ -1,10 +1,10 @@
-
 import { Lead } from "@/types/leads";
 import { toast } from "@/components/ui/use-toast";
 import { generateReportPDF, convertPDFToBlob } from "./pdfUtils";
-import { verifyReportsBucket, saveReportData, savePDFToStorage, saveReportToStorageWithRetry } from "./storageUtils";
+import { verifyReportsBucket, saveReportData, savePDFToStorage, saveReportToStorageWithRetry, checkUserAuthentication } from "./storageUtils";
 import { ensureLeadHasValidId, getSafeFileName } from "./validation";
 import { ReportGenerationResult } from "./types";
+import { supabase } from "@/integrations/supabase/client";
 
 /**
  * Generate a PDF report for a lead and save it
@@ -28,9 +28,7 @@ export async function generateAndSaveReport(lead: Lead): Promise<ReportGeneratio
     }
 
     // Check authentication
-    const {
-      data: { session },
-    } = await supabase.auth.getSession();
+    const { session } = await checkUserAuthentication();
     
     if (!session) {
       console.warn("User is not authenticated - report will be generated for download only");
