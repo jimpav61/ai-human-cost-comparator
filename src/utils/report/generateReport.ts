@@ -2,7 +2,7 @@
 import { Lead } from "@/types/leads";
 import { toast } from "@/components/ui/use-toast";
 import { generateReportPDF, convertPDFToBlob } from "./pdfUtils";
-import { createOrGetReportsBucket, saveReportData, savePDFToStorage, saveReportToStorageWithRetry } from "./storageUtils";
+import { verifyReportsBucket, saveReportData, savePDFToStorage, saveReportToStorageWithRetry } from "./storageUtils";
 import { ensureLeadHasValidId, getSafeFileName } from "./validation";
 import { ReportGenerationResult } from "./types";
 
