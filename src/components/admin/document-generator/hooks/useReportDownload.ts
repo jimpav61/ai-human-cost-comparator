@@ -45,7 +45,7 @@ export const useReportDownload = () => {
         console.log('Checking for PDF file:', pdfFileName);
         
         try {
-          // Try to get the public URL directly
+          // Get the public URL directly
           const { data: urlData } = await supabase.storage
             .from('reports')
             .getPublicUrl(pdfFileName);
