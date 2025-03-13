@@ -6,7 +6,6 @@ import { supabase } from "@/integrations/supabase/client";
 import { getSafeFileName } from "./report-generator/saveReport";
 import { generatePDF } from "@/components/calculator/pdf";
 import { toJson } from "@/hooks/calculator/supabase-types";
-import { CalculationResults } from "@/hooks/calculator/types";
 
 export const useReportDownload = () => {
   const [isLoading, setIsLoading] = useState(false);
@@ -36,25 +35,8 @@ export const useReportDownload = () => {
       const reportId = crypto.randomUUID();
       console.log("Generated new report ID:", reportId);
       
-      // Extract necessary values directly from calculator results
-      const results = lead.calculator_results as CalculationResults;
-      const setupFee = results?.aiCostMonthly?.setupFee || 0;
-      
-      // CRITICAL FIX: Make sure we extract the additional voice minutes correctly 
-      // and exactly as they are in the frontend report
-      const additionalVoiceMinutes = 
-        // First try from calculator_results.additionalVoiceMinutes
-        (results?.additionalVoiceMinutes) || 
-        // Then from calculator_inputs.callVolume 
-        (lead.calculator_inputs?.callVolume) || 
-        // Fallback to 0
-        0;
-      
-      console.log("Using additionalVoiceMinutes:", additionalVoiceMinutes);
-      console.log("Using setupFee:", setupFee);
-      
-      // Generate the PDF with EXPLICITLY passed additionalVoiceMinutes and included minutes
-      // to ensure it matches the frontend report exactly
+      // Use the EXACT same parameters and function as the frontend report
+      // This ensures complete consistency between frontend and admin reports
       const doc = generatePDF({
         contactInfo: lead.name || 'Valued Client',
         companyName: lead.company_name || 'Your Company',
@@ -62,9 +44,10 @@ export const useReportDownload = () => {
         phoneNumber: lead.phone_number || '',
         industry: lead.industry || 'Other',
         employeeCount: Number(lead.employee_count) || 5,
-        results: results,
-        additionalVoiceMinutes: additionalVoiceMinutes,
-        includedVoiceMinutes: results?.tierKey === 'starter' ? 0 : 600,
+        results: lead.calculator_results,
+        // Use exactly the same values as stored in the lead object
+        additionalVoiceMinutes: lead.calculator_inputs?.callVolume || 0,
+        includedVoiceMinutes: lead.calculator_results?.tierKey === 'starter' ? 0 : 600,
         businessSuggestions: [
           {
             title: "Automate Common Customer Inquiries",
@@ -93,28 +76,20 @@ export const useReportDownload = () => {
             capabilities: ["Answer product questions", "Provide pricing information", "Schedule demonstrations with sales team"]
           }
         ],
-        tierName: results?.tierKey === 'starter' ? 'Starter Plan' : 
-                 results?.tierKey === 'growth' ? 'Growth Plan' : 
-                 results?.tierKey === 'premium' ? 'Premium Plan' : 'Growth Plan',
-        aiType: results?.aiType === 'chatbot' ? 'Text Only' : 
-                results?.aiType === 'voice' ? 'Basic Voice' : 
-                results?.aiType === 'conversationalVoice' ? 'Conversational Voice' : 
-                results?.aiType === 'both' ? 'Text & Basic Voice' : 
-                results?.aiType === 'both-premium' ? 'Text & Conversational Voice' : 'Text Only'
+        tierName: lead.calculator_results?.tierKey === 'starter' ? 'Starter Plan' : 
+                 lead.calculator_results?.tierKey === 'growth' ? 'Growth Plan' : 
+                 lead.calculator_results?.tierKey === 'premium' ? 'Premium Plan' : 'Growth Plan',
+        aiType: lead.calculator_results?.aiType === 'chatbot' ? 'Text Only' : 
+                lead.calculator_results?.aiType === 'voice' ? 'Basic Voice' : 
+                lead.calculator_results?.aiType === 'conversationalVoice' ? 'Conversational Voice' : 
+                lead.calculator_results?.aiType === 'both' ? 'Text & Basic Voice' : 
+                lead.calculator_results?.aiType === 'both-premium' ? 'Text & Conversational Voice' : 'Text Only'
       });
       
       // Save a copy of this report to the database
       try {
         const jsonInputs = toJson(lead.calculator_inputs);
-        
-        // CRITICAL FIX: Make sure additionalVoiceMinutes is in the results before saving
-        // to ensure database has the same data as what we're generating in the PDF
-        let resultsToSave = { ...results };
-        if (resultsToSave && typeof resultsToSave === 'object') {
-          resultsToSave.additionalVoiceMinutes = additionalVoiceMinutes;
-        }
-        
-        const jsonResults = toJson(resultsToSave || lead.calculator_results);
+        const jsonResults = toJson(lead.calculator_results);
         
         const reportData = {
           id: reportId,
@@ -130,8 +105,6 @@ export const useReportDownload = () => {
         };
         
         console.log("Saving new report version to database:", reportData);
-        console.log("Report data includes additionalVoiceMinutes:", additionalVoiceMinutes);
-        console.log("Report data includes setupFee:", setupFee);
         
         const { error } = await supabase
           .from('generated_reports')
