@@ -25,6 +25,29 @@ export async function createOrGetReportsBucket(): Promise<boolean> {
     
     if (reportsBucket) {
       console.log("'reports' bucket already exists");
+      
+      // Check if the bucket is public
+      const { data: bucketData, error: bucketError } = await supabase.storage.getBucket('reports');
+      if (bucketError) {
+        console.error("Error checking bucket details:", bucketError);
+        return false;
+      }
+      
+      if (!bucketData.public) {
+        console.log("'reports' bucket is not public, updating...");
+        const { error: updateError } = await supabase.storage.updateBucket('reports', {
+          public: true,
+          fileSizeLimit: 10485760 // 10MB limit
+        });
+        
+        if (updateError) {
+          console.error("Failed to update bucket to public:", updateError);
+          return false;
+        }
+        
+        console.log("Successfully updated 'reports' bucket to public");
+      }
+      
       return true;
     }
     
@@ -53,6 +76,11 @@ export async function createOrGetReportsBucket(): Promise<boolean> {
       return false;
     } else {
       console.log("Bucket creation confirmed:", checkData);
+      // Double-check bucket is public
+      if (!checkData.public) {
+        console.warn("New bucket not public, trying to update...");
+        await supabase.storage.updateBucket('reports', { public: true });
+      }
       return true;
     }
     
@@ -126,6 +154,12 @@ export async function savePDFToStorage(reportId: string, pdfBlob: Blob): Promise
     
     console.log("Uploading to bucket 'reports' with path:", filePath);
     console.log("PDF Blob size:", pdfBlob.size, "bytes");
+    
+    // Ensure PDF blob is valid
+    if (!pdfBlob || pdfBlob.size === 0) {
+      console.error("Invalid PDF blob - empty or missing");
+      return null;
+    }
     
     // Upload the PDF to Supabase storage
     const { data, error } = await supabase.storage
