@@ -238,10 +238,15 @@ async function savePDFToStorage(reportId: string, pdfBlob: Blob): Promise<string
   try {
     console.log("Saving PDF to storage for report:", reportId);
     
-    // Upload the PDF to Supabase storage
+    // Make sure the path is correct - don't include the bucket name as part of the path
+    const filePath = `reports/${reportId}.pdf`;
+    
+    console.log("Uploading to path:", filePath);
+    
+    // Upload the PDF to Supabase storage - using the correct path format
     const { data, error } = await supabase.storage
       .from('reports')
-      .upload(`reports/${reportId}.pdf`, pdfBlob, {
+      .upload(filePath, pdfBlob, {
         contentType: 'application/pdf',
         upsert: true
       });
@@ -254,9 +259,9 @@ async function savePDFToStorage(reportId: string, pdfBlob: Blob): Promise<string
     // Get the public URL for the uploaded file
     const { data: urlData } = await supabase.storage
       .from('reports')
-      .getPublicUrl(`reports/${reportId}.pdf`);
+      .getPublicUrl(filePath);
     
-    if (!urlData) {
+    if (!urlData || !urlData.publicUrl) {
       console.error("Failed to get public URL for PDF");
       return null;
     }
