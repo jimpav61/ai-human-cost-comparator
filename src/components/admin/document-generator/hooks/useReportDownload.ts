@@ -21,7 +21,8 @@ export const useReportDownload = () => {
         throw new Error("Lead ID is missing");
       }
       
-      // Query for reports with this lead ID, without any ordering
+      // Query directly for reports with this lead_id, with clear logging
+      console.log('Querying for reports with lead_id:', lead.id);
       const { data: reports, error: fetchError } = await supabase
         .from('generated_reports')
         .select('*')
