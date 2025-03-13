@@ -1,3 +1,4 @@
+
 import { Lead } from "@/types/leads";
 import { supabase } from "@/integrations/supabase/client";
 import { jsPDF } from "jspdf";
@@ -8,7 +9,7 @@ import { toJson } from "@/hooks/calculator/supabase-types";
 /**
  * Create or get the reports bucket, ensuring it exists and is properly configured
  */
-export async function createOrGetReportsBucket(): Promise<void> {
+export async function createOrGetReportsBucket(): Promise<boolean> {
   try {
     console.log("Checking if 'reports' bucket exists...");
     
@@ -24,7 +25,7 @@ export async function createOrGetReportsBucket(): Promise<void> {
     
     if (reportsBucket) {
       console.log("'reports' bucket already exists");
-      return;
+      return true;
     }
     
     // Bucket doesn't exist, try to create it
@@ -49,14 +50,16 @@ export async function createOrGetReportsBucket(): Promise<void> {
     
     if (checkError) {
       console.error("Error confirming bucket creation:", checkError);
+      return false;
     } else {
       console.log("Bucket creation confirmed:", checkData);
+      return true;
     }
     
   } catch (error) {
     console.error("Error in createOrGetReportsBucket:", error);
-    // We'll log the error but not throw it, as we want to continue even if bucket creation fails
-    // The upload will attempt anyway and might succeed if the bucket already exists
+    // Log the error but return false to indicate failure
+    return false;
   }
 }
 
@@ -81,6 +84,8 @@ export async function saveReportData(lead: Lead): Promise<string | null> {
       report_date: new Date().toISOString(),
       version: 1 // Default to version 1
     };
+
+    console.log("Saving report data:", reportData);
 
     // Save to database
     const { data, error } = await supabase
@@ -110,12 +115,17 @@ export async function savePDFToStorage(reportId: string, pdfBlob: Blob): Promise
     console.log("Saving PDF to storage for report ID:", reportId);
     
     // Ensure the bucket exists
-    await createOrGetReportsBucket();
+    const bucketExists = await createOrGetReportsBucket();
+    if (!bucketExists) {
+      console.error("Cannot save PDF - reports bucket creation failed");
+      return null;
+    }
     
     // The file path in storage
     const filePath = `${reportId}.pdf`;
     
     console.log("Uploading to bucket 'reports' with path:", filePath);
+    console.log("PDF Blob size:", pdfBlob.size, "bytes");
     
     // Upload the PDF to Supabase storage
     const { data, error } = await supabase.storage
@@ -130,6 +140,8 @@ export async function savePDFToStorage(reportId: string, pdfBlob: Blob): Promise
       console.error("Failed to upload PDF to storage:", error);
       return null;
     }
+    
+    console.log("Upload successful, data:", data);
     
     // Get the public URL for the uploaded file
     const { data: urlData } = await supabase.storage
@@ -174,7 +186,16 @@ export async function saveReportToStorageWithRetry(
   try {
     console.log("Saving front-end report to storage for lead:", lead.id);
     
-    // First save report data to DB to get reportId
+    // First ensure the reports bucket exists
+    const bucketExists = await createOrGetReportsBucket();
+    if (!bucketExists) {
+      return {
+        success: false,
+        message: "Failed to create or verify reports bucket"
+      };
+    }
+    
+    // Save report data to DB to get reportId
     const reportId = await saveReportData(lead);
     if (!reportId) {
       return {
@@ -183,11 +204,9 @@ export async function saveReportToStorageWithRetry(
       };
     }
     
-    // Ensure reports bucket exists before uploading
-    await createOrGetReportsBucket();
-    
     // Convert PDF to blob for storage
     const pdfBlob = await convertPDFToBlob(pdfDoc);
+    console.log("PDF converted to blob, size:", pdfBlob.size, "bytes");
     
     // Upload PDF directly
     const { data, error } = await supabase.storage
@@ -206,6 +225,8 @@ export async function saveReportToStorageWithRetry(
         reportId 
       };
     }
+    
+    console.log("Upload successful, storage path:", data?.path);
     
     // Get public URL
     const { data: urlData } = await supabase.storage
