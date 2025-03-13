@@ -12,7 +12,7 @@ export interface SavedReport {
   report_date: string;
   calculator_inputs: any;
   calculator_results: any;
-  lead_id: string; // Make sure this field is included
+  lead_id: string | null; // Updated to allow null since some existing reports might not have lead_id
 }
 
 export const useSavedReports = (leadId?: string) => {
@@ -24,27 +24,26 @@ export const useSavedReports = (leadId?: string) => {
     
     setIsLoading(true);
     try {
-      console.log("Fetching saved reports for lead ID:", leadId);
+      console.log("📊 REPORT FINDER: Starting search for lead ID:", leadId);
       
-      // Query directly by lead_id first - this is the most reliable approach
-      const { data: leadIdMatch, error: leadIdError } = await supabase
+      // Try all possible ways to find the report, capturing all results first
+      const searchResults = [];
+      
+      // 1. Try direct lead_id match
+      const { data: leadIdMatches, error: leadIdError } = await supabase
         .from('generated_reports')
         .select('*')
         .eq('lead_id', leadId)
         .order('report_date', { ascending: false });
         
       if (leadIdError) {
-        console.error("Error fetching reports by lead_id:", leadIdError);
+        console.error("📊 REPORT FINDER: Error searching by lead_id:", leadIdError);
+      } else if (leadIdMatches && leadIdMatches.length > 0) {
+        console.log(`📊 REPORT FINDER: Found ${leadIdMatches.length} reports by lead_id match`);
+        searchResults.push(...leadIdMatches);
       }
       
-      if (leadIdMatch && leadIdMatch.length > 0) {
-        console.log("Found reports by lead_id:", leadIdMatch.length);
-        setReports(leadIdMatch);
-        setIsLoading(false);
-        return;
-      }
-      
-      // If no match by lead_id, then check if the ID we have is actually a report ID
+      // 2. Try exact id match (report id = lead id)
       const { data: exactMatch, error: exactMatchError } = await supabase
         .from('generated_reports')
         .select('*')
@@ -52,54 +51,72 @@ export const useSavedReports = (leadId?: string) => {
         .maybeSingle();
         
       if (exactMatchError) {
-        console.error("Error fetching report by id:", exactMatchError);
+        console.error("📊 REPORT FINDER: Error searching by report id:", exactMatchError);
+      } else if (exactMatch) {
+        console.log("📊 REPORT FINDER: Found report by direct ID match");
+        if (!searchResults.some(r => r.id === exactMatch.id)) {
+          searchResults.push(exactMatch);
+        }
       }
       
-      if (exactMatch) {
-        console.log("Found report by direct ID:", exactMatch);
-        setReports([exactMatch]);
-        setIsLoading(false);
-        return;
-      }
-      
-      // If no matches yet, try email as fallback
-      const { data: emailMatch, error: emailMatchError } = await supabase
+      // 3. Try matching by email (for legacy reports)
+      const { data: emailMatches, error: emailMatchError } = await supabase
         .from('generated_reports')
         .select('*')
         .eq('email', leadId)
         .order('report_date', { ascending: false });
         
       if (emailMatchError) {
-        console.error("Error fetching reports by email:", emailMatchError);
+        console.error("📊 REPORT FINDER: Error searching by email:", emailMatchError);
+      } else if (emailMatches && emailMatches.length > 0) {
+        console.log(`📊 REPORT FINDER: Found ${emailMatches.length} reports by email match`);
+        // Avoid duplicates
+        emailMatches.forEach(match => {
+          if (!searchResults.some(r => r.id === match.id)) {
+            searchResults.push(match);
+          }
+        });
       }
       
-      if (emailMatch && emailMatch.length > 0) {
-        console.log("Found reports by email:", emailMatch.length);
-        setReports(emailMatch);
-        setIsLoading(false);
-        return;
-      }
-      
-      // Last resort: try company name as fuzzy match
-      const { data: companyMatch, error: companyMatchError } = await supabase
+      // 4. Try fuzzy company name match as last resort
+      const { data: companyMatches, error: companyMatchError } = await supabase
         .from('generated_reports')
         .select('*')
         .ilike('company_name', `%${leadId}%`)
         .order('report_date', { ascending: false });
         
       if (companyMatchError) {
-        console.error("Error fetching reports by company name:", companyMatchError);
+        console.error("📊 REPORT FINDER: Error searching by company name:", companyMatchError);
+      } else if (companyMatches && companyMatches.length > 0) {
+        console.log(`📊 REPORT FINDER: Found ${companyMatches.length} reports by company name match`);
+        // Avoid duplicates
+        companyMatches.forEach(match => {
+          if (!searchResults.some(r => r.id === match.id)) {
+            searchResults.push(match);
+          }
+        });
       }
       
-      if (companyMatch && companyMatch.length > 0) {
-        console.log("Found reports by company name:", companyMatch.length);
-        setReports(companyMatch);
+      // Show search summary
+      if (searchResults.length > 0) {
+        console.log(`📊 REPORT FINDER: Search complete. Found ${searchResults.length} total reports.`);
+        setReports(searchResults);
       } else {
-        console.log("No reports found for lead:", leadId);
+        // If no matches, log a comprehensive debug message
+        console.log("📊 REPORT FINDER: No reports found for this lead. Debug info:");
+        console.log("- Lead ID searched:", leadId);
+        
+        // Query for all reports to help with debugging
+        const { data: allReports } = await supabase
+          .from('generated_reports')
+          .select('id, lead_id, company_name, email')
+          .limit(10);
+          
+        console.log("- Sample of reports in database:", allReports);
         setReports([]);
       }
     } catch (error) {
-      console.error("Error fetching reports:", error);
+      console.error("📊 REPORT FINDER: Unexpected error:", error);
       setReports([]);
     } finally {
       setIsLoading(false);
