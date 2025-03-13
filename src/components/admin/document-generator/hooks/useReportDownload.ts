@@ -40,7 +40,8 @@ export const useReportDownload = () => {
       const results = lead.calculator_results as CalculationResults;
       const setupFee = results?.aiCostMonthly?.setupFee || 0;
       
-      // Make sure we extract the additional voice minutes correctly
+      // CRITICAL FIX: Make sure we extract the additional voice minutes correctly 
+      // and exactly as they are in the frontend report
       const additionalVoiceMinutes = 
         // First try from calculator_results.additionalVoiceMinutes
         (results?.additionalVoiceMinutes) || 
@@ -53,6 +54,7 @@ export const useReportDownload = () => {
       console.log("Using setupFee:", setupFee);
       
       // Generate the PDF with EXPLICITLY passed additionalVoiceMinutes and included minutes
+      // to ensure it matches the frontend report exactly
       const doc = generatePDF({
         contactInfo: lead.name || 'Valued Client',
         companyName: lead.company_name || 'Your Company',
@@ -105,12 +107,14 @@ export const useReportDownload = () => {
       try {
         const jsonInputs = toJson(lead.calculator_inputs);
         
-        // Make sure additionalVoiceMinutes is in the results before saving
-        if (results && typeof results === 'object') {
-          results.additionalVoiceMinutes = additionalVoiceMinutes;
+        // CRITICAL FIX: Make sure additionalVoiceMinutes is in the results before saving
+        // to ensure database has the same data as what we're generating in the PDF
+        let resultsToSave = { ...results };
+        if (resultsToSave && typeof resultsToSave === 'object') {
+          resultsToSave.additionalVoiceMinutes = additionalVoiceMinutes;
         }
         
-        const jsonResults = toJson(results || lead.calculator_results);
+        const jsonResults = toJson(resultsToSave || lead.calculator_results);
         
         const reportData = {
           id: reportId,
