@@ -219,6 +219,7 @@ export const generateAndDownloadReport = async (lead: Lead) => {
       };
       
       console.log('[CALCULATOR REPORT] Saving report to database with ID:', reportData.id);
+      console.log('[CALCULATOR REPORT] Report lead_id:', reportData.lead_id);
       console.log('[CALCULATOR REPORT] Report data tierKey:', tierKey);
       console.log('[CALCULATOR REPORT] Report data aiType:', aiType);
       console.log('[CALCULATOR REPORT] Report data additionalVoiceMinutes:', additionalVoiceMinutes);

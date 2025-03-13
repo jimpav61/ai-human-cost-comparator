@@ -16,6 +16,11 @@ export const useReportDownload = () => {
       console.log('---------- ADMIN REPORT DOWNLOAD ATTEMPT ----------');
       console.log('Lead ID for report download:', lead.id);
       
+      // Check if lead ID exists
+      if (!lead.id) {
+        throw new Error("Lead ID is missing");
+      }
+      
       // Query for reports with this lead ID, without any ordering
       const { data: reports, error: fetchError } = await supabase
         .from('generated_reports')
