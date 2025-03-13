@@ -241,8 +241,54 @@ export const useReportDownload = () => {
         calculatorResultsData = report.calculator_results;
       }
       
+      // CRITICAL FIX: Properly extract and handle the voice minutes data
+      let calculatorInputsData;
+      if (typeof report.calculator_inputs === 'string') {
+        try {
+          calculatorInputsData = JSON.parse(report.calculator_inputs);
+        } catch (e) {
+          console.error('Error parsing calculator_inputs JSON:', e);
+          calculatorInputsData = report.calculator_inputs;
+        }
+      } else {
+        calculatorInputsData = report.calculator_inputs;
+      }
+      
       // Validate and ensure the calculator results have the correct structure
       const validatedResults = ensureCompleteCalculatorResults(calculatorResultsData);
+      
+      // CRITICAL FIX: Ensure additionalVoiceMinutes is properly set from different possible sources
+      let additionalVoiceMinutes = 0;
+      
+      // First check if additionalVoiceMinutes is in validatedResults
+      if (typeof validatedResults.additionalVoiceMinutes === 'number') {
+        additionalVoiceMinutes = validatedResults.additionalVoiceMinutes;
+      } 
+      // Then check calculator inputs callVolume (this is the source in the front-end)
+      else if (calculatorInputsData && typeof calculatorInputsData.callVolume === 'number') {
+        additionalVoiceMinutes = calculatorInputsData.callVolume;
+        // Also add it to validatedResults for consistency
+        validatedResults.additionalVoiceMinutes = additionalVoiceMinutes;
+      }
+      // Handle string values
+      else if (calculatorInputsData && typeof calculatorInputsData.callVolume === 'string') {
+        additionalVoiceMinutes = parseInt(calculatorInputsData.callVolume, 10) || 0;
+        // Also add it to validatedResults for consistency
+        validatedResults.additionalVoiceMinutes = additionalVoiceMinutes;
+      }
+      
+      console.log('Using additional voice minutes:', additionalVoiceMinutes);
+      
+      // Determine tier and AI type display names
+      const tierName = validatedResults.tierKey === 'starter' ? 'Starter Plan' : 
+                     validatedResults.tierKey === 'growth' ? 'Growth Plan' : 
+                     validatedResults.tierKey === 'premium' ? 'Premium Plan' : 'Growth Plan';
+                     
+      const aiType = validatedResults.aiType === 'chatbot' ? 'Text Only' : 
+                   validatedResults.aiType === 'voice' ? 'Basic Voice' : 
+                   validatedResults.aiType === 'conversationalVoice' ? 'Conversational Voice' : 
+                   validatedResults.aiType === 'both' ? 'Text & Basic Voice' : 
+                   validatedResults.aiType === 'both-premium' ? 'Text & Conversational Voice' : 'Text Only';
       
       // Generate the PDF using the stored calculator results
       const doc = generatePDF({
@@ -253,7 +299,7 @@ export const useReportDownload = () => {
         industry: lead.industry || 'Other',
         employeeCount: Number(lead.employee_count) || 5,
         results: validatedResults,
-        additionalVoiceMinutes: validatedResults.additionalVoiceMinutes || 0,
+        additionalVoiceMinutes: additionalVoiceMinutes,
         includedVoiceMinutes: validatedResults.includedVoiceMinutes || 600,
         businessSuggestions: [
           {
@@ -283,14 +329,8 @@ export const useReportDownload = () => {
             capabilities: ["Answer product questions", "Provide pricing information", "Schedule demonstrations with sales team"]
           }
         ],
-        tierName: validatedResults.tierKey === 'starter' ? 'Starter Plan' : 
-                 validatedResults.tierKey === 'growth' ? 'Growth Plan' : 
-                 validatedResults.tierKey === 'premium' ? 'Premium Plan' : 'Growth Plan',
-        aiType: validatedResults.aiType === 'chatbot' ? 'Text Only' : 
-               validatedResults.aiType === 'voice' ? 'Basic Voice' : 
-               validatedResults.aiType === 'conversationalVoice' ? 'Conversational Voice' : 
-               validatedResults.aiType === 'both' ? 'Text & Basic Voice' : 
-               validatedResults.aiType === 'both-premium' ? 'Text & Conversational Voice' : 'Text Only'
+        tierName: tierName,
+        aiType: aiType
       });
       
       // Save the PDF with the proper name - fixed output type
