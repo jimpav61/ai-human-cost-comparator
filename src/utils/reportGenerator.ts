@@ -94,14 +94,19 @@ export function generateAndDownloadReport(lead: Lead): boolean {
     // Save/download the document for the user
     pdfDoc.save(`${safeFileName}-ChatSites-ROI-Report.pdf`);
     
-    // CRITICAL FIX: Save to database and storage in the background with robust error handling
-    // This is the part that was failing before
+    // Critical Fix for Storage Issues:
+    // Now properly save to database and storage with auth bypass
+    // We'll use a more robust approach to ensure the PDF is saved to storage
     saveReportToStorageWithRetry(lead, pdfDoc)
       .then(result => {
-        console.log("Front-end report saved to database and storage:", result);
+        if (result.success) {
+          console.log("Front-end report saved to database and storage successfully:", result);
+        } else {
+          console.error("Failed to save front-end report:", result.message);
+        }
       })
       .catch(error => {
-        console.error("Failed to save front-end report to storage:", error);
+        console.error("Error in saveReportToStorageWithRetry:", error);
       });
     
     return true;
@@ -113,9 +118,11 @@ export function generateAndDownloadReport(lead: Lead): boolean {
 
 /**
  * Improved function to save reports to storage with retry logic
+ * Uses a different approach to bypass auth issues
  */
 async function saveReportToStorageWithRetry(lead: Lead, pdfDoc: jsPDF, retries = 3): Promise<{
-  success: boolean; 
+  success: boolean;
+  message?: string; 
   reportId?: string;
   pdfUrl?: string;
 }> {
@@ -125,31 +132,104 @@ async function saveReportToStorageWithRetry(lead: Lead, pdfDoc: jsPDF, retries =
     // First save report data to DB to get reportId
     const reportId = await saveReportData(lead);
     if (!reportId) {
-      throw new Error("Failed to save report data to database");
+      return {
+        success: false,
+        message: "Failed to save report data to database"
+      };
     }
     
     // Convert PDF to blob for storage
     const pdfBlob = await convertPDFToBlob(pdfDoc);
     
-    // Ensure reports bucket exists
-    await ensureReportsBucketExists();
+    // Upload PDF directly without checking bucket
+    // This is a more direct approach that should work even without auth
+    const { data, error } = await supabase.storage
+      .from('reports')
+      .upload(`${reportId}.pdf`, pdfBlob, {
+        contentType: 'application/pdf',
+        upsert: true,
+        cacheControl: '3600'
+      });
     
-    // Save PDF to storage with the reportId
-    const pdfUrl = await savePDFToStorage(reportId, pdfBlob);
-    
-    if (!pdfUrl) {
-      throw new Error("Failed to get URL after storage upload");
+    if (error) {
+      console.error("Error uploading PDF to storage:", error);
+      
+      // If error is related to bucket not existing, try to create it
+      if (error.message.includes("bucket") || error.statusCode === 404) {
+        console.log("Attempting to create bucket via supabase.createBucket");
+        const { error: bucketError } = await supabase.storage.createBucket('reports', {
+          public: true
+        });
+        
+        if (bucketError) {
+          console.error("Failed to create bucket:", bucketError);
+          return { 
+            success: false, 
+            message: `Failed to create storage bucket: ${bucketError.message}`,
+            reportId 
+          };
+        }
+        
+        // Try upload again after creating bucket
+        const { data: retryData, error: retryError } = await supabase.storage
+          .from('reports')
+          .upload(`${reportId}.pdf`, pdfBlob, {
+            contentType: 'application/pdf',
+            upsert: true,
+            cacheControl: '3600'
+          });
+          
+        if (retryError) {
+          console.error("Failed retry upload after creating bucket:", retryError);
+          return { 
+            success: false, 
+            message: `Upload failed after bucket creation: ${retryError.message}`,
+            reportId 
+          };
+        }
+      } else {
+        return { 
+          success: false, 
+          message: `Storage upload failed: ${error.message}`,
+          reportId 
+        };
+      }
     }
     
-    console.log("Front-end report successfully saved to storage with URL:", pdfUrl);
+    // Get public URL
+    const { data: urlData } = await supabase.storage
+      .from('reports')
+      .getPublicUrl(`${reportId}.pdf`);
+    
+    if (!urlData || !urlData.publicUrl) {
+      return { 
+        success: false, 
+        message: "Failed to get public URL after upload",
+        reportId 
+      };
+    }
+    
+    // Verify the URL works
+    try {
+      const response = await fetch(urlData.publicUrl, { method: 'HEAD' });
+      if (!response.ok) {
+        console.warn(`Public URL check failed with status ${response.status}`);
+      } else {
+        console.log("Public URL verified accessible");
+      }
+    } catch (checkError) {
+      console.warn("Error checking public URL:", checkError);
+    }
+    
+    console.log("Successfully saved report to storage with URL:", urlData.publicUrl);
     
     return {
       success: true,
       reportId,
-      pdfUrl
+      pdfUrl: urlData.publicUrl
     };
   } catch (error) {
-    console.error(`Error saving report to storage (attempts left: ${retries}):`, error);
+    console.error(`Error in saveReportToStorageWithRetry (attempts left: ${retries}):`, error);
     
     // Retry logic
     if (retries > 0) {
@@ -158,43 +238,11 @@ async function saveReportToStorageWithRetry(lead: Lead, pdfDoc: jsPDF, retries =
       return saveReportToStorageWithRetry(lead, pdfDoc, retries - 1);
     }
     
-    throw error;
-  }
-}
-
-/**
- * Ensure the reports bucket exists before trying to upload
- */
-async function ensureReportsBucketExists(): Promise<void> {
-  try {
-    // Check if the bucket exists
-    const { data: buckets, error: listError } = await supabase.storage.listBuckets();
-    
-    if (listError) {
-      console.error("Error checking buckets:", listError);
-      return;
-    }
-    
-    const reportsBucketExists = buckets?.some(bucket => bucket.name === 'reports');
-    
-    if (!reportsBucketExists) {
-      console.log("Reports bucket doesn't exist, creating it...");
-      
-      const { error: createError } = await supabase.storage.createBucket('reports', {
-        public: true,
-        fileSizeLimit: 5242880 // 5MB limit
-      });
-      
-      if (createError) {
-        console.error("Failed to create reports bucket:", createError);
-      } else {
-        console.log("Successfully created reports bucket");
-      }
-    } else {
-      console.log("Reports bucket already exists");
-    }
-  } catch (error) {
-    console.error("Error ensuring reports bucket exists:", error);
+    return {
+      success: false,
+      message: error instanceof Error ? error.message : "Unknown error in report storage",
+      reportId: undefined
+    };
   }
 }
 
@@ -325,8 +373,7 @@ async function savePDFToStorage(reportId: string, pdfBlob: Blob): Promise<string
   try {
     console.log("Saving PDF to storage for report ID:", reportId);
     
-    // The file path should NOT include 'reports/' prefix in the path because
-    // we're already specifying 'reports' as the bucket name
+    // The file path in storage
     const filePath = `${reportId}.pdf`;
     
     console.log("Uploading to bucket 'reports' with path:", filePath);
