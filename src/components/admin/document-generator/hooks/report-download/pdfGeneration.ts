@@ -186,7 +186,7 @@ export const generateAndUploadPDF = async (report: any, lead: Lead) => {
       console.log('Uploading the exact same PDF to Supabase storage...');
       console.log('Report ID (used as filename in storage):', report.id);
       
-      // Get blob from the SAME document that was saved locally
+      // Get blob from the document once for both database and storage
       const pdfBlob = await docToBlob(doc);
       console.log('PDF blob size:', pdfBlob.size, 'bytes');
       
@@ -211,14 +211,10 @@ export const generateAndUploadPDF = async (report: any, lead: Lead) => {
       } else {
         console.log('Report saved to database successfully:', dbData);
       }
-      
+    
       // Upload to Supabase storage with the report ID as the filename
       const storageFilePath = `${report.id}.pdf`;
       console.log('Uploading to storage path:', storageFilePath);
-      
-      // Get blob from the SAME document that was saved locally
-      const pdfBlob = await docToBlob(doc);
-      console.log('PDF blob size:', pdfBlob.size, 'bytes');
       
       // Add debugging to check authentication status before upload
       const { data: { session } } = await supabase.auth.getSession();
@@ -238,8 +234,7 @@ export const generateAndUploadPDF = async (report: any, lead: Lead) => {
           console.log('Upload error details:', {
             message: uploadError.message,
             name: uploadError.name,
-            statusCode: uploadError.statusCode,
-            details: uploadError.details
+            // Remove properties that don't exist on StorageError type
           });
           
           // More specific error handling for common errors
