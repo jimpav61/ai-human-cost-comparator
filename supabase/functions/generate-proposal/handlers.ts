@@ -21,6 +21,7 @@ export async function handlePreviewRequest(lead: any, shouldReturnContent: boole
     
     // Create a professional multi-page proposal PDF with actual lead data
     const pdfContent = generateProfessionalProposal(lead);
+    console.log("PDF content generated successfully, length:", pdfContent.length);
     
     // If returnContent flag is set, return the raw content instead of PDF 
     if (shouldReturnContent) {
@@ -47,6 +48,8 @@ export async function handlePreviewRequest(lead: any, shouldReturnContent: boole
     console.log("Returning base64 encoded PDF for invoke method");
     // Convert string content to base64 for easy transmission through JSON
     const base64Content = btoa(pdfContent);
+    console.log("Base64 PDF created successfully, length:", base64Content.length);
+    
     return new Response(
       JSON.stringify({
         success: true,
