@@ -16,7 +16,7 @@ export const findOrGenerateReport = async (lead: Lead, setIsLoading: (isLoading:
       throw new Error("Lead ID is missing");
     }
     
-    // First, try to find the report in the database by lead_id
+    // Find the report in the database by lead_id
     console.log("Searching for report with lead_id:", lead.id);
     
     const { data: reportResults, error: searchError } = await supabase
@@ -45,28 +45,28 @@ export const findOrGenerateReport = async (lead: Lead, setIsLoading: (isLoading:
     const report = reportResults[0];
     console.log('Found report for lead:', report.id);
     
-    // Direct download from storage using the report ID
+    // Get the PDF file from storage using the report ID
     const pdfFileName = `${report.id}.pdf`;
-    console.log('Looking for PDF file:', pdfFileName);
+    console.log('Getting PDF file:', pdfFileName);
     
-    const { data: urlData } = await supabase.storage
+    // Get the public URL directly
+    const { data: urlData, error: urlError } = await supabase.storage
       .from('reports')
       .getPublicUrl(pdfFileName);
     
+    if (urlError) {
+      console.error('Error getting URL for PDF:', urlError);
+      throw new Error('Could not get report URL');
+    }
+    
     if (!urlData || !urlData.publicUrl) {
       console.error('No public URL found for PDF');
-      toast({
-        title: "Report Error",
-        description: "Report file not found in storage.",
-        variant: "destructive",
-      });
-      setIsLoading(false);
-      return;
+      throw new Error('Report file not found in storage');
     }
     
     console.log('Found stored PDF, downloading from:', urlData.publicUrl);
     
-    // Trigger direct download of the PDF using the URL
+    // Download the PDF
     const link = document.createElement('a');
     link.href = urlData.publicUrl;
     const safeCompanyName = getSafeFileName(lead);
