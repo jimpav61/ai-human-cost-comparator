@@ -33,6 +33,8 @@ export const addFinancialImpact = (doc: JsPDFWithAutoTable, yPosition: number, p
   const tierKey = params.tierName?.toLowerCase().includes('starter') ? 'starter' : 
                 params.tierName?.toLowerCase().includes('growth') ? 'growth' : 
                 params.tierName?.toLowerCase().includes('premium') ? 'premium' : 'growth';
+  
+  // FIXED: Always use 600 included minutes for non-starter tiers
   const includedVoiceMinutes = tierKey === 'starter' ? 0 : 600;
   
   console.log("Financial Impact - Voice minutes:", {

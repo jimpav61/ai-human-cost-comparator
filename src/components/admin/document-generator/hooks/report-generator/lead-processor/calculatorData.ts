@@ -1,4 +1,3 @@
-
 import { Lead } from "@/types/leads";
 import { AI_RATES } from "@/constants/pricing";
 import { SharedResults } from "../../../types";
@@ -32,7 +31,7 @@ export function getCalculatorData(lead: Lead): CalculatorDataResult {
   const tierKey = inputs.aiTier || 'starter';
   const aiTypeToUse = inputs.aiType || 'chatbot';
   
-  // Calculate included voice minutes based on tier - FIXED: always 600 for non-starter tiers
+  // FIXED: Always use 600 included minutes for non-starter tiers
   const includedVoiceMinutes = tierKey === 'starter' ? 0 : 600;
   
   // Get voice minutes data
