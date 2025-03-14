@@ -1,5 +1,6 @@
 
 import { ProposalData } from "../pdf-data-extractor.ts";
+import { escapePdfText } from "../pdf-utils.ts";
 
 /**
  * Generate the next steps page content for the proposal PDF
@@ -9,6 +10,9 @@ export function generateNextStepsPageContent(data: ProposalData): string {
     brandRed,
     companyName
   } = data;
+
+  // Escape text to prevent PDF syntax errors
+  const safeCompanyName = escapePdfText(companyName);
 
   return `q
 ${brandRed} rg
@@ -74,7 +78,7 @@ ${brandRed} rg
 0 0 0 rg
 0 -30 Td
 /F1 13 Tf
-(To proceed with implementing this AI solution for ${companyName}:) Tj
+(To proceed with implementing this AI solution for ${safeCompanyName}:) Tj
 0 -30 Td
 (\\267 Schedule a demonstration of our solution) Tj
 0 -20 Td

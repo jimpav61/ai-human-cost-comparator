@@ -1,116 +1,95 @@
 
-import { corsHeaders } from "../_shared/cors.ts";
+import { ProposalData, extractProposalData } from "./pdf-data-extractor.ts";
 import { generateProfessionalProposal } from "./pdf-generator.ts";
-import { getSafeFileName } from "../_shared/utils.ts";
+import { isValidPdf, debugLog } from "./pdf-utils.ts";
 
 /**
- * Handle preview request for proposal generation
+ * Proposal generation handler - main entry point
  */
-export async function handlePreviewRequest(lead: any, returnContent = false, debug = false) {
+export async function handleProposalGeneration(req: Request): Promise<Response> {
   try {
-    console.log("Generating PDF preview for lead:", lead.id);
-    
-    // Generate the PDF content
-    const pdfContent = generateProfessionalProposal(lead);
-    
-    // Verify the PDF content starts with the PDF header
-    if (!pdfContent.startsWith('%PDF-')) {
-      console.error("CRITICAL ERROR: Generated content is not a valid PDF (missing %PDF- header)");
-      throw new Error("Generated content is not a valid PDF");
-    }
-    
-    // Log success
-    console.log(`Successfully generated PDF preview (${pdfContent.length} bytes)`);
-    
-    // Determine what to return
-    const response = {
-      success: true,
-      message: "Successfully generated proposal PDF",
-      contentLength: pdfContent.length,
-      contentStartsWith: pdfContent.substring(0, 20),
-      // Only include content if explicitly requested
-      content: returnContent ? pdfContent : undefined,
-      // Include debug info if requested
-      debug: debug ? {
-        leadId: lead.id,
-        companyName: lead.company_name,
-        calculatorResultsType: typeof lead.calculator_results,
-        hasCalculatorInputs: !!lead.calculator_inputs,
-        apiVersion: "2.8"
-      } : undefined
+    const corsHeaders = {
+      'Access-Control-Allow-Origin': '*',
+      'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
     };
     
-    return new Response(
-      JSON.stringify(response),
-      {
-        headers: {
-          ...corsHeaders,
-          "Content-Type": "application/json"
-        },
-        status: 200
-      }
-    );
-  } catch (error) {
-    console.error("Error generating PDF preview:", error);
+    // Parse request body
+    const { lead, mode = "preview", returnContent = true, debug = false } = await req.json();
     
+    debugLog("Proposal Request", { leadId: lead?.id, mode, returnContent, debug });
+    
+    // Validate input data
+    if (!lead || !lead.id || !lead.company_name) {
+      throw new Error("Missing required lead data: id and company_name");
+    }
+    
+    // Log the lead data for debugging
+    if (debug) {
+      console.log('Lead data received:', {
+        id: lead.id,
+        company: lead.company_name,
+        calculator_results: lead.calculator_results ? Object.keys(lead.calculator_results) : "missing"
+      });
+    }
+    
+    // Generate the PDF proposal
+    const pdfContent = generateProfessionalProposal(lead);
+    
+    // Validate the generated PDF content
+    if (!isValidPdf(pdfContent)) {
+      console.error("Generated content is not a valid PDF!");
+      throw new Error("Failed to generate a valid PDF document");
+    }
+    
+    console.log(`PDF generated successfully for ${lead.company_name} (${lead.id})`);
+    
+    // Prepare the response
+    const response = {
+      success: true,
+      message: "Proposal generated successfully",
+      leadId: lead.id
+    };
+    
+    // Add the PDF content to the response if requested
+    if (returnContent) {
+      response["pdf"] = pdfContent;
+    }
+    
+    return new Response(JSON.stringify(response), {
+      headers: {
+        'Content-Type': 'application/json',
+        ...corsHeaders
+      }
+    });
+  } catch (error) {
+    console.error('Error handling proposal generation:', error);
     return new Response(
-      JSON.stringify({ 
-        success: false, 
-        error: error instanceof Error ? error.message : "Unknown error",
-        stage: "preview generation" 
+      JSON.stringify({
+        success: false,
+        error: error instanceof Error ? error.message : 'Unknown error',
       }),
       {
+        status: 500,
         headers: {
-          ...corsHeaders,
-          "Content-Type": "application/json"
-        },
-        status: 500
+          'Content-Type': 'application/json',
+          'Access-Control-Allow-Origin': '*',
+          'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
+        }
       }
     );
   }
 }
 
 /**
- * Handle email request for proposal
+ * Handle CORS preflight requests
  */
-export async function handleEmailRequest(lead: any) {
-  try {
-    console.log("Email functionality not yet implemented");
-    
-    // Create a filename for the PDF
-    const filename = getSafeFileName(lead.company_name);
-    
-    // Return success with placeholder message
-    return new Response(
-      JSON.stringify({ 
-        success: true, 
-        message: "Email functionality not yet implemented",
-        filename: filename
-      }),
-      {
-        headers: {
-          ...corsHeaders,
-          "Content-Type": "application/json"
-        },
-        status: 200
-      }
-    );
-  } catch (error) {
-    console.error("Error in email handler:", error);
-    
-    return new Response(
-      JSON.stringify({ 
-        success: false, 
-        error: error instanceof Error ? error.message : "Unknown error",
-        stage: "email sending" 
-      }),
-      {
-        headers: {
-          ...corsHeaders,
-          "Content-Type": "application/json"
-        },
-        status: 500
-      }
-    );
-  }
+export function handleCorsRequest(): Response {
+  return new Response(null, {
+    headers: {
+      'Access-Control-Allow-Origin': '*',
+      'Access-Control-Allow-Methods': 'POST, OPTIONS',
+      'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
+      'Access-Control-Max-Age': '86400',
+    }
+  });
 }

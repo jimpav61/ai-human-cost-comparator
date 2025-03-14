@@ -4,7 +4,7 @@ import { generateSolutionPageContent } from "./pdf-sections/solution-page.ts";
 import { generateFinancialPageContent } from "./pdf-sections/financial-page.ts";
 import { generateNextStepsPageContent } from "./pdf-sections/next-steps-page.ts";
 import { extractProposalData } from "./pdf-data-extractor.ts";
-import { isValidPdf } from "./pdf-utils.ts";
+import { isValidPdf, debugLog } from "./pdf-utils.ts";
 
 /**
  * Generates a professional PDF proposal document based on lead data
@@ -19,10 +19,10 @@ export function generateProfessionalProposal(lead: any): string {
   try {
     // Extract all data needed for the PDF
     const proposalData = extractProposalData(lead);
+    debugLog("Proposal Data Ready", { company: proposalData.companyName, plan: proposalData.tierName });
     
     // Create the PDF document with proper structure
-    let pdfContent = `
-%PDF-1.7
+    let pdfContent = `%PDF-1.7
 1 0 obj
 << /Type /Catalog
    /Pages 2 0 R
@@ -197,10 +197,9 @@ trailer
 >>
 startxref
 15179
-%%EOF
-`;
+%%EOF`;
 
-    // Validate the generated PDF
+    // Verify the generated PDF
     if (!isValidPdf(pdfContent)) {
       console.error("CRITICAL ERROR: Generated content is not a valid PDF!");
       throw new Error("Failed to generate a valid PDF document");

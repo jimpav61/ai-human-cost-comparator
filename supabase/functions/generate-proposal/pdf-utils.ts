@@ -7,7 +7,12 @@
 /**
  * Format currency values for PDF display
  */
-export function formatPdfCurrency(amount: number): string {
+export function formatPdfCurrency(amount: number | null | undefined): string {
+  // Return $0 if amount is null or undefined
+  if (amount === null || amount === undefined) {
+    return "$0";
+  }
+  
   return new Intl.NumberFormat('en-US', {
     style: 'currency',
     currency: 'USD',
@@ -19,7 +24,12 @@ export function formatPdfCurrency(amount: number): string {
 /**
  * Format percentage values for PDF display
  */
-export function formatPdfPercentage(value: number): string {
+export function formatPdfPercentage(value: number | null | undefined): string {
+  // Return 0% if value is null or undefined
+  if (value === null || value === undefined) {
+    return "0%";
+  }
+  
   return new Intl.NumberFormat('en-US', {
     style: 'percent',
     minimumFractionDigits: 0,
@@ -30,14 +40,21 @@ export function formatPdfPercentage(value: number): string {
 /**
  * Format large numbers with separators
  */
-export function formatPdfNumber(value: number): string {
+export function formatPdfNumber(value: number | null | undefined): string {
+  // Return 0 if value is null or undefined
+  if (value === null || value === undefined) {
+    return "0";
+  }
+  
   return new Intl.NumberFormat('en-US').format(value);
 }
 
 /**
  * Get plan display name from tier key
  */
-export function getPlanName(tierKey: string): string {
+export function getPlanName(tierKey: string | null | undefined): string {
+  if (!tierKey) return 'Custom Plan';
+  
   return tierKey === 'starter' ? 'Starter Plan' : 
          tierKey === 'growth' ? 'Growth Plan' : 
          tierKey === 'premium' ? 'Premium Plan' : 'Custom Plan';
@@ -46,7 +63,9 @@ export function getPlanName(tierKey: string): string {
 /**
  * Get AI type display name from type key
  */
-export function getAiTypeDisplay(aiType: string): string {
+export function getAiTypeDisplay(aiType: string | null | undefined): string {
+  if (!aiType) return 'Custom';
+  
   return aiType === 'chatbot' ? 'Text Only' : 
          aiType === 'voice' ? 'Basic Voice' : 
          aiType === 'conversationalVoice' ? 'Conversational Voice' : 
@@ -62,9 +81,52 @@ export function isValidPdf(content: string): boolean {
 }
 
 /**
+ * Ensure a number is valid and not NaN
+ */
+export function ensureNumber(value: any, defaultValue: number = 0): number {
+  if (value === null || value === undefined || isNaN(Number(value))) {
+    return defaultValue;
+  }
+  return Number(value);
+}
+
+/**
+ * Ensure a string is valid and not empty
+ */
+export function ensureString(value: any, defaultValue: string = ''): string {
+  if (value === null || value === undefined || typeof value !== 'string') {
+    return defaultValue;
+  }
+  return value;
+}
+
+/**
  * Get timestamp formatted for PDF display
  */
 export function getFormattedTimestamp(): string {
   const today = new Date();
   return `${today.toLocaleString('default', { month: 'long' })} ${today.getDate()}, ${today.getFullYear()}`;
+}
+
+/**
+ * Safely escape PDF text to prevent formatting issues
+ * Replace characters that could break PDF formatting 
+ */
+export function escapePdfText(text: string): string {
+  if (!text) return '';
+  
+  // Replace special characters that might break PDF syntax
+  return text
+    .replace(/\\/g, '\\\\')
+    .replace(/\(/g, '\\(')
+    .replace(/\)/g, '\\)')
+    .replace(/\n/g, ' ');
+}
+
+/**
+ * Log data to console with label for improved debugging
+ */
+export function debugLog(label: string, data: any): void {
+  console.log(`[PDF DEBUG] ${label}:`, 
+    typeof data === 'object' ? JSON.stringify(data, null, 2) : data);
 }

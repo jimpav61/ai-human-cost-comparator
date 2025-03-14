@@ -1,135 +1,115 @@
 
-import { formatPdfCurrency, getPlanName, getAiTypeDisplay } from "./pdf-utils.ts";
+import { 
+  formatPdfCurrency, 
+  formatPdfPercentage, 
+  getPlanName, 
+  getAiTypeDisplay,
+  ensureNumber,
+  ensureString,
+  debugLog
+} from "./pdf-utils.ts";
 
-/**
- * Proposal PDF Data Parameters 
- * Contains all the information needed to generate a proposal
- */
 export interface ProposalData {
-  // Company information
+  // Company and contact info
+  brandRed: string;
   companyName: string;
   contactName: string;
   email: string;
   phoneNumber: string;
   industry: string;
+  employeeCount: number;
   
-  // Plan information
+  // Plan details
   tierKey: string;
   tierName: string;
   aiType: string;
   aiTypeDisplay: string;
+  includedVoiceMinutes: number;
+  additionalVoiceMinutes: number;
   
-  // Financial information
-  basePriceMonthly: number;
-  setupFee: number;
+  // Financial details
   humanCostMonthly: number;
+  basePrice: number;
+  setupFee: number;
+  voiceCost: number;
+  totalMonthlyCost: number;
   monthlySavings: number;
   yearlySavings: number;
   savingsPercentage: number;
-  aiCostMonthly: {
-    total: number;
-    setupFee: number;
-    voice: number;
-    chatbot: number;
-  };
-  
-  // Voice information
-  includedVoiceMinutes: number;
-  additionalVoiceMinutes: number;
-  additionalVoiceCost: number;
-  
-  // Derived values
-  annualPlan: number;
-  breakEvenPoint: number;
+  breakEvenMonths: number;
   firstYearROI: number;
   fiveYearSavings: number;
   
-  // Date information
+  // Formatting
   formattedDate: string;
   
-  // Branding
-  brandRed: string;
+  // Formatted values for display
+  formattedHumanCost: string;
+  formattedBasePrice: string;
+  formattedSetupFee: string;
+  formattedVoiceCost: string;
+  formattedTotalCost: string;
+  formattedMonthlySavings: string;
+  formattedYearlySavings: string;
+  formattedSavingsPercentage: string;
 }
 
 /**
- * Extract and sanitize all data needed for the PDF from the lead object
+ * Extract all necessary data from lead object to generate a proposal PDF
  */
 export function extractProposalData(lead: any): ProposalData {
-  console.log("Extracting proposal data from lead:", lead.id);
+  debugLog("Lead Object for Extraction", {
+    id: lead.id,
+    company: lead.company_name,
+    contact: lead.name,
+    calculatorResults: lead.calculator_results ? Object.keys(lead.calculator_results) : "missing"
+  });
   
-  // Create sanitized deep copy of lead data to avoid reference issues
-  const sanitizedLead = JSON.parse(JSON.stringify(lead));
+  // Ensure calculator_results exists and is an object
+  const calculatorResults = lead.calculator_results || {};
+  debugLog("Calculator Results", calculatorResults);
   
-  // Ensure calculator_results exists
-  if (!sanitizedLead.calculator_results) {
-    console.error("Missing calculator_results, using defaults");
-    sanitizedLead.calculator_results = {
-      aiCostMonthly: { voice: 0, chatbot: 229, total: 229, setupFee: 749 },
-      basePriceMonthly: 229,
-      humanCostMonthly: 3800,
-      monthlySavings: 3571,
-      yearlySavings: 42852,
-      savingsPercentage: 94,
-      tierKey: "growth",
-      aiType: "both",
-      includedVoiceMinutes: 600,
-      additionalVoiceMinutes: 0
-    };
-  }
+  // Extract company and contact information with defaults
+  const companyName = ensureString(lead.company_name, 'Your Company');
+  const contactName = ensureString(lead.name, 'Valued Client');
+  const email = ensureString(lead.email, 'client@example.com');
+  const phoneNumber = ensureString(lead.phone_number, 'Not provided');
+  const industry = ensureString(lead.industry, 'Technology');
+  const employeeCount = ensureNumber(lead.employee_count, 5);
   
-  // Company information - use exactly what's in the lead
-  const companyName = sanitizedLead.company_name || 'Client';
-  const contactName = sanitizedLead.name || 'Valued Client';
-  const email = sanitizedLead.email || 'client@example.com';
-  const phoneNumber = sanitizedLead.phone_number || 'Not provided';
-  const industry = sanitizedLead.industry || 'Technology';
+  // Extract and validate tier and AI type
+  const tierKey = ensureString(calculatorResults.tierKey, 'growth');
+  const aiType = ensureString(calculatorResults.aiType, 'both');
   
-  // Extract plan/pricing information directly without recalculation
-  const tierKey = sanitizedLead.calculator_results.tierKey || 'growth';
-  const aiType = sanitizedLead.calculator_results.aiType || 'both';
-  
-  // Get display names from keys
+  // Get display names
   const tierName = getPlanName(tierKey);
   const aiTypeDisplay = getAiTypeDisplay(aiType);
   
-  // Take financial values exactly as stored, with no modifications
-  const basePriceMonthly = sanitizedLead.calculator_results.basePriceMonthly || 229;
-  const humanCostMonthly = sanitizedLead.calculator_results.humanCostMonthly || 3800;
-  const monthlySavings = sanitizedLead.calculator_results.monthlySavings || 3571;
-  const yearlySavings = sanitizedLead.calculator_results.yearlySavings || 42852;
-  const savingsPercentage = sanitizedLead.calculator_results.savingsPercentage || 94;
-  
-  // Get the aiCostMonthly structure exactly as stored
-  const aiCostMonthly = sanitizedLead.calculator_results.aiCostMonthly || {
-    voice: 0,
-    chatbot: 229,
-    total: 229,
-    setupFee: 749
-  };
-  
-  // Get additional values directly from the calculator data
-  const setupFee = aiCostMonthly.setupFee;
-  const totalMonthlyCost = aiCostMonthly.total;
-  const voiceCost = aiCostMonthly.voice || 0;
-  
-  // Safely extract additional voice minutes
-  const additionalVoiceMinutes = sanitizedLead.calculator_results.additionalVoiceMinutes || 
-                               sanitizedLead.calculator_inputs?.callVolume || 0;
-  
-  // Calculate additional voice cost
-  const additionalVoiceCost = additionalVoiceMinutes * 0.12;
-  
-  // Get included minutes based on tier
+  // Voice minutes calculations
   const includedVoiceMinutes = tierKey === 'starter' ? 0 : 600;
+  const additionalVoiceMinutes = ensureNumber(
+    calculatorResults.additionalVoiceMinutes || 
+    (lead.calculator_inputs?.callVolume || 0)
+  );
   
-  // Safely access annualPlan with type checking
-  const annualPlan = typeof sanitizedLead.calculator_results.annualPlan === 'number' 
-                   ? sanitizedLead.calculator_results.annualPlan 
-                   : basePriceMonthly * 10; // 2 months free with annual plan
+  // Financial calculations - ensure valid numbers with defaults
+  const humanCostMonthly = ensureNumber(calculatorResults.humanCostMonthly, 3800);
+  const basePrice = ensureNumber(calculatorResults.basePriceMonthly, 229);
+  const setupFee = ensureNumber(calculatorResults.aiCostMonthly?.setupFee, 749);
+  const voiceCost = ensureNumber(calculatorResults.aiCostMonthly?.voice, 0);
+  const totalMonthlyCost = ensureNumber(calculatorResults.aiCostMonthly?.total, basePrice + voiceCost);
+  const monthlySavings = ensureNumber(calculatorResults.monthlySavings, humanCostMonthly - totalMonthlyCost);
+  const yearlySavings = ensureNumber(calculatorResults.yearlySavings, monthlySavings * 12);
+  const savingsPercentage = ensureNumber(calculatorResults.savingsPercentage, 
+    humanCostMonthly > 0 ? (monthlySavings / humanCostMonthly) * 100 : 0);
   
-  // Derived values for ROI calculations
-  const breakEvenPoint = monthlySavings > 0 ? Math.ceil(setupFee / monthlySavings) : 1;
-  const firstYearROI = monthlySavings > 0 ? Math.round((yearlySavings - setupFee) / setupFee * 100) : 0;
+  // ROI calculations
+  const breakEvenMonths = setupFee > 0 && monthlySavings > 0 
+    ? Math.ceil(setupFee / monthlySavings) 
+    : 1;
+  const firstYearROI = setupFee > 0 
+    ? Math.round((yearlySavings - setupFee) / setupFee * 100) 
+    : 0;
   const fiveYearSavings = yearlySavings * 5;
   
   // Format date for proposal
@@ -137,42 +117,64 @@ export function extractProposalData(lead: any): ProposalData {
   const formattedDate = `${today.toLocaleString('default', { month: 'long' })} ${today.getDate()}, ${today.getFullYear()}`;
   
   // Brand Colors
-  const brandRed = "#f65228"; // Corrected to your brand color
+  const brandRed = "#ff432a";
   
-  console.log("Extracted data for PDF generation:", {
+  // Create formatted values for display
+  const formattedHumanCost = formatPdfCurrency(humanCostMonthly);
+  const formattedBasePrice = formatPdfCurrency(basePrice);
+  const formattedSetupFee = formatPdfCurrency(setupFee);
+  const formattedVoiceCost = formatPdfCurrency(voiceCost);
+  const formattedTotalCost = formatPdfCurrency(totalMonthlyCost);
+  const formattedMonthlySavings = formatPdfCurrency(monthlySavings);
+  const formattedYearlySavings = formatPdfCurrency(yearlySavings);
+  const formattedSavingsPercentage = formatPdfPercentage(savingsPercentage);
+  
+  debugLog("Extracted and Processed Data", {
     companyName,
-    tierKey,
-    aiType,
-    additionalVoiceMinutes,
+    tierName,
+    aiTypeDisplay,
     humanCostMonthly,
-    monthlySavings
+    totalMonthlyCost,
+    savingsPercentage
   });
   
   return {
+    brandRed,
     companyName,
     contactName,
     email,
     phoneNumber,
     industry,
+    employeeCount,
+    
     tierKey,
     tierName,
     aiType,
     aiTypeDisplay,
-    basePriceMonthly,
-    setupFee,
+    includedVoiceMinutes,
+    additionalVoiceMinutes,
+    
     humanCostMonthly,
+    basePrice,
+    setupFee,
+    voiceCost,
+    totalMonthlyCost,
     monthlySavings,
     yearlySavings,
     savingsPercentage,
-    aiCostMonthly,
-    includedVoiceMinutes,
-    additionalVoiceMinutes,
-    additionalVoiceCost,
-    annualPlan,
-    breakEvenPoint,
+    breakEvenMonths,
     firstYearROI,
     fiveYearSavings,
+    
     formattedDate,
-    brandRed
+    
+    formattedHumanCost,
+    formattedBasePrice,
+    formattedSetupFee,
+    formattedVoiceCost,
+    formattedTotalCost,
+    formattedMonthlySavings,
+    formattedYearlySavings,
+    formattedSavingsPercentage
   };
 }
