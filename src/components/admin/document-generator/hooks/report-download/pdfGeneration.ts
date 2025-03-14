@@ -1,3 +1,4 @@
+
 import { Lead } from "@/types/leads";
 import { toast } from "@/hooks/use-toast";
 import { ensureCompleteCalculatorResults } from "@/hooks/calculator/supabase-types";
@@ -102,35 +103,44 @@ export const generateAndUploadPDF = async (report: any, lead: Lead) => {
     // Validate and ensure the calculator results have the correct structure
     const validatedResults = ensureCompleteCalculatorResults(calculatorResultsData);
     
-    // CRITICAL FIX: Ensure additionalVoiceMinutes is correctly handled
+    // CRITICAL: Directly use call volume from calculator inputs for voice minutes
     let additionalVoiceMinutes = 0;
     
-    // Check all possible sources for additionalVoiceMinutes
-    if (typeof validatedResults.additionalVoiceMinutes === 'number') {
-      additionalVoiceMinutes = validatedResults.additionalVoiceMinutes;
-      console.log('Using additionalVoiceMinutes from validatedResults:', additionalVoiceMinutes);
-    } 
-    // Check calculator inputs callVolume
-    else if (calculatorInputsData && typeof calculatorInputsData.callVolume === 'number') {
+    // First priority: Look for callVolume in calculator_inputs
+    if (calculatorInputsData && typeof calculatorInputsData.callVolume === 'number') {
       additionalVoiceMinutes = calculatorInputsData.callVolume;
-      console.log('Using callVolume as additionalVoiceMinutes:', additionalVoiceMinutes);
-    }
-    // Handle string values in callVolume
+      console.log('Using callVolume from inputs:', additionalVoiceMinutes);
+    } 
+    // Second priority: Parse string value if present
     else if (calculatorInputsData && typeof calculatorInputsData.callVolume === 'string' && calculatorInputsData.callVolume !== '') {
       additionalVoiceMinutes = parseInt(calculatorInputsData.callVolume, 10) || 0;
-      console.log('Parsed callVolume string as additionalVoiceMinutes:', additionalVoiceMinutes);
+      console.log('Parsed callVolume string as:', additionalVoiceMinutes);
+    }
+    // Third priority: Check additionalVoiceMinutes in validatedResults
+    else if (typeof validatedResults.additionalVoiceMinutes === 'number') {
+      additionalVoiceMinutes = validatedResults.additionalVoiceMinutes;
+      console.log('Using additionalVoiceMinutes from results:', additionalVoiceMinutes);
     }
     
-    // Inject the additionalVoiceMinutes into validated results to ensure it's used in PDF generation
-    validatedResults.additionalVoiceMinutes = additionalVoiceMinutes;
+    // IMPORTANT: Always get the tier and AI type correctly
+    const tierKey = validatedResults.tierKey || 'growth';
+    const aiTypeKey = validatedResults.aiType || 'both';
     
-    console.log('Final additionalVoiceMinutes value being used:', additionalVoiceMinutes);
+    // Ensure includedVoiceMinutes is set correctly based on tier
+    const includedVoiceMinutes = tierKey === 'starter' ? 0 : 600;
+    
+    console.log('Final values for PDF generation:', {
+      additionalVoiceMinutes,
+      includedVoiceMinutes,
+      tierKey,
+      aiTypeKey
+    });
     
     // Determine tier and AI type display names
-    const tierName = getTierName(validatedResults.tierKey);
-    const aiType = getAiTypeName(validatedResults.aiType);
+    const tierName = getTierName(tierKey);
+    const aiType = getAiTypeName(aiTypeKey);
     
-    // Generate the PDF using the stored calculator results
+    // Generate the PDF using the stored calculator results with corrected voice minutes
     const doc = generatePDF({
       contactInfo: report.contact_name || lead.name || 'Valued Client',
       companyName: report.company_name || lead.company_name || 'Your Company',
@@ -138,9 +148,13 @@ export const generateAndUploadPDF = async (report: any, lead: Lead) => {
       phoneNumber: report.phone_number || lead.phone_number || '',
       industry: lead.industry || 'Other',
       employeeCount: Number(lead.employee_count) || 5,
-      results: validatedResults,
+      results: {
+        ...validatedResults,
+        additionalVoiceMinutes: additionalVoiceMinutes,
+        includedVoiceMinutes: includedVoiceMinutes
+      },
       additionalVoiceMinutes: additionalVoiceMinutes,
-      includedVoiceMinutes: validatedResults.includedVoiceMinutes || 600,
+      includedVoiceMinutes: includedVoiceMinutes,
       businessSuggestions: getBusinessSuggestions(),
       aiPlacements: getAiPlacements(),
       tierName: tierName,

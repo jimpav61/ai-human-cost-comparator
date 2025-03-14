@@ -98,31 +98,36 @@ export async function findAndDownloadReport(lead: Lead, setIsLoading: (loading: 
     
     // Create a new report record in the database
     const safeCompanyName = getSafeFileName(lead);
-    const reportId = Math.random().toString(36).substring(2, 15);
+    // Use a proper UUID for the reportId instead of a random string
+    const reportId = crypto.randomUUID();
     
     console.log("Creating new report in database with ID:", reportId);
-    const { error: insertError } = await supabase
+    
+    // Create insertion object without explicit 'id' field to let Supabase handle it
+    const newReportData = {
+      lead_id: lead.id,
+      company_name: lead.company_name,
+      contact_name: lead.name,
+      email: lead.email,
+      phone_number: lead.phone_number,
+      calculator_results: lead.calculator_results,
+      calculator_inputs: lead.calculator_inputs,
+      report_date: new Date().toISOString()
+    };
+    
+    const { data: insertedReport, error: insertError } = await supabase
       .from('generated_reports')
-      .insert({
-        id: reportId,
-        lead_id: lead.id,
-        company_name: lead.company_name,
-        contact_name: lead.name,
-        email: lead.email,
-        phone_number: lead.phone_number,
-        calculator_results: lead.calculator_results,
-        calculator_inputs: lead.calculator_inputs,
-        report_date: new Date().toISOString()
-      });
+      .insert(newReportData)
+      .select('*')
+      .single();
       
     if (insertError) {
       console.error("Error creating report record:", insertError);
       console.log("Continuing with report generation despite record creation error");
     }
     
-    // Generate the PDF with the lead data
-    console.log("Generating PDF from lead data");
-    await generateAndUploadPDF({
+    // Use the inserted report if available, otherwise create a new one
+    const reportToUse = insertedReport || {
       id: reportId,
       lead_id: lead.id,
       company_name: lead.company_name,
@@ -131,9 +136,14 @@ export async function findAndDownloadReport(lead: Lead, setIsLoading: (loading: 
       phone_number: lead.phone_number,
       calculator_results: lead.calculator_results,
       calculator_inputs: lead.calculator_inputs
-    }, lead);
+    };
+    
+    // Generate the PDF with the lead data - ensure we pass the full report data
+    console.log("Generating PDF from lead data");
+    await generateAndUploadPDF(reportToUse, lead);
     
     console.log("Successfully generated and downloaded report");
+    console.log("---------- ADMIN REPORT DOWNLOAD ATTEMPT ENDED ----------");
     
   } catch (error) {
     console.error("Error in findAndDownloadReport:", error);
