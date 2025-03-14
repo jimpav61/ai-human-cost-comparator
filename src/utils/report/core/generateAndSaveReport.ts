@@ -8,7 +8,8 @@ import {
   saveReportData,
   savePDFToStorage
 } from "../storageUtils";
-import { generateReportPDF, convertPDFToBlob } from "../pdfUtils";
+import { generateReportPDF } from "../pdf/generator";
+import { convertPDFToBlob } from "../pdf/conversion";
 import { ensureLeadHasValidId, getSafeFileName } from "../validation";
 
 /**

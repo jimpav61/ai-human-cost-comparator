@@ -1,7 +1,8 @@
 
 import { Lead } from "@/types/leads";
 import { toast } from "@/components/ui/use-toast";
-import { generateReportPDF } from "../pdfUtils";
+import { generateReportPDF } from "../pdf/generator";
+import { convertPDFToBlob } from "../pdf/conversion";
 import { ensureLeadHasValidId, getSafeFileName } from "../validation";
 import { supabase } from "@/integrations/supabase/client";
 import { verifyReportsBucket, saveReportToStorageWithRetry } from "../storageUtils";
