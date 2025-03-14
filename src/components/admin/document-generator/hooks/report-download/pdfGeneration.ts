@@ -5,7 +5,6 @@ import { ensureCompleteCalculatorResults } from "@/hooks/calculator/supabase-typ
 import { generatePDF } from "@/components/calculator/pdf";
 import { supabase } from "@/integrations/supabase/client";
 import { getSafeFileName } from "@/utils/report/validation";
-import { verifyReportsBucket } from "@/utils/report/bucketUtils";
 
 // Helper function to ensure JSON is parsed
 export const ensureJsonParsed = (data: any) => {
@@ -83,10 +82,10 @@ export const docToBlob = async (doc: any): Promise<Blob> => {
 // Generate PDF from report data and download it
 export const generateAndUploadPDF = async (report: any, lead: Lead) => {
   try {
-    console.log('Generating and uploading PDF for report:', {
+    console.log('Generating PDF for report:', {
       reportId: report.id, 
       leadId: report.lead_id,
-      company: report.company_name
+      company: lead.company_name
     });
     
     // Generate safe filename for the report
@@ -167,28 +166,76 @@ export const generateAndUploadPDF = async (report: any, lead: Lead) => {
     
     // Also upload to Supabase storage
     try {
-      // Verify bucket exists first
-      await verifyReportsBucket();
+      console.log('Attempting to save PDF to Supabase storage...');
+      console.log('Report ID (used as filename in storage):', report.id);
       
       // Get the PDF as binary data
       const pdfBlob = await docToBlob(doc);
+      console.log('PDF blob size:', pdfBlob.size, 'bytes');
       
-      // Upload to Supabase storage
-      const storageResponse = await uploadPdfToStorage(report.id, pdfBlob);
+      // CRITICAL - Insert the report into the database first
+      const { data: dbData, error: dbError } = await supabase
+        .from('generated_reports')
+        .upsert({
+          id: report.id,
+          lead_id: report.lead_id,
+          report_date: report.report_date,
+          calculator_inputs: report.calculator_inputs,
+          calculator_results: report.calculator_results,
+          company_name: lead.company_name,
+          contact_name: lead.name,
+          email: lead.email,
+          phone_number: lead.phone_number
+        })
+        .select('id');
       
-      if (storageResponse) {
-        console.log('PDF successfully uploaded to Supabase storage at:', storageResponse);
+      if (dbError) {
+        console.error('Error saving report to database:', dbError);
       } else {
-        console.error('Failed to upload PDF to storage. Falling back to local download only.');
+        console.log('Report saved to database successfully:', dbData);
+      }
+      
+      // Upload to Supabase storage with the report ID as the filename
+      const storageFilePath = `${report.id}.pdf`;
+      console.log('Uploading to storage path:', storageFilePath);
+      
+      const { data: uploadData, error: uploadError } = await supabase.storage
+        .from('reports')
+        .upload(storageFilePath, pdfBlob, {
+          contentType: 'application/pdf',
+          upsert: true
+        });
+      
+      if (uploadError) {
+        console.error('Error uploading PDF to storage:', uploadError);
+        
+        if (uploadError.message.includes('The resource already exists')) {
+          console.log('File already exists in storage. This is not an error.');
+          
+          // Get the public URL for the existing file
+          const { data: urlData } = await supabase.storage
+            .from('reports')
+            .getPublicUrl(storageFilePath);
+            
+          console.log('Existing file URL:', urlData?.publicUrl);
+        }
+      } else {
+        console.log('PDF successfully uploaded to storage:', uploadData?.path);
+        
+        // Get the public URL
+        const { data: urlData } = await supabase.storage
+          .from('reports')
+          .getPublicUrl(storageFilePath);
+          
+        console.log('Public URL for uploaded file:', urlData?.publicUrl);
       }
     } catch (uploadError) {
-      console.error('Error uploading PDF to storage:', uploadError);
-      // Don't throw the error, as we've already given the user the local download
+      console.error('Error during storage upload process:', uploadError);
     }
     
     toast({
       title: "Report Downloaded",
-      description: "The report has been successfully downloaded.",
+      description: "The report has been successfully downloaded and saved.",
       duration: 3000,
     });
   } catch (error) {
@@ -199,55 +246,5 @@ export const generateAndUploadPDF = async (report: any, lead: Lead) => {
       variant: "destructive",
       duration: 3000,
     });
-  }
-};
-
-// Helper function to upload PDF to Supabase storage
-export const uploadPdfToStorage = async (reportId: string, pdfBlob: Blob): Promise<string | null> => {
-  try {
-    // Upload the PDF file
-    const filePath = `${reportId}.pdf`;
-    console.log('Uploading PDF to storage path:', filePath);
-    
-    // Check blob validity
-    if (!pdfBlob || pdfBlob.size === 0) {
-      console.error('Invalid PDF blob - empty or zero size');
-      return null;
-    }
-    
-    console.log('PDF blob size for upload:', pdfBlob.size, 'bytes');
-    
-    const { data, error } = await supabase.storage
-      .from('reports')
-      .upload(filePath, pdfBlob, {
-        contentType: 'application/pdf',
-        upsert: true,
-        cacheControl: '3600'
-      });
-    
-    if (error) {
-      console.error('Error uploading to storage:', error);
-      
-      // More detailed error diagnostics
-      if (error.message.includes("row-level security policy")) {
-        console.error("CRITICAL: RLS policy is preventing upload. The bucket may need to be public and have proper policies.");
-        return null;
-      }
-      
-      return null;
-    }
-    
-    // Get the public URL
-    const { data: urlData } = await supabase.storage
-      .from('reports')
-      .getPublicUrl(filePath);
-    
-    console.log('Storage upload successful, file path:', data?.path);
-    console.log('Public URL:', urlData?.publicUrl);
-    
-    return urlData?.publicUrl || null;
-  } catch (error) {
-    console.error('Unexpected error in upload process:', error);
-    return null;
   }
 };
