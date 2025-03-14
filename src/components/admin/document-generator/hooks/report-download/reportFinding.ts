@@ -52,6 +52,24 @@ export const findAndDownloadReport = async (lead: Lead, setIsLoading: (isLoading
         return;
       }
       
+      // If no report found by lead_id or direct ID, check storage directly for any report with this ID
+      console.log('Checking storage directly for report with ID:', lead.id);
+      
+      const { data: fileExistsInStorage, error: storageError } = await supabase.storage
+        .from('reports')
+        .list('', {
+          search: `${lead.id}.pdf`
+        });
+        
+      if (storageError) {
+        console.error('Error checking storage for files:', storageError);
+      } else if (fileExistsInStorage && fileExistsInStorage.length > 0) {
+        console.log('Found file directly in storage:', fileExistsInStorage[0].name);
+        // File exists in storage but not in database, download it directly
+        await downloadReportDirectlyFromStorage(lead.id, lead, setIsLoading);
+        return;
+      }
+      
       toast({
         title: "No Report Available",
         description: "No report has been generated for this lead yet.",
@@ -76,6 +94,47 @@ export const findAndDownloadReport = async (lead: Lead, setIsLoading: (isLoading
     setIsLoading(false);
   } finally {
     console.log("---------- ADMIN REPORT DOWNLOAD ATTEMPT ENDED ----------");
+  }
+};
+
+// Helper function to download a PDF directly from storage using lead ID
+const downloadReportDirectlyFromStorage = async (reportId: string, lead: Lead, setIsLoading: (isLoading: boolean) => void) => {
+  try {
+    const pdfFileName = `${reportId}.pdf`;
+    console.log('Getting PDF file directly from storage:', pdfFileName);
+    
+    // Get the public URL
+    const { data: urlData } = await supabase.storage
+      .from('reports')
+      .getPublicUrl(pdfFileName);
+    
+    if (!urlData || !urlData.publicUrl) {
+      console.error('No public URL found for PDF');
+      throw new Error('Report file not found in storage');
+    }
+    
+    console.log('Found stored PDF, downloading from:', urlData.publicUrl);
+    
+    // Download the PDF
+    const link = document.createElement('a');
+    link.href = urlData.publicUrl;
+    const safeCompanyName = getSafeFileName(lead);
+    link.download = `${safeCompanyName}-ChatSites-ROI-Report.pdf`;
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    
+    toast({
+      title: "Report Downloaded",
+      description: "The report has been successfully downloaded.",
+      duration: 1000,
+    });
+    
+  } catch (error) {
+    console.error("Error downloading PDF directly from storage:", error);
+    throw error;
+  } finally {
+    setIsLoading(false);
   }
 };
 
