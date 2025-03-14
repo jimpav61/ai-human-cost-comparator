@@ -1,33 +1,24 @@
 
-// Common utility functions for edge functions
+/**
+ * Format a number as currency with "$" prefix
+ */
+export function formatCurrency(amount: number): string {
+  return "$" + amount.toLocaleString('en-US', {
+    minimumFractionDigits: 0,
+    maximumFractionDigits: 0
+  });
+}
 
 /**
- * Formats a currency value with $ sign and 2 decimal places
+ * Format a number with commas for thousands
  */
-export const formatCurrency = (amount: number): string => {
-  return new Intl.NumberFormat('en-US', {
-    style: 'currency',
-    currency: 'USD',
-    minimumFractionDigits: 2
-  }).format(amount);
-};
+export function formatNumber(num: number): string {
+  return num.toLocaleString('en-US');
+}
 
 /**
- * Safely extracts a value from an object with fallback
+ * Sanitize a filename to remove invalid characters
  */
-export const safeGet = <T>(obj: any, path: string, defaultValue: T): T => {
-  try {
-    const value = path.split('.').reduce((o, key) => (o || {})[key], obj);
-    return (value !== undefined && value !== null) ? value as T : defaultValue;
-  } catch (e) {
-    console.error(`Error accessing path ${path}:`, e);
-    return defaultValue;
-  }
-};
-
-/**
- * Gets a safe filename based on a company name
- */
-export const getSafeFileName = (companyName: string): string => {
-  return companyName ? companyName.replace(/[^\w\s-]/gi, '-').toLowerCase() : 'client';
-};
+export function getSafeFileName(name: string): string {
+  return name.replace(/[^a-z0-9]/gi, '-').toLowerCase();
+}

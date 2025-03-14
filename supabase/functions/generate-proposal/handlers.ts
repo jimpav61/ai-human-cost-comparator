@@ -51,7 +51,11 @@ export async function handlePreviewRequest(lead: any, shouldReturnContent: boole
       // Convert to base64 for easy transmission through JSON
       const base64Content = btoa(pdfContent);
       return new Response(
-        JSON.stringify(base64Content),
+        JSON.stringify({
+          success: true,
+          pdf: base64Content,
+          message: "Proposal generated successfully"
+        }),
         {
           headers: {
             ...corsHeaders,
