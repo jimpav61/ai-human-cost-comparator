@@ -8,6 +8,7 @@ import { addCostBreakdownSection } from '@/components/calculator/pdf/sections/co
 import { addRecommendationsSection } from '@/components/calculator/pdf/sections/recommendationsSection';
 import { addAIPlacementsSection } from '@/components/calculator/pdf/sections/aiPlacementsSection';
 import { addContactSection } from '@/components/calculator/pdf/sections/contactSection';
+import { ensureCalculationResults } from '@/components/calculator/pdf/types';
 
 export const addDocumentContent = (doc: JsPDFWithAutoTable, data: ProcessedLeadData): void => {
   console.log("Adding content to PDF document with data:", data);
@@ -36,15 +37,16 @@ export const addDocumentContent = (doc: JsPDFWithAutoTable, data: ProcessedLeadD
     );
   }
 
-  // Add cost summary table
-  currentY = addCostSummarySection(doc, currentY, data.results);
+  // Add cost summary table - convert SharedResults to CalculationResults
+  const calculationResults = ensureCalculationResults(data.results);
+  currentY = addCostSummarySection(doc, currentY, calculationResults);
 
   // Always add the cost breakdown section to match frontend
-  // Pass the entire results object instead of individual values
+  // Convert SharedResults to CalculationResults for the cost breakdown section
   currentY = addCostBreakdownSection(
     doc, 
     currentY, 
-    data.results
+    calculationResults
   );
 
   // Add implementation recommendations

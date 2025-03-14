@@ -33,7 +33,7 @@ export interface SharedResults {
   annualPlan: number;
   tierKey?: 'starter' | 'growth' | 'premium';
   aiType?: 'voice' | 'chatbot' | 'both' | 'conversationalVoice' | 'both-premium';
-  includedVoiceMinutes: number;
+  includedVoiceMinutes: number; // Changed from optional to required
   additionalVoiceMinutes?: number;
 }
 
