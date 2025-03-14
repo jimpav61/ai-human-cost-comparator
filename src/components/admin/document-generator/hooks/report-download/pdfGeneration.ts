@@ -210,9 +210,8 @@ export const generateAndUploadPDF = async (report: any, lead: Lead) => {
         console.error('Error uploading PDF to storage:', uploadError);
         console.log('Upload error details:', {
           message: uploadError.message,
-          name: uploadError.name,
-          code: uploadError.code,
-          details: uploadError.details
+          name: uploadError.name
+          // Removed the properties that don't exist on StorageError type
         });
         
         if (uploadError.message.includes('The resource already exists')) {
