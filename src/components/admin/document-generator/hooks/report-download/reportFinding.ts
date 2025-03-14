@@ -33,6 +33,25 @@ export const findOrGenerateReport = async (lead: Lead, setIsLoading: (isLoading:
     
     if (!reportResults || reportResults.length === 0) {
       console.log('No reports found for lead:', lead.id);
+      
+      // Attempt a direct ID match (for older reports where lead_id might not be set)
+      const { data: directIdMatch, error: directIdError } = await supabase
+        .from('generated_reports')
+        .select('*')
+        .eq('id', lead.id)
+        .maybeSingle();
+        
+      if (directIdError) {
+        console.error('Error searching by direct ID:', directIdError);
+      }
+      
+      if (directIdMatch) {
+        console.log('Found report by direct ID match:', directIdMatch.id);
+        // Download this report instead
+        await downloadReportPDF(directIdMatch, lead, setIsLoading);
+        return;
+      }
+      
       toast({
         title: "No Report Available",
         description: "No report has been generated for this lead yet.",
@@ -45,9 +64,41 @@ export const findOrGenerateReport = async (lead: Lead, setIsLoading: (isLoading:
     const report = reportResults[0];
     console.log('Found report for lead:', report.id);
     
+    await downloadReportPDF(report, lead, setIsLoading);
+    
+  } catch (error) {
+    console.error("Error in findOrGenerateReport:", error);
+    toast({
+      title: "Error",
+      description: error instanceof Error ? error.message : "An unexpected error occurred.",
+      variant: "destructive",
+    });
+    setIsLoading(false);
+  } finally {
+    console.log("---------- ADMIN REPORT DOWNLOAD ATTEMPT ENDED ----------");
+  }
+};
+
+// Helper function to download the PDF from storage
+const downloadReportPDF = async (report: any, lead: Lead, setIsLoading: (isLoading: boolean) => void) => {
+  try {
     // Get the PDF file from storage using the report ID
     const pdfFileName = `${report.id}.pdf`;
     console.log('Getting PDF file:', pdfFileName);
+    
+    // Check if file exists in storage first
+    const { data: fileList, error: fileListError } = await supabase.storage
+      .from('reports')
+      .list('', {
+        search: pdfFileName,
+        limit: 1
+      });
+      
+    if (fileListError) {
+      console.error('Error checking for file existence:', fileListError);
+    }
+    
+    console.log('Storage file search results:', fileList);
     
     // Get the public URL - getPublicUrl doesn't return an error property in its response
     const { data: urlData } = await supabase.storage
@@ -77,14 +128,9 @@ export const findOrGenerateReport = async (lead: Lead, setIsLoading: (isLoading:
     });
     
   } catch (error) {
-    console.error("Error in findOrGenerateReport:", error);
-    toast({
-      title: "Error",
-      description: error instanceof Error ? error.message : "An unexpected error occurred.",
-      variant: "destructive",
-    });
+    console.error("Error downloading PDF:", error);
+    throw error;
   } finally {
     setIsLoading(false);
-    console.log("---------- ADMIN REPORT DOWNLOAD ATTEMPT ENDED ----------");
   }
 };
