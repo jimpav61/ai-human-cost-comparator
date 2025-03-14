@@ -26,7 +26,7 @@ ${brandRed} rg
 0 0 0 rg
 BT
 /F2 24 Tf
-72 740 Td
+60 740 Td
 1 1 1 rg
 (RECOMMENDED SOLUTION) Tj
 0 0 0 rg
@@ -105,7 +105,7 @@ ${brandRed} rg
 
 BT
 /F2 16 Tf
-72 195 Td
+60 195 Td
 ${brandRed} rg
 (Implementation Timeline:) Tj
 0 0 0 rg

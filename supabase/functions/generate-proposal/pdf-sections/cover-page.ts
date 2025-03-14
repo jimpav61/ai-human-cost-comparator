@@ -39,7 +39,7 @@ ${brandRed} rg
 0 0 0 rg
 BT
 /F2 28 Tf
-72 740 Td
+60 740 Td
 1 1 1 rg
 (AI SOLUTION PROPOSAL) Tj
 0 0 0 rg
@@ -95,7 +95,7 @@ ${brandRed} rg
 
 BT
 /F2 14 Tf
-72 90 Td
+60 90 Td
 ${brandRed} rg
 (Selected Plan: ${tierName} - ${aiTypeDisplay}) Tj
 0 0 0 rg

@@ -22,7 +22,7 @@ ${brandRed} rg
 0 0 0 rg
 BT
 /F2 24 Tf
-72 740 Td
+60 740 Td
 1 1 1 rg
 (IMPLEMENTATION PLAN & NEXT STEPS) Tj
 0 0 0 rg
