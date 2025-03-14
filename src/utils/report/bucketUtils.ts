@@ -10,7 +10,7 @@ export async function verifyReportsBucket(): Promise<boolean> {
   try {
     console.log("Verifying reports bucket existence...");
     
-    // Check if the 'reports' bucket exists
+    // Improved bucket check using direct listBuckets method
     const { data: buckets, error: listError } = await supabase.storage.listBuckets();
     
     if (listError) {
@@ -18,33 +18,28 @@ export async function verifyReportsBucket(): Promise<boolean> {
       return false;
     }
     
-    // If the bucket doesn't exist, create it
-    if (!buckets?.find(bucket => bucket.name === 'reports')) {
-      console.log("Reports bucket not found, creating now...");
-      
-      const { data, error } = await supabase.storage.createBucket('reports', {
-        public: true, // Make reports publicly accessible
-        fileSizeLimit: 10485760, // 10MB limit
-      });
-      
-      if (error) {
-        console.error("Error creating reports bucket:", error);
-        return false;
-      }
-      
-      console.log("Created 'reports' bucket successfully:", data);
-      
-      // Set the bucket policy to allow public access to all files
-      const { error: policyError } = await supabase.storage.from('reports')
-        .createSignedUrl('placeholder.txt', 60);
-        
-      if (policyError && !policyError.message.includes('not found')) {
-        console.error("Error setting bucket policy:", policyError);
-      }
-    } else {
-      console.log("Reports bucket already exists");
+    // Check if the 'reports' bucket exists in the returned buckets
+    const reportsBucket = buckets?.find(bucket => bucket.name === 'reports');
+    
+    if (reportsBucket) {
+      console.log("Reports bucket exists:", reportsBucket.id);
+      return true;
     }
     
+    console.log("Reports bucket not found, creating now...");
+    
+    // Create the bucket if it doesn't exist
+    const { data, error } = await supabase.storage.createBucket('reports', {
+      public: true, // Make reports publicly accessible
+      fileSizeLimit: 10485760, // 10MB limit
+    });
+    
+    if (error) {
+      console.error("Error creating reports bucket:", error);
+      return false;
+    }
+    
+    console.log("Created 'reports' bucket successfully:", data);
     return true;
   } catch (error) {
     console.error("Error in verifyReportsBucket:", error);
@@ -68,6 +63,9 @@ export async function testStorageBucketConnectivity() {
     // Check if reports bucket exists
     const reportsBucketExists = buckets?.some(bucket => bucket.name === 'reports');
     
+    // Log the bucket list to help with debugging
+    console.log("Available buckets:", buckets);
+    
     if (!reportsBucketExists && !listError) {
       // Attempt to create the bucket
       const { error: createError } = await supabase.storage.createBucket('reports', {
@@ -88,6 +86,7 @@ export async function testStorageBucketConnectivity() {
       bucketExists: reportsBucketExists,
       storageAccessible: !listError,
       error: listError,
+      bucketList: buckets || []
     };
   } catch (error) {
     console.error("Storage diagnostic error:", error);
@@ -97,6 +96,7 @@ export async function testStorageBucketConnectivity() {
       bucketExists: false,
       storageAccessible: false,
       error,
+      bucketList: []
     };
   }
 }
