@@ -61,7 +61,7 @@ export async function handlePreviewRequest(lead: any, shouldReturnContent: boole
       );
     }
     
-    // For client.invoke() method, properly encode the PDF
+    // For preview, properly encode the PDF
     console.log("Encoding PDF for response");
     
     // Check if content is a valid PDF
@@ -70,11 +70,9 @@ export async function handlePreviewRequest(lead: any, shouldReturnContent: boole
       throw new Error("Failed to generate a valid PDF document");
     }
     
-    // Convert to base64 - crucial for PDF display in modern browsers
+    // CRITICAL FIX: Convert to base64 - crucial for PDF display in modern browsers
     const encoder = new TextEncoder();
     const pdfBytes = encoder.encode(pdfContent);
-    
-    // Use the proper method for base64 encoding in Deno
     const base64Content = btoa(String.fromCharCode(...new Uint8Array(pdfBytes)));
     
     if (debug) {
@@ -86,7 +84,7 @@ export async function handlePreviewRequest(lead: any, shouldReturnContent: boole
     
     console.log("Base64 PDF created successfully, length:", base64Content.length);
     
-    // Return the base64 encoded PDF - CRITICAL: format must be exactly as frontend expects
+    // Return the base64 encoded PDF with proper content type
     return new Response(
       JSON.stringify({
         success: true,

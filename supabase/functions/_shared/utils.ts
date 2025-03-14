@@ -1,26 +1,41 @@
 
-// Shared utility functions
-
 /**
- * Format a number as currency with "$" prefix
+ * Formats a number as currency
+ * @param value The number to format
+ * @returns A formatted currency string
  */
-export function formatCurrency(amount: number): string {
-  return "$" + amount.toLocaleString('en-US', {
-    minimumFractionDigits: 0,
-    maximumFractionDigits: 0
-  });
+export function formatCurrency(value: number | null | undefined): string {
+  if (value === undefined || value === null) {
+    return '$0.00';
+  }
+  return new Intl.NumberFormat('en-US', {
+    style: 'currency',
+    currency: 'USD',
+    minimumFractionDigits: 2,
+    maximumFractionDigits: 2
+  }).format(value);
 }
 
 /**
- * Format a number with commas for thousands
+ * Formats a number with commas for thousands
+ * @param value The number to format
+ * @returns A formatted number string
  */
-export function formatNumber(num: number): string {
-  return num.toLocaleString('en-US');
+export function formatNumber(value: number | null | undefined): string {
+  if (value === undefined || value === null) {
+    return '0';
+  }
+  return new Intl.NumberFormat('en-US').format(value);
 }
 
 /**
- * Sanitize a filename to remove invalid characters
+ * Sanitizes a string for use in a filename
+ * @param name The string to sanitize
+ * @returns A safe filename string
  */
 export function getSafeFileName(name: string): string {
-  return name.replace(/[^a-z0-9]/gi, '-').toLowerCase();
+  return name
+    .replace(/[^a-z0-9]/gi, '_')
+    .toLowerCase()
+    .substring(0, 50);
 }

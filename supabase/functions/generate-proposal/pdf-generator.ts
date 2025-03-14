@@ -1,7 +1,4 @@
 
-// PDF Generation Utilities
-// This file contains functions to generate a PDF proposal document
-
 // Import utility functions from shared module
 import { formatCurrency, formatNumber, getSafeFileName } from "../_shared/utils.ts";
 
@@ -17,7 +14,7 @@ const formatPercentage = (value: number): string => {
 /**
  * Generates a professional PDF proposal document based on lead data
  * @param lead The lead data containing company info and calculator results
- * @returns A PDF document as a base64 encoded string
+ * @returns A PDF document as a string with proper PDF structure
  */
 export function generateProfessionalProposal(lead: any): string {
   console.log('Generating professional proposal for lead:', lead.id);
@@ -45,7 +42,7 @@ export function generateProfessionalProposal(lead: any): string {
     const pdfHeader = '%PDF-1.4';
     const timestamp = new Date().toISOString();
     
-    // Create a PDF document with proposal information
+    // Create a PDF document with proposal information - CRITICAL: proper PDF structure
     const content = `${pdfHeader}
 1 0 obj
 << /Type /Catalog /Pages 2 0 R >>
