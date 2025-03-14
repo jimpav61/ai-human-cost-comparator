@@ -12,13 +12,13 @@ export async function findAndDownloadReport(lead: Lead, setIsLoading: (loading: 
   console.log("Lead company name:", lead.company_name);
 
   try {
-    // First attempt: Query reports table for reports associated with this lead
+    // First attempt: Query generated_reports table for reports associated with this lead
     console.log("Searching for report with lead_id:", lead.id);
     const { data: reports, error } = await supabase
-      .from('reports')
+      .from('generated_reports')
       .select('*')
       .eq('lead_id', lead.id)
-      .order('created_at', { ascending: false })
+      .order('report_date', { ascending: false })
       .limit(1);
 
     if (error) {
@@ -102,7 +102,7 @@ export async function findAndDownloadReport(lead: Lead, setIsLoading: (loading: 
     
     console.log("Creating new report in database with ID:", reportId);
     const { error: insertError } = await supabase
-      .from('reports')
+      .from('generated_reports')
       .insert({
         id: reportId,
         lead_id: lead.id,
