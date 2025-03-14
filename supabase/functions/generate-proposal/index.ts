@@ -38,7 +38,7 @@ serve(async (req) => {
       lead, 
       mode = "preview", 
       returnContent = false, 
-      debug = false,
+      debug = true, // Enable debug by default for troubleshooting
       version = null 
     } = requestData;
     
@@ -71,7 +71,7 @@ serve(async (req) => {
     console.log("Version:", version);
     console.log("Calculator inputs type:", typeof lead.calculator_inputs);
     console.log("Calculator results type:", typeof lead.calculator_results);
-    console.log("API Version: 2.2"); // Updated version info to ensure change detection
+    console.log("API Version: 2.5"); // Updated version info to ensure change detection
     
     // CRITICAL: Ensure calculator_results is an object not a string
     if (!lead.calculator_results) {
@@ -129,6 +129,18 @@ serve(async (req) => {
       );
     }
     
+    // CRITICAL FIX: Ensure calculator_inputs is an object not a string
+    if (lead.calculator_inputs && typeof lead.calculator_inputs === 'string') {
+      try {
+        lead.calculator_inputs = JSON.parse(lead.calculator_inputs);
+        console.log("Successfully parsed calculator_inputs from string to object");
+      } catch (e) {
+        console.error("Failed to parse calculator_inputs from string:", e);
+        // Continue without failing - inputs are less critical than results
+        lead.calculator_inputs = {};
+      }
+    }
+    
     // Include version information if provided
     if (version) {
       lead.version_info = {
@@ -182,7 +194,7 @@ serve(async (req) => {
         success: false, 
         error: error.message,
         stack: error.stack,
-        version: "2.2" // Updated version to ensure change detection
+        version: "2.5" // Updated version to ensure change detection
       }),
       {
         headers: {

@@ -1,86 +1,117 @@
 
-// Import utility functions from enhanced shared module
-import { formatCurrency, formatNumber, getSafeFileName, formatPercentage } from "../_shared/utils.ts";
+import { formatCurrency } from "../_shared/utils.ts";
 
 /**
- * Generates a professional PDF proposal document based on lead data
- * @param lead The lead data containing company info and calculator results
- * @returns A PDF document as a string with proper PDF structure
+ * Generates a professional proposal using template-based approach
+ * with proper branding and formatting
  */
 export function generateProfessionalProposal(lead: any): string {
-  console.log('Generating professional PDF proposal for lead:', lead.id);
+  console.log("=== GENERATING PROFESSIONAL PROPOSAL WITH TEMPLATE-BASED APPROACH ===");
+  console.log("Lead ID:", lead.id);
+  console.log("Company name:", lead.company_name);
   
-  try {
-    // Validate required lead data
-    if (!lead || !lead.company_name) {
-      throw new Error('Missing required lead data: company_name');
-    }
-    
-    if (!lead.calculator_results || typeof lead.calculator_results !== 'object') {
-      throw new Error('Missing or invalid calculator_results');
-    }
-    
-    // Extract key values from calculator results for easy access
-    // Use safe defaults to prevent errors
-    const {
-      humanCostMonthly = 3800,
-      aiCostMonthly = { total: 299, setupFee: 500, voice: 0, chatbot: 299 },
-      monthlySavings = 3501,
-      yearlySavings = 42012,
-      savingsPercentage = 92,
-      tierKey = 'growth',
-      aiType = 'both',
-      additionalVoiceMinutes = 0
-    } = lead.calculator_results;
-    
-    // Include version info if available
-    const versionInfo = lead.version_info || {
-      version_number: 1,
-      created_at: new Date().toISOString(),
-      notes: "Initial proposal"
+  // Create complete sanitized deep copy of lead data to avoid reference issues
+  const sanitizedLead = JSON.parse(JSON.stringify(lead));
+  
+  // Ensure we have proper calculator results
+  if (!sanitizedLead.calculator_results) {
+    console.error("Missing calculator_results, using defaults");
+    sanitizedLead.calculator_results = {
+      aiCostMonthly: { voice: 0, chatbot: 229, total: 229, setupFee: 749 },
+      basePriceMonthly: 229,
+      humanCostMonthly: 3800,
+      monthlySavings: 3571,
+      yearlySavings: 42852,
+      savingsPercentage: 94,
+      tierKey: "growth",
+      aiType: "both",
+      includedVoiceMinutes: 600,
+      additionalVoiceMinutes: 0
     };
-    
-    // Extract company information
-    const timestamp = versionInfo.created_at || new Date().toISOString();
-    const companyName = lead.company_name || 'Client';
-    const contactName = lead.name || 'Valued Client';
-    const email = lead.email || 'client@example.com';
-    const phoneNumber = lead.phone_number || 'Not provided';
-    const industry = lead.industry || 'Technology';
-    const versionNumber = versionInfo.version_number || 1;
-    
-    // Determine plan name based on tierKey
-    const planName = tierKey === 'starter' ? 'Starter Plan' : 
-                    tierKey === 'growth' ? 'Growth Plan' : 
-                    tierKey === 'premium' ? 'Premium Plan' : 'Custom Plan';
-    
-    // Determine AI type display name
-    const aiTypeDisplay = aiType === 'chatbot' ? 'Text Only' : 
-                         aiType === 'voice' ? 'Basic Voice' : 
-                         aiType === 'conversationalVoice' ? 'Conversational Voice' : 
-                         aiType === 'both' ? 'Text & Basic Voice' : 
-                         aiType === 'both-premium' ? 'Text & Conversational Voice' : 'Custom';
-    
-    // Get included voice minutes based on tier
-    const includedVoiceMinutes = tierKey === 'starter' ? 0 : 600;
-    
-    // Calculate voice costs
-    const voiceCost = additionalVoiceMinutes * 0.12;
-    
-    // Determine the base price based on tier
-    const basePrice = tierKey === 'starter' ? 99 :
-                     tierKey === 'growth' ? 229 :
-                     tierKey === 'premium' ? 429 : 229;
-                     
-    // Format date for the proposal
-    const today = new Date();
-    const formattedDate = `${today.toLocaleString('default', { month: 'long' })} ${today.getDate()}, ${today.getFullYear()}`;
-    
-    // Brand color (ChatSite's orange-red)
-    const brandRed = "#f65228";
-    
-    // Create a multi-page PDF document with professional formatting
-    const content = `%PDF-1.7
+  }
+  
+  // Log the entire calculator_results for debugging
+  console.log("CALCULATOR RESULTS FOR PDF GENERATION:", JSON.stringify(sanitizedLead.calculator_results, null, 2));
+  
+  // Company information - use exactly what's in the lead
+  const companyName = sanitizedLead.company_name || 'Client';
+  const contactName = sanitizedLead.name || 'Valued Client';
+  const email = sanitizedLead.email || 'client@example.com';
+  const phoneNumber = sanitizedLead.phone_number || 'Not provided';
+  const industry = sanitizedLead.industry || 'Technology';
+  
+  // Extract plan/pricing information DIRECTLY without recalculation
+  const tierKey = sanitizedLead.calculator_results.tierKey || 'growth';
+  const aiType = sanitizedLead.calculator_results.aiType || 'both';
+  
+  // CRITICAL: Take financial values EXACTLY as stored, with no modifications
+  const basePriceMonthly = sanitizedLead.calculator_results.basePriceMonthly || 229;
+  const humanCostMonthly = sanitizedLead.calculator_results.humanCostMonthly || 3800;
+  const monthlySavings = sanitizedLead.calculator_results.monthlySavings || 3571;
+  const yearlySavings = sanitizedLead.calculator_results.yearlySavings || 42852;
+  const savingsPercentage = sanitizedLead.calculator_results.savingsPercentage || 94;
+  
+  // Get the aiCostMonthly structure exactly as stored
+  const aiCostMonthly = sanitizedLead.calculator_results.aiCostMonthly || {
+    voice: 0,
+    chatbot: 229,
+    total: 229,
+    setupFee: 749
+  };
+  
+  // Print all values to ensure they're being used correctly
+  console.log("TEMPLATE VALUES:", {
+    companyName,
+    contactName,
+    humanCostMonthly,
+    basePriceMonthly,
+    monthlySavings,
+    yearlySavings,
+    savingsPercentage,
+    tierKey,
+    aiType,
+    aiCostMonthly
+  });
+  
+  // Simple lookup tables for tier and AI type display names
+  const tierName = tierKey === 'starter' ? 'Starter Plan' : 
+                  tierKey === 'growth' ? 'Growth Plan' : 
+                  tierKey === 'premium' ? 'Premium Plan' : 'Growth Plan';
+  
+  const aiTypeDisplay = aiType === 'chatbot' ? 'Text Only' : 
+                      aiType === 'voice' ? 'Basic Voice' : 
+                      aiType === 'conversationalVoice' ? 'Conversational Voice' : 
+                      aiType === 'both' ? 'Text & Basic Voice' : 
+                      aiType === 'both-premium' ? 'Text & Conversational Voice' : 'Text Only';
+  
+  // Get additional values directly from the calculator data
+  const setupFee = aiCostMonthly.setupFee;
+  const totalMonthlyCost = aiCostMonthly.total;
+  const voiceCost = aiCostMonthly.voice || 0;
+  const additionalVoiceMinutes = sanitizedLead.calculator_results.additionalVoiceMinutes || 
+                               sanitizedLead.calculator_inputs?.callVolume || 0;
+  
+  // Safely access annualPlan with type checking
+  const annualPlan = typeof sanitizedLead.calculator_results.annualPlan === 'number' 
+                   ? sanitizedLead.calculator_results.annualPlan 
+                   : basePriceMonthly * 10; // 2 months free with annual plan
+  
+  // Derived values for ROI calculations
+  const breakEvenPoint = monthlySavings > 0 ? Math.ceil(setupFee / monthlySavings) : 1;
+  const firstYearROI = monthlySavings > 0 ? Math.round((yearlySavings - setupFee) / setupFee * 100) : 0;
+  const fiveYearSavings = yearlySavings * 5;
+  
+  // Format date for proposal
+  const today = new Date();
+  const formattedDate = `${today.toLocaleString('default', { month: 'long' })} ${today.getDate()}, ${today.getFullYear()}`;
+  
+  // Brand Colors
+  const brandRed = "#f65228"; // Corrected to your brand color
+  
+  // Now let's create the PDF template with placeholders
+  // This is our static template - we'll just replace the values directly
+  let pdfTemplate = `
+%PDF-1.7
 1 0 obj
 << /Type /Catalog
    /Pages 2 0 R
@@ -232,7 +263,7 @@ BT
 /F2 14 Tf
 72 90 Td
 ${brandRed} rg
-(Selected Plan: ${planName} - ${aiTypeDisplay}) Tj
+(Selected Plan: ${tierName} - ${aiTypeDisplay}) Tj
 0 0 0 rg
 ET
 Q
@@ -255,11 +286,11 @@ BT
 0 -45 Td
 /F2 18 Tf
 ${brandRed} rg
-(${planName} - ${aiTypeDisplay}) Tj
+(${tierName} - ${aiTypeDisplay}) Tj
 0 0 0 rg
 0 -30 Td
 /F1 12 Tf
-(Based on your specific business requirements, we recommend our ${planName} with) Tj
+(Based on your specific business requirements, we recommend our ${tierName} with) Tj
 0 -20 Td
 (${aiTypeDisplay} capabilities as the optimal solution for ${companyName}.) Tj
 0 -40 Td
@@ -288,36 +319,36 @@ ${brandRed} rg
 0 0 0 rg
 0 -25 Td
 /F1 12 Tf
-(\\267 ${planName} AI Engine with ${tierKey === 'premium' ? 'advanced' : tierKey === 'growth' ? 'enhanced' : 'standard'} capabilities) Tj
+(\\267 ${tierName} AI Engine with ${tierKey === 'premium' ? 'advanced' : tierKey === 'growth' ? 'enhanced' : 'standard'} capabilities) Tj
 0 -20 Td
 (\\267 ${aiTypeDisplay} Interface ${tierKey !== 'starter' ? 'with speech recognition and synthesis' : ''}) Tj
 0 -20 Td`;
 
-    // Add voice information based on tier and type
-    if (tierKey === 'starter') {
-      content += `
+  // Add voice information based on tier and type
+  if (tierKey === 'starter') {
+    pdfTemplate += `
 (\\267 No voice capabilities included in this tier) Tj
 0 -20 Td`;
-    } else {
-      content += `
-(\\267 Includes ${includedVoiceMinutes} voice minutes per month as part of base plan) Tj
+  } else {
+    pdfTemplate += `
+(\\267 Includes 600 voice minutes per month as part of base plan) Tj
 0 -20 Td`;
-      
-      if (additionalVoiceMinutes > 0) {
-        content += `
+    
+    if (additionalVoiceMinutes > 0) {
+      pdfTemplate += `
 (\\267 ${additionalVoiceMinutes} additional voice minutes at $0.12/minute) Tj
 0 -20 Td
 (\\267 Additional voice cost: $${(additionalVoiceMinutes * 0.12).toFixed(2)}/month) Tj
 0 -20 Td`;
-      } else {
-        content += `
+    } else {
+      pdfTemplate += `
 (\\267 No additional voice minutes requested) Tj
 0 -20 Td`;
-      }
     }
+  }
 
-    // Continue with standard content
-    content += `
+  // Continue with standard content
+  pdfTemplate += `
 (\\267 ${tierKey === 'premium' ? 'Unlimited' : '50,000+'} monthly text interactions) Tj
 0 -20 Td
 (\\267 Secure cloud-based deployment with 99.9% uptime guarantee) Tj
@@ -369,51 +400,48 @@ ${brandRed} rg
 /F1 13 Tf
 (Monthly Base Price:) Tj
 190 0 Td
-($${basePrice.toFixed(2)}/month) Tj
+($${basePriceMonthly.toFixed(2)}/month) Tj
 -190 -25 Td
 (Setup and Onboarding Fee:) Tj
 190 0 Td
-($${aiCostMonthly.setupFee.toFixed(2)} one-time) Tj
+($${setupFee.toFixed(2)} one-time) Tj
 -190 -25 Td`;
 
-    // Handle voice minutes information 
-    if (tierKey === 'starter') {
-      content += `
+  // Handle voice minutes information 
+  if (tierKey === 'starter') {
+    pdfTemplate += `
 (Voice Capabilities:) Tj
 190 0 Td
 (Not included in Starter Plan) Tj
 -190 -25 Td`;
-    } else {
-      content += `
+  } else {
+    pdfTemplate += `
 (Included Voice Minutes:) Tj
 190 0 Td
-(${includedVoiceMinutes} minutes/month) Tj
+(600 minutes/month) Tj
 -190 -25 Td`;
-      
-      if (additionalVoiceMinutes > 0) {
-        content += `
+    
+    if (additionalVoiceMinutes > 0) {
+      pdfTemplate += `
 (Additional Voice Minutes:) Tj
 190 0 Td
 (${additionalVoiceMinutes} minutes @ $0.12/minute) Tj
 -190 -25 Td
 (Additional Voice Cost:) Tj
 190 0 Td
-($${voiceCost.toFixed(2)}/month) Tj
+($${(additionalVoiceMinutes * 0.12).toFixed(2)}/month) Tj
 -190 -25 Td`;
-      } else {
-        content += `
+    } else {
+      pdfTemplate += `
 (Additional Voice Minutes:) Tj
 190 0 Td
 (None requested) Tj
 -190 -25 Td`;
-      }
     }
+  }
 
-    // Show total monthly cost with clear breakdown
-    const totalMonthlyCost = basePrice + voiceCost;
-    const annualPlan = totalMonthlyCost * 10; // 2 months free
-    
-    content += `
+  // Show total monthly cost with clear breakdown
+  pdfTemplate += `
 (Total Monthly Investment:) Tj
 190 0 Td
 ($${totalMonthlyCost.toFixed(2)}/month) Tj
@@ -463,14 +491,7 @@ ${brandRed} rg
 0 -30 Td
 /F1 13 Tf
 (Based on the projected savings and implementation costs, your expected ROI timeline is:) Tj
-0 -30 Td`;
-
-    // Calculate ROI metrics
-    const breakEvenPoint = Math.ceil(aiCostMonthly.setupFee / monthlySavings) || 1;
-    const firstYearROI = Math.round((yearlySavings - aiCostMonthly.setupFee) / aiCostMonthly.setupFee * 100) || 0;
-    const fiveYearSavings = yearlySavings * 5;
-
-    content += `
+0 -30 Td
 (\\267 Break-even Point: ${breakEvenPoint} months) Tj
 0 -25 Td
 (\\267 First Year ROI: ${firstYearROI}%) Tj
@@ -551,7 +572,7 @@ ${brandRed} rg
 /F1 13 Tf
 (To proceed with implementing this AI solution for ${companyName}:) Tj
 0 -30 Td
-(\\267 Schedule a demonstration of our ${planName} solution) Tj
+(\\267 Schedule a demonstration of our ${tierName} solution) Tj
 0 -20 Td
 (\\267 Finalize the proposal details and customization requirements) Tj
 0 -20 Td
@@ -639,11 +660,9 @@ startxref
 %%EOF
 `;
 
-    // Log success and return the PDF content
-    console.log("Generated professional PDF proposal with proper branding and detailed content");
-    return content;
-  } catch (error) {
-    console.error('Error generating PDF:', error);
-    throw error;
-  }
+  console.log("==== PDF GENERATION COMPLETE ====");
+  console.log("PDF template length:", pdfTemplate.length);
+  console.log("PDF starts with:", pdfTemplate.substring(0, 20));
+  
+  return pdfTemplate;
 }

@@ -34,7 +34,7 @@ export async function handlePreviewRequest(lead: any, shouldReturnContent: boole
           success: false, 
           error: "Invalid calculator results data",
           details: "The calculator_results property is missing or not an object",
-          version: "2.3"
+          version: "2.5"
         }),
         {
           headers: {
@@ -48,6 +48,12 @@ export async function handlePreviewRequest(lead: any, shouldReturnContent: boole
     
     // Create the PDF content - this needs to be a valid PDF string
     const pdfContent = generateProfessionalProposal(lead);
+    
+    if (!pdfContent || pdfContent.length < 100) {
+      console.error("Generated PDF content is invalid or too short:", pdfContent?.substring(0, 50));
+      throw new Error("Failed to generate valid PDF content");
+    }
+    
     console.log("PDF content generated successfully, length:", pdfContent.length);
     console.log("PDF starts with:", pdfContent.substring(0, 20)); // Check the first 20 chars
     
@@ -63,14 +69,36 @@ export async function handlePreviewRequest(lead: any, shouldReturnContent: boole
     // If returnContent flag is set, return the raw content instead of PDF 
     if (shouldReturnContent) {
       console.log("Returning raw proposal content as requested");
+      
+      // Ensure the content is properly encoded
+      let encodedContent;
+      
+      try {
+        // Check if content is a valid PDF
+        if (!pdfContent.startsWith('%PDF-')) {
+          console.error("Generated content is not a valid PDF");
+          throw new Error("Failed to generate a valid PDF document");
+        }
+        
+        // CRITICAL FIX: Proper base64 encoding for PDF content
+        const encoder = new TextEncoder();
+        const pdfBytes = encoder.encode(pdfContent);
+        encodedContent = btoa(String.fromCharCode(...new Uint8Array(pdfBytes)));
+        
+        console.log("Base64 encoding successful, length:", encodedContent.length);
+      } catch (encodingError) {
+        console.error("Error encoding PDF:", encodingError);
+        throw new Error(`Failed to encode PDF content: ${encodingError.message}`);
+      }
+      
       return new Response(
         JSON.stringify({
           success: true,
-          pdf: btoa(pdfContent), // Base64 encode the PDF content for transport
+          pdf: encodedContent,
           format: 'base64',
           contentType: 'application/pdf',
           message: "Proposal generated successfully",
-          version: "2.3", 
+          version: "2.5", 
           timestamp: new Date().toISOString()
         }),
         {
@@ -114,7 +142,7 @@ export async function handlePreviewRequest(lead: any, shouldReturnContent: boole
         format: 'base64',
         contentType: 'application/pdf',
         message: "Proposal generated successfully",
-        version: "2.3", 
+        version: "2.5", 
         timestamp: new Date().toISOString()
       }),
       {
@@ -132,7 +160,7 @@ export async function handlePreviewRequest(lead: any, shouldReturnContent: boole
         success: false, 
         error: "Failed to generate PDF: " + pdfError.message,
         stack: pdfError.stack,
-        version: "2.3"
+        version: "2.5"
       }),
       {
         headers: {
@@ -156,7 +184,7 @@ export function handleEmailRequest(lead: any) {
       success: true,
       message: "Proposal has been sent to " + lead.email,
       timestamp: new Date().toISOString(),
-      version: "2.3"
+      version: "2.5"
     }),
     {
       headers: {
