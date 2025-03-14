@@ -1,5 +1,5 @@
 
-import { formatCurrency } from "../_shared/utils.ts";
+import { formatCurrency, formatNumber } from "../_shared/utils.ts";
 
 /**
  * Generates a professional, multi-page proposal PDF with lead data

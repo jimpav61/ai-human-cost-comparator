@@ -4,7 +4,7 @@
 
 import { serve } from "https://deno.land/std@0.186.0/http/server.ts";
 import { corsHeaders } from "../_shared/cors.ts";
-import { generateProfessionalProposal } from "./pdf-generator.ts";
+import { handlePreviewRequest, handleEmailRequest } from "./handlers.ts";
 
 serve(async (req) => {
   // Handle CORS preflight requests
@@ -50,23 +50,17 @@ serve(async (req) => {
     console.log("yearlySavings:", lead.calculator_results.yearlySavings);
     console.log("savingsPercentage:", lead.calculator_results.savingsPercentage);
     
-    // Generate the PDF using the template approach with exact values
-    const pdfContent = generateProfessionalProposal(lead);
+    // Determine if this is a preview or email request
+    const mode = lead.mode || "preview";
+    const shouldReturnContent = lead.returnContent === true;
     
-    // Return the PDF content
-    return new Response(
-      JSON.stringify({ 
-        success: true, 
-        pdf: pdfContent,
-        message: "Proposal generated successfully with template approach"
-      }),
-      {
-        headers: {
-          ...corsHeaders,
-          "Content-Type": "application/json",
-        },
-      }
-    );
+    if (mode === "preview") {
+      return handlePreviewRequest(lead, shouldReturnContent);
+    } else if (mode === "email") {
+      return handleEmailRequest(lead);
+    } else {
+      throw new Error(`Invalid mode: ${mode}`);
+    }
   } catch (error) {
     // Log the error for debugging
     console.error("Error generating proposal:", error);

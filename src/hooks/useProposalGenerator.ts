@@ -32,6 +32,13 @@ export function useProposalGenerator() {
 
       if (error) throw error;
 
+      // Verify the data structure returned from the edge function
+      console.log('Response from generate-proposal edge function:', data);
+      
+      if (!data || !data.pdf) {
+        throw new Error('Invalid response from proposal generator');
+      }
+
       setProposalPdf(data.pdf);
       setGenerationSuccess(true);
       return data.pdf;
