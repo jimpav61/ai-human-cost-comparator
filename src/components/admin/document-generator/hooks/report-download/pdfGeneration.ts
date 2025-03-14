@@ -5,6 +5,7 @@ import { ensureCompleteCalculatorResults } from "@/hooks/calculator/supabase-typ
 import { generatePDF } from "@/components/calculator/pdf";
 import { supabase } from "@/integrations/supabase/client";
 import { getSafeFileName } from "@/utils/report/validation";
+import { verifyReportsBucket, createReportsBucketPolicies } from "@/utils/report/bucketUtils";
 
 // Helper function to ensure JSON is parsed
 export const ensureJsonParsed = (data: any) => {
@@ -87,6 +88,22 @@ export const generateAndUploadPDF = async (report: any, lead: Lead) => {
       leadId: report.lead_id,
       company: lead.company_name
     });
+    
+    // CRITICAL: First verify and create the reports bucket if needed
+    const bucketSuccess = await verifyReportsBucket();
+    if (!bucketSuccess) {
+      console.error("CRITICAL: Reports bucket could not be verified or created");
+      toast({
+        title: "Storage Error",
+        description: "There was an issue with the storage configuration. PDF may not be saved online.",
+        variant: "destructive",
+        duration: 5000,
+      });
+    } else {
+      console.log("Reports bucket verified successfully");
+      // Also verify/create bucket policies
+      await createReportsBucketPolicies();
+    }
     
     // Generate safe filename for the report
     const safeCompanyName = getSafeFileName(lead);
@@ -222,6 +239,32 @@ export const generateAndUploadPDF = async (report: any, lead: Lead) => {
             .getPublicUrl(storageFilePath);
             
           console.log('Existing file URL:', urlData?.publicUrl);
+        } else if (uploadError.message.includes('bucket') && uploadError.message.includes('not found')) {
+          console.error('CRITICAL: The storage bucket "reports" does not exist - attempting to create it now');
+          
+          // Last resort: create bucket directly
+          const { error: createBucketError } = await supabase.storage.createBucket('reports', {
+            public: true
+          });
+          
+          if (createBucketError) {
+            console.error('Failed to create reports bucket:', createBucketError);
+          } else {
+            console.log('Created reports bucket successfully, retrying upload');
+            // Retry the upload after bucket creation
+            const { data: retryData, error: retryError } = await supabase.storage
+              .from('reports')
+              .upload(storageFilePath, pdfBlob, {
+                contentType: 'application/pdf',
+                upsert: true
+              });
+              
+            if (retryError) {
+              console.error('Retry upload failed:', retryError);
+            } else {
+              console.log('Retry upload succeeded:', retryData);
+            }
+          }
         }
       } else {
         console.log('PDF successfully uploaded to storage:', uploadData?.path);
