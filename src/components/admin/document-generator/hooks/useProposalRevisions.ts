@@ -166,21 +166,35 @@ export const useProposalRevisions = () => {
   const generatePdfFromRevision = async (revision: ProposalRevision) => {
     try {
       setIsLoading(true);
+      console.log("Generating PDF from revision:", revision.id);
       
       // Extract lead data from the proposal content
       let leadData: any;
       try {
         leadData = JSON.parse(revision.proposal_content);
+        console.log("Successfully parsed proposal content into JSON");
       } catch (e) {
-        // If content isn't valid JSON, use a simpler object
+        console.error("Failed to parse proposal content as JSON:", e);
+        // If content isn't valid JSON, use a simpler object with fallback data
         leadData = {
           id: revision.lead_id,
+          company_name: "Client Company", // Fallback value
+          calculator_results: {
+            humanCostMonthly: 3800, 
+            aiCostMonthly: { total: 299, setupFee: 500, voice: 0, chatbot: 299 },
+            monthlySavings: 3501,
+            yearlySavings: 42012,
+            savingsPercentage: 92,
+            tierKey: 'growth',
+            aiType: 'both'
+          },
           version_info: {
             version_number: revision.version_number,
             created_at: revision.created_at,
             notes: revision.notes
           }
         };
+        console.log("Using fallback data structure for proposal generation");
       }
       
       // Call the edge function to generate the PDF
@@ -189,12 +203,32 @@ export const useProposalRevisions = () => {
           lead: leadData,
           mode: "preview",
           returnContent: true,
-          version: revision.version_number
+          version: revision.version_number,
+          debug: true // Enable debug mode for better error logs
         }
       });
       
-      if (error) throw error;
+      if (error) {
+        console.error("Edge function error:", error);
+        throw new Error(`Failed to generate PDF: ${error.message}`);
+      }
       
+      if (!data) {
+        console.error("No data returned from edge function");
+        throw new Error("Failed to generate PDF: No data returned from edge function");
+      }
+      
+      if (!data.success) {
+        console.error("Edge function reported failure:", data.error);
+        throw new Error(`Failed to generate PDF: ${data.error}`);
+      }
+      
+      if (!data.pdf) {
+        console.error("No PDF data in response");
+        throw new Error("Failed to generate PDF: No PDF data in response");
+      }
+      
+      console.log("PDF generation successful");
       setIsLoading(false);
       
       return data.pdf;

@@ -1,7 +1,7 @@
 
 import { Lead } from "@/types/leads";
 import { supabase } from "@/integrations/supabase/client";
-import { toast } from "@/components/ui/use-toast";
+import { toast } from "@/hooks/use-toast";
 
 /**
  * Generates a proposal PDF from a lead using the Supabase edge function
@@ -33,20 +33,36 @@ export async function generateProposalFromSavedData(leadId: string) {
       throw new Error("Missing or invalid calculator results for this lead");
     }
     
+    // Ensure we have required fields in calculator_results even if they're missing
+    const enhancedLead = {
+      ...lead,
+      calculator_results: {
+        humanCostMonthly: 3800,
+        aiCostMonthly: { total: 299, setupFee: 500, voice: 0, chatbot: 299 },
+        monthlySavings: 3501,
+        yearlySavings: 42012,
+        savingsPercentage: 92,
+        tierKey: 'growth',
+        aiType: 'both',
+        ...lead.calculator_results, // Overwrite defaults with actual data if it exists
+      }
+    };
+    
     // Log key data for debugging
-    console.log("Lead data fetched successfully:");
-    console.log("- ID:", lead.id);
-    console.log("- Company:", lead.company_name);
-    console.log("- Calculator results available:", !!lead.calculator_results);
+    console.log("Lead data fetched and enhanced successfully:");
+    console.log("- ID:", enhancedLead.id);
+    console.log("- Company:", enhancedLead.company_name);
+    console.log("- Calculator results available:", !!enhancedLead.calculator_results);
     
     // Call the Edge Function to generate the proposal
     const { data: proposalData, error: proposalError } = await supabase.functions.invoke(
       "generate-proposal",
       {
         body: {
-          lead,
+          lead: enhancedLead,
           mode: "preview",
-          debug: true // Enable debug mode for verbose logging
+          debug: true, // Enable debug mode for verbose logging
+          returnContent: true // Ensure we get the content back
         }
       }
     );

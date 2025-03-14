@@ -9,7 +9,7 @@ import { Lead } from "@/types/leads";
 import { useProposalRevisions, ProposalRevision } from '../hooks/useProposalRevisions';
 import { Loader2, FileDown, Clock, Calendar } from "lucide-react";
 import { saveAs } from 'file-saver';
-// Import getSafeFileName from the utils file instead
+import { toast } from "@/hooks/use-toast";
 import { getSafeFileName } from "@/utils/report/validation";
 
 interface ProposalVersionHistoryProps {
@@ -37,22 +37,41 @@ export const ProposalVersionHistory = ({ lead, isOpen, onClose }: ProposalVersio
   
   const loadRevisions = async () => {
     if (!lead?.id) return;
-    const fetchedRevisions = await getProposalRevisions(lead.id);
-    setRevisions(fetchedRevisions);
+    try {
+      const fetchedRevisions = await getProposalRevisions(lead.id);
+      console.log("Fetched revisions:", fetchedRevisions);
+      setRevisions(fetchedRevisions);
+    } catch (error) {
+      console.error("Failed to load revisions:", error);
+      toast({
+        title: "Error",
+        description: "Failed to load proposal versions. Please try again.",
+        variant: "destructive"
+      });
+    }
   };
   
   const handleDownloadRevision = async (revision: ProposalRevision) => {
     try {
       setGeneratingPdf(revision.id);
+      console.log("Starting download of revision:", revision.id);
       
       // Generate PDF from the revision
       const pdfContent = await generatePdfFromRevision(revision);
       
-      // Convert base64 to blob if needed
+      if (!pdfContent) {
+        throw new Error("Failed to generate PDF content");
+      }
+      
+      console.log("PDF content received, type:", typeof pdfContent);
+      console.log("PDF content starts with:", typeof pdfContent === 'string' ? pdfContent.substring(0, 20) : 'Not a string');
+      
+      // Convert content to blob based on content type
       let pdfBlob;
       if (typeof pdfContent === 'string') {
         // Check if it's a base64 string
         if (pdfContent.startsWith('data:application/pdf;base64,')) {
+          console.log("Converting base64 to blob");
           const base64Data = pdfContent.split(',')[1];
           const byteCharacters = atob(base64Data);
           const byteArrays = [];
@@ -68,14 +87,16 @@ export const ProposalVersionHistory = ({ lead, isOpen, onClose }: ProposalVersio
           
           pdfBlob = new Blob(byteArrays, { type: 'application/pdf' });
         } else if (pdfContent.startsWith('%PDF')) {
+          console.log("Direct PDF content detected");
           // Raw PDF content
           pdfBlob = new Blob([pdfContent], { type: 'application/pdf' });
         } else {
+          console.log("Treating as general content");
           // Assume it's just content that needs to be converted
           pdfBlob = new Blob([pdfContent], { type: 'application/pdf' });
         }
       } else {
-        throw new Error('Invalid PDF content');
+        throw new Error('Invalid PDF content type');
       }
       
       // Generate filename
@@ -83,11 +104,24 @@ export const ProposalVersionHistory = ({ lead, isOpen, onClose }: ProposalVersio
       const safeCompanyName = getSafeFileName(companyName, { maxLength: 40, replaceChar: '-' });
       const filename = `${safeCompanyName}_v${revision.version_number}.pdf`;
       
+      console.log("Saving PDF as:", filename);
+      
       // Save the file
       saveAs(pdfBlob, filename);
       
+      toast({
+        title: "Success",
+        description: `Downloaded proposal version ${revision.version_number}`,
+        variant: "default"
+      });
+      
     } catch (error) {
       console.error('Error downloading revision:', error);
+      toast({
+        title: "Error",
+        description: `Failed to download: ${error instanceof Error ? error.message : 'Unknown error'}`,
+        variant: "destructive"
+      });
     } finally {
       setGeneratingPdf(null);
     }
