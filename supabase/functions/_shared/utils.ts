@@ -1,4 +1,6 @@
 
+// Shared utility functions
+
 /**
  * Format a number as currency with "$" prefix
  */

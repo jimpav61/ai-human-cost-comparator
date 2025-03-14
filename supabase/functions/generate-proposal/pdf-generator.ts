@@ -2,15 +2,8 @@
 // PDF Generation Utilities
 // This file contains functions to generate a PDF proposal document
 
-// Helper function to format currency
-const formatCurrency = (value: number): string => {
-  return new Intl.NumberFormat('en-US', {
-    style: 'currency',
-    currency: 'USD',
-    minimumFractionDigits: 0,
-    maximumFractionDigits: 0
-  }).format(value);
-};
+// Import utility functions from shared module
+import { formatCurrency as formatCurrencyUtil, formatNumber as formatNumberUtil, getSafeFileName } from "../_shared/utils.ts";
 
 // Helper function to format percentages
 const formatPercentage = (value: number): string => {
@@ -19,11 +12,6 @@ const formatPercentage = (value: number): string => {
     minimumFractionDigits: 0,
     maximumFractionDigits: 0
   }).format(value / 100);
-};
-
-// Helper function to format numbers
-const formatNumber = (value: number): string => {
-  return new Intl.NumberFormat('en-US').format(value);
 };
 
 /**
@@ -81,17 +69,17 @@ BT
 0 -40 Td
 (BUSINESS COST ANALYSIS) Tj
 0 -20 Td
-(Current Monthly Cost: ${formatCurrency(humanCostMonthly)}) Tj
+(Current Monthly Cost: ${formatCurrencyUtil(humanCostMonthly)}) Tj
 0 -15 Td
-(AI Solution Monthly Cost: ${formatCurrency(aiCostMonthly.total || 0)}) Tj
+(AI Solution Monthly Cost: ${formatCurrencyUtil(aiCostMonthly.total || 0)}) Tj
 0 -15 Td
-(Setup Fee: ${formatCurrency(aiCostMonthly.setupFee || 0)}) Tj
+(Setup Fee: ${formatCurrencyUtil(aiCostMonthly.setupFee || 0)}) Tj
 0 -25 Td
 (SAVINGS SUMMARY) Tj
 0 -20 Td
-(Monthly Savings: ${formatCurrency(monthlySavings)}) Tj
+(Monthly Savings: ${formatCurrencyUtil(monthlySavings)}) Tj
 0 -15 Td
-(Annual Savings: ${formatCurrency(yearlySavings)}) Tj
+(Annual Savings: ${formatCurrencyUtil(yearlySavings)}) Tj
 0 -15 Td
 (Savings Percentage: ${formatPercentage(savingsPercentage)}) Tj
 0 -25 Td
