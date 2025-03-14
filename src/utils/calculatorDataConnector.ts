@@ -30,97 +30,13 @@ export async function generateProposalFromSavedData(leadId: string) {
     // Create a deep copy to avoid reference issues
     const leadCopy = JSON.parse(JSON.stringify(lead));
     
-    // Validate and provide fallback data if calculator_results is missing or invalid
-    if (!leadCopy.calculator_results || typeof leadCopy.calculator_results !== 'object') {
-      console.log("Missing or incomplete calculator_results, creating default values");
-      
-      // Get values from calculator_inputs if available
-      const aiTier = leadCopy.calculator_inputs?.aiTier || 'growth';
-      const aiType = leadCopy.calculator_inputs?.aiType || 'both';
-      const callVolume = leadCopy.calculator_inputs?.callVolume || 0;
-      
-      // Create default calculator results based on tier
-      const tierBasePrices = {
-        starter: 99,
-        growth: 229,
-        premium: 429
-      };
-      
-      const basePrice = tierBasePrices[aiTier as keyof typeof tierBasePrices] || 229;
-      const setupFee = aiTier === 'starter' ? 299 : aiTier === 'growth' ? 499 : 999;
-      const voiceCost = aiTier !== 'starter' ? Math.round(callVolume * 0.12) : 0;
-      const totalCost = basePrice + voiceCost;
-      
-      // Default human cost
-      const humanCostMonthly = 3800;
-      
-      // Calculate savings
-      const monthlySavings = humanCostMonthly - totalCost;
-      const yearlySavings = monthlySavings * 12;
-      const savingsPercentage = Math.round((monthlySavings / humanCostMonthly) * 100);
-      
-      // Create complete calculator_results structure
-      leadCopy.calculator_results = {
-        humanCostMonthly,
-        aiCostMonthly: { 
-          total: totalCost, 
-          setupFee, 
-          voice: voiceCost, 
-          chatbot: basePrice 
-        },
-        monthlySavings,
-        yearlySavings,
-        savingsPercentage,
-        tierKey: aiTier,
-        aiType,
-        basePriceMonthly: basePrice,
-        additionalVoiceMinutes: callVolume
-      };
-      
-      console.log("Created default calculator_results:", leadCopy.calculator_results);
-    } else {
-      // Ensure all required fields exist in calculator_results
-      leadCopy.calculator_results = {
-        humanCostMonthly: 3800,
-        aiCostMonthly: { 
-          total: 299, 
-          setupFee: 500, 
-          voice: 0, 
-          chatbot: 299 
-        },
-        monthlySavings: 3501,
-        yearlySavings: 42012,
-        savingsPercentage: 92,
-        tierKey: 'growth',
-        aiType: 'both',
-        basePriceMonthly: 299,
-        additionalVoiceMinutes: 0,
-        ...leadCopy.calculator_results, // Overwrite defaults with actual data if it exists
-      };
+    // CRITICAL: Don't validate or modify calculator_results - use exactly what's in the lead
+    if (!leadCopy.calculator_results) {
+      console.error("Lead has no calculator_results:", leadId);
+      throw new Error("Missing calculator results data");
     }
     
-    // Ensure calculator_inputs exists
-    if (!leadCopy.calculator_inputs) {
-      leadCopy.calculator_inputs = {
-        aiTier: leadCopy.calculator_results.tierKey || 'growth',
-        aiType: leadCopy.calculator_results.aiType || 'both',
-        callVolume: leadCopy.calculator_results.additionalVoiceMinutes || 0,
-        numEmployees: leadCopy.employee_count || 5,
-        chatVolume: 2000,
-        role: 'customerService',
-        avgCallDuration: 4.5,
-        avgChatLength: 8,
-        avgChatResolutionTime: 10
-      };
-    }
-    
-    // Log key data for debugging
-    console.log("Lead data prepared successfully:");
-    console.log("- ID:", leadCopy.id);
-    console.log("- Company:", leadCopy.company_name);
-    console.log("- aiTier:", leadCopy.calculator_results.tierKey);
-    console.log("- aiType:", leadCopy.calculator_results.aiType);
-    console.log("- callVolume:", leadCopy.calculator_results.additionalVoiceMinutes);
+    console.log("Using exact calculator_results from lead:", leadCopy.calculator_results);
     
     // Use a timeout to ensure we don't hang forever
     const timeoutPromise = new Promise((_, reject) => {

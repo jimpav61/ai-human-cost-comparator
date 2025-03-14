@@ -33,10 +33,10 @@ export function useProposalGenerator() {
         throw new Error("Lead ID is required");
       }
       
-      // Ensure calculator_results is present and valid
-      if (!lead.calculator_results || typeof lead.calculator_results !== 'object') {
-        console.error("Invalid calculator_results:", lead.calculator_results);
-        throw new Error("Missing or invalid calculator results data");
+      // Check if calculator_results exists
+      if (!lead.calculator_results) {
+        console.error("Missing calculator_results");
+        throw new Error("This lead doesn't have calculator results. Edit the lead first to add calculator data.");
       }
       
       // Use the data connector to generate the proposal

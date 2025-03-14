@@ -30,6 +30,7 @@ export const ProposalGenerator = ({ lead, onLeadUpdated, onProposalGenerated }: 
         return;
       }
       
+      // Log what we're working with
       console.log("Starting proposal generation for lead:", lead.id);
       console.log("Calculator inputs:", lead.calculator_inputs);
       console.log("Calculator results:", lead.calculator_results);
@@ -92,7 +93,7 @@ export const ProposalGenerator = ({ lead, onLeadUpdated, onProposalGenerated }: 
           <Info className="h-4 w-4 text-yellow-600" />
           <AlertTitle className="text-yellow-800">Information</AlertTitle>
           <AlertDescription className="text-yellow-700">
-            This lead doesn't have calculator results. The system will create default values when you generate a proposal.
+            This lead doesn't have calculator results. You'll need to edit the lead first to add calculator data.
           </AlertDescription>
         </Alert>
       )}
@@ -129,7 +130,7 @@ export const ProposalGenerator = ({ lead, onLeadUpdated, onProposalGenerated }: 
               <AlertTitle className="text-blue-800">Troubleshooting</AlertTitle>
               <AlertDescription className="text-blue-700">
                 <ul className="list-disc pl-5 mt-2 space-y-1">
-                  <li>Check that the lead has calculator inputs defined</li>
+                  <li>Check that the lead has calculator results defined</li>
                   <li>Try editing the lead to update calculator settings</li>
                   <li>Make sure both aiTier and aiType are set correctly</li>
                   <li>For voice plans, ensure callVolume is properly defined</li>
