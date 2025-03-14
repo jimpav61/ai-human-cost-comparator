@@ -49,15 +49,10 @@ export const findOrGenerateReport = async (lead: Lead, setIsLoading: (isLoading:
     const pdfFileName = `${report.id}.pdf`;
     console.log('Getting PDF file:', pdfFileName);
     
-    // Get the public URL directly
-    const { data: urlData, error: urlError } = await supabase.storage
+    // Get the public URL directly - this method doesn't return an error property
+    const { data: urlData } = await supabase.storage
       .from('reports')
       .getPublicUrl(pdfFileName);
-    
-    if (urlError) {
-      console.error('Error getting URL for PDF:', urlError);
-      throw new Error('Could not get report URL');
-    }
     
     if (!urlData || !urlData.publicUrl) {
       console.error('No public URL found for PDF');
