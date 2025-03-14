@@ -14,12 +14,14 @@ serve(async (req) => {
 
   try {
     // Parse the request body
-    const { lead } = await req.json();
+    const requestData = await req.json();
+    const { lead, mode = "preview", returnContent = false, debug = false } = requestData;
     
     // Log the received data for debugging (sensitive info redacted)
     console.log("=== RECEIVED PROPOSAL GENERATION REQUEST ===");
     console.log("Lead ID:", lead.id);
     console.log("Company:", lead.company_name);
+    console.log("Debug mode:", debug);
     console.log("Calculator inputs type:", typeof lead.calculator_inputs);
     console.log("Calculator results type:", typeof lead.calculator_results);
     console.log("Raw calculator results:", JSON.stringify(lead.calculator_results));
@@ -51,11 +53,8 @@ serve(async (req) => {
     console.log("savingsPercentage:", lead.calculator_results.savingsPercentage);
     
     // Determine if this is a preview or email request
-    const mode = lead.mode || "preview";
-    const shouldReturnContent = lead.returnContent === true;
-    
     if (mode === "preview") {
-      return handlePreviewRequest(lead, shouldReturnContent);
+      return handlePreviewRequest(lead, returnContent, debug);
     } else if (mode === "email") {
       return handleEmailRequest(lead);
     } else {

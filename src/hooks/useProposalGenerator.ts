@@ -12,6 +12,49 @@ export function useProposalGenerator() {
   const [proposalPdf, setProposalPdf] = useState('');
   const [generationSuccess, setGenerationSuccess] = useState(false);
 
+  // Debugging utility to check PDF content format
+  const diagnosePdfFormat = async (pdfContent: string) => {
+    try {
+      // Log general characteristics about the content
+      console.log('PDF DIAGNOSTICS:', {
+        contentType: typeof pdfContent,
+        contentLength: pdfContent.length,
+        firstFewChars: pdfContent.substring(0, 50),
+        lastFewChars: pdfContent.substring(pdfContent.length - 50),
+        isPdfHeader: pdfContent.startsWith('%PDF-'),
+        isBase64: /^[A-Za-z0-9+/=]+$/.test(pdfContent) && !pdfContent.includes(' '),
+        isDataUrl: pdfContent.startsWith('data:application/pdf;base64,'),
+        isJsonString: pdfContent.startsWith('{') && pdfContent.endsWith('}'),
+      });
+
+      // Try to check if it's a JSON object with PDF content
+      if (pdfContent.startsWith('{')) {
+        try {
+          const jsonObj = JSON.parse(pdfContent);
+          console.log('JSON PARSED CONTENT:', {
+            hasPdfProperty: !!jsonObj.pdf,
+            pdfPropertyType: jsonObj.pdf ? typeof jsonObj.pdf : 'N/A',
+            pdfPropertyLength: jsonObj.pdf ? jsonObj.pdf.length : 0,
+            pdfPropertyStart: jsonObj.pdf ? jsonObj.pdf.substring(0, 30) : '',
+          });
+        } catch (e) {
+          console.log('Not valid JSON:', e);
+        }
+      }
+      
+      return {
+        success: true,
+        format: pdfContent.startsWith('%PDF-') ? 'raw-pdf' : 
+                /^[A-Za-z0-9+/=]+$/.test(pdfContent) ? 'base64' : 
+                pdfContent.startsWith('data:') ? 'data-url' :
+                pdfContent.startsWith('{') ? 'json' : 'unknown'
+      };
+    } catch (error) {
+      console.error('Error diagnosing PDF format:', error);
+      return { success: false, error };
+    }
+  };
+
   const generateProposalDoc = async (lead: Lead): Promise<string> => {
     try {
       setGenerating(true);
@@ -45,7 +88,9 @@ export function useProposalGenerator() {
         body: { 
           lead: { ...safetyLead, proposalData },
           mode: "preview",
-          returnContent: false
+          returnContent: false,
+          // Add a flag to trigger detailed diagnostics
+          debug: true
         }
       });
 
@@ -64,6 +109,9 @@ export function useProposalGenerator() {
 
       console.log('PDF data received, length:', data.pdf.length);
       console.log('PDF data sample (first 30 chars):', data.pdf.substring(0, 30));
+      
+      // Run diagnostics on the received PDF content
+      await diagnosePdfFormat(data.pdf);
 
       setProposalPdf(data.pdf);
       setGenerationSuccess(true);
@@ -84,6 +132,7 @@ export function useProposalGenerator() {
     generationError,
     proposalPdf,
     generationSuccess,
-    generateProposal: generateProposalDoc
+    generateProposal: generateProposalDoc,
+    diagnosePdfFormat
   };
 }
