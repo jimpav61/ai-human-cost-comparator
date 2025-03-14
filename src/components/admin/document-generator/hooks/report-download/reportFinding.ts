@@ -12,108 +12,74 @@ export async function findAndDownloadReport(lead: Lead, setIsLoading: (loading: 
   console.log("Lead company name:", lead.company_name);
 
   try {
-    // First attempt: Query generated_reports table for reports associated with this lead
-    console.log("Searching for report with lead_id:", lead.id);
-    const { data: reports, error } = await supabase
-      .from('generated_reports')
-      .select('*')
-      .eq('lead_id', lead.id)
-      .order('report_date', { ascending: false })
-      .limit(1);
-
-    if (error) {
-      console.error("Error searching for reports:", error);
-      throw new Error("Failed to search for existing reports");
-    }
-
-    if (reports && reports.length > 0) {
-      console.log("Found report in database:", reports[0].id);
-      await generateAndUploadPDF(reports[0], lead);
-      return;
-    }
-
-    console.log("No reports found with lead_id:", lead.id);
+    // First attempt: Check 'reports' storage bucket directly for lead ID
+    console.log("Checking 'reports' storage bucket for files with lead ID:", lead.id);
     
-    // Second attempt: Check storage directly for any files with this lead ID pattern
-    console.log("Checking storage directly for report with ID:", lead.id);
+    const { data: storageFiles, error: storageError } = await supabase
+      .storage
+      .from('reports')
+      .list();
+      
+    if (storageError) {
+      console.error("Error listing storage files in 'reports' bucket:", storageError);
+      throw new Error("Unable to access reports storage");
+    }
     
-    try {
-      // Check both 'reports' and 'generated_reports' buckets
-      // First try 'reports' bucket which is the standard name
-      const { data: storageFiles, error: storageError } = await supabase
-        .storage
-        .from('reports')
-        .list();
+    if (storageFiles && storageFiles.length > 0) {
+      console.log("All files in reports bucket:", storageFiles.map(f => f.name));
+      
+      // Look for any file that contains the lead ID
+      const matchingFile = storageFiles.find(file => file.name.includes(lead.id));
+      
+      if (matchingFile) {
+        console.log("Found matching file by lead ID:", matchingFile.name);
         
-      if (storageError) {
-        console.error("Error listing storage files in 'reports' bucket:", storageError);
-        
-        // If that fails, try 'generated_reports' bucket as fallback
-        const { data: altStorageFiles, error: altStorageError } = await supabase
-          .storage
-          .from('generated_reports')
-          .list();
+        // Get the public URL
+        const { data: urlData } = await supabase.storage
+          .from('reports')
+          .getPublicUrl(matchingFile.name);
           
-        if (altStorageError) {
-          console.error("Error listing storage files in 'generated_reports' bucket:", altStorageError);
-        } else if (altStorageFiles) {
-          console.log("All files in generated_reports bucket:", altStorageFiles.map(f => f.name));
+        if (urlData?.publicUrl) {
+          console.log("Downloading report from URL:", urlData.publicUrl);
           
-          // Look for any file that might be related to this lead (by ID or name)
-          const matchingFile = altStorageFiles.find(file => 
-            file.name.includes(lead.id) || 
-            (lead.company_name && file.name.toLowerCase().includes(lead.company_name.toLowerCase()))
-          );
+          // Create download link
+          const link = document.createElement('a');
+          link.href = urlData.publicUrl;
+          link.download = `${getSafeFileName(lead)}-ChatSites-ROI-Report.pdf`;
+          document.body.appendChild(link);
+          link.click();
+          document.body.removeChild(link);
           
-          if (matchingFile) {
-            console.log("Found potential matching file in 'generated_reports' storage:", matchingFile.name);
-            
-            // Get the public URL
-            const { data: urlData } = await supabase.storage
-              .from('generated_reports')
-              .getPublicUrl(matchingFile.name);
-              
-            if (urlData?.publicUrl) {
-              console.log("Found report in storage:", urlData.publicUrl);
-              
-              // Use the URL directly
-              const link = document.createElement('a');
-              link.href = urlData.publicUrl;
-              link.download = `${getSafeFileName(lead)}-ChatSites-ROI-Report.pdf`;
-              document.body.appendChild(link);
-              link.click();
-              document.body.removeChild(link);
-              
-              toast({
-                title: "Report Downloaded",
-                description: "The report has been successfully downloaded from storage.",
-                duration: 1000,
-              });
-              return;
-            }
-          }
+          toast({
+            title: "Report Downloaded",
+            description: "The report has been successfully downloaded.",
+            duration: 3000,
+          });
+          setIsLoading(false);
+          return;
         }
-      } else if (storageFiles) {
-        console.log("All files in reports bucket:", storageFiles.map(f => f.name));
+      } else {
+        // If no direct ID match, try company name matching as fallback
+        console.log("No exact lead ID match, trying company name fallback...");
+        const companyNameMatches = lead.company_name ? storageFiles.filter(file => 
+          file.name.toLowerCase().includes(lead.company_name.toLowerCase().replace(/[^a-z0-9]/gi, ''))
+        ) : [];
         
-        // Look for any file that might be related to this lead (by ID or name)
-        const matchingFile = storageFiles.find(file => 
-          file.name.includes(lead.id) || 
-          (lead.company_name && file.name.toLowerCase().includes(lead.company_name.toLowerCase()))
-        );
-        
-        if (matchingFile) {
-          console.log("Found potential matching file in storage:", matchingFile.name);
+        if (companyNameMatches.length > 0) {
+          console.log("Found potential company name matches:", companyNameMatches.map(f => f.name));
+          
+          // Use the most recent file (assuming filename sorting works)
+          const mostRecentMatch = companyNameMatches[0];
           
           // Get the public URL
           const { data: urlData } = await supabase.storage
             .from('reports')
-            .getPublicUrl(matchingFile.name);
+            .getPublicUrl(mostRecentMatch.name);
             
           if (urlData?.publicUrl) {
-            console.log("Found report in storage:", urlData.publicUrl);
+            console.log("Downloading report by company name match:", urlData.publicUrl);
             
-            // Use the URL directly
+            // Create download link
             const link = document.createElement('a');
             link.href = urlData.publicUrl;
             link.download = `${getSafeFileName(lead)}-ChatSites-ROI-Report.pdf`;
@@ -123,33 +89,57 @@ export async function findAndDownloadReport(lead: Lead, setIsLoading: (loading: 
             
             toast({
               title: "Report Downloaded",
-              description: "The report has been successfully downloaded from storage.",
-              duration: 1000,
+              description: "The report has been successfully downloaded.",
+              duration: 3000,
             });
+            setIsLoading(false);
             return;
           }
         }
       }
-    } catch (storageCheckError) {
-      console.error("Error checking storage:", storageCheckError);
     }
     
-    // If no report found, notify the user that they need to generate one first
+    // As a final fallback, check if there's a report in the database
+    console.log("No matching files in storage, checking database...");
+    
+    const { data: reports, error } = await supabase
+      .from('generated_reports')
+      .select('*')
+      .eq('lead_id', lead.id)
+      .order('report_date', { ascending: false })
+      .limit(1);
+
+    if (error) {
+      console.error("Error checking database for reports:", error);
+    } else if (reports && reports.length > 0) {
+      console.log("Found report in database:", reports[0].id);
+      await generateAndUploadPDF(reports[0], lead);
+      setIsLoading(false);
+      return;
+    }
+    
+    // If we got here, no report was found
     console.log("No existing report found, notifying user to generate one first");
     setIsLoading(false);
     
     toast({
       title: "No Report Found",
-      description: "There is no existing report for this lead. Please generate a report from the calculator data first.",
+      description: "No existing report found for this lead. Please generate a report first.",
       variant: "destructive",
       duration: 3000,
     });
     
-    console.log("---------- ADMIN REPORT DOWNLOAD ATTEMPT ENDED ----------");
-    
   } catch (error) {
     console.error("Error in findAndDownloadReport:", error);
     setIsLoading(false);
-    throw error;
+    
+    toast({
+      title: "Error",
+      description: "Failed to find or download report. Please try again.",
+      variant: "destructive",
+      duration: 3000,
+    });
   }
+  
+  console.log("---------- ADMIN REPORT DOWNLOAD ATTEMPT ENDED ----------");
 }

@@ -12,8 +12,8 @@ export interface SavedReport {
   report_date: string;
   calculator_inputs: any;
   calculator_results: any;
-  lead_id: string | null; // Updated to allow null since some existing reports might not have lead_id
-  pdf_url?: string; // Add field for PDF URL if available
+  lead_id: string | null;
+  pdf_url?: string;
 }
 
 export const useSavedReports = (leadId?: string) => {
@@ -27,10 +27,52 @@ export const useSavedReports = (leadId?: string) => {
     try {
       console.log("📊 REPORT FINDER: Starting search for lead ID:", leadId);
       
-      // Try all possible ways to find the report, capturing all results first
-      const searchResults = [];
+      // PRIORITY 1: Check storage for existing PDF file with the lead ID
+      // This is the most direct and reliable method
+      const { data: storageFiles, error: storageError } = await supabase
+        .storage
+        .from('reports')
+        .list();
+        
+      if (storageError) {
+        console.error("📊 REPORT FINDER: Error accessing 'reports' storage:", storageError);
+      } else if (storageFiles && storageFiles.length > 0) {
+        console.log("📊 REPORT FINDER: Checking storage files:", storageFiles.map(f => f.name));
+        
+        // Look for exact lead ID match in filenames
+        const matchingFile = storageFiles.find(file => file.name.includes(leadId));
+        
+        if (matchingFile) {
+          console.log(`📊 REPORT FINDER: Found exact match in storage: ${matchingFile.name}`);
+          
+          // Get the public URL
+          const { data: urlData } = await supabase.storage
+            .from('reports')
+            .getPublicUrl(matchingFile.name);
+            
+          if (urlData?.publicUrl) {
+            // Create a report object from the file
+            const storageReport: SavedReport = {
+              id: matchingFile.name.replace('.pdf', ''),
+              company_name: "Report from Storage",
+              contact_name: "Unknown",
+              email: "",
+              phone_number: "",
+              report_date: new Date().toISOString(),
+              calculator_inputs: {},
+              calculator_results: {},
+              lead_id: leadId,
+              pdf_url: urlData.publicUrl
+            };
+            
+            setReports([storageReport]);
+            setIsLoading(false);
+            return;
+          }
+        }
+      }
       
-      // 1. Try direct lead_id match
+      // PRIORITY 2: Check the database for reports with this lead ID
       const { data: leadIdMatches, error: leadIdError } = await supabase
         .from('generated_reports')
         .select('*')
@@ -41,151 +83,29 @@ export const useSavedReports = (leadId?: string) => {
         console.error("📊 REPORT FINDER: Error searching by lead_id:", leadIdError);
       } else if (leadIdMatches && leadIdMatches.length > 0) {
         console.log(`📊 REPORT FINDER: Found ${leadIdMatches.length} reports by lead_id match`);
-        searchResults.push(...leadIdMatches);
-      }
-      
-      // 2. Try exact id match (report id = lead id)
-      const { data: exactMatch, error: exactMatchError } = await supabase
-        .from('generated_reports')
-        .select('*')
-        .eq('id', leadId)
-        .maybeSingle();
         
-      if (exactMatchError) {
-        console.error("📊 REPORT FINDER: Error searching by report id:", exactMatchError);
-      } else if (exactMatch) {
-        console.log("📊 REPORT FINDER: Found report by direct ID match");
-        if (!searchResults.some(r => r.id === exactMatch.id)) {
-          searchResults.push(exactMatch);
-        }
-      }
-      
-      // 3. Try matching by email (for legacy reports)
-      const { data: emailMatches, error: emailMatchError } = await supabase
-        .from('generated_reports')
-        .select('*')
-        .eq('email', leadId)
-        .order('report_date', { ascending: false });
-        
-      if (emailMatchError) {
-        console.error("📊 REPORT FINDER: Error searching by email:", emailMatchError);
-      } else if (emailMatches && emailMatches.length > 0) {
-        console.log(`📊 REPORT FINDER: Found ${emailMatches.length} reports by email match`);
-        // Avoid duplicates
-        emailMatches.forEach(match => {
-          if (!searchResults.some(r => r.id === match.id)) {
-            searchResults.push(match);
-          }
-        });
-      }
-      
-      // 4. Try fuzzy company name match as last resort
-      const { data: companyMatches, error: companyMatchError } = await supabase
-        .from('generated_reports')
-        .select('*')
-        .ilike('company_name', `%${leadId}%`)
-        .order('report_date', { ascending: false });
-        
-      if (companyMatchError) {
-        console.error("📊 REPORT FINDER: Error searching by company name:", companyMatchError);
-      } else if (companyMatches && companyMatches.length > 0) {
-        console.log(`📊 REPORT FINDER: Found ${companyMatches.length} reports by company name match`);
-        // Avoid duplicates
-        companyMatches.forEach(match => {
-          if (!searchResults.some(r => r.id === match.id)) {
-            searchResults.push(match);
-          }
-        });
-      }
-      
-      // Also check storage for PDF files
-      if (searchResults.length > 0) {
-        // Check for stored PDF files for each report - try both bucket names
-        for (const report of searchResults) {
-          try {
-            // CRITICAL FIX: Use correct file path format
-            const pdfFileName = `${report.id}.pdf`;
-            
-            console.log("📊 REPORT FINDER: Checking for PDF file:", pdfFileName);
-            
-            // Try in 'reports' bucket first
-            let foundFile = false;
-            const { data: fileData, error: fileError } = await supabase.storage
-              .from('reports')
-              .list('', {
-                search: pdfFileName,
-                limit: 1
-              });
-              
-            if (fileError) {
-              console.error("📊 REPORT FINDER: Error checking file existence in 'reports':", fileError);
-              
-              // Try in 'generated_reports' bucket as fallback
-              const { data: altFileData, error: altFileError } = await supabase.storage
-                .from('generated_reports')
-                .list('', {
-                  search: pdfFileName,
-                  limit: 1
-                });
-                
-              if (altFileError) {
-                console.error("📊 REPORT FINDER: Error checking file existence in 'generated_reports':", altFileError);
-              } else if (altFileData && altFileData.length > 0) {
-                console.log(`📊 REPORT FINDER: Found file in 'generated_reports' storage: ${altFileData[0].name}`);
-                
-                // Get the public URL
-                const { data: urlData } = await supabase.storage
-                  .from('generated_reports')
-                  .getPublicUrl(pdfFileName);
-                
-                if (urlData && urlData.publicUrl) {
-                  console.log(`📊 REPORT FINDER: Generated public URL for report ${report.id}`);
-                  report.pdf_url = urlData.publicUrl;
-                  foundFile = true;
-                }
-              }
-            } else if (fileData && fileData.length > 0) {
-              console.log(`📊 REPORT FINDER: Found file in 'reports' storage: ${fileData[0].name}`);
-              
-              // Get the public URL
-              const { data: urlData } = await supabase.storage
-                .from('reports')
-                .getPublicUrl(pdfFileName);
-              
-              if (urlData && urlData.publicUrl) {
-                console.log(`📊 REPORT FINDER: Generated public URL for report ${report.id}`);
-                report.pdf_url = urlData.publicUrl;
-                foundFile = true;
-              }
-            }
-            
-            if (!foundFile) {
-              console.log(`📊 REPORT FINDER: No file found for ${pdfFileName}`);
-            }
-          } catch (fileCheckError) {
-            console.error("Error checking for PDF file:", fileCheckError);
-          }
-        }
-      }
-      
-      // Show search summary
-      if (searchResults.length > 0) {
-        console.log(`📊 REPORT FINDER: Search complete. Found ${searchResults.length} total reports.`);
-        setReports(searchResults);
-      } else {
-        // If no matches, log a comprehensive debug message
-        console.log("📊 REPORT FINDER: No reports found for this lead. Debug info:");
-        console.log("- Lead ID searched:", leadId);
-        
-        // Query for all reports to help with debugging
-        const { data: allReports } = await supabase
-          .from('generated_reports')
-          .select('id, lead_id, company_name, email')
-          .limit(10);
+        // For each database report, check if there's a corresponding PDF file
+        for (const report of leadIdMatches) {
+          const pdfFileName = `${report.id}.pdf`;
           
-        console.log("- Sample of reports in database:", allReports);
-        setReports([]);
+          const { data: fileData, error: fileError } = await supabase.storage
+            .from('reports')
+            .getPublicUrl(pdfFileName);
+            
+          if (!fileError && fileData?.publicUrl) {
+            report.pdf_url = fileData.publicUrl;
+          }
+        }
+        
+        setReports(leadIdMatches);
+        setIsLoading(false);
+        return;
       }
+      
+      // At this point, no reports found for the lead ID
+      console.log("📊 REPORT FINDER: No reports found with this lead ID");
+      setReports([]);
+      
     } catch (error) {
       console.error("📊 REPORT FINDER: Unexpected error:", error);
       setReports([]);
