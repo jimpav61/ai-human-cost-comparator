@@ -5,7 +5,7 @@ import { toast } from "@/hooks/use-toast";
 import { getSafeFileName } from "@/utils/report/validation";
 
 // Find existing reports for a lead and download them
-export const findOrGenerateReport = async (lead: Lead, setIsLoading: (isLoading: boolean) => void) => {
+export const findAndDownloadReport = async (lead: Lead, setIsLoading: (isLoading: boolean) => void) => {
   try {
     console.log('---------- ADMIN REPORT DOWNLOAD ATTEMPT ----------');
     console.log('Lead ID for report download:', lead.id);
@@ -67,7 +67,7 @@ export const findOrGenerateReport = async (lead: Lead, setIsLoading: (isLoading:
     await downloadReportPDF(report, lead, setIsLoading);
     
   } catch (error) {
-    console.error("Error in findOrGenerateReport:", error);
+    console.error("Error in findAndDownloadReport:", error);
     toast({
       title: "Error",
       description: error instanceof Error ? error.message : "An unexpected error occurred.",

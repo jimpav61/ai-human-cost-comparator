@@ -2,7 +2,7 @@
 import { useState } from "react";
 import { Lead } from "@/types/leads";
 import { toast } from "@/hooks/use-toast";
-import { findOrGenerateReport } from "./report-download/reportFinding";
+import { findAndDownloadReport } from "./report-download/reportFinding";
 
 export const useReportDownload = () => {
   const [isLoading, setIsLoading] = useState(false);
@@ -11,7 +11,7 @@ export const useReportDownload = () => {
     try {
       setIsLoading(true);
       
-      await findOrGenerateReport(lead, setIsLoading);
+      await findAndDownloadReport(lead, setIsLoading);
       
     } catch (error) {
       console.error("Error downloading report:", error);
