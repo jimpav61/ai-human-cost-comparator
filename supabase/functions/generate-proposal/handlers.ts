@@ -22,7 +22,8 @@ export async function handlePreviewRequest(lead: any, shouldReturnContent: boole
       console.log("- calculator_results sample:", JSON.stringify({
         humanCostMonthly: lead.calculator_results?.humanCostMonthly,
         aiCostMonthly: lead.calculator_results?.aiCostMonthly,
-        monthlySavings: lead.calculator_results?.monthlySavings
+        monthlySavings: lead.calculator_results?.monthlySavings,
+        additionalVoiceMinutes: lead.calculator_results?.additionalVoiceMinutes
       }, null, 2));
     }
     
@@ -44,6 +45,16 @@ export async function handlePreviewRequest(lead: any, shouldReturnContent: boole
           status: 400,
         }
       );
+    }
+    
+    // ENHANCED VALIDATION: Check for all required properties and provide defaults if missing
+    const validatedResults = validateAndSanitizeResults(lead.calculator_results, debug);
+    
+    // Replace the original results with the validated and sanitized version
+    lead.calculator_results = validatedResults;
+    
+    if (debug) {
+      console.log("Validated calculator_results:", JSON.stringify(validatedResults, null, 2));
     }
     
     // Create the PDF content - this needs to be a valid PDF string
@@ -194,4 +205,114 @@ export function handleEmailRequest(lead: any) {
       status: 200,
     }
   );
+}
+
+/**
+ * NEW FUNCTION: Validates and sanitizes calculator results
+ * Ensures all required properties exist and provides default values for missing ones
+ */
+function validateAndSanitizeResults(results: any, debug = false): any {
+  if (debug) {
+    console.log("Validating calculator results:", typeof results);
+  }
+  
+  // Create a deep copy to avoid modifying the original object
+  const sanitized = JSON.parse(JSON.stringify(results));
+  
+  // Ensure aiCostMonthly exists and has all required properties
+  if (!sanitized.aiCostMonthly || typeof sanitized.aiCostMonthly !== 'object') {
+    console.log("Creating missing aiCostMonthly object");
+    sanitized.aiCostMonthly = {};
+  }
+  
+  // Ensure all aiCostMonthly properties
+  sanitized.aiCostMonthly.voice = typeof sanitized.aiCostMonthly.voice === 'number' ? 
+    sanitized.aiCostMonthly.voice : 0;
+    
+  sanitized.aiCostMonthly.chatbot = typeof sanitized.aiCostMonthly.chatbot === 'number' ? 
+    sanitized.aiCostMonthly.chatbot : 0;
+    
+  sanitized.aiCostMonthly.total = typeof sanitized.aiCostMonthly.total === 'number' ? 
+    sanitized.aiCostMonthly.total : 0;
+    
+  sanitized.aiCostMonthly.setupFee = typeof sanitized.aiCostMonthly.setupFee === 'number' ? 
+    sanitized.aiCostMonthly.setupFee : 749;
+  
+  // Ensure basic calculation properties exist
+  sanitized.basePriceMonthly = typeof sanitized.basePriceMonthly === 'number' ? 
+    sanitized.basePriceMonthly : 229;
+    
+  sanitized.humanCostMonthly = typeof sanitized.humanCostMonthly === 'number' ? 
+    sanitized.humanCostMonthly : 0;
+    
+  sanitized.monthlySavings = typeof sanitized.monthlySavings === 'number' ? 
+    sanitized.monthlySavings : 0;
+    
+  sanitized.yearlySavings = typeof sanitized.yearlySavings === 'number' ? 
+    sanitized.yearlySavings : 0;
+    
+  sanitized.savingsPercentage = typeof sanitized.savingsPercentage === 'number' ? 
+    sanitized.savingsPercentage : 0;
+  
+  // CRITICAL: Ensure additionalVoiceMinutes is properly set
+  // Try to get it from the results directly
+  if (typeof sanitized.additionalVoiceMinutes !== 'number') {
+    // If it's a string, try to parse it as a number
+    if (typeof sanitized.additionalVoiceMinutes === 'string') {
+      console.log("Converting additionalVoiceMinutes from string to number");
+      sanitized.additionalVoiceMinutes = parseInt(sanitized.additionalVoiceMinutes, 10) || 0;
+    } else {
+      // If it doesn't exist, calculate it from the voice cost or set to 0
+      console.log("Setting missing additionalVoiceMinutes");
+      sanitized.additionalVoiceMinutes = 
+        sanitized.aiCostMonthly.voice > 0 ? 
+        Math.round(sanitized.aiCostMonthly.voice / 0.12) : 0;
+    }
+  }
+  
+  if (debug) {
+    console.log("AdditionalVoiceMinutes set to:", sanitized.additionalVoiceMinutes);
+  }
+  
+  // Ensure tier and AI type are set
+  sanitized.tierKey = sanitized.tierKey || "growth";
+  sanitized.aiType = sanitized.aiType || "both";
+  
+  // Validate breakEvenPoint
+  if (!sanitized.breakEvenPoint || typeof sanitized.breakEvenPoint !== 'object') {
+    sanitized.breakEvenPoint = { voice: 0, chatbot: 0 };
+  } else {
+    sanitized.breakEvenPoint.voice = typeof sanitized.breakEvenPoint.voice === 'number' ? 
+      sanitized.breakEvenPoint.voice : 0;
+    sanitized.breakEvenPoint.chatbot = typeof sanitized.breakEvenPoint.chatbot === 'number' ? 
+      sanitized.breakEvenPoint.chatbot : 0;
+  }
+  
+  // Validate humanHours
+  if (!sanitized.humanHours || typeof sanitized.humanHours !== 'object') {
+    sanitized.humanHours = {
+      dailyPerEmployee: 8,
+      weeklyTotal: 40,
+      monthlyTotal: 160,
+      yearlyTotal: 2080
+    };
+  } else {
+    sanitized.humanHours.dailyPerEmployee = typeof sanitized.humanHours.dailyPerEmployee === 'number' ? 
+      sanitized.humanHours.dailyPerEmployee : 8;
+    sanitized.humanHours.weeklyTotal = typeof sanitized.humanHours.weeklyTotal === 'number' ? 
+      sanitized.humanHours.weeklyTotal : 40;
+    sanitized.humanHours.monthlyTotal = typeof sanitized.humanHours.monthlyTotal === 'number' ? 
+      sanitized.humanHours.monthlyTotal : 160;
+    sanitized.humanHours.yearlyTotal = typeof sanitized.humanHours.yearlyTotal === 'number' ? 
+      sanitized.humanHours.yearlyTotal : 2080;
+  }
+  
+  // Ensure included voice minutes based on tier
+  sanitized.includedVoiceMinutes = sanitized.tierKey === 'starter' ? 0 : 600;
+  
+  // Ensure annualPlan exists
+  sanitized.annualPlan = typeof sanitized.annualPlan === 'number' ? 
+    sanitized.annualPlan : sanitized.basePriceMonthly * 10;
+  
+  return sanitized;
 }

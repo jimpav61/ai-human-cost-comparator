@@ -71,7 +71,7 @@ serve(async (req) => {
     console.log("Version:", version);
     console.log("Calculator inputs type:", typeof lead.calculator_inputs);
     console.log("Calculator results type:", typeof lead.calculator_results);
-    console.log("API Version: 2.5"); // Updated version info to ensure change detection
+    console.log("API Version: 2.6"); // Updated version info to ensure change detection
     
     // CRITICAL: Ensure calculator_results is an object not a string
     if (!lead.calculator_results) {
@@ -92,9 +92,12 @@ serve(async (req) => {
       );
     }
     
-    if (typeof lead.calculator_results === 'string') {
+    // NEW: Create a deep clone of the lead to avoid mutations affecting the original
+    const sanitizedLead = JSON.parse(JSON.stringify(lead));
+    
+    if (typeof sanitizedLead.calculator_results === 'string') {
       try {
-        lead.calculator_results = JSON.parse(lead.calculator_results);
+        sanitizedLead.calculator_results = JSON.parse(sanitizedLead.calculator_results);
         console.log("Successfully parsed calculator_results from string to object");
       } catch (e) {
         console.error("Failed to parse calculator_results from string:", e);
@@ -112,12 +115,12 @@ serve(async (req) => {
           }
         );
       }
-    } else if (typeof lead.calculator_results !== 'object') {
-      console.error("Invalid calculator_results type:", typeof lead.calculator_results);
+    } else if (typeof sanitizedLead.calculator_results !== 'object') {
+      console.error("Invalid calculator_results type:", typeof sanitizedLead.calculator_results);
       return new Response(
         JSON.stringify({ 
           success: false, 
-          error: `Invalid calculator_results: Expected object but got ${typeof lead.calculator_results}` 
+          error: `Invalid calculator_results: Expected object but got ${typeof sanitizedLead.calculator_results}` 
         }),
         {
           headers: {
@@ -130,43 +133,69 @@ serve(async (req) => {
     }
     
     // CRITICAL FIX: Ensure calculator_inputs is an object not a string
-    if (lead.calculator_inputs && typeof lead.calculator_inputs === 'string') {
+    if (sanitizedLead.calculator_inputs && typeof sanitizedLead.calculator_inputs === 'string') {
       try {
-        lead.calculator_inputs = JSON.parse(lead.calculator_inputs);
+        sanitizedLead.calculator_inputs = JSON.parse(sanitizedLead.calculator_inputs);
         console.log("Successfully parsed calculator_inputs from string to object");
       } catch (e) {
         console.error("Failed to parse calculator_inputs from string:", e);
         // Continue without failing - inputs are less critical than results
-        lead.calculator_inputs = {};
+        sanitizedLead.calculator_inputs = {};
       }
     }
     
     // Include version information if provided
     if (version) {
-      lead.version_info = {
+      sanitizedLead.version_info = {
         version_number: version,
         created_at: new Date().toISOString(),
         notes: `Version ${version}`
       };
-      console.log("Added version info:", lead.version_info);
+      console.log("Added version info:", sanitizedLead.version_info);
+    }
+    
+    // ENHANCED: Check for additionalVoiceMinutes in calculator_results
+    if (sanitizedLead.calculator_results) {
+      if (typeof sanitizedLead.calculator_results.additionalVoiceMinutes !== 'number') {
+        console.log("additionalVoiceMinutes is not a number, type:", 
+          typeof sanitizedLead.calculator_results.additionalVoiceMinutes);
+          
+        // Try to extract from calculator_inputs.callVolume if available
+        if (sanitizedLead.calculator_inputs && 
+            typeof sanitizedLead.calculator_inputs.callVolume !== 'undefined') {
+          
+          // Ensure it's a number
+          const callVolume = typeof sanitizedLead.calculator_inputs.callVolume === 'string' 
+            ? parseInt(sanitizedLead.calculator_inputs.callVolume, 10) || 0
+            : Number(sanitizedLead.calculator_inputs.callVolume) || 0;
+            
+          console.log(`Setting additionalVoiceMinutes from callVolume: ${callVolume}`);
+          sanitizedLead.calculator_results.additionalVoiceMinutes = callVolume;
+        } else {
+          // Default to 0 if not available
+          console.log("Setting additionalVoiceMinutes to default value: 0");
+          sanitizedLead.calculator_results.additionalVoiceMinutes = 0;
+        }
+      }
     }
     
     // DEBUG: Log key values we'll use in the proposal
     console.log("CRITICAL VALUES FOR PROPOSAL:");
-    console.log("humanCostMonthly:", lead.calculator_results.humanCostMonthly);
-    console.log("aiCostMonthly.total:", lead.calculator_results.aiCostMonthly?.total);
-    console.log("monthlySavings:", lead.calculator_results.monthlySavings);
-    console.log("yearlySavings:", lead.calculator_results.yearlySavings);
-    console.log("savingsPercentage:", lead.calculator_results.savingsPercentage);
-    console.log("tierKey:", lead.calculator_results.tierKey);
-    console.log("aiType:", lead.calculator_results.aiType);
+    console.log("humanCostMonthly:", sanitizedLead.calculator_results.humanCostMonthly);
+    console.log("aiCostMonthly.total:", sanitizedLead.calculator_results.aiCostMonthly?.total);
+    console.log("monthlySavings:", sanitizedLead.calculator_results.monthlySavings);
+    console.log("yearlySavings:", sanitizedLead.calculator_results.yearlySavings);
+    console.log("savingsPercentage:", sanitizedLead.calculator_results.savingsPercentage);
+    console.log("tierKey:", sanitizedLead.calculator_results.tierKey);
+    console.log("aiType:", sanitizedLead.calculator_results.aiType);
+    console.log("additionalVoiceMinutes:", sanitizedLead.calculator_results.additionalVoiceMinutes);
     console.log("Processing timestamp:", new Date().toISOString());
     
     // Determine if this is a preview or email request
     if (mode === "preview") {
-      return handlePreviewRequest(lead, returnContent, debug);
+      return handlePreviewRequest(sanitizedLead, returnContent, debug);
     } else if (mode === "email") {
-      return handleEmailRequest(lead);
+      return handleEmailRequest(sanitizedLead);
     } else {
       console.error("Invalid mode:", mode);
       return new Response(
@@ -194,7 +223,7 @@ serve(async (req) => {
         success: false, 
         error: error.message,
         stack: error.stack,
-        version: "2.5" // Updated version to ensure change detection
+        version: "2.6" // Updated version to ensure change detection
       }),
       {
         headers: {
