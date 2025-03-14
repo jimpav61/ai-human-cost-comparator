@@ -100,7 +100,7 @@ export const useSavedReports = (leadId?: string) => {
       
       // Also check storage for PDF files
       if (searchResults.length > 0) {
-        // Check for stored PDF files for each report
+        // Check for stored PDF files for each report - try both bucket names
         for (const report of searchResults) {
           try {
             // CRITICAL FIX: Use correct file path format
@@ -108,7 +108,8 @@ export const useSavedReports = (leadId?: string) => {
             
             console.log("📊 REPORT FINDER: Checking for PDF file:", pdfFileName);
             
-            // Need to first check if file exists before getting public URL
+            // Try in 'reports' bucket first
+            let foundFile = false;
             const { data: fileData, error: fileError } = await supabase.storage
               .from('reports')
               .list('', {
@@ -117,11 +118,36 @@ export const useSavedReports = (leadId?: string) => {
               });
               
             if (fileError) {
-              console.error("📊 REPORT FINDER: Error checking file existence:", fileError);
-            } else if (fileData && fileData.length > 0) {
-              console.log(`📊 REPORT FINDER: Found file in storage: ${fileData[0].name}`);
+              console.error("📊 REPORT FINDER: Error checking file existence in 'reports':", fileError);
               
-              // Now get the public URL
+              // Try in 'generated_reports' bucket as fallback
+              const { data: altFileData, error: altFileError } = await supabase.storage
+                .from('generated_reports')
+                .list('', {
+                  search: pdfFileName,
+                  limit: 1
+                });
+                
+              if (altFileError) {
+                console.error("📊 REPORT FINDER: Error checking file existence in 'generated_reports':", altFileError);
+              } else if (altFileData && altFileData.length > 0) {
+                console.log(`📊 REPORT FINDER: Found file in 'generated_reports' storage: ${altFileData[0].name}`);
+                
+                // Get the public URL
+                const { data: urlData } = await supabase.storage
+                  .from('generated_reports')
+                  .getPublicUrl(pdfFileName);
+                
+                if (urlData && urlData.publicUrl) {
+                  console.log(`📊 REPORT FINDER: Generated public URL for report ${report.id}`);
+                  report.pdf_url = urlData.publicUrl;
+                  foundFile = true;
+                }
+              }
+            } else if (fileData && fileData.length > 0) {
+              console.log(`📊 REPORT FINDER: Found file in 'reports' storage: ${fileData[0].name}`);
+              
+              // Get the public URL
               const { data: urlData } = await supabase.storage
                 .from('reports')
                 .getPublicUrl(pdfFileName);
@@ -129,8 +155,11 @@ export const useSavedReports = (leadId?: string) => {
               if (urlData && urlData.publicUrl) {
                 console.log(`📊 REPORT FINDER: Generated public URL for report ${report.id}`);
                 report.pdf_url = urlData.publicUrl;
+                foundFile = true;
               }
-            } else {
+            }
+            
+            if (!foundFile) {
               console.log(`📊 REPORT FINDER: No file found for ${pdfFileName}`);
             }
           } catch (fileCheckError) {
