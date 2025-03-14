@@ -5,7 +5,7 @@ import { generateReportPDF } from "../pdf/generator";
 import { convertPDFToBlob } from "../pdf/conversion";
 import { getSafeFileName } from "../validation";
 import { supabase } from "@/integrations/supabase/client";
-import { verifyReportsBucket } from "../storageUtils";
+import { verifyReportsBucket } from "../bucketUtils";
 import { jsPDF } from "jspdf";
 import { toJson } from "@/hooks/calculator/supabase-types";
 
@@ -74,6 +74,7 @@ async function saveReportInBackground(lead: Lead, pdfDoc: jsPDF): Promise<void> 
     return;
   }
   
+  // Ensure the reports bucket exists
   const bucketAccessible = await verifyReportsBucket();
   if (!bucketAccessible) {
     console.error("Cannot save report to storage - bucket not accessible");
@@ -93,7 +94,8 @@ async function saveReportInBackground(lead: Lead, pdfDoc: jsPDF): Promise<void> 
       .from('reports')
       .upload(fileName, pdfBlob, {
         contentType: 'application/pdf',
-        cacheControl: '3600'
+        cacheControl: '3600',
+        upsert: true
       });
     
     if (uploadError) {
@@ -110,6 +112,8 @@ async function saveReportInBackground(lead: Lead, pdfDoc: jsPDF): Promise<void> 
       console.error("Failed to get public URL for uploaded file");
       return;
     }
+    
+    console.log("PDF uploaded successfully, URL:", urlData.publicUrl);
     
     // Save report data in database
     const reportId = crypto.randomUUID();

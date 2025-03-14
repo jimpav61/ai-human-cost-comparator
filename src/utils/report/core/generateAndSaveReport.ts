@@ -5,6 +5,7 @@ import { generateReportPDF } from "../pdf/generator";
 import { saveReportToStorageWithRetry } from "../retryUtils";
 import { ReportGenerationResult } from "../types";
 import { getSafeFileName } from "../validation";
+import { verifyReportsBucket } from "../bucketUtils";
 
 export async function generateAndSaveReport(
   lead: Lead,
@@ -12,6 +13,14 @@ export async function generateAndSaveReport(
 ): Promise<ReportGenerationResult> {
   try {
     console.log("Starting report generation and save process for lead:", lead.id);
+    
+    // First, check if the reports bucket exists
+    if (!options.skipStorage) {
+      const bucketExists = await verifyReportsBucket();
+      if (!bucketExists) {
+        console.warn("Reports bucket could not be verified or created");
+      }
+    }
     
     // Generate the PDF document
     const doc = generateReportPDF(lead);

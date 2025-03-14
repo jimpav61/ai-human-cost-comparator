@@ -5,6 +5,7 @@ import { Lead } from "@/types/leads";
 import { jsPDF } from "jspdf";
 import { toast } from "@/hooks/use-toast";
 import { ReportGenerationResult } from "./types";
+import { verifyReportsBucket } from "./bucketUtils";
 
 /**
  * Save a report to storage with retry mechanism
@@ -14,11 +15,18 @@ export async function saveReportToStorageWithRetry(
   lead: Lead,
   fileName: string,
   maxRetries: number = 3
-): Promise<ReportGenerationResult> {
+): Promise<{ reportId: string | null; pdfUrl: string | null }> {
   let attempts = 0;
   let success = false;
   let pdfUrl: string | null = null;
   let reportId: string | null = null;
+  
+  // First, make sure the bucket exists
+  const bucketVerified = await verifyReportsBucket();
+  if (!bucketVerified) {
+    console.error("Failed to verify or create reports bucket");
+    return { reportId: null, pdfUrl: null };
+  }
   
   while (attempts < maxRetries && !success) {
     attempts++;
@@ -58,10 +66,5 @@ export async function saveReportToStorageWithRetry(
     }
   }
   
-  return { 
-    success, 
-    message: success ? "Report saved successfully" : "Failed to save report",
-    reportId, 
-    pdfUrl 
-  };
+  return { reportId, pdfUrl };
 }

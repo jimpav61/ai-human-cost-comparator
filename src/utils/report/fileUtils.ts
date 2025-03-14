@@ -3,28 +3,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { toast } from "@/hooks/use-toast";
 import { convertPDFToBlob } from "./pdf/conversion";
 import { jsPDF } from "jspdf";
-
-// Make sure the reports bucket exists
-export async function verifyReportsBucket() {
-  // Check if the 'reports' bucket exists
-  const { data: buckets } = await supabase.storage.listBuckets();
-  
-  if (!buckets?.find(bucket => bucket.name === 'reports')) {
-    // Create the bucket if it doesn't exist
-    const { error } = await supabase.storage.createBucket('reports', {
-      public: false, // Keep reports private
-    });
-    
-    if (error) {
-      console.error("Error creating reports bucket:", error);
-      return false;
-    }
-    
-    console.log("Created 'reports' bucket");
-  }
-  
-  return true;
-}
+import { verifyReportsBucket } from "./bucketUtils";
 
 /**
  * Save a PDF file to Supabase storage
@@ -37,13 +16,17 @@ export async function savePDFToStorage(pdfDoc: jsPDF, fileName: string): Promise
     console.log("Starting PDF storage process for", fileName);
     
     // Make sure reports bucket exists
-    await verifyReportsBucket();
+    const bucketExists = await verifyReportsBucket();
+    if (!bucketExists) {
+      console.error("Failed to verify or create reports bucket");
+      return null;
+    }
     
     // First convert the PDF to a blob
     const pdfBlob = await convertPDFToBlob(pdfDoc);
     console.log("PDF converted to blob, size:", pdfBlob.size);
     
-    // Upload the file to Supabase storage
+    // Upload the file to Supabase storage with a timestamp prefix to avoid conflicts
     const filePath = `${Date.now()}_${fileName}`;
     
     // Debug logging to verify the upload parameters
@@ -55,7 +38,7 @@ export async function savePDFToStorage(pdfDoc: jsPDF, fileName: string): Promise
       .upload(filePath, pdfBlob, {
         contentType: 'application/pdf',
         cacheControl: '3600',
-        upsert: false // Don't overwrite existing files
+        upsert: true // Allow overwriting existing files
       });
     
     if (error) {
@@ -70,6 +53,7 @@ export async function savePDFToStorage(pdfDoc: jsPDF, fileName: string): Promise
       .from('reports')
       .getPublicUrl(filePath);
     
+    console.log("Generated public URL:", urlData);
     return urlData.publicUrl;
   } catch (error) {
     console.error("Error in savePDFToStorage:", error);
