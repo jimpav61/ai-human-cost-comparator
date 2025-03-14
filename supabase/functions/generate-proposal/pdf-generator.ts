@@ -3,7 +3,7 @@
 // This file contains functions to generate a PDF proposal document
 
 // Import utility functions from shared module
-import { formatCurrency as formatCurrencyUtil, formatNumber as formatNumberUtil, getSafeFileName } from "../_shared/utils.ts";
+import { formatCurrency, formatNumber, getSafeFileName } from "../_shared/utils.ts";
 
 // Helper function to format percentages
 const formatPercentage = (value: number): string => {
@@ -69,17 +69,17 @@ BT
 0 -40 Td
 (BUSINESS COST ANALYSIS) Tj
 0 -20 Td
-(Current Monthly Cost: ${formatCurrencyUtil(humanCostMonthly)}) Tj
+(Current Monthly Cost: ${formatCurrency(humanCostMonthly)}) Tj
 0 -15 Td
-(AI Solution Monthly Cost: ${formatCurrencyUtil(aiCostMonthly.total || 0)}) Tj
+(AI Solution Monthly Cost: ${formatCurrency(aiCostMonthly.total || 0)}) Tj
 0 -15 Td
-(Setup Fee: ${formatCurrencyUtil(aiCostMonthly.setupFee || 0)}) Tj
+(Setup Fee: ${formatCurrency(aiCostMonthly.setupFee || 0)}) Tj
 0 -25 Td
 (SAVINGS SUMMARY) Tj
 0 -20 Td
-(Monthly Savings: ${formatCurrencyUtil(monthlySavings)}) Tj
+(Monthly Savings: ${formatCurrency(monthlySavings)}) Tj
 0 -15 Td
-(Annual Savings: ${formatCurrencyUtil(yearlySavings)}) Tj
+(Annual Savings: ${formatCurrency(yearlySavings)}) Tj
 0 -15 Td
 (Savings Percentage: ${formatPercentage(savingsPercentage)}) Tj
 0 -25 Td
