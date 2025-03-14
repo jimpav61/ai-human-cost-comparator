@@ -1,4 +1,3 @@
-
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
 import { Lead } from "@/types/leads";
 import { useSavedReports } from "../hooks/useSavedReports";

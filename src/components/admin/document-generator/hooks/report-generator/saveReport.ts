@@ -1,16 +1,9 @@
 
 import { Lead } from "@/types/leads";
 import { JsPDFWithAutoTable } from '@/components/calculator/pdf/types';
+import { getSafeFileName } from "./fileNameUtils";
+import { saveReportPDF } from "./savePDFFile";
 
-export const getSafeFileName = (lead: Lead): string => {
-  // Make sure we have a valid company name for the file
-  return lead.company_name ? lead.company_name.replace(/[^\w\s-]/gi, '') : 'Client';
-};
-
-export const saveReportPDF = (doc: JsPDFWithAutoTable, lead: Lead): void => {
-  const safeCompanyName = getSafeFileName(lead);
-  console.log("Document generated, saving as:", `${safeCompanyName}-ChatSites-ROI-Report.pdf`);
-  
-  // Save the document with proper company name
-  doc.save(`${safeCompanyName}-ChatSites-ROI-Report.pdf`);
-};
+// Re-export the functions from the smaller files
+export { getSafeFileName };
+export { saveReportPDF };

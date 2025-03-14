@@ -1,3 +1,4 @@
+
 import { Lead } from "@/types/leads";
 
 /**
@@ -16,5 +17,3 @@ export const getReportFileName = (lead: Lead): string => {
   const safeCompanyName = getSafeFileName(lead);
   return `${safeCompanyName}-ChatSites-ROI-Report.pdf`;
 };
-
-// Other validation utilities can be added here

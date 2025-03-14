@@ -1,4 +1,3 @@
-
 import { Lead } from "@/types/leads";
 import { toast } from "@/hooks/use-toast";
 import { ensureCompleteCalculatorResults } from "@/hooks/calculator/supabase-types";
