@@ -168,70 +168,79 @@ export const useProposalRevisions = () => {
       setIsLoading(true);
       console.log("Generating PDF from revision:", revision.id);
       
-      // Extract lead data from the proposal content
-      let leadData: any;
-      try {
-        leadData = JSON.parse(revision.proposal_content);
-        console.log("Successfully parsed proposal content into JSON");
-      } catch (e) {
-        console.error("Failed to parse proposal content as JSON:", e);
-        // If content isn't valid JSON, use a simpler object with fallback data
-        leadData = {
-          id: revision.lead_id,
-          company_name: "Client Company", // Fallback value
-          calculator_results: {
-            humanCostMonthly: 3800, 
-            aiCostMonthly: { total: 299, setupFee: 500, voice: 0, chatbot: 299 },
-            monthlySavings: 3501,
-            yearlySavings: 42012,
-            savingsPercentage: 92,
-            tierKey: 'growth',
-            aiType: 'both'
-          },
-          version_info: {
-            version_number: revision.version_number,
-            created_at: revision.created_at,
-            notes: revision.notes
-          }
-        };
-        console.log("Using fallback data structure for proposal generation");
+      // Get the lead ID from the revision
+      const leadId = revision.lead_id;
+      console.log("Using lead ID:", leadId);
+      
+      // Fetch the complete lead data
+      const { data: lead, error: leadError } = await supabase
+        .from("leads")
+        .select("*")
+        .eq("id", leadId)
+        .single();
+      
+      if (leadError) {
+        console.error("Error fetching lead data:", leadError);
+        throw new Error(`Failed to fetch lead data: ${leadError.message}`);
       }
       
-      // Call the edge function to generate the PDF
-      const { data, error } = await supabase.functions.invoke('generate-proposal', {
-        body: { 
-          lead: leadData,
-          mode: "preview",
-          returnContent: true,
-          version: revision.version_number,
-          debug: true // Enable debug mode for better error logs
+      if (!lead) {
+        console.error("Lead not found:", leadId);
+        throw new Error("Lead not found, cannot generate proposal");
+      }
+      
+      console.log("Retrieved lead data:", lead.id, lead.company_name);
+      
+      // Create an enhanced lead with version info
+      const enhancedLead = {
+        ...lead,
+        version_info: {
+          version_number: revision.version_number,
+          created_at: revision.created_at,
+          notes: revision.notes || "Version " + revision.version_number
         }
-      });
+      };
       
-      if (error) {
-        console.error("Edge function error:", error);
-        throw new Error(`Failed to generate PDF: ${error.message}`);
+      console.log("Calling edge function with enhanced lead and version:", revision.version_number);
+      
+      // Call the edge function directly with this lead and version info
+      const { data: proposalData, error: proposalError } = await supabase.functions.invoke(
+        "generate-proposal",
+        {
+          body: {
+            lead: enhancedLead,
+            mode: "preview",
+            returnContent: true,
+            version: revision.version_number,
+            debug: true
+          }
+        }
+      );
+      
+      if (proposalError) {
+        console.error("Edge function error:", proposalError);
+        throw new Error(`Failed to generate PDF: ${proposalError.message}`);
       }
       
-      if (!data) {
+      if (!proposalData) {
         console.error("No data returned from edge function");
         throw new Error("Failed to generate PDF: No data returned from edge function");
       }
       
-      if (!data.success) {
-        console.error("Edge function reported failure:", data.error);
-        throw new Error(`Failed to generate PDF: ${data.error}`);
+      if (!proposalData.success) {
+        console.error("Edge function reported failure:", proposalData.error);
+        throw new Error(`Failed to generate PDF: ${proposalData.error}`);
       }
       
-      if (!data.pdf) {
+      if (!proposalData.pdf) {
         console.error("No PDF data in response");
         throw new Error("Failed to generate PDF: No PDF data in response");
       }
       
-      console.log("PDF generation successful");
+      console.log("PDF generation successful, returning base64 data");
       setIsLoading(false);
       
-      return data.pdf;
+      return proposalData.pdf;
     } catch (error) {
       console.error("Error generating PDF from revision:", error);
       setIsLoading(false);

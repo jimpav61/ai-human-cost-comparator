@@ -63,7 +63,7 @@ export const ProposalVersionHistory = ({ lead, isOpen, onClose }: ProposalVersio
         throw new Error("Failed to generate PDF content");
       }
       
-      console.log("PDF content received, type:", typeof pdfContent);
+      console.log("PDF content received, length:", pdfContent.length);
       console.log("PDF content starts with:", typeof pdfContent === 'string' ? pdfContent.substring(0, 20) : 'Not a string');
       
       // Convert content to blob based on content type
@@ -86,14 +86,28 @@ export const ProposalVersionHistory = ({ lead, isOpen, onClose }: ProposalVersio
           }
           
           pdfBlob = new Blob(byteArrays, { type: 'application/pdf' });
-        } else if (pdfContent.startsWith('%PDF')) {
-          console.log("Direct PDF content detected");
-          // Raw PDF content
-          pdfBlob = new Blob([pdfContent], { type: 'application/pdf' });
         } else {
-          console.log("Treating as general content");
-          // Assume it's just content that needs to be converted
-          pdfBlob = new Blob([pdfContent], { type: 'application/pdf' });
+          console.log("Treating as base64 PDF content");
+          // Assume it's a base64 string without the data URL prefix
+          try {
+            const byteCharacters = atob(pdfContent);
+            const byteArrays = [];
+            
+            for (let offset = 0; offset < byteCharacters.length; offset += 1024) {
+              const slice = byteCharacters.slice(offset, offset + 1024);
+              const byteNumbers = new Array(slice.length);
+              for (let i = 0; i < slice.length; i++) {
+                byteNumbers[i] = slice.charCodeAt(i);
+              }
+              byteArrays.push(new Uint8Array(byteNumbers));
+            }
+            
+            pdfBlob = new Blob(byteArrays, { type: 'application/pdf' });
+          } catch (e) {
+            console.error("Error decoding base64:", e);
+            // If fails, try as raw content
+            pdfBlob = new Blob([pdfContent], { type: 'application/pdf' });
+          }
         }
       } else {
         throw new Error('Invalid PDF content type');

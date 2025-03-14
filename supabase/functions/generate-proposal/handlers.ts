@@ -66,11 +66,12 @@ export async function handlePreviewRequest(lead: any, shouldReturnContent: boole
       return new Response(
         JSON.stringify({
           success: true,
-          proposalContent: pdfContent,
-          title: `Proposal for ${companyName}`,
-          notes: `Generated proposal for ${companyName} on ${new Date().toLocaleString()}`,
-          leadId: lead.id,
-          version: "2.2"
+          pdf: btoa(pdfContent), // Base64 encode the PDF content for transport
+          format: 'base64',
+          contentType: 'application/pdf',
+          message: "Proposal generated successfully",
+          version: "2.3", 
+          timestamp: new Date().toISOString()
         }),
         {
           headers: {
@@ -113,7 +114,7 @@ export async function handlePreviewRequest(lead: any, shouldReturnContent: boole
         format: 'base64',
         contentType: 'application/pdf',
         message: "Proposal generated successfully",
-        version: "2.2", 
+        version: "2.3", 
         timestamp: new Date().toISOString()
       }),
       {
@@ -131,7 +132,7 @@ export async function handlePreviewRequest(lead: any, shouldReturnContent: boole
         success: false, 
         error: "Failed to generate PDF: " + pdfError.message,
         stack: pdfError.stack,
-        version: "2.2"
+        version: "2.3"
       }),
       {
         headers: {
@@ -155,7 +156,7 @@ export function handleEmailRequest(lead: any) {
       success: true,
       message: "Proposal has been sent to " + lead.email,
       timestamp: new Date().toISOString(),
-      version: "2.2"
+      version: "2.3"
     }),
     {
       headers: {

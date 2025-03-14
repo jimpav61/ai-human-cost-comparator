@@ -53,6 +53,7 @@ export async function generateProposalFromSavedData(leadId: string) {
     console.log("- ID:", enhancedLead.id);
     console.log("- Company:", enhancedLead.company_name);
     console.log("- Calculator results available:", !!enhancedLead.calculator_results);
+    console.log("- Calculator results:", JSON.stringify(enhancedLead.calculator_results).substring(0, 100) + "...");
     
     // Call the Edge Function to generate the proposal
     const { data: proposalData, error: proposalError } = await supabase.functions.invoke(
@@ -88,7 +89,7 @@ export async function generateProposalFromSavedData(leadId: string) {
       throw new Error("Proposal generation failed: No PDF data in response");
     }
     
-    console.log("Proposal generated successfully");
+    console.log("Proposal generated successfully with PDF data length:", proposalData.pdf.length);
     
     // Return the base64 encoded PDF
     return proposalData.pdf;
