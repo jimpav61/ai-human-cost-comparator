@@ -3,6 +3,8 @@ import { useState } from 'react';
 import { Lead } from '@/types/leads';
 import { generateProposal } from '@/utils/proposalGenerator';
 import { supabase } from '@/integrations/supabase/client';
+import { CalculatorInputs, CalculationResults } from '@/hooks/calculator/types';
+import { getDefaultCalculatorInputs, getDefaultCalculationResults } from '@/hooks/calculator/supabase-types';
 
 export function useProposalGenerator() {
   const [generating, setGenerating] = useState(false);
@@ -22,11 +24,16 @@ export function useProposalGenerator() {
         calculatorResults: JSON.stringify(lead.calculator_results, null, 2)
       });
 
-      // Ensure calculator_inputs and calculator_results are properly set
+      // Ensure calculator_inputs and calculator_results are properly set with default values
+      // that match the required TypeScript interfaces
       const safetyLead = {
         ...lead,
-        calculator_inputs: lead.calculator_inputs || {},
-        calculator_results: lead.calculator_results || {}
+        calculator_inputs: lead.calculator_inputs && typeof lead.calculator_inputs === 'object' && Object.keys(lead.calculator_inputs).length > 0
+          ? lead.calculator_inputs as CalculatorInputs
+          : getDefaultCalculatorInputs(),
+        calculator_results: lead.calculator_results && typeof lead.calculator_results === 'object' && Object.keys(lead.calculator_results).length > 0
+          ? lead.calculator_results as CalculationResults
+          : getDefaultCalculationResults()
       };
 
       // Generate proposal data using our utility
