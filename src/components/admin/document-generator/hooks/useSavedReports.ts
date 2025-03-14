@@ -27,6 +27,10 @@ export const useSavedReports = (leadId?: string) => {
     try {
       console.log("📊 REPORT FINDER: Starting search for lead ID:", leadId);
       
+      // Ensure we have a clean lead ID for consistent searching
+      const exactLeadId = leadId.trim();
+      console.log("📊 REPORT FINDER: Using exact lead ID for matching:", exactLeadId);
+      
       // HIGHEST PRIORITY: First check storage for exact lead ID match
       const { data: storageFiles, error: storageError } = await supabase
         .storage
@@ -36,12 +40,14 @@ export const useSavedReports = (leadId?: string) => {
       if (storageError) {
         console.error("📊 REPORT FINDER: Error accessing 'reports' storage:", storageError);
       } else if (storageFiles && storageFiles.length > 0) {
-        console.log("📊 REPORT FINDER: Checking storage files for EXACT lead ID match:", leadId);
+        console.log("📊 REPORT FINDER: Found", storageFiles.length, "files in reports bucket");
+        console.log("📊 REPORT FINDER: Checking storage files for EXACT lead ID match:", exactLeadId);
         
         // STRICT MATCHING: Only look for files that have the exact lead ID in the filename
-        // This is critical for finding the correct report
         const matchingFiles = storageFiles.filter(file => {
-          return file.name.includes(leadId);
+          const containsExactId = file.name.includes(exactLeadId);
+          console.log(`📊 File ${file.name} contains lead ID ${exactLeadId}? ${containsExactId}`);
+          return containsExactId;
         });
         
         if (matchingFiles.length > 0) {
@@ -65,7 +71,7 @@ export const useSavedReports = (leadId?: string) => {
                 report_date: new Date().toISOString(),
                 calculator_inputs: {},
                 calculator_results: {},
-                lead_id: leadId,
+                lead_id: exactLeadId,
                 pdf_url: urlData.publicUrl
               } as SavedReport;
             }
@@ -84,11 +90,11 @@ export const useSavedReports = (leadId?: string) => {
       }
       
       // PRIORITY 2: Check the database for reports with this exact lead ID
-      console.log("📊 REPORT FINDER: No exact matches in storage, checking database for lead_id:", leadId);
+      console.log("📊 REPORT FINDER: No exact matches in storage, checking database for lead_id:", exactLeadId);
       const { data: leadIdMatches, error: leadIdError } = await supabase
         .from('generated_reports')
         .select('*')
-        .eq('lead_id', leadId)
+        .eq('lead_id', exactLeadId)
         .order('report_date', { ascending: false });
         
       if (leadIdError) {
@@ -136,7 +142,7 @@ export const useSavedReports = (leadId?: string) => {
       }
       
       // At this point, no reports found for the lead ID
-      console.log("📊 REPORT FINDER: No reports found with this lead ID:", leadId);
+      console.log("📊 REPORT FINDER: No reports found with this lead ID:", exactLeadId);
       setReports([]);
       
     } catch (error) {

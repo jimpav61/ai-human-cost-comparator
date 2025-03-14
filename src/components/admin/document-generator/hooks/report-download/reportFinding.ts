@@ -12,8 +12,18 @@ export async function findAndDownloadReport(lead: Lead, setIsLoading: (loading: 
   console.log("Lead company name:", lead.company_name);
 
   try {
+    // Validate the lead ID - essential for exact matching
+    if (!lead.id) {
+      console.error("Missing lead ID, cannot search for reports");
+      throw new Error("Missing lead ID");
+    }
+
+    // Get exact lead ID for consistent searching
+    const exactLeadId = lead.id.trim();
+    console.log("Using exact lead ID for matching:", exactLeadId);
+    
     // FIRST PRIORITY: Check 'reports' storage bucket for EXACT lead ID match
-    console.log("Checking 'reports' storage bucket for files with EXACT lead ID:", lead.id);
+    console.log("Checking 'reports' storage bucket for files with EXACT lead ID:", exactLeadId);
     
     const { data: storageFiles, error: storageError } = await supabase
       .storage
@@ -30,7 +40,7 @@ export async function findAndDownloadReport(lead: Lead, setIsLoading: (loading: 
       
       // STRICT MATCHING: Only look for the exact lead ID in filenames
       const exactMatches = storageFiles.filter(file => 
-        file.name.includes(lead.id)
+        file.name.includes(exactLeadId)
       );
       
       if (exactMatches.length > 0) {
@@ -62,17 +72,23 @@ export async function findAndDownloadReport(lead: Lead, setIsLoading: (loading: 
           });
           setIsLoading(false);
           return;
+        } else {
+          console.error("Failed to get public URL for matching file:", matchingFile.name);
         }
-      } 
+      } else {
+        console.log("No exact lead ID matches found in storage files");
+      }
+    } else {
+      console.log("No files found in 'reports' bucket or bucket is empty");
     }
     
-    // Check database as fallback
-    console.log("No matching files in storage, checking database for lead ID:", lead.id);
+    // Check database as fallback - using exact lead ID
+    console.log("No matching files in storage, checking database for lead ID:", exactLeadId);
     
     const { data: reports, error } = await supabase
       .from('generated_reports')
       .select('*')
-      .eq('lead_id', lead.id)
+      .eq('lead_id', exactLeadId)
       .order('report_date', { ascending: false })
       .limit(1);
 
@@ -83,10 +99,12 @@ export async function findAndDownloadReport(lead: Lead, setIsLoading: (loading: 
       await generateAndUploadPDF(reports[0], lead);
       setIsLoading(false);
       return;
+    } else {
+      console.log("No reports found in database for lead ID:", exactLeadId);
     }
     
     // If we got here, no report was found
-    console.log("No existing report found with lead ID:", lead.id);
+    console.log("No existing report found with lead ID:", exactLeadId);
     setIsLoading(false);
     
     toast({
