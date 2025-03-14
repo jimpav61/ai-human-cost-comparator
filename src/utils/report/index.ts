@@ -6,4 +6,5 @@ export * from './pdfUtils';
 export * from './validation';
 export * from './types';
 export * from './core/generateAndSaveReport';
-export * from './core/generateAndDownloadReport';
+// Removing duplicate export to avoid naming conflicts
+// export * from './core/generateAndDownloadReport';
