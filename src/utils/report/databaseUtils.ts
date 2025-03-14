@@ -1,146 +1,98 @@
 
 import { supabase } from "@/integrations/supabase/client";
-import { toast } from "@/components/ui/use-toast";
-import { Lead } from "@/types/leads";
 import { ReportData } from "./types";
-import { toJson } from "@/hooks/calculator/supabase-types";
+import { Lead } from "@/types/leads";
+import { v4 as uuidv4 } from 'uuid';
 
 /**
- * Check if user is authenticated with Supabase
+ * Check if the user is authenticated
  */
-export async function checkUserAuthentication() {
-  const { data: { session } } = await supabase.auth.getSession();
-  return { session, isAuthenticated: !!session };
+export async function checkUserAuthentication(): Promise<boolean> {
+  const { data, error } = await supabase.auth.getSession();
+  if (error || !data.session) {
+    console.error("Authentication error:", error);
+    return false;
+  }
+  return true;
 }
 
 /**
  * Save report data to the database
  */
-export async function saveReportData(lead: Lead): Promise<string | null> {
+export async function saveReportData(
+  lead: Lead,
+  pdfUrl: string,
+  version: number = 1
+): Promise<string | null> {
   try {
-    // Generate a new UUID for the report
-    const reportId = crypto.randomUUID();
+    console.log("Saving report data for lead:", lead.id);
     
-    // Ensure the lead ID is valid UUID
-    if (!lead.id || lead.id.startsWith('temp-')) {
-      console.warn(`Invalid lead ID format detected: ${lead.id}, this may cause issues with storage references`);
-      lead.id = crypto.randomUUID();
-      console.log(`Assigned new valid UUID to lead: ${lead.id}`);
-    }
-    
-    // Prepare report data
-    const reportData: ReportData = {
-      id: reportId,
-      lead_id: lead.id,
-      company_name: lead.company_name || "Unknown Company",
-      contact_name: lead.name || "Unknown Contact",
-      email: lead.email || "unknown@example.com",
-      phone_number: lead.phone_number || null,
-      calculator_inputs: toJson(lead.calculator_inputs),
-      calculator_results: toJson(lead.calculator_results),
-      report_date: new Date().toISOString(),
-      version: 1 // Default to version 1
-    };
-
-    console.log("Saving report data:", reportData);
-
-    // Check if user is authenticated
-    const { session } = await checkUserAuthentication();
-    
-    if (!session) {
-      console.error("User is not authenticated - report data cannot be saved to database");
-      toast({
-        title: "Authentication Required",
-        description: "You must be logged in to save report data",
-        variant: "destructive"
-      });
-      return null;
-    }
-
-    // First, check if the lead needs to be created in the database
-    // This fixes the foreign key constraint issue
-    const leadExists = await checkLeadExists(lead.id);
-    
-    if (!leadExists && session) {
-      console.log(`Lead with ID ${lead.id} does not exist in database. Creating it first...`);
-      const { error: leadError } = await supabase
-        .from('leads')
-        .insert({
-          id: lead.id,
-          name: lead.name || "Unknown User",
-          company_name: lead.company_name || "Unknown Company",
-          email: lead.email || "unknown@example.com",
-          phone_number: lead.phone_number || null,
-          website: lead.website || null,
-          industry: lead.industry || null,
-          employee_count: lead.employee_count || 0,
-          calculator_inputs: toJson(lead.calculator_inputs),
-          calculator_results: toJson(lead.calculator_results),
-          form_completed: true
-        });
-        
-      if (leadError) {
-        console.error("Failed to create lead record:", leadError);
-        toast({
-          title: "Database Error",
-          description: "Failed to create necessary lead record. Please try again.",
-          variant: "destructive"
-        });
-        return null;
-      }
-      
-      console.log(`Successfully created lead record with ID: ${lead.id}`);
-    }
-
-    // Now save the report after ensuring the lead exists
-    const { data, error } = await supabase
-      .from('generated_reports')
-      .insert(reportData)
-      .select('id')
-      .single();
-
-    if (error) {
-      console.error("Failed to save report to database:", error);
-      toast({
-        title: "Database Error",
-        description: "Failed to save report data. Please try again.",
-        variant: "destructive"
-      });
-      return null;
-    }
-
-    console.log("Report saved to database with ID:", data.id);
-    return data.id;
-  } catch (error) {
-    console.error("Unexpected error saving report:", error);
-    toast({
-      title: "Error",
-      description: "Unexpected error saving report data. Please try again.",
-      variant: "destructive"
-    });
-    return null;
-  }
-}
-
-/**
- * Check if a lead with the given ID exists in the database
- */
-async function checkLeadExists(leadId: string): Promise<boolean> {
-  try {
-    const { data, error } = await supabase
+    // First, check if the lead exists in the database
+    const { data: existingLead, error: checkError } = await supabase
       .from('leads')
       .select('id')
-      .eq('id', leadId)
-      .maybeSingle();
+      .eq('id', lead.id)
+      .single();
+    
+    if (checkError || !existingLead) {
+      console.log("Lead not found in database, attempting to insert first");
       
-    if (error) {
-      console.error("Error checking if lead exists:", error);
-      return false;
+      // Insert the lead first
+      const { error: insertError } = await supabase
+        .from('leads')
+        .insert([{
+          id: lead.id,
+          name: lead.name,
+          company_name: lead.company_name,
+          email: lead.email,
+          phone_number: lead.phone_number,
+          website: lead.website,
+          industry: lead.industry,
+          employee_count: lead.employee_count,
+          calculator_inputs: lead.calculator_inputs,
+          calculator_results: lead.calculator_results,
+          proposal_sent: lead.proposal_sent || false,
+          created_at: lead.created_at || new Date().toISOString(),
+          updated_at: new Date().toISOString()
+        }]);
+      
+      if (insertError) {
+        console.error("Error inserting lead:", insertError);
+        throw insertError;
+      }
+      
+      console.log("Successfully inserted lead");
     }
     
-    return !!data;
+    // Generate a unique report ID
+    const reportId = uuidv4();
+    
+    // Insert the report data
+    const { data, error } = await supabase
+      .from('proposal_revisions')
+      .insert([{
+        id: reportId,
+        lead_id: lead.id,
+        company_name: lead.company_name,
+        contact_name: lead.name,
+        email: lead.email,
+        phone_number: lead.phone_number,
+        calculator_inputs: lead.calculator_inputs,
+        calculator_results: lead.calculator_results,
+        report_date: new Date().toISOString(),
+        pdf_url: pdfUrl,
+        version: version
+      }]);
+    
+    if (error) {
+      console.error("Error saving report data:", error);
+      throw error;
+    }
+    
+    console.log("Report data saved successfully, ID:", reportId);
+    return reportId;
   } catch (error) {
-    console.error("Unexpected error checking lead existence:", error);
-    return false;
+    console.error("Error in saveReportData:", error);
+    return null;
   }
 }

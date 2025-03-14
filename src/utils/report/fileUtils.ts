@@ -1,141 +1,78 @@
 
 import { supabase } from "@/integrations/supabase/client";
-import { toast } from "@/components/ui/use-toast";
-import { verifyReportsBucket } from "./bucketUtils";
-import { checkUserAuthentication } from "./databaseUtils";
+import { toast } from "@/hooks/use-toast";
+import { convertPDFToBlob } from "./pdf/conversion";
+import { jsPDF } from "jspdf";
+
+// Make sure the reports bucket exists
+export async function verifyReportsBucket() {
+  // Check if the 'reports' bucket exists
+  const { data: buckets } = await supabase.storage.listBuckets();
+  
+  if (!buckets?.find(bucket => bucket.name === 'reports')) {
+    // Create the bucket if it doesn't exist
+    const { error } = await supabase.storage.createBucket('reports', {
+      public: false, // Keep reports private
+    });
+    
+    if (error) {
+      console.error("Error creating reports bucket:", error);
+      return false;
+    }
+    
+    console.log("Created 'reports' bucket");
+  }
+  
+  return true;
+}
 
 /**
- * Save PDF to Supabase storage and return the URL
+ * Save a PDF file to Supabase storage
+ * @param pdfDoc The PDF document to save
+ * @param fileName The name to save the file as
+ * @returns URL to the saved file or null if there was an error
  */
-export async function savePDFToStorage(reportId: string, pdfBlob: Blob): Promise<string | null> {
+export async function savePDFToStorage(pdfDoc: jsPDF, fileName: string): Promise<string | null> {
   try {
-    console.log("Saving PDF to storage for report ID:", reportId);
+    console.log("Starting PDF storage process for", fileName);
     
-    // Verify the bucket is accessible before attempting upload
-    const bucketAccessible = await verifyReportsBucket();
-    if (!bucketAccessible) {
-      console.error("Cannot save PDF - reports bucket is not accessible. Please check your Supabase storage configuration.");
-      toast({
-        title: "Storage Error",
-        description: "Unable to access storage. Please try again later.",
-        variant: "destructive"
-      });
-      return null;
-    }
+    // Make sure reports bucket exists
+    await verifyReportsBucket();
     
-    // Check authentication before uploading
-    const { session } = await checkUserAuthentication();
+    // First convert the PDF to a blob
+    const pdfBlob = await convertPDFToBlob(pdfDoc);
+    console.log("PDF converted to blob, size:", pdfBlob.size);
     
-    if (!session) {
-      console.error("User is not authenticated - cannot upload PDF to storage");
-      toast({
-        title: "Authentication Required",
-        description: "You must be logged in to upload files",
-        variant: "destructive"
-      });
-      return null;
-    }
+    // Upload the file to Supabase storage
+    const filePath = `${Date.now()}_${fileName}`;
     
-    // The file path in storage
-    const filePath = `${reportId}.pdf`;
+    // Debug logging to verify the upload parameters
+    console.log("Uploading to path:", filePath);
+    console.log("Bucket:", 'reports');
     
-    console.log("Uploading to bucket 'reports' with path:", filePath);
-    console.log("PDF Blob size:", pdfBlob.size, "bytes");
-    
-    // Ensure PDF blob is valid
-    if (!pdfBlob || pdfBlob.size === 0) {
-      console.error("Invalid PDF blob - empty or missing");
-      toast({
-        title: "Report Error",
-        description: "Could not generate a valid PDF file",
-        variant: "destructive"
-      });
-      return null;
-    }
-    
-    // Upload the PDF to Supabase storage
     const { data, error } = await supabase.storage
       .from('reports')
       .upload(filePath, pdfBlob, {
         contentType: 'application/pdf',
-        upsert: true,
-        cacheControl: '3600'
+        cacheControl: '3600',
+        upsert: false // Don't overwrite existing files
       });
     
     if (error) {
-      console.error("Failed to upload PDF to storage:", error);
-      
-      // Add more detailed error diagnostics
-      if (error.message.includes("row-level security policy")) {
-        console.error("CRITICAL: RLS policy is preventing upload - check Supabase storage bucket permissions");
-        console.error("Ensure the 'reports' bucket has RLS policies allowing uploads from authenticated users");
-        toast({
-          title: "Permission Error",
-          description: "Storage permissions preventing upload. Please contact support.",
-          variant: "destructive"
-        });
-      } else if (error.message.includes("bucket") && error.message.includes("not found")) {
-        console.error("CRITICAL: Bucket 'reports' does not exist - it must be created in the Supabase dashboard");
-        toast({
-          title: "Configuration Error",
-          description: "Storage bucket does not exist. Please contact support.",
-          variant: "destructive"
-        });
-      } else if (error.message.includes("not authenticated")) {
-        toast({
-          title: "Authentication Error",
-          description: "You must be logged in to upload files",
-          variant: "destructive"
-        });
-      }
-      
-      return null;
+      console.error("Error uploading PDF to storage:", error);
+      throw error;
     }
     
-    console.log("Upload successful, data:", data?.path);
+    console.log("PDF successfully uploaded:", data);
     
-    // Get the public URL for the uploaded file
-    const { data: urlData } = await supabase.storage
+    // Get the public URL
+    const { data: urlData } = supabase.storage
       .from('reports')
       .getPublicUrl(filePath);
     
-    if (!urlData || !urlData.publicUrl) {
-      console.error("Failed to get public URL for PDF");
-      toast({
-        title: "Storage Error",
-        description: "Could not retrieve file URL after upload",
-        variant: "destructive"
-      });
-      return null;
-    }
-    
-    console.log("PDF saved to storage with URL:", urlData.publicUrl);
-    
-    // Verify the URL is accessible
-    try {
-      const response = await fetch(urlData.publicUrl, { method: 'HEAD' });
-      if (!response.ok) {
-        console.error(`PDF URL check failed with status ${response.status}`);
-        toast({
-          title: "Warning",
-          description: "Report was saved but may not be accessible. Please try downloading again.",
-          variant: "destructive"
-        });
-      } else {
-        console.log("PDF URL was successfully verified as accessible");
-      }
-    } catch (checkError) {
-      console.error("Error verifying PDF URL:", checkError);
-    }
-    
     return urlData.publicUrl;
   } catch (error) {
-    console.error("Unexpected error saving PDF to storage:", error);
-    toast({
-      title: "Upload Error",
-      description: "Unexpected error uploading file. Please try again.",
-      variant: "destructive"
-    });
+    console.error("Error in savePDFToStorage:", error);
     return null;
   }
 }
