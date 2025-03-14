@@ -1,134 +1,105 @@
 
-import { CalculatorInputs, CalculationResults } from "./types";
+import { AI_RATES } from "@/constants/pricing";
 
 /**
- * Converts JavaScript objects to JSON format for Supabase storage
+ * Ensures calculator results have all required properties for PDF generation
  */
-export function toJson(data: any): any {
-  if (!data) return {};
-  return JSON.parse(JSON.stringify(data));
-}
-
-/**
- * Parses JSON from Supabase into correct objects
- */
-export function fromJson(data: any): any {
-  if (typeof data === 'string') {
-    try {
-      return JSON.parse(data);
-    } catch (e) {
-      console.error("Error parsing JSON:", e);
-      return {};
-    }
+export function ensureCompleteCalculatorResults(calculatorResults: any): any {
+  // Use calculator_results if it exists, otherwise create empty object
+  const results = calculatorResults || {};
+  
+  // Get tier key with fallback
+  const tierKey = results.tierKey || 'growth';
+  
+  // Get AI type with fallback 
+  const aiType = results.aiType || 'both';
+  
+  // Calculate included voice minutes based on tier
+  const includedVoiceMinutes = tierKey === 'starter' ? 0 : 
+                              (tierKey === 'growth' ? 600 : 1200);
+  
+  // Ensure aiCostMonthly exists with all required properties
+  results.aiCostMonthly = results.aiCostMonthly || {};
+  
+  // Base price fallbacks
+  const basePrice = results.basePriceMonthly || AI_RATES.chatbot[tierKey].base;
+  
+  // Make sure key financial values exist
+  if (!results.aiCostMonthly.setupFee) {
+    results.aiCostMonthly.setupFee = AI_RATES.chatbot[tierKey].setupFee;
   }
-  return data || {};
-}
-
-/**
- * Provides default calculator inputs if none exist
- */
-export function getDefaultCalculatorInputs(): CalculatorInputs {
-  return {
-    aiTier: 'growth',
-    aiType: 'both',
-    role: 'customerService',
-    numEmployees: 5,
-    callVolume: 0,
-    avgCallDuration: 0,
-    chatVolume: 2000,
-    avgChatLength: 0,
-    avgChatResolutionTime: 0
-  };
-}
-
-/**
- * Provides default calculator results if none exist
- */
-export function getDefaultCalculationResults(): CalculationResults {
-  return {
-    aiCostMonthly: {
-      voice: 0,
-      chatbot: 0,
-      total: 0,
-      setupFee: 749 // Default to growth tier setup fee
-    },
-    basePriceMonthly: 229, // Default to growth tier
-    humanCostMonthly: 0,
-    monthlySavings: 0,
-    yearlySavings: 0,
-    savingsPercentage: 0,
-    breakEvenPoint: {
-      voice: 0,
-      chatbot: 0
-    },
-    humanHours: {
+  
+  // Ensure we have voice costs
+  if (typeof results.aiCostMonthly.voice !== 'number') {
+    results.aiCostMonthly.voice = 0;
+  }
+  
+  // Ensure we have chatbot costs
+  if (typeof results.aiCostMonthly.chatbot !== 'number') {
+    results.aiCostMonthly.chatbot = basePrice;
+  }
+  
+  // Make sure total cost exists
+  if (typeof results.aiCostMonthly.total !== 'number') {
+    results.aiCostMonthly.total = results.aiCostMonthly.chatbot + results.aiCostMonthly.voice;
+  }
+  
+  // Set base price
+  if (typeof results.basePriceMonthly !== 'number') {
+    results.basePriceMonthly = basePrice;
+  }
+  
+  // Ensure we have additionalVoiceMinutes
+  if (typeof results.additionalVoiceMinutes !== 'number') {
+    results.additionalVoiceMinutes = 0;
+  }
+  
+  // Ensure we have includedVoiceMinutes
+  if (typeof results.includedVoiceMinutes !== 'number') {
+    results.includedVoiceMinutes = includedVoiceMinutes;
+  }
+  
+  // Ensure humanCostMonthly exists
+  if (typeof results.humanCostMonthly !== 'number') {
+    results.humanCostMonthly = 3800;
+  }
+  
+  // Calculate savings if they don't exist
+  if (typeof results.monthlySavings !== 'number') {
+    results.monthlySavings = results.humanCostMonthly - results.aiCostMonthly.total;
+  }
+  
+  if (typeof results.yearlySavings !== 'number') {
+    results.yearlySavings = results.monthlySavings * 12;
+  }
+  
+  if (typeof results.savingsPercentage !== 'number') {
+    results.savingsPercentage = (results.monthlySavings / results.humanCostMonthly) * 100;
+  }
+  
+  // Ensure breakEvenPoint exists
+  if (!results.breakEvenPoint) {
+    results.breakEvenPoint = { 
+      voice: results.additionalVoiceMinutes || 0, 
+      chatbot: 500 
+    };
+  }
+  
+  // Ensure humanHours exists with all properties
+  if (!results.humanHours) {
+    results.humanHours = {
       dailyPerEmployee: 8,
-      weeklyTotal: 0,
-      monthlyTotal: 0,
-      yearlyTotal: 0
-    },
-    annualPlan: 2290, // Default to growth tier annual plan
-    includedVoiceMinutes: 600, // Default for growth tier
-    additionalVoiceMinutes: 0 // Default to 0 additional minutes
-  };
-}
-
-/**
- * Ensures calculator results are complete with all required properties
- */
-export function ensureCompleteCalculatorResults(results: any): CalculationResults {
-  const defaultResults = getDefaultCalculationResults();
-  
-  if (!results) return defaultResults;
-  
-  return {
-    aiCostMonthly: {
-      voice: results.aiCostMonthly?.voice ?? defaultResults.aiCostMonthly.voice,
-      chatbot: results.aiCostMonthly?.chatbot ?? defaultResults.aiCostMonthly.chatbot,
-      total: results.aiCostMonthly?.total ?? defaultResults.aiCostMonthly.total,
-      setupFee: results.aiCostMonthly?.setupFee ?? defaultResults.aiCostMonthly.setupFee
-    },
-    basePriceMonthly: results.basePriceMonthly ?? defaultResults.basePriceMonthly,
-    humanCostMonthly: results.humanCostMonthly ?? defaultResults.humanCostMonthly,
-    monthlySavings: results.monthlySavings ?? defaultResults.monthlySavings,
-    yearlySavings: results.yearlySavings ?? defaultResults.yearlySavings,
-    savingsPercentage: results.savingsPercentage ?? defaultResults.savingsPercentage,
-    breakEvenPoint: {
-      voice: results.breakEvenPoint?.voice ?? defaultResults.breakEvenPoint.voice,
-      chatbot: results.breakEvenPoint?.chatbot ?? defaultResults.breakEvenPoint.chatbot
-    },
-    humanHours: {
-      dailyPerEmployee: results.humanHours?.dailyPerEmployee ?? defaultResults.humanHours.dailyPerEmployee,
-      weeklyTotal: results.humanHours?.weeklyTotal ?? defaultResults.humanHours.weeklyTotal,
-      monthlyTotal: results.humanHours?.monthlyTotal ?? defaultResults.humanHours.monthlyTotal,
-      yearlyTotal: results.humanHours?.yearlyTotal ?? defaultResults.humanHours.yearlyTotal
-    },
-    annualPlan: results.annualPlan ?? defaultResults.annualPlan,
-    tierKey: results.tierKey || (results.basePriceMonthly === 99 ? 'starter' : 
-                                results.basePriceMonthly === 429 ? 'premium' : 'growth'),
-    aiType: results.aiType || 'both',
-    includedVoiceMinutes: results.includedVoiceMinutes ?? (results.tierKey === 'starter' ? 0 : 600),
-    additionalVoiceMinutes: results.additionalVoiceMinutes ?? 0
-  };
-}
-
-/**
- * Ensures calculator inputs conform to required type
- */
-export function ensureCalculatorInputs(inputs: Record<string, any>): CalculatorInputs {
-  if (!inputs) {
-    return getDefaultCalculatorInputs();
+      weeklyTotal: 200,
+      monthlyTotal: 850,
+      yearlyTotal: 10200
+    };
   }
-
+  
   return {
-    aiType: inputs.aiType || 'chatbot',
-    aiTier: inputs.aiTier || 'growth',
-    role: inputs.role || 'customerService',
-    numEmployees: typeof inputs.numEmployees === 'number' ? inputs.numEmployees : 1,
-    callVolume: typeof inputs.callVolume === 'number' ? inputs.callVolume : 0,
-    avgCallDuration: typeof inputs.avgCallDuration === 'number' ? inputs.avgCallDuration : 0,
-    chatVolume: typeof inputs.chatVolume === 'number' ? inputs.chatVolume : 2000,
-    avgChatLength: typeof inputs.avgChatLength === 'number' ? inputs.avgChatLength : 0,
-    avgChatResolutionTime: typeof inputs.avgChatResolutionTime === 'number' ? inputs.avgChatResolutionTime : 0
+    ...results,
+    tierKey,
+    aiType,
+    includedVoiceMinutes,
+    additionalVoiceMinutes: results.additionalVoiceMinutes || 0
   };
 }
