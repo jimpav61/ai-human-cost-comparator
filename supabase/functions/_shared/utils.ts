@@ -21,6 +21,24 @@ export function formatCurrency(amount: number): string {
 }
 
 /**
+ * Format a number with thousands separators
+ */
+export function formatNumber(value: number): string {
+  return new Intl.NumberFormat('en-US').format(value);
+}
+
+/**
+ * Format a percentage value
+ */
+export function formatPercentage(value: number): string {
+  return new Intl.NumberFormat('en-US', {
+    style: 'percent',
+    minimumFractionDigits: 0,
+    maximumFractionDigits: 0
+  }).format(value / 100);
+}
+
+/**
  * Get a safe filename from a potentially unsafe string
  */
 export function getSafeFileName(input: string | { company_name?: string }, options: { maxLength?: number, replaceChar?: string } = {}): string {
