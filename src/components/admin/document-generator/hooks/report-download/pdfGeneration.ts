@@ -139,8 +139,8 @@ export const generateAndUploadPDF = async (report: any, lead: Lead) => {
     const tierName = getTierName(tierKey);
     const aiType = getAiTypeName(aiTypeKey);
     
-    // Generate the PDF using the stored calculator results with corrected voice minutes
-    const doc = generatePDF({
+    // IMPORTANT: Using consistent PDF generation parameters
+    const pdfParams = {
       contactInfo: report.contact_name || lead.name || 'Valued Client',
       companyName: report.company_name || lead.company_name || 'Your Company',
       email: report.email || lead.email || 'client@example.com',
@@ -158,18 +158,24 @@ export const generateAndUploadPDF = async (report: any, lead: Lead) => {
       aiPlacements: getAiPlacements(),
       tierName: tierName,
       aiType: aiType
-    });
+    };
     
-    // Save the PDF locally
+    // Generate the PDF using the stored calculator results with corrected voice minutes
+    const doc = generatePDF(pdfParams);
+    
+    // Store the exact same PDF version that will be downloaded
+    console.log('PDF generated and about to be saved locally and to storage');
+    
+    // Save the PDF locally first to ensure user gets what they expect
     doc.save(fileName);
     console.log('PDF generated and saved locally as:', fileName);
     
-    // Also upload to Supabase storage
+    // Also upload to Supabase storage - ENSURING we use the exact same PDF blob
     try {
       console.log('Attempting to save PDF to Supabase storage...');
       console.log('Report ID (used as filename in storage):', report.id);
       
-      // Get the PDF as binary data
+      // Get the PDF as binary data from the same document
       const pdfBlob = await docToBlob(doc);
       console.log('PDF blob size:', pdfBlob.size, 'bytes');
       
