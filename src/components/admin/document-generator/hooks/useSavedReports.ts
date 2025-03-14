@@ -27,8 +27,7 @@ export const useSavedReports = (leadId?: string) => {
     try {
       console.log("📊 REPORT FINDER: Starting search for lead ID:", leadId);
       
-      // PRIORITY 1: Check storage for existing PDF file with the lead ID
-      // This is the most direct and reliable method
+      // HIGHEST PRIORITY: First check storage for exact lead ID match
       const { data: storageFiles, error: storageError } = await supabase
         .storage
         .from('reports')
@@ -37,13 +36,17 @@ export const useSavedReports = (leadId?: string) => {
       if (storageError) {
         console.error("📊 REPORT FINDER: Error accessing 'reports' storage:", storageError);
       } else if (storageFiles && storageFiles.length > 0) {
-        console.log("📊 REPORT FINDER: Checking storage files:", storageFiles.map(f => f.name));
+        console.log("📊 REPORT FINDER: Checking storage files for EXACT lead ID match:", leadId);
         
-        // Look for exact lead ID match in filenames
-        const matchingFiles = storageFiles.filter(file => file.name.includes(leadId));
+        // STRICT MATCHING: Only look for files that have the exact lead ID in the filename
+        // This is critical for finding the correct report
+        const matchingFiles = storageFiles.filter(file => {
+          return file.name.includes(leadId);
+        });
         
         if (matchingFiles.length > 0) {
-          console.log(`📊 REPORT FINDER: Found ${matchingFiles.length} matches in storage`);
+          console.log(`📊 REPORT FINDER: Found ${matchingFiles.length} exact ID matches in storage:`, 
+            matchingFiles.map(f => f.name));
           
           const reportPromises = matchingFiles.map(async (file) => {
             // Get the public URL
@@ -72,7 +75,7 @@ export const useSavedReports = (leadId?: string) => {
           const foundReports = (await Promise.all(reportPromises)).filter(Boolean) as SavedReport[];
           
           if (foundReports.length > 0) {
-            console.log(`📊 REPORT FINDER: Successfully processed ${foundReports.length} reports`);
+            console.log(`📊 REPORT FINDER: Successfully processed ${foundReports.length} reports with exact ID match`);
             setReports(foundReports);
             setIsLoading(false);
             return;
@@ -80,7 +83,8 @@ export const useSavedReports = (leadId?: string) => {
         }
       }
       
-      // PRIORITY 2: Check the database for reports with this lead ID
+      // PRIORITY 2: Check the database for reports with this exact lead ID
+      console.log("📊 REPORT FINDER: No exact matches in storage, checking database for lead_id:", leadId);
       const { data: leadIdMatches, error: leadIdError } = await supabase
         .from('generated_reports')
         .select('*')
@@ -90,12 +94,14 @@ export const useSavedReports = (leadId?: string) => {
       if (leadIdError) {
         console.error("📊 REPORT FINDER: Error searching by lead_id:", leadIdError);
       } else if (leadIdMatches && leadIdMatches.length > 0) {
-        console.log(`📊 REPORT FINDER: Found ${leadIdMatches.length} reports by lead_id match`);
+        console.log(`📊 REPORT FINDER: Found ${leadIdMatches.length} reports by lead_id match in database`);
         
         // For each database report, check if there's a corresponding PDF file
         const reportPromises = leadIdMatches.map(async (report) => {
-          const pdfFileName = `${report.id}.pdf`;
+          // Try with report.id first (most likely filename)
+          let pdfFileName = `${report.id}.pdf`;
           
+          // Check if the file exists with report.id
           const { data: fileData } = await supabase.storage
             .from('reports')
             .getPublicUrl(pdfFileName);
@@ -106,6 +112,20 @@ export const useSavedReports = (leadId?: string) => {
               pdf_url: fileData.publicUrl
             } as SavedReport;
           }
+          
+          // If no file found with report.id, try with lead_id
+          pdfFileName = `${report.lead_id}.pdf`;
+          const { data: leadIdFileData } = await supabase.storage
+            .from('reports')
+            .getPublicUrl(pdfFileName);
+            
+          if (leadIdFileData?.publicUrl) {
+            return {
+              ...report,
+              pdf_url: leadIdFileData.publicUrl
+            } as SavedReport;
+          }
+          
           return report as SavedReport;
         });
         
@@ -116,7 +136,7 @@ export const useSavedReports = (leadId?: string) => {
       }
       
       // At this point, no reports found for the lead ID
-      console.log("📊 REPORT FINDER: No reports found with this lead ID");
+      console.log("📊 REPORT FINDER: No reports found with this lead ID:", leadId);
       setReports([]);
       
     } catch (error) {

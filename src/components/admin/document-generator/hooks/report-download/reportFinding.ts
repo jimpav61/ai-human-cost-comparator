@@ -12,8 +12,8 @@ export async function findAndDownloadReport(lead: Lead, setIsLoading: (loading: 
   console.log("Lead company name:", lead.company_name);
 
   try {
-    // First attempt: Check 'reports' storage bucket directly for lead ID
-    console.log("Checking 'reports' storage bucket for files with lead ID:", lead.id);
+    // FIRST PRIORITY: Check 'reports' storage bucket for EXACT lead ID match
+    console.log("Checking 'reports' storage bucket for files with EXACT lead ID:", lead.id);
     
     const { data: storageFiles, error: storageError } = await supabase
       .storage
@@ -28,16 +28,16 @@ export async function findAndDownloadReport(lead: Lead, setIsLoading: (loading: 
     if (storageFiles && storageFiles.length > 0) {
       console.log("All files in reports bucket:", storageFiles.map(f => f.name));
       
-      // IMPROVED: First look for direct lead ID exact matches
-      const directMatches = storageFiles.filter(file => 
+      // STRICT MATCHING: Only look for the exact lead ID in filenames
+      const exactMatches = storageFiles.filter(file => 
         file.name.includes(lead.id)
       );
       
-      if (directMatches.length > 0) {
-        console.log("Found direct lead ID matches:", directMatches.map(f => f.name));
+      if (exactMatches.length > 0) {
+        console.log("Found exact lead ID matches:", exactMatches.map(f => f.name));
         
         // Use the first match (most recent if sorted by filename)
-        const matchingFile = directMatches[0];
+        const matchingFile = exactMatches[0];
         
         // Get the public URL
         const { data: urlData } = await supabase.storage
@@ -64,55 +64,10 @@ export async function findAndDownloadReport(lead: Lead, setIsLoading: (loading: 
           return;
         }
       } 
-      
-      // Second attempt: If no direct ID match, try company name matching as fallback
-      if (lead.company_name) {
-        console.log("No exact lead ID match, trying company name fallback...");
-        
-        // Normalize company name for comparison (remove spaces and special chars)
-        const normalizedCompanyName = lead.company_name.toLowerCase().replace(/[^a-z0-9]/gi, '');
-        
-        const companyMatches = storageFiles.filter(file => {
-          const fileName = file.name.toLowerCase();
-          return fileName.includes(normalizedCompanyName);
-        });
-        
-        if (companyMatches.length > 0) {
-          console.log("Found potential company name matches:", companyMatches.map(f => f.name));
-          
-          // Use the most recent file (assuming filename sorting works)
-          const mostRecentMatch = companyMatches[0];
-          
-          // Get the public URL
-          const { data: urlData } = await supabase.storage
-            .from('reports')
-            .getPublicUrl(mostRecentMatch.name);
-            
-          if (urlData?.publicUrl) {
-            console.log("Downloading report by company name match:", urlData.publicUrl);
-            
-            // Create download link
-            const link = document.createElement('a');
-            link.href = urlData.publicUrl;
-            link.download = `${getSafeFileName(lead)}-ChatSites-ROI-Report.pdf`;
-            document.body.appendChild(link);
-            link.click();
-            document.body.removeChild(link);
-            
-            toast({
-              title: "Report Downloaded",
-              description: "The report has been successfully downloaded.",
-              duration: 3000,
-            });
-            setIsLoading(false);
-            return;
-          }
-        }
-      }
     }
     
-    // As a final fallback, check if there's a report in the database
-    console.log("No matching files in storage, checking database...");
+    // Check database as fallback
+    console.log("No matching files in storage, checking database for lead ID:", lead.id);
     
     const { data: reports, error } = await supabase
       .from('generated_reports')
@@ -131,7 +86,7 @@ export async function findAndDownloadReport(lead: Lead, setIsLoading: (loading: 
     }
     
     // If we got here, no report was found
-    console.log("No existing report found, notifying user to generate one first");
+    console.log("No existing report found with lead ID:", lead.id);
     setIsLoading(false);
     
     toast({

@@ -14,6 +14,11 @@ export async function verifyReportsBucket(): Promise<boolean> {
     
     if (!reportsError) {
       console.log("Successfully verified 'reports' bucket exists and is accessible. Files count:", reportsData?.length);
+      
+      if (reportsData && reportsData.length > 0) {
+        console.log("Files in reports bucket:", reportsData.map(f => f.name));
+      }
+      
       return true;
     }
     
