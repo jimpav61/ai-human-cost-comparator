@@ -15,10 +15,7 @@ export async function handlePreviewRequest(lead: any, shouldReturnContent: boole
     // Sanitize company name for filename
     const safeCompanyName = getSafeFileName(companyName);
     
-    // Do not clone the lead - use the original data exactly as received
-    console.log("Using exact lead data for proposal generation (no cloning)");
-    
-    // Enhanced debugging
+    // Debug logging
     if (debug) {
       console.log("LEAD DATA FOR PDF GENERATION:");
       console.log("- company_name:", lead.company_name);
@@ -29,7 +26,7 @@ export async function handlePreviewRequest(lead: any, shouldReturnContent: boole
       }, null, 2));
     }
     
-    // Create a professional multi-page proposal PDF with actual lead data
+    // Create the PDF content
     const pdfContent = generateProfessionalProposal(lead);
     console.log("PDF content generated successfully, length:", pdfContent.length);
     
@@ -40,7 +37,6 @@ export async function handlePreviewRequest(lead: any, shouldReturnContent: boole
       console.log("- Content length:", pdfContent.length);
       console.log("- Starts with PDF header:", pdfContent.startsWith('%PDF-'));
       console.log("- First 50 chars:", pdfContent.substring(0, 50).replace(/\n/g, '\\n'));
-      console.log("- Last 50 chars:", pdfContent.substring(pdfContent.length - 50).replace(/\n/g, '\\n'));
     }
     
     // If returnContent flag is set, return the raw content instead of PDF 
@@ -73,10 +69,12 @@ export async function handlePreviewRequest(lead: any, shouldReturnContent: boole
       throw new Error("Failed to generate a valid PDF document");
     }
     
-    // Convert raw PDF to base64
+    // Convert to base64 - crucial for PDF display in modern browsers
     const encoder = new TextEncoder();
-    const pdfData = encoder.encode(pdfContent);
-    const base64Content = btoa(String.fromCharCode(...new Uint8Array(pdfData)));
+    const pdfBytes = encoder.encode(pdfContent);
+    
+    // Use the proper method for base64 encoding in Deno
+    const base64Content = btoa(String.fromCharCode(...new Uint8Array(pdfBytes)));
     
     if (debug) {
       console.log("Base64 encoding details:");
@@ -87,11 +85,13 @@ export async function handlePreviewRequest(lead: any, shouldReturnContent: boole
     
     console.log("Base64 PDF created successfully, length:", base64Content.length);
     
+    // Return the base64 encoded PDF
     return new Response(
       JSON.stringify({
         success: true,
         pdf: base64Content,
-        format: 'raw-pdf-encoded-to-base64',
+        format: 'base64',
+        contentType: 'application/pdf',
         message: "Proposal generated successfully"
       }),
       {

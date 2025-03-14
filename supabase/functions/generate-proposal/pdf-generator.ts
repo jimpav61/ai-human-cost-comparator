@@ -32,7 +32,7 @@ const formatNumber = (value: number): string => {
 /**
  * Generates a professional PDF proposal document based on lead data
  * @param lead The lead data containing company info and calculator results
- * @returns A PDF document as a string
+ * @returns A PDF document as a base64 encoded string
  */
 export function generateProfessionalProposal(lead: any): string {
   console.log('Generating professional proposal for lead:', lead.id);
@@ -56,7 +56,7 @@ export function generateProfessionalProposal(lead: any): string {
       savingsPercentage = 0
     } = lead.calculator_results;
     
-    // Create a basic PDF document with proposal information
+    // Create a PDF document with proposal information
     const content = `%PDF-1.4
 1 0 obj
 << /Type /Catalog /Pages 2 0 R >>
@@ -65,16 +65,19 @@ endobj
 << /Type /Pages /Kids [3 0 R] /Count 1 >>
 endobj
 3 0 obj
-<< /Type /Page /Parent 2 0 R /Resources << /Font << /F1 4 0 R >> >> /Contents 5 0 R >>
+<< /Type /Page /Parent 2 0 R /Resources << /Font << /F1 4 0 R /F2 5 0 R >> >> /Contents 6 0 R >>
 endobj
 4 0 obj
 << /Type /Font /Subtype /Type1 /BaseFont /Helvetica >>
 endobj
 5 0 obj
+<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica-Bold >>
+endobj
+6 0 obj
 << /Length 1000 >>
 stream
 BT
-/F1 24 Tf
+/F2 24 Tf
 50 750 Td
 (AI Business Proposal for ${lead.company_name}) Tj
 /F1 12 Tf
@@ -100,20 +103,21 @@ ET
 endstream
 endobj
 xref
-0 6
+0 7
 0000000000 65535 f
 0000000010 00000 n
 0000000059 00000 n
 0000000118 00000 n
-0000000217 00000 n
-0000000285 00000 n
+0000000223 00000 n
+0000000291 00000 n
+0000000363 00000 n
 trailer
-<< /Size 6 /Root 1 0 R >>
+<< /Size 7 /Root 1 0 R >>
 startxref
-1336
+1414
 %%EOF`;
 
-    // Return PDF content directly as a string (will be encoded to base64 in handler)
+    // Important: Return the raw PDF content (handler will encode it to base64)
     return content;
   } catch (error) {
     console.error('Error generating PDF:', error);

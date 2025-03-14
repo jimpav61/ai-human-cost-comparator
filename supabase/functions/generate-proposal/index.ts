@@ -24,7 +24,6 @@ serve(async (req) => {
     console.log("Debug mode:", debug);
     console.log("Calculator inputs type:", typeof lead.calculator_inputs);
     console.log("Calculator results type:", typeof lead.calculator_results);
-    console.log("Raw calculator results:", JSON.stringify(lead.calculator_results));
     
     // CRITICAL: Ensure calculator_results is an object not a string
     if (!lead.calculator_results || typeof lead.calculator_results !== 'object') {
@@ -40,9 +39,6 @@ serve(async (req) => {
         throw new Error(`Invalid calculator_results: ${JSON.stringify(lead.calculator_results)}`);
       }
     }
-    
-    // NEW: Make a copy of the lead object with all data intact and ensure values are available
-    console.log("Using EXACT calculator_results values without recalculation");
     
     // DEBUG: Log key values we'll use in the proposal
     console.log("CRITICAL VALUES:");

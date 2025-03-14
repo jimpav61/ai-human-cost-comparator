@@ -22,12 +22,33 @@ export const usePdfPreview = () => {
       
       let pdfBlob: Blob;
       
-      // Check if content is already a PDF document
+      // Check if content is a raw PDF document
       if (content.startsWith('%PDF-')) {
         console.log("Content is a raw PDF document");
         const encoder = new TextEncoder();
         const pdfData = encoder.encode(content);
         pdfBlob = new Blob([pdfData], { type: 'application/pdf' });
+      }
+      // Check if the content is a JSON string with base64 PDF data
+      else if (content.startsWith('{') && content.includes('"pdf":')) {
+        console.log("Content appears to be JSON with PDF data");
+        try {
+          const jsonData = JSON.parse(content);
+          if (jsonData.pdf) {
+            const binaryString = atob(jsonData.pdf);
+            const bytes = new Uint8Array(binaryString.length);
+            for (let i = 0; i < binaryString.length; i++) {
+              bytes[i] = binaryString.charCodeAt(i);
+            }
+            pdfBlob = new Blob([bytes], { type: 'application/pdf' });
+            console.log("Successfully extracted PDF from JSON");
+          } else {
+            throw new Error("JSON does not contain PDF data");
+          }
+        } catch (e) {
+          console.error("Error processing JSON PDF data:", e);
+          throw new Error("Failed to process JSON PDF data: " + e.message);
+        }
       }
       // Check if the content is base64 encoded PDF (usually starts with "JVB")
       else if (/^[A-Za-z0-9+/=]+$/.test(content) && content.length > 100) {
@@ -61,31 +82,12 @@ export const usePdfPreview = () => {
           throw new Error("Failed to process data URL: " + e.message);
         }
       }
-      // Handle JSON string (sometimes our API returns JSON instead of binary data)
-      else if (content.startsWith('{') && content.includes('"pdf":')) {
-        console.log("Content appears to be JSON with PDF data");
-        try {
-          const jsonData = JSON.parse(content);
-          if (jsonData.pdf) {
-            const binaryString = atob(jsonData.pdf);
-            const bytes = new Uint8Array(binaryString.length);
-            for (let i = 0; i < binaryString.length; i++) {
-              bytes[i] = binaryString.charCodeAt(i);
-            }
-            pdfBlob = new Blob([bytes], { type: 'application/pdf' });
-            console.log("Successfully extracted PDF from JSON");
-          } else {
-            throw new Error("JSON does not contain PDF data");
-          }
-        } catch (e) {
-          console.error("Error processing JSON PDF data:", e);
-          throw new Error("Failed to process JSON PDF data: " + e.message);
-        }
-      }
       // Fall back to treating it as raw content
       else {
-        console.log("Content format not recognized, trying as raw content");
-        pdfBlob = new Blob([content], { type: 'application/pdf' });
+        console.log("Content format not recognized, treating as plain text");
+        // Since we can't determine the format, try to read the content as plain text
+        // This helps diagnose issues by showing what was actually returned
+        pdfBlob = new Blob([content], { type: 'text/plain' });
       }
       
       // Create object URL for embedded viewer
