@@ -5,7 +5,7 @@ import { ensureCompleteCalculatorResults } from "@/hooks/calculator/supabase-typ
 import { generatePDF } from "@/components/calculator/pdf";
 import { supabase } from "@/integrations/supabase/client";
 import { getSafeFileName } from "@/utils/report/validation";
-import { verifyReportsBucket } from "@/utils/report/storageUtils";
+import { verifyReportsBucket } from "@/utils/report/bucketUtils";
 
 // Helper function to ensure JSON is parsed
 export const ensureJsonParsed = (data: any) => {
@@ -167,17 +167,19 @@ export const generateAndUploadPDF = async (report: any, lead: Lead) => {
     
     // Also upload to Supabase storage
     try {
+      // Verify bucket exists first
+      await verifyReportsBucket();
+      
       // Get the PDF as binary data
       const pdfBlob = await docToBlob(doc);
-      
-      // First ensure the bucket exists
-      await verifyReportsBucket();
       
       // Upload to Supabase storage
       const storageResponse = await uploadPdfToStorage(report.id, pdfBlob);
       
       if (storageResponse) {
         console.log('PDF successfully uploaded to Supabase storage at:', storageResponse);
+      } else {
+        console.error('Failed to upload PDF to storage. Falling back to local download only.');
       }
     } catch (uploadError) {
       console.error('Error uploading PDF to storage:', uploadError);
@@ -187,11 +189,16 @@ export const generateAndUploadPDF = async (report: any, lead: Lead) => {
     toast({
       title: "Report Downloaded",
       description: "The report has been successfully downloaded.",
-      duration: 1000,
+      duration: 3000,
     });
   } catch (error) {
     console.error('Error generating PDF:', error);
-    throw new Error('Failed to generate PDF from report data');
+    toast({
+      title: "Error",
+      description: "Failed to generate PDF from report data.",
+      variant: "destructive",
+      duration: 3000,
+    });
   }
 };
 
@@ -201,6 +208,14 @@ export const uploadPdfToStorage = async (reportId: string, pdfBlob: Blob): Promi
     // Upload the PDF file
     const filePath = `${reportId}.pdf`;
     console.log('Uploading PDF to storage path:', filePath);
+    
+    // Check blob validity
+    if (!pdfBlob || pdfBlob.size === 0) {
+      console.error('Invalid PDF blob - empty or zero size');
+      return null;
+    }
+    
+    console.log('PDF blob size for upload:', pdfBlob.size, 'bytes');
     
     const { data, error } = await supabase.storage
       .from('reports')
@@ -212,6 +227,13 @@ export const uploadPdfToStorage = async (reportId: string, pdfBlob: Blob): Promi
     
     if (error) {
       console.error('Error uploading to storage:', error);
+      
+      // More detailed error diagnostics
+      if (error.message.includes("row-level security policy")) {
+        console.error("CRITICAL: RLS policy is preventing upload. The bucket may need to be public and have proper policies.");
+        return null;
+      }
+      
       return null;
     }
     
@@ -220,7 +242,9 @@ export const uploadPdfToStorage = async (reportId: string, pdfBlob: Blob): Promi
       .from('reports')
       .getPublicUrl(filePath);
     
-    console.log('Storage upload successful, public URL:', urlData?.publicUrl);
+    console.log('Storage upload successful, file path:', data?.path);
+    console.log('Public URL:', urlData?.publicUrl);
+    
     return urlData?.publicUrl || null;
   } catch (error) {
     console.error('Unexpected error in upload process:', error);

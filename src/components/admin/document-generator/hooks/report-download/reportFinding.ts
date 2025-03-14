@@ -59,7 +59,7 @@ export async function findAndDownloadReport(lead: Lead, setIsLoading: (loading: 
       console.log("Looking for PDF file with name:", reportFilePath);
       
       // Get the file directly using the report UUID
-      const { data: urlData, error: urlError } = await supabase.storage
+      const { data: urlData } = await supabase.storage
         .from('reports')
         .getPublicUrl(reportFilePath);
         
@@ -99,12 +99,6 @@ export async function findAndDownloadReport(lead: Lead, setIsLoading: (loading: 
           setIsLoading(false);
           return;
         }
-      } else if (urlError) {
-        console.error("Error getting public URL:", urlError);
-        console.log("No file found with report UUID. Trying to generate a new PDF.");
-        await generateAndUploadPDF(reports[0], lead);
-        setIsLoading(false);
-        return;
       } else {
         console.log("No file found with report UUID. Trying to generate a new PDF.");
         await generateAndUploadPDF(reports[0], lead);

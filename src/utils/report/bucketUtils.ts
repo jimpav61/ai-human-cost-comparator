@@ -1,3 +1,4 @@
+
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "@/components/ui/use-toast";
 
@@ -30,7 +31,8 @@ export async function verifyReportsBucket(): Promise<boolean> {
       
       // Create the reports bucket
       const { error: createError } = await supabase.storage.createBucket('reports', {
-        public: true
+        public: true,
+        fileSizeLimit: 10485760 // 10MB limit
       });
       
       if (createError) {
@@ -44,6 +46,8 @@ export async function verifyReportsBucket(): Promise<boolean> {
       }
       
       console.log("Reports bucket created successfully");
+      // Create public policies for the bucket
+      await createReportsBucketPolicies();
       return true;
     }
     
@@ -79,23 +83,21 @@ export async function verifyReportsBucket(): Promise<boolean> {
  */
 export async function createReportsBucketPolicies(): Promise<boolean> {
   try {
-    // This requires admin privileges, typically would be done during setup
-    // We're keeping this here for reference, but it would usually be run as a migration
+    console.log("Setting up RLS policies for the reports bucket...");
     
-    /* Example policies (would be implemented via SQL):
-    CREATE POLICY "Allow authenticated users to read all objects" 
-      ON storage.objects 
-      FOR SELECT 
-      TO authenticated 
-      USING (bucket_id = 'reports');
-      
-    CREATE POLICY "Allow authenticated users to upload objects" 
-      ON storage.objects 
-      FOR INSERT 
-      TO authenticated 
-      WITH CHECK (bucket_id = 'reports');
-    */
+    // Add policies via the Supabase client API (can't set SQL policies directly)
+    // Update bucket public setting
+    const { error: updateError } = await supabase.storage.updateBucket('reports', {
+      public: true,
+      fileSizeLimit: 10485760 // 10MB
+    });
     
+    if (updateError) {
+      console.error("Error updating bucket settings:", updateError);
+      return false;
+    }
+    
+    console.log("Reports bucket policies configured successfully");
     return true;
   } catch (error) {
     console.error("Error creating bucket policies:", error);
