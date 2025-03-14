@@ -34,7 +34,7 @@ export async function handlePreviewRequest(lead: any, shouldReturnContent: boole
           success: false, 
           error: "Invalid calculator results data",
           details: "The calculator_results property is missing or not an object",
-          version: "2.2"
+          version: "2.3"
         }),
         {
           headers: {

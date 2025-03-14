@@ -1,88 +1,87 @@
 
 /**
- * Enhanced utility functions for formatting and sanitizing values
+ * Safely formats a currency value with $ symbol, commas, and 2 decimal places
  */
-
-/**
- * Formats a number as currency with configurable options
- * @param value The number to format
- * @param options Optional configuration for currency formatting
- * @returns A formatted currency string
- */
-export function formatCurrency(
-  value: number | null | undefined, 
-  options?: {
-    minimumFractionDigits?: number;
-    maximumFractionDigits?: number;
-    currency?: string;
+export function formatCurrency(value: number): string {
+  try {
+    // Ensure value is a valid number
+    const num = typeof value === 'number' ? value : 0;
+    
+    // Format with $ symbol, commas, and fixed 2 decimal places
+    return '$' + num.toLocaleString('en-US', {
+      minimumFractionDigits: 0,
+      maximumFractionDigits: 0
+    });
+  } catch (error) {
+    console.error('Error formatting currency:', error);
+    return '$0';
   }
-): string {
-  if (value === undefined || value === null) {
-    return '$0.00';
-  }
-  
-  return new Intl.NumberFormat('en-US', {
-    style: 'currency',
-    currency: options?.currency || 'USD',
-    minimumFractionDigits: options?.minimumFractionDigits ?? 2,
-    maximumFractionDigits: options?.maximumFractionDigits ?? 2
-  }).format(value);
 }
 
 /**
- * Formats a number with commas for thousands with configurable options
- * @param value The number to format
- * @param options Optional configuration for number formatting
- * @returns A formatted number string
+ * Safely formats a percentage value with % symbol
  */
-export function formatNumber(
-  value: number | null | undefined,
-  options?: {
-    minimumFractionDigits?: number;
-    maximumFractionDigits?: number;
+export function formatPercentage(value: number): string {
+  try {
+    // Ensure value is a valid number
+    const num = typeof value === 'number' ? value : 0;
+    
+    // Format with % symbol and no decimal places
+    return Math.round(num) + '%';
+  } catch (error) {
+    console.error('Error formatting percentage:', error);
+    return '0%';
   }
-): string {
-  if (value === undefined || value === null) {
+}
+
+/**
+ * Safely formats a number with commas and optional decimal places
+ */
+export function formatNumber(value: number, decimalPlaces: number = 0): string {
+  try {
+    // Ensure value is a valid number
+    const num = typeof value === 'number' ? value : 0;
+    
+    // Format with commas and specified decimal places
+    return num.toLocaleString('en-US', {
+      minimumFractionDigits: decimalPlaces,
+      maximumFractionDigits: decimalPlaces
+    });
+  } catch (error) {
+    console.error('Error formatting number:', error);
     return '0';
   }
-  
-  return new Intl.NumberFormat('en-US', {
-    minimumFractionDigits: options?.minimumFractionDigits ?? 0,
-    maximumFractionDigits: options?.maximumFractionDigits ?? 0
-  }).format(value);
 }
 
 /**
- * Sanitizes a string for use in a filename with additional options
- * @param name The string to sanitize
- * @param options Optional configuration for filename sanitization
+ * Sanitizes a string for use as a filename
+ * @param input The input string to sanitize
+ * @param options Optional configuration
  * @returns A safe filename string
  */
 export function getSafeFileName(
-  name: string,
-  options?: {
-    maxLength?: number;
-    replaceChar?: string;
-  }
+  input: string, 
+  options: { maxLength?: number; replaceChar?: string } = {}
 ): string {
-  const replaceChar = options?.replaceChar || '_';
-  const maxLength = options?.maxLength || 50;
+  // Set default options
+  const maxLength = options.maxLength || 50;
+  const replaceChar = options.replaceChar || '_';
   
-  return name
-    .replace(/[^a-z0-9]/gi, replaceChar)
-    .toLowerCase()
-    .substring(0, maxLength);
-}
-
-/**
- * Formats a percentage value
- * @param value The percentage value (0-100)
- * @returns A formatted percentage string
- */
-export function formatPercentage(value: number): string {
-  return new Intl.NumberFormat('en-US', {
-    style: 'percent',
-    minimumFractionDigits: 0,
-    maximumFractionDigits: 0
-  }).format(value / 100);
+  // Replace invalid characters and trim
+  let safeStr = input
+    .replace(/[^a-z0-9]/gi, replaceChar) // Replace invalid chars with replacement char
+    .replace(new RegExp(`\\${replaceChar}+`, 'g'), replaceChar) // Collapse multiple replacement chars
+    .replace(new RegExp(`^\\${replaceChar}|\\${replaceChar}$`, 'g'), ''); // Remove leading/trailing replacement chars
+  
+  // Truncate if needed
+  if (safeStr.length > maxLength) {
+    safeStr = safeStr.substring(0, maxLength);
+    
+    // If truncated at a replacement char, remove it
+    if (safeStr.endsWith(replaceChar)) {
+      safeStr = safeStr.substring(0, safeStr.length - 1);
+    }
+  }
+  
+  return safeStr || 'document'; // Fallback if empty
 }
