@@ -4,16 +4,16 @@ import { generateProfessionalProposal } from "./pdf-generator.ts";
 import { getSafeFileName } from "../_shared/utils.ts";
 
 /**
- * Handles preview mode requests, generating and returning a PDF for download
+ * Enhanced handler for preview mode requests, generating and returning a PDF for download
  */
 export async function handlePreviewRequest(lead: any, shouldReturnContent: boolean = false, debug: boolean = false) {
-  console.log("Generating preview PDF for download");
+  console.log("Generating enhanced preview PDF for download");
   
   try {
     // Get company name from lead data for the filename
     const companyName = lead.company_name || 'Client';
     // Sanitize company name for filename
-    const safeCompanyName = getSafeFileName(companyName);
+    const safeCompanyName = getSafeFileName(companyName, { maxLength: 40, replaceChar: '-' });
     
     // Debug logging
     if (debug) {
@@ -49,7 +49,8 @@ export async function handlePreviewRequest(lead: any, shouldReturnContent: boole
           proposalContent: pdfContent,
           title: `Proposal for ${companyName}`,
           notes: `Generated proposal for ${companyName} on ${new Date().toLocaleString()}`,
-          leadId: lead.id
+          leadId: lead.id,
+          version: "2.0" // Added version to ensure change detection
         }),
         {
           headers: {
@@ -62,7 +63,7 @@ export async function handlePreviewRequest(lead: any, shouldReturnContent: boole
     }
     
     // For preview, properly encode the PDF
-    console.log("Encoding PDF for response");
+    console.log("Encoding enhanced PDF for response");
     
     // Check if content is a valid PDF
     if (!pdfContent.startsWith('%PDF-')) {
@@ -84,14 +85,16 @@ export async function handlePreviewRequest(lead: any, shouldReturnContent: boole
     
     console.log("Base64 PDF created successfully, length:", base64Content.length);
     
-    // Return the base64 encoded PDF with proper content type
+    // Return the base64 encoded PDF with enhanced metadata
     return new Response(
       JSON.stringify({
         success: true,
         pdf: base64Content,
         format: 'base64',
         contentType: 'application/pdf',
-        message: "Proposal generated successfully"
+        message: "Proposal generated successfully",
+        version: "2.0", // Added version to ensure change detection
+        timestamp: new Date().toISOString()
       }),
       {
         headers: {
@@ -102,12 +105,13 @@ export async function handlePreviewRequest(lead: any, shouldReturnContent: boole
       }
     );
   } catch (pdfError) {
-    console.error("Error generating PDF:", pdfError);
+    console.error("Error generating enhanced PDF:", pdfError);
     return new Response(
       JSON.stringify({ 
         error: "Failed to generate PDF: " + pdfError.message,
         stack: pdfError.stack,
-        success: false  // Explicitly mark as failed for frontend compatibility
+        success: false,  // Explicitly mark as failed for frontend compatibility
+        version: "2.0"   // Added version to ensure change detection
       }),
       {
         headers: {
@@ -121,16 +125,17 @@ export async function handlePreviewRequest(lead: any, shouldReturnContent: boole
 }
 
 /**
- * Handles email mode requests, sending the proposal via email
+ * Enhanced handler for email mode requests, sending the proposal via email
  */
 export function handleEmailRequest(lead: any) {
-  console.log("Proposal generation successful, returning response");
+  console.log("Enhanced proposal generation successful, returning response");
   
   return new Response(
     JSON.stringify({
       success: true,
       message: "Proposal has been sent to " + lead.email,
       timestamp: new Date().toISOString(),
+      version: "2.0" // Added version to ensure change detection
     }),
     {
       headers: {

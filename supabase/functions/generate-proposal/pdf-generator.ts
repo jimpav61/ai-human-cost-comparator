@@ -1,15 +1,6 @@
 
-// Import utility functions from shared module
-import { formatCurrency, formatNumber, getSafeFileName } from "../_shared/utils.ts";
-
-// Helper function to format percentages
-const formatPercentage = (value: number): string => {
-  return new Intl.NumberFormat('en-US', {
-    style: 'percent',
-    minimumFractionDigits: 0,
-    maximumFractionDigits: 0
-  }).format(value / 100);
-};
+// Import utility functions from enhanced shared module
+import { formatCurrency, formatNumber, getSafeFileName, formatPercentage } from "../_shared/utils.ts";
 
 /**
  * Generates a professional PDF proposal document based on lead data
@@ -17,7 +8,7 @@ const formatPercentage = (value: number): string => {
  * @returns A PDF document as a string with proper PDF structure
  */
 export function generateProfessionalProposal(lead: any): string {
-  console.log('Generating professional proposal for lead:', lead.id);
+  console.log('Generating professional PDF proposal for lead:', lead.id);
   
   try {
     // Validate required lead data
@@ -41,6 +32,7 @@ export function generateProfessionalProposal(lead: any): string {
     // Generate the PDF as a valid PDF document with proper header
     const pdfHeader = '%PDF-1.4';
     const timestamp = new Date().toISOString();
+    const companyName = lead.company_name || 'Client';
     
     // Create a PDF document with proposal information - CRITICAL: proper PDF structure
     const content = `${pdfHeader}
@@ -60,12 +52,12 @@ endobj
 << /Type /Font /Subtype /Type1 /BaseFont /Helvetica-Bold >>
 endobj
 6 0 obj
-<< /Length 1000 >>
+<< /Length 1200 >>
 stream
 BT
 /F2 24 Tf
 50 750 Td
-(AI Business Proposal for ${lead.company_name}) Tj
+(AI Business Proposal for ${companyName}) Tj
 /F1 12 Tf
 0 -40 Td
 (BUSINESS COST ANALYSIS) Tj
@@ -102,7 +94,7 @@ xref
 trailer
 << /Size 7 /Root 1 0 R >>
 startxref
-1414
+1614
 %%EOF`;
 
     // Return the valid PDF content - this is critical
