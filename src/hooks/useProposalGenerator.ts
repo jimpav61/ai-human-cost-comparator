@@ -34,6 +34,12 @@ export function useProposalGenerator() {
         throw new Error("Lead ID is required");
       }
       
+      // Ensure calculator_results is present and valid
+      if (!lead.calculator_results || typeof lead.calculator_results !== 'object') {
+        console.error("Invalid calculator_results:", lead.calculator_results);
+        throw new Error("Missing or invalid calculator results data");
+      }
+      
       // Use the data connector to generate the proposal
       const pdf = await generateProposalFromSavedData(lead.id);
       
@@ -57,6 +63,14 @@ export function useProposalGenerator() {
       console.error("Error generating proposal:", error);
       const errorMsg = error instanceof Error ? error.message : "Unknown error occurred";
       setGenerationError(errorMsg);
+      
+      // Show error toast
+      toast({
+        title: "Error",
+        description: errorMsg,
+        variant: "destructive"
+      });
+      
       return null;
     } finally {
       setGenerating(false);

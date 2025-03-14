@@ -20,10 +20,30 @@ export async function handlePreviewRequest(lead: any, shouldReturnContent: boole
       console.log("LEAD DATA FOR PDF GENERATION:");
       console.log("- company_name:", lead.company_name);
       console.log("- calculator_results sample:", JSON.stringify({
-        humanCostMonthly: lead.calculator_results.humanCostMonthly,
-        aiCostMonthly: lead.calculator_results.aiCostMonthly,
-        monthlySavings: lead.calculator_results.monthlySavings
+        humanCostMonthly: lead.calculator_results?.humanCostMonthly,
+        aiCostMonthly: lead.calculator_results?.aiCostMonthly,
+        monthlySavings: lead.calculator_results?.monthlySavings
       }, null, 2));
+    }
+    
+    // CRITICAL: Validate calculator_results before proceeding
+    if (!lead.calculator_results || typeof lead.calculator_results !== 'object') {
+      console.error("Invalid calculator_results:", lead.calculator_results);
+      return new Response(
+        JSON.stringify({ 
+          success: false, 
+          error: "Invalid calculator results data",
+          details: "The calculator_results property is missing or not an object",
+          version: "2.2"
+        }),
+        {
+          headers: {
+            ...corsHeaders,
+            "Content-Type": "application/json",
+          },
+          status: 400,
+        }
+      );
     }
     
     // Create the PDF content - this needs to be a valid PDF string
@@ -50,7 +70,7 @@ export async function handlePreviewRequest(lead: any, shouldReturnContent: boole
           title: `Proposal for ${companyName}`,
           notes: `Generated proposal for ${companyName} on ${new Date().toLocaleString()}`,
           leadId: lead.id,
-          version: "2.0" // Added version to ensure change detection
+          version: "2.2"
         }),
         {
           headers: {
@@ -93,7 +113,7 @@ export async function handlePreviewRequest(lead: any, shouldReturnContent: boole
         format: 'base64',
         contentType: 'application/pdf',
         message: "Proposal generated successfully",
-        version: "2.0", // Added version to ensure change detection
+        version: "2.2", 
         timestamp: new Date().toISOString()
       }),
       {
@@ -108,10 +128,10 @@ export async function handlePreviewRequest(lead: any, shouldReturnContent: boole
     console.error("Error generating enhanced PDF:", pdfError);
     return new Response(
       JSON.stringify({ 
+        success: false, 
         error: "Failed to generate PDF: " + pdfError.message,
         stack: pdfError.stack,
-        success: false,  // Explicitly mark as failed for frontend compatibility
-        version: "2.0"   // Added version to ensure change detection
+        version: "2.2"
       }),
       {
         headers: {
@@ -135,7 +155,7 @@ export function handleEmailRequest(lead: any) {
       success: true,
       message: "Proposal has been sent to " + lead.email,
       timestamp: new Date().toISOString(),
-      version: "2.0" // Added version to ensure change detection
+      version: "2.2"
     }),
     {
       headers: {

@@ -14,7 +14,26 @@ serve(async (req) => {
 
   try {
     // Parse the request body
-    const requestData = await req.json();
+    let requestData;
+    try {
+      requestData = await req.json();
+    } catch (parseError) {
+      console.error("Invalid JSON in request body:", parseError);
+      return new Response(
+        JSON.stringify({ 
+          success: false, 
+          error: "Invalid JSON in request body" 
+        }),
+        {
+          headers: {
+            ...corsHeaders,
+            "Content-Type": "application/json",
+          },
+          status: 400,
+        }
+      );
+    }
+    
     const { 
       lead, 
       mode = "preview", 
@@ -22,6 +41,25 @@ serve(async (req) => {
       debug = false,
       version = null 
     } = requestData;
+    
+    // Validate lead data
+    if (!lead || !lead.id || !lead.company_name) {
+      console.error("Missing or invalid lead data");
+      return new Response(
+        JSON.stringify({ 
+          success: false, 
+          error: "Missing or invalid lead data",
+          requiredFields: "id, company_name" 
+        }),
+        {
+          headers: {
+            ...corsHeaders,
+            "Content-Type": "application/json",
+          },
+          status: 400,
+        }
+      );
+    }
     
     // Log the received data for debugging (sensitive info redacted)
     console.log("=== RECEIVED ENHANCED PROPOSAL GENERATION REQUEST ===");
@@ -33,21 +71,62 @@ serve(async (req) => {
     console.log("Version:", version);
     console.log("Calculator inputs type:", typeof lead.calculator_inputs);
     console.log("Calculator results type:", typeof lead.calculator_results);
-    console.log("API Version: 2.1"); // Updated version info to ensure change detection
+    console.log("API Version: 2.2"); // Updated version info to ensure change detection
     
     // CRITICAL: Ensure calculator_results is an object not a string
-    if (!lead.calculator_results || typeof lead.calculator_results !== 'object') {
-      // If calculator_results is a string, try to parse it
-      if (typeof lead.calculator_results === 'string') {
-        try {
-          lead.calculator_results = JSON.parse(lead.calculator_results);
-          console.log("Successfully parsed calculator_results from string to object");
-        } catch (e) {
-          throw new Error(`Invalid calculator_results: Failed to parse string: ${e.message}`);
+    if (!lead.calculator_results) {
+      console.error("Missing calculator_results");
+      return new Response(
+        JSON.stringify({ 
+          success: false, 
+          error: "Missing calculator_results",
+          details: "The calculator_results property is required" 
+        }),
+        {
+          headers: {
+            ...corsHeaders,
+            "Content-Type": "application/json",
+          },
+          status: 400,
         }
-      } else {
-        throw new Error(`Invalid calculator_results: ${JSON.stringify(lead.calculator_results)}`);
+      );
+    }
+    
+    if (typeof lead.calculator_results === 'string') {
+      try {
+        lead.calculator_results = JSON.parse(lead.calculator_results);
+        console.log("Successfully parsed calculator_results from string to object");
+      } catch (e) {
+        console.error("Failed to parse calculator_results from string:", e);
+        return new Response(
+          JSON.stringify({ 
+            success: false, 
+            error: `Invalid calculator_results: Failed to parse string: ${e.message}` 
+          }),
+          {
+            headers: {
+              ...corsHeaders,
+              "Content-Type": "application/json",
+            },
+            status: 400,
+          }
+        );
       }
+    } else if (typeof lead.calculator_results !== 'object') {
+      console.error("Invalid calculator_results type:", typeof lead.calculator_results);
+      return new Response(
+        JSON.stringify({ 
+          success: false, 
+          error: `Invalid calculator_results: Expected object but got ${typeof lead.calculator_results}` 
+        }),
+        {
+          headers: {
+            ...corsHeaders,
+            "Content-Type": "application/json",
+          },
+          status: 400,
+        }
+      );
     }
     
     // Include version information if provided
@@ -77,7 +156,21 @@ serve(async (req) => {
     } else if (mode === "email") {
       return handleEmailRequest(lead);
     } else {
-      throw new Error(`Invalid mode: ${mode}`);
+      console.error("Invalid mode:", mode);
+      return new Response(
+        JSON.stringify({ 
+          success: false, 
+          error: `Invalid mode: ${mode}`,
+          validModes: ["preview", "email"] 
+        }),
+        {
+          headers: {
+            ...corsHeaders,
+            "Content-Type": "application/json",
+          },
+          status: 400,
+        }
+      );
     }
   } catch (error) {
     // Log the error for debugging
@@ -89,7 +182,7 @@ serve(async (req) => {
         success: false, 
         error: error.message,
         stack: error.stack,
-        version: "2.1" // Updated version to ensure change detection
+        version: "2.2" // Updated version to ensure change detection
       }),
       {
         headers: {
