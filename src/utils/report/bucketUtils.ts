@@ -137,35 +137,3 @@ export async function testStorageBucketConnectivity(): Promise<{
     };
   }
 }
-
-/**
- * Attempt to create the reports bucket if it doesn't exist
- * and set up proper RLS policies
- */
-export async function createReportsBucket(): Promise<boolean> {
-  try {
-    console.log("[DIAGNOSTIC] Attempting to create 'reports' bucket...");
-    
-    const { error } = await supabase.storage.createBucket('reports', {
-      public: true,
-      fileSizeLimit: 5242880 // 5MB
-    });
-    
-    if (error) {
-      console.error("[DIAGNOSTIC] Error creating 'reports' bucket:", error);
-      
-      if (error.message.includes("already exists")) {
-        console.log("[DIAGNOSTIC] Bucket already exists, this is not an error");
-        return true;
-      }
-      
-      return false;
-    }
-    
-    console.log("[DIAGNOSTIC] Successfully created 'reports' bucket");
-    return true;
-  } catch (error) {
-    console.error("[DIAGNOSTIC] Unexpected error creating 'reports' bucket:", error);
-    return false;
-  }
-}

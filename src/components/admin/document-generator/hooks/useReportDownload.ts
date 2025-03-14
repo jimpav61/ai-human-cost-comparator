@@ -3,6 +3,7 @@ import { useState } from "react";
 import { Lead } from "@/types/leads";
 import { toast } from "@/hooks/use-toast";
 import { findOrGenerateReport } from "./report-download/reportFinding";
+import { testStorageBucketConnectivity } from "@/utils/report/storageUtils";
 
 export const useReportDownload = () => {
   const [isLoading, setIsLoading] = useState(false);
@@ -11,6 +12,15 @@ export const useReportDownload = () => {
     try {
       setIsLoading(true);
       
+      console.log("---------- TRACKING LEAD REPORT STORAGE PROCESS ----------");
+      console.log("Lead ID:", lead.id);
+      console.log("Company name:", lead.company_name);
+      
+      // Run a storage diagnostic check before attempting to find/generate the report
+      const diagnosticResult = await testStorageBucketConnectivity();
+      console.log("Storage diagnostic before report generation:", diagnosticResult);
+      
+      // Proceed with existing report finding/generation
       await findOrGenerateReport(lead, setIsLoading);
       
     } catch (error) {
