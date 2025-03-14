@@ -43,57 +43,57 @@ ${brandRed} rg
 0 -30 Td
 /F1 13 Tf
 (Monthly Base Price:) Tj
-160 0 Td
+150 0 Td
 (${formattedBasePrice}/month) Tj
--160 -25 Td
+-150 -25 Td
 (Setup and Onboarding Fee:) Tj
-160 0 Td
+150 0 Td
 (${formattedSetupFee} one-time) Tj
--160 -25 Td`;
+-150 -25 Td`;
 
   // Handle voice minutes information 
   if (tierKey === 'starter') {
     content += `
 (Voice Capabilities:) Tj
-160 0 Td
+150 0 Td
 (Not included in Starter Plan) Tj
--160 -25 Td`;
+-150 -25 Td`;
   } else {
     content += `
 (Included Voice Minutes:) Tj
-160 0 Td
+150 0 Td
 (600 minutes/month) Tj
--160 -25 Td`;
+-150 -25 Td`;
     
     if (additionalVoiceMinutes > 0) {
       content += `
 (Additional Voice Minutes:) Tj
-160 0 Td
+150 0 Td
 (${additionalVoiceMinutes} minutes @ $0.12/minute) Tj
--160 -25 Td
+-150 -25 Td
 (Additional Voice Cost:) Tj
-160 0 Td
+150 0 Td
 ($${(additionalVoiceMinutes * 0.12).toFixed(2)}/month) Tj
--160 -25 Td`;
+-150 -25 Td`;
     } else {
       content += `
 (Additional Voice Minutes:) Tj
-160 0 Td
+150 0 Td
 (None requested) Tj
--160 -25 Td`;
+-150 -25 Td`;
     }
   }
 
   // Show total monthly cost with clear breakdown
   content += `
 (Total Monthly Investment:) Tj
-160 0 Td
+150 0 Td
 (${formattedTotalCost}/month) Tj
--160 -25 Td
+-150 -25 Td
 (Annual Investment:) Tj
-160 0 Td
+150 0 Td
 (${formatPdfCurrency(totalMonthlyCost * 12)}/year) Tj
--160 -45 Td
+-150 -45 Td
 
 /F2 18 Tf
 ${brandRed} rg
@@ -102,31 +102,31 @@ ${brandRed} rg
 0 -30 Td
 /F1 13 Tf
 (Current Estimated Monthly Cost:) Tj
-160 0 Td
+150 0 Td
 (${formattedHumanCost}/month) Tj
--160 -25 Td
+-150 -25 Td
 (AI Solution Monthly Cost:) Tj
-160 0 Td
+150 0 Td
 (${formattedTotalCost}/month) Tj
--160 -25 Td
+-150 -25 Td
 (Monthly Savings:) Tj
-160 0 Td
+150 0 Td
 ${brandRed} rg
 (${formattedMonthlySavings}/month) Tj
 0 0 0 rg
--160 -25 Td
+-150 -25 Td
 (Annual Savings:) Tj
-160 0 Td
+150 0 Td
 ${brandRed} rg
 (${formattedYearlySavings}/year) Tj
 0 0 0 rg
--160 -25 Td
+-150 -25 Td
 (Savings Percentage:) Tj
-160 0 Td
+150 0 Td
 ${brandRed} rg
 (${formattedSavingsPercentage}) Tj
 0 0 0 rg
--160 -45 Td
+-150 -45 Td
 
 /F2 18 Tf
 ${brandRed} rg
