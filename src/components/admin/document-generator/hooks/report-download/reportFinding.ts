@@ -20,18 +20,11 @@ export async function findAndDownloadReport(lead: Lead, setIsLoading: (loading: 
     }
 
     // First, make sure the reports bucket exists
-    const bucketExists = await verifyReportsBucket();
-    if (!bucketExists) {
-      console.error("Reports bucket doesn't exist or can't be accessed");
-      toast({
-        title: "Storage Error",
-        description: "The reports storage is not properly configured. Please contact support.",
-        variant: "destructive",
-        duration: 5000,
-      });
-      setIsLoading(false);
-      return;
-    }
+    const bucketVerified = await verifyReportsBucket();
+    console.log("Bucket verification result:", bucketVerified);
+    
+    // We'll continue regardless of bucket verification result
+    // This makes our system more resilient to storage configuration issues
 
     // Get exact lead ID for consistent searching
     const exactLeadId = lead.id.trim();
@@ -58,49 +51,57 @@ export async function findAndDownloadReport(lead: Lead, setIsLoading: (loading: 
       
       console.log("Looking for PDF file with name:", reportFilePath);
       
-      // Get the file directly using the report UUID
-      const { data: urlData } = await supabase.storage
-        .from('reports')
-        .getPublicUrl(reportFilePath);
-        
-      if (urlData?.publicUrl) {
-        console.log("Found PDF using report UUID. Downloading from URL:", urlData.publicUrl);
-        
-        // Verify the URL is accessible before creating the download link
-        try {
-          const response = await fetch(urlData.publicUrl, { method: 'HEAD' });
-          if (!response.ok) {
-            console.log(`Report exists in database but file not found in storage. Status: ${response.status}`);
-            console.log("Generating a new PDF...");
+      try {
+        // Get the file directly using the report UUID
+        const { data: urlData } = await supabase.storage
+          .from('reports')
+          .getPublicUrl(reportFilePath);
+          
+        if (urlData?.publicUrl) {
+          console.log("Found PDF using report UUID. Downloading from URL:", urlData.publicUrl);
+          
+          // Verify the URL is accessible before creating the download link
+          try {
+            const response = await fetch(urlData.publicUrl, { method: 'HEAD' });
+            if (!response.ok) {
+              console.log(`Report exists in database but file not found in storage. Status: ${response.status}`);
+              console.log("Generating a new PDF...");
+              await generateAndUploadPDF(reports[0], lead);
+              setIsLoading(false);
+              return;
+            }
+            
+            // Create download link
+            const link = document.createElement('a');
+            link.href = urlData.publicUrl;
+            link.download = `${getSafeFileName(lead)}-ChatSites-ROI-Report.pdf`;
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+            
+            toast({
+              title: "Report Downloaded",
+              description: "The report has been successfully downloaded.",
+              duration: 3000,
+            });
+            setIsLoading(false);
+            return;
+          } catch (fetchError) {
+            console.error("Error verifying PDF URL accessibility:", fetchError);
+            console.log("Will regenerate the PDF due to access issues");
             await generateAndUploadPDF(reports[0], lead);
             setIsLoading(false);
             return;
           }
-          
-          // Create download link
-          const link = document.createElement('a');
-          link.href = urlData.publicUrl;
-          link.download = `${getSafeFileName(lead)}-ChatSites-ROI-Report.pdf`;
-          document.body.appendChild(link);
-          link.click();
-          document.body.removeChild(link);
-          
-          toast({
-            title: "Report Downloaded",
-            description: "The report has been successfully downloaded.",
-            duration: 3000,
-          });
-          setIsLoading(false);
-          return;
-        } catch (fetchError) {
-          console.error("Error verifying PDF URL accessibility:", fetchError);
-          console.log("Attempting to regenerate the PDF...");
+        } else {
+          console.log("No public URL found for report UUID. Generating a new PDF.");
           await generateAndUploadPDF(reports[0], lead);
           setIsLoading(false);
           return;
         }
-      } else {
-        console.log("No file found with report UUID. Trying to generate a new PDF.");
+      } catch (storageError) {
+        console.error("Storage error when getting PDF URL:", storageError);
+        console.log("Falling back to PDF generation due to storage issues");
         await generateAndUploadPDF(reports[0], lead);
         setIsLoading(false);
         return;
@@ -112,79 +113,92 @@ export async function findAndDownloadReport(lead: Lead, setIsLoading: (loading: 
     // SECOND: Fall back to checking for any files in storage that might match the lead
     console.log("Checking storage for any files related to this lead...");
     
-    const { data: storageFiles, error: storageError } = await supabase
-      .storage
-      .from('reports')
-      .list();
-      
-    if (storageError) {
-      console.error("Error listing storage files:", storageError);
-      throw new Error("Unable to access reports storage");
-    }
-    
-    if (storageFiles && storageFiles.length > 0) {
-      console.log("All files in reports bucket:", storageFiles.map(f => f.name));
-      
-      // Try multiple approaches to find a matching file
-      
-      // 1. Try files with exact lead ID in name
-      let matchingFile = storageFiles.find(file => 
-        file.name.includes(exactLeadId)
-      );
-      
-      // 2. If no match, try with company name as fallback
-      if (!matchingFile && lead.company_name) {
-        const safeCompanyName = getSafeFileName(lead);
-        console.log("Trying to match by company name:", safeCompanyName);
+    try {
+      const { data: storageFiles, error: storageError } = await supabase
+        .storage
+        .from('reports')
+        .list();
         
-        matchingFile = storageFiles.find(file => 
-          file.name.toLowerCase().includes(safeCompanyName.toLowerCase())
+      if (storageError) {
+        console.error("Error listing storage files (expected if bucket empty or restricted):", storageError);
+        console.log("Continuing to PDF generation step...");
+      } else if (storageFiles && storageFiles.length > 0) {
+        console.log("Files found in reports bucket:", storageFiles.length);
+        
+        // Try multiple approaches to find a matching file
+        
+        // 1. Try files with exact lead ID in name
+        let matchingFile = storageFiles.find(file => 
+          file.name.includes(exactLeadId)
         );
-      }
-      
-      if (matchingFile) {
-        console.log("Found potential matching file:", matchingFile.name);
         
-        // Get the public URL
-        const { data: urlData } = await supabase.storage
-          .from('reports')
-          .getPublicUrl(matchingFile.name);
+        // 2. If no match, try with company name as fallback
+        if (!matchingFile && lead.company_name) {
+          const safeCompanyName = getSafeFileName(lead);
+          console.log("Trying to match by company name:", safeCompanyName);
           
-        if (urlData?.publicUrl) {
-          console.log("Downloading report from URL:", urlData.publicUrl);
-          
-          // Create download link
-          const link = document.createElement('a');
-          link.href = urlData.publicUrl;
-          link.download = `${getSafeFileName(lead)}-ChatSites-ROI-Report.pdf`;
-          document.body.appendChild(link);
-          link.click();
-          document.body.removeChild(link);
-          
-          toast({
-            title: "Report Downloaded",
-            description: "The report has been successfully downloaded.",
-            duration: 3000,
-          });
-          setIsLoading(false);
-          return;
+          matchingFile = storageFiles.find(file => 
+            file.name.toLowerCase().includes(safeCompanyName.toLowerCase())
+          );
         }
-      } else {
-        console.log("No matching files found in storage for this lead");
+        
+        if (matchingFile) {
+          console.log("Found potential matching file:", matchingFile.name);
+          
+          try {
+            // Get the public URL
+            const { data: urlData } = await supabase.storage
+              .from('reports')
+              .getPublicUrl(matchingFile.name);
+              
+            if (urlData?.publicUrl) {
+              console.log("Downloading report from URL:", urlData.publicUrl);
+              
+              // Create download link
+              const link = document.createElement('a');
+              link.href = urlData.publicUrl;
+              link.download = `${getSafeFileName(lead)}-ChatSites-ROI-Report.pdf`;
+              document.body.appendChild(link);
+              link.click();
+              document.body.removeChild(link);
+              
+              toast({
+                title: "Report Downloaded",
+                description: "The report has been successfully downloaded.",
+                duration: 3000,
+              });
+              setIsLoading(false);
+              return;
+            }
+          } catch (urlError) {
+            console.error("Error getting public URL for matching file:", urlError);
+          }
+        } else {
+          console.log("No matching files found in storage for this lead");
+        }
       }
+    } catch (listError) {
+      console.error("Error during storage file listing:", listError);
+      console.log("Continuing with PDF generation...");
     }
     
-    // If we got here, no report was found
-    console.log("No existing report found for lead:", exactLeadId);
+    // If we got here, we need to generate a new report
+    console.log("No existing report found or accessible. Generating new report for lead:", exactLeadId);
+    
+    // Generate a new report
+    console.log("Calling generateAndUploadPDF for new report generation");
+    const newReport = {
+      id: crypto.randomUUID(),
+      lead_id: lead.id,
+      report_date: new Date().toISOString(),
+      calculator_inputs: lead.calculator_inputs || {},
+      calculator_results: lead.calculator_results || {}
+    };
+    
+    await generateAndUploadPDF(newReport, lead);
+    
     setIsLoading(false);
-    
-    toast({
-      title: "No Report Found",
-      description: "No report exists for this lead. Please generate a report first.",
-      variant: "destructive",
-      duration: 3000,
-    });
-    
+    return;
   } catch (error) {
     console.error("Error in findAndDownloadReport:", error);
     setIsLoading(false);
