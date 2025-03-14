@@ -8,5 +8,8 @@ import { Lead } from "@/types/leads";
 export const getSafeFileName = (lead: Lead): string => {
   // Make sure we have a valid company name for the file
   const companyName = lead.company_name || "Client";
-  return companyName.replace(/[^\w\s-]/gi, '') || 'Client';
+  console.log("Creating safe filename for:", companyName);
+  const safeName = companyName.replace(/[^\w\s-]/gi, '');
+  console.log("Safe filename created:", safeName);
+  return safeName || 'Client';
 };

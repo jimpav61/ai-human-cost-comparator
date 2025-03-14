@@ -32,7 +32,9 @@ export const addPlanSection = (
   
   // Use the proper fee (either passed value or tier-based)
   const fee = typeof setupFee === 'number' ? setupFee : tierBasedSetupFee;
-  const voiceMinutes = typeof includedVoiceMinutes === 'number' ? includedVoiceMinutes : 600;
+  
+  // CRITICAL FIX: Always use 600 minutes for included voice minutes regardless of tier (except starter)
+  const voiceMinutes = tierKey === 'starter' ? 0 : 600;
   
   // CRITICAL FIX: Ensure additionalMinutes is a number, default to 0
   const additionalMinutes = typeof additionalVoiceMinutes === 'number' ? additionalVoiceMinutes : 0;

@@ -32,7 +32,7 @@ export const findAndDownloadReport = async (lead: Lead, setIsLoading: (isLoading
     }
     
     if (!reportResults || reportResults.length === 0) {
-      console.log('No reports found for lead:', lead.id);
+      console.log('No reports found with lead_id:', lead.id);
       
       // Attempt a direct ID match (for older reports where lead_id might not be set)
       const { data: directIdMatch, error: directIdError } = await supabase
@@ -55,6 +55,18 @@ export const findAndDownloadReport = async (lead: Lead, setIsLoading: (isLoading
       // If no report found by lead_id or direct ID, check storage directly for any report with this ID
       console.log('Checking storage directly for report with ID:', lead.id);
       
+      // First list all files in the reports bucket to debug what's available
+      const { data: allFiles, error: listError } = await supabase.storage
+        .from('reports')
+        .list('');
+        
+      if (listError) {
+        console.error('Error listing all storage files:', listError);
+      } else {
+        console.log('All files in reports bucket:', allFiles?.map(f => f.name));
+      }
+      
+      // Now search for the specific file
       const { data: fileExistsInStorage, error: storageError } = await supabase.storage
         .from('reports')
         .list('', {
@@ -68,6 +80,22 @@ export const findAndDownloadReport = async (lead: Lead, setIsLoading: (isLoading
         // File exists in storage but not in database, download it directly
         await downloadReportDirectlyFromStorage(lead.id, lead, setIsLoading);
         return;
+      } else {
+        console.log('No file found in storage with name pattern:', `${lead.id}.pdf`);
+        
+        // Last resort: try to list all files and see if any contain this ID as part of the name
+        const { data: allFilesAgain } = await supabase.storage
+          .from('reports')
+          .list('');
+          
+        const matchingFiles = allFilesAgain?.filter(f => f.name.includes(lead.id));
+        
+        if (matchingFiles && matchingFiles.length > 0) {
+          console.log('Found files that might match by ID partial match:', matchingFiles);
+          // Try to download the first matching file
+          await downloadReportDirectlyFromStorage(matchingFiles[0].name.replace('.pdf', ''), lead, setIsLoading);
+          return;
+        }
       }
       
       toast({
@@ -158,6 +186,26 @@ const downloadReportPDF = async (report: any, lead: Lead, setIsLoading: (isLoadi
     }
     
     console.log('Storage file search results:', fileList);
+    
+    // If no file found with report.id, try lead.id as fallback
+    if (!fileList || fileList.length === 0) {
+      console.log('No file found with report.id, trying lead.id as fallback...');
+      const fallbackFileName = `${lead.id}.pdf`;
+      
+      const { data: fallbackFileList } = await supabase.storage
+        .from('reports')
+        .list('', {
+          search: fallbackFileName,
+          limit: 1
+        });
+        
+      if (fallbackFileList && fallbackFileList.length > 0) {
+        console.log('Found file using lead.id instead:', fallbackFileList[0].name);
+        // Use the fallback file instead
+        await downloadReportDirectlyFromStorage(lead.id, lead, setIsLoading);
+        return;
+      }
+    }
     
     // Get the public URL - getPublicUrl doesn't return an error property in its response
     const { data: urlData } = await supabase.storage

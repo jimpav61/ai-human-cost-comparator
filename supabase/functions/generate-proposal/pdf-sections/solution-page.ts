@@ -78,7 +78,7 @@ ${brandRed} rg
 0 -20 Td`;
   } else {
     content += `
-(\\267 Includes ${includedVoiceMinutes} voice minutes per month as part of base plan) Tj
+(\\267 Includes ${600} voice minutes per month as part of base plan) Tj
 0 -20 Td`;
     
     if (additionalVoiceMinutes > 0) {

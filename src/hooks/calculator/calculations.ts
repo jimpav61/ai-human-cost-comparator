@@ -112,7 +112,7 @@ export function calculateAICosts(inputs: CalculatorInputs, aiRates: any) {
   // Calculate additional voice costs - input field is now the ADDITIONAL minutes
   let additionalVoiceCost = 0;
   
-  // Define included voice minutes based on tier
+  // Define included voice minutes based on tier - FIXED: always 600 for non-starter tiers
   const includedVoiceMinutes = inputs.aiTier === 'starter' ? 0 : 600;
   console.log("Included voice minutes:", includedVoiceMinutes);
   
