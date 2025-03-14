@@ -1,4 +1,3 @@
-
 import { 
   formatPdfCurrency, 
   formatPdfPercentage, 
@@ -85,7 +84,7 @@ export function extractProposalData(lead: any): ProposalData {
   const tierName = getPlanName(tierKey);
   const aiTypeDisplay = getAiTypeDisplay(aiType);
   
-  // Voice minutes calculations - CRITICAL FIX: Always 600 minutes for non-starter tiers
+  // Voice minutes calculations
   const includedVoiceMinutes = tierKey === 'starter' ? 0 : 600;
   const additionalVoiceMinutes = ensureNumber(
     calculatorResults.additionalVoiceMinutes || 

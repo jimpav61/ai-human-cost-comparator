@@ -1,3 +1,4 @@
+
 import { Lead } from "@/types/leads";
 import { AI_RATES } from "@/constants/pricing";
 import { SharedResults } from "../../../types";
@@ -31,8 +32,9 @@ export function getCalculatorData(lead: Lead): CalculatorDataResult {
   const tierKey = inputs.aiTier || 'starter';
   const aiTypeToUse = inputs.aiType || 'chatbot';
   
-  // FIXED: Always use 600 included minutes for non-starter tiers
-  const includedVoiceMinutes = tierKey === 'starter' ? 0 : 600;
+  // Calculate included voice minutes based on tier
+  const includedVoiceMinutes = tierKey === 'starter' ? 0 : 
+                              (tierKey === 'growth' ? 600 : 1200);
   
   // Get voice minutes data
   const extraVoiceMinutes = inputs.callVolume || 0;
@@ -83,8 +85,8 @@ export function getCalculatorData(lead: Lead): CalculatorDataResult {
       // Ensure tierKey and aiType are set
       tierKey: (lead.calculator_results.tierKey || tierKey) as "starter" | "growth" | "premium",
       aiType: (lead.calculator_results.aiType || aiTypeToUse) as "chatbot" | "voice" | "both" | "conversationalVoice" | "both-premium",
-      // CRITICAL FIX: Ensure includedVoiceMinutes is set to 600 for non-starter plans
-      includedVoiceMinutes: tierKey === 'starter' ? 0 : 600
+      // Ensure includedVoiceMinutes is set
+      includedVoiceMinutes: lead.calculator_results.includedVoiceMinutes ?? includedVoiceMinutes
     };
     
     // Ensure setupFee exists (this is the property causing the error)

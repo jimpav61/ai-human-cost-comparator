@@ -1,181 +1,125 @@
 
 import { Lead } from "@/types/leads";
-import { toast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
+import { toast } from "@/hooks/use-toast";
 import { generateAndUploadPDF } from "./pdfGeneration";
 import { getSafeFileName } from "@/utils/report/validation";
-import { verifyReportsBucket } from "@/utils/report/bucketUtils";
 
-// Find and download a report for a given lead
-export async function findAndDownloadReport(lead: Lead, setIsLoading: (loading: boolean) => void) {
-  console.log("---------- ADMIN REPORT DOWNLOAD ATTEMPT ----------");
-  console.log("Lead ID for report download:", lead.id);
-  console.log("Lead company name:", lead.company_name);
-
+// Find existing reports for a lead or generate new one
+export const findOrGenerateReport = async (lead: Lead, setIsLoading: (isLoading: boolean) => void) => {
   try {
-    // Validate the lead ID - essential for exact matching
+    console.log('---------- ADMIN REPORT DOWNLOAD ATTEMPT ----------');
+    console.log('Lead ID for report download:', lead.id);
+    console.log('Lead calculator_inputs:', lead.calculator_inputs);
+    console.log('Lead calculator_results:', lead.calculator_results);
+    
+    // Check if lead ID exists
     if (!lead.id) {
-      console.error("Missing lead ID, cannot search for reports");
-      throw new Error("Missing lead ID");
-    }
-
-    // First, make sure the reports bucket exists and is accessible
-    const bucketAccessible = await verifyReportsBucket();
-    if (!bucketAccessible) {
-      console.error("Reports bucket is not accessible, cannot download reports");
-      throw new Error("Reports storage is not accessible");
+      throw new Error("Lead ID is missing");
     }
     
-    console.log("Bucket verification successful, proceeding with report search");
-    
-    // Get exact lead ID for consistent searching
-    const exactLeadId = lead.id.trim();
-    
-    // STEP 1: Check the database first for reports with this lead ID
-    console.log("Checking database for reports with lead ID:", exactLeadId);
-    
-    const { data: reports, error } = await supabase
+    // First, try to find the report in the database with a more streamlined approach
+    const { data: reportResults, error: searchError } = await supabase
       .from('generated_reports')
       .select('*')
-      .eq('lead_id', exactLeadId)
+      .eq('lead_id', lead.id)
       .order('report_date', { ascending: false })
       .limit(1);
     
-    if (error) {
-      console.error("Error querying database for reports:", error);
-    } else if (reports && reports.length > 0) {
-      console.log("Found report in database:", reports[0]);
+    if (searchError) {
+      console.error('Error searching for reports:', searchError);
+      throw new Error('Failed to search for reports');
+    }
+    
+    if (reportResults && reportResults.length > 0) {
+      const report = reportResults[0];
+      console.log('Found report for lead:', report.id);
       
-      // We found a report in the database, now try to get the file from storage
-      const reportId = reports[0].id;
-      const fileName = `${reportId}.pdf`;
+      // Look for stored PDF in Supabase storage
+      const pdfFileName = `${report.id}.pdf`;
+      console.log('Checking for PDF file:', pdfFileName);
       
-      console.log("Looking for file in storage with name:", fileName);
-      
-      // Try to get the public URL for this file
-      const { data: urlData } = await supabase.storage
-        .from('reports')
-        .getPublicUrl(fileName);
-      
-      if (urlData?.publicUrl) {
-        console.log("Found PDF in storage with URL:", urlData.publicUrl);
+      try {
+        // Get the public URL directly
+        const { data: urlData } = await supabase.storage
+          .from('reports')
+          .getPublicUrl(pdfFileName);
         
-        // Verify the file exists by making a HEAD request
-        try {
-          const response = await fetch(urlData.publicUrl, { method: 'HEAD' });
+        if (urlData && urlData.publicUrl) {
+          console.log('Found stored PDF, downloading from:', urlData.publicUrl);
           
-          if (response.ok) {
-            console.log("File exists and is accessible, downloading it");
+          // Verify the URL is accessible
+          try {
+            const response = await fetch(urlData.publicUrl, { method: 'HEAD' });
             
-            // Create download link
-            const link = document.createElement('a');
-            link.href = urlData.publicUrl;
-            link.download = `${getSafeFileName(lead)}-ChatSites-ROI-Report.pdf`;
-            document.body.appendChild(link);
-            link.click();
-            document.body.removeChild(link);
-            
-            toast({
-              title: "Report Downloaded",
-              description: "The existing report has been successfully downloaded.",
-              duration: 3000,
-            });
-            
-            setIsLoading(false);
-            return;
-          } else {
-            console.error(`File returned status ${response.status}. Need to regenerate.`);
+            if (response.ok) {
+              // Trigger direct download of the PDF using the URL
+              const link = document.createElement('a');
+              link.href = urlData.publicUrl;
+              const safeCompanyName = getSafeFileName(lead);
+              link.download = `${safeCompanyName}-ChatSites-ROI-Report.pdf`;
+              document.body.appendChild(link);
+              link.click();
+              document.body.removeChild(link);
+              
+              toast({
+                title: "Report Downloaded",
+                description: "The original report has been successfully downloaded.",
+                duration: 1000,
+              });
+              
+              setIsLoading(false);
+              return;
+            } else {
+              console.log(`PDF URL check failed with status ${response.status}. Generating new PDF.`);
+            }
+          } catch (checkError) {
+            console.error("Error verifying PDF URL:", checkError);
           }
-        } catch (fetchError) {
-          console.error("Error verifying file accessibility:", fetchError);
         }
+      } catch (storageError) {
+        console.error('Error checking stored PDF:', storageError);
       }
       
-      // If we get here, the report exists in the database but we couldn't download the file
-      console.log("Report exists in database but couldn't download the file. Will regenerate.");
-      await generateAndUploadPDF(reports[0], lead);
+      // If stored PDF not found or not accessible, generate from report data
+      console.log('No stored PDF found or not accessible, generating from report data');
+      await generateAndUploadPDF(report, lead);
       setIsLoading(false);
       return;
     }
     
-    // STEP 2: If no report in database, check storage directly to see if there are any files
-    console.log("No reports found in database. Checking storage for files...");
-    
-    const { data: files, error: listError } = await supabase.storage
-      .from('reports')
-      .list();
-    
-    if (listError) {
-      console.error("Error listing files in storage:", listError);
-    } else if (files && files.length > 0) {
-      console.log(`Found ${files.length} files in storage. Searching for match with lead ID:`, exactLeadId);
+    // If no reports were found, generate a new one if we have calculator data
+    if (lead.calculator_results) {
+      console.log('No reports found, generating new report from lead data');
       
-      // Look for files that contain the lead ID in the filename
-      const matchingFiles = files.filter(file => file.name.includes(exactLeadId));
+      // Create a temporary report object
+      const tempReport = {
+        id: lead.id,
+        lead_id: lead.id,
+        company_name: lead.company_name,
+        contact_name: lead.name,
+        email: lead.email,
+        phone_number: lead.phone_number,
+        calculator_inputs: lead.calculator_inputs,
+        calculator_results: lead.calculator_results
+      };
       
-      if (matchingFiles.length > 0) {
-        console.log("Found matching files:", matchingFiles.map(f => f.name));
-        
-        // Use the first matching file
-        const file = matchingFiles[0];
-        
-        // Get the public URL
-        const { data: urlData } = await supabase.storage
-          .from('reports')
-          .getPublicUrl(file.name);
-        
-        if (urlData?.publicUrl) {
-          console.log("Downloading file from URL:", urlData.publicUrl);
-          
-          // Create download link
-          const link = document.createElement('a');
-          link.href = urlData.publicUrl;
-          link.download = `${getSafeFileName(lead)}-ChatSites-ROI-Report.pdf`;
-          document.body.appendChild(link);
-          link.click();
-          document.body.removeChild(link);
-          
-          toast({
-            title: "Report Downloaded",
-            description: "An existing report has been found and downloaded.",
-            duration: 3000,
-          });
-          
-          setIsLoading(false);
-          return;
-        }
-      } else {
-        console.log("No files found that match the lead ID");
-      }
-    } else {
-      console.log("No files found in storage");
+      await generateAndUploadPDF(tempReport, lead);
+      setIsLoading(false);
+      return;
     }
     
-    // If we get here, we need to generate a new report
-    console.log("No existing reports found. Generating a new report.");
-    
-    const newReport = {
-      id: crypto.randomUUID(),
-      lead_id: lead.id,
-      report_date: new Date().toISOString(),
-      calculator_inputs: lead.calculator_inputs || {},
-      calculator_results: lead.calculator_results || {}
-    };
-    
-    await generateAndUploadPDF(newReport, lead);
-    setIsLoading(false);
-    
-  } catch (error) {
-    console.error("Error in findAndDownloadReport:", error);
-    setIsLoading(false);
+    // If we get here, no reports were found and no calculator data exists
+    console.error('No reports found and no calculator data available for lead:', lead.id);
     
     toast({
-      title: "Error",
-      description: "Failed to find or download report. Please try again.",
-      variant: "destructive",
-      duration: 3000,
+      title: "No Report Available",
+      description: "No report data was found for this lead. Please generate a report first.",
+      variant: "warning",
     });
+    
+  } catch (error) {
+    console.error("Error in findOrGenerateReport:", error);
+    throw error; // Rethrow to be handled by the main hook
   }
-  
-  console.log("---------- ADMIN REPORT DOWNLOAD ATTEMPT ENDED ----------");
-}
+};

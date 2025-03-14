@@ -1,11 +1,10 @@
-
 import { Lead } from "@/types/leads";
 import { toast } from "@/hooks/use-toast";
 import { ensureCompleteCalculatorResults } from "@/hooks/calculator/supabase-types";
 import { generatePDF } from "@/components/calculator/pdf";
 import { supabase } from "@/integrations/supabase/client";
 import { getSafeFileName } from "@/utils/report/validation";
-import { verifyReportsBucket, createReportsBucketPolicies } from "@/utils/report/bucketUtils";
+import { verifyReportsBucket } from "@/utils/report/storageUtils";
 
 // Helper function to ensure JSON is parsed
 export const ensureJsonParsed = (data: any) => {
@@ -83,27 +82,11 @@ export const docToBlob = async (doc: any): Promise<Blob> => {
 // Generate PDF from report data and download it
 export const generateAndUploadPDF = async (report: any, lead: Lead) => {
   try {
-    console.log('Generating PDF for report:', {
+    console.log('Generating and uploading PDF for report:', {
       reportId: report.id, 
       leadId: report.lead_id,
-      company: lead.company_name
+      company: report.company_name
     });
-    
-    // CRITICAL: First verify and create the reports bucket if needed
-    const bucketSuccess = await verifyReportsBucket();
-    if (!bucketSuccess) {
-      console.error("CRITICAL: Reports bucket could not be verified or created");
-      toast({
-        title: "Storage Error",
-        description: "There was an issue with the storage configuration. PDF may not be saved online.",
-        variant: "destructive",
-        duration: 5000,
-      });
-    } else {
-      console.log("Reports bucket verified successfully");
-      // Also verify/create bucket policies
-      await createReportsBucketPolicies();
-    }
     
     // Generate safe filename for the report
     const safeCompanyName = getSafeFileName(lead);
@@ -119,44 +102,35 @@ export const generateAndUploadPDF = async (report: any, lead: Lead) => {
     // Validate and ensure the calculator results have the correct structure
     const validatedResults = ensureCompleteCalculatorResults(calculatorResultsData);
     
-    // CRITICAL: Directly use call volume from calculator inputs for voice minutes
+    // CRITICAL FIX: Ensure additionalVoiceMinutes is correctly handled
     let additionalVoiceMinutes = 0;
     
-    // First priority: Look for callVolume in calculator_inputs
-    if (calculatorInputsData && typeof calculatorInputsData.callVolume === 'number') {
-      additionalVoiceMinutes = calculatorInputsData.callVolume;
-      console.log('Using callVolume from inputs:', additionalVoiceMinutes);
+    // Check all possible sources for additionalVoiceMinutes
+    if (typeof validatedResults.additionalVoiceMinutes === 'number') {
+      additionalVoiceMinutes = validatedResults.additionalVoiceMinutes;
+      console.log('Using additionalVoiceMinutes from validatedResults:', additionalVoiceMinutes);
     } 
-    // Second priority: Parse string value if present
+    // Check calculator inputs callVolume
+    else if (calculatorInputsData && typeof calculatorInputsData.callVolume === 'number') {
+      additionalVoiceMinutes = calculatorInputsData.callVolume;
+      console.log('Using callVolume as additionalVoiceMinutes:', additionalVoiceMinutes);
+    }
+    // Handle string values in callVolume
     else if (calculatorInputsData && typeof calculatorInputsData.callVolume === 'string' && calculatorInputsData.callVolume !== '') {
       additionalVoiceMinutes = parseInt(calculatorInputsData.callVolume, 10) || 0;
-      console.log('Parsed callVolume string as:', additionalVoiceMinutes);
-    }
-    // Third priority: Check additionalVoiceMinutes in validatedResults
-    else if (typeof validatedResults.additionalVoiceMinutes === 'number') {
-      additionalVoiceMinutes = validatedResults.additionalVoiceMinutes;
-      console.log('Using additionalVoiceMinutes from results:', additionalVoiceMinutes);
+      console.log('Parsed callVolume string as additionalVoiceMinutes:', additionalVoiceMinutes);
     }
     
-    // IMPORTANT: Always get the tier and AI type correctly
-    const tierKey = validatedResults.tierKey || 'growth';
-    const aiTypeKey = validatedResults.aiType || 'both';
+    // Inject the additionalVoiceMinutes into validated results to ensure it's used in PDF generation
+    validatedResults.additionalVoiceMinutes = additionalVoiceMinutes;
     
-    // Ensure includedVoiceMinutes is set correctly based on tier
-    const includedVoiceMinutes = tierKey === 'starter' ? 0 : 600;
-    
-    console.log('Final values for PDF generation:', {
-      additionalVoiceMinutes,
-      includedVoiceMinutes,
-      tierKey,
-      aiTypeKey
-    });
+    console.log('Final additionalVoiceMinutes value being used:', additionalVoiceMinutes);
     
     // Determine tier and AI type display names
-    const tierName = getTierName(tierKey);
-    const aiType = getAiTypeName(aiTypeKey);
+    const tierName = getTierName(validatedResults.tierKey);
+    const aiType = getAiTypeName(validatedResults.aiType);
     
-    // Generate the PDF using the EXACT SAME parameters for both download and storage
+    // Generate the PDF using the stored calculator results
     const doc = generatePDF({
       contactInfo: report.contact_name || lead.name || 'Valued Client',
       companyName: report.company_name || lead.company_name || 'Your Company',
@@ -164,151 +138,78 @@ export const generateAndUploadPDF = async (report: any, lead: Lead) => {
       phoneNumber: report.phone_number || lead.phone_number || '',
       industry: lead.industry || 'Other',
       employeeCount: Number(lead.employee_count) || 5,
-      results: {
-        ...validatedResults,
-        additionalVoiceMinutes: additionalVoiceMinutes,
-        includedVoiceMinutes: includedVoiceMinutes
-      },
+      results: validatedResults,
       additionalVoiceMinutes: additionalVoiceMinutes,
-      includedVoiceMinutes: includedVoiceMinutes,
+      includedVoiceMinutes: validatedResults.includedVoiceMinutes || 600,
       businessSuggestions: getBusinessSuggestions(),
       aiPlacements: getAiPlacements(),
       tierName: tierName,
       aiType: aiType
     });
     
-    // First - save the exact document locally for immediate download
+    // Save the PDF locally
     doc.save(fileName);
     console.log('PDF generated and saved locally as:', fileName);
     
-    // Then - DIRECTLY upload the same document to storage
+    // Also upload to Supabase storage
     try {
-      console.log('Uploading the exact same PDF to Supabase storage...');
-      console.log('Report ID (used as filename in storage):', report.id);
-      
-      // Get blob from the document once for both database and storage
+      // Get the PDF as binary data
       const pdfBlob = await docToBlob(doc);
-      console.log('PDF blob size:', pdfBlob.size, 'bytes');
       
-      // CRITICAL - Insert the report into the database first
-      const { data: dbData, error: dbError } = await supabase
-        .from('generated_reports')
-        .upsert({
-          id: report.id,
-          lead_id: report.lead_id,
-          report_date: report.report_date,
-          calculator_inputs: report.calculator_inputs,
-          calculator_results: report.calculator_results,
-          company_name: lead.company_name,
-          contact_name: lead.name,
-          email: lead.email,
-          phone_number: lead.phone_number
-        })
-        .select('id');
-    
-      if (dbError) {
-        console.error('Error saving report to database:', dbError);
-      } else {
-        console.log('Report saved to database successfully:', dbData);
+      // First ensure the bucket exists
+      await verifyReportsBucket();
+      
+      // Upload to Supabase storage
+      const storageResponse = await uploadPdfToStorage(report.id, pdfBlob);
+      
+      if (storageResponse) {
+        console.log('PDF successfully uploaded to Supabase storage at:', storageResponse);
       }
-    
-      // Upload to Supabase storage with the report ID as the filename
-      const storageFilePath = `${report.id}.pdf`;
-      console.log('Uploading to storage path:', storageFilePath);
-      
-      // Add debugging to check authentication status before upload
-      const { data: { session } } = await supabase.auth.getSession();
-      console.log('Current auth session:', session ? 'Authenticated' : 'Not authenticated');
-      
-      // Try upload with more detailed error handling
-      try {
-        const { data: uploadData, error: uploadError } = await supabase.storage
-          .from('reports')
-          .upload(storageFilePath, pdfBlob, {
-            contentType: 'application/pdf',
-            upsert: true
-          });
-        
-        if (uploadError) {
-          console.error('Error uploading PDF to storage:', uploadError);
-          console.log('Upload error details:', {
-            message: uploadError.message,
-            name: uploadError.name,
-            // Remove properties that don't exist on StorageError type
-          });
-          
-          // More specific error handling for common errors
-          if (uploadError.message.includes("The resource already exists")) {
-            console.log('File already exists in storage. This is not an error.');
-            
-            // Get the public URL for the existing file
-            const { data: urlData } = await supabase.storage
-              .from('reports')
-              .getPublicUrl(storageFilePath);
-              
-            console.log('Existing file URL:', urlData?.publicUrl);
-          } else if (uploadError.message.includes('bucket') && uploadError.message.includes('not found')) {
-            console.error('CRITICAL: The storage bucket "reports" does not exist - attempting to create it now');
-            
-            // Last resort: create bucket directly
-            const { error: createBucketError } = await supabase.storage.createBucket('reports', {
-              public: true
-            });
-            
-            if (createBucketError) {
-              console.error('Failed to create reports bucket:', createBucketError);
-            } else {
-              console.log('Created reports bucket successfully, retrying upload');
-              // Retry the upload after bucket creation
-              const { data: retryData, error: retryError } = await supabase.storage
-                .from('reports')
-                .upload(storageFilePath, pdfBlob, {
-                  contentType: 'application/pdf',
-                  upsert: true
-                });
-                
-              if (retryError) {
-                console.error('Retry upload failed:', retryError);
-              } else {
-                console.log('Retry upload succeeded:', retryData);
-              }
-            }
-          }
-        } else {
-          console.log('PDF successfully uploaded to storage:', uploadData?.path);
-          
-          // Get the public URL
-          const { data: urlData } = await supabase.storage
-            .from('reports')
-            .getPublicUrl(storageFilePath);
-            
-          console.log('Public URL for uploaded file:', urlData?.publicUrl);
-        }
-      } catch (uploadError) {
-        console.error('Error during storage upload process:', uploadError);
-      }
-      
-      toast({
-        title: "Report Downloaded",
-        description: "The report has been successfully downloaded and saved.",
-        duration: 3000,
-      });
-    } catch (error) {
-      console.error('Error uploading to storage:', error);
-      toast({
-        title: "Storage Error",
-        description: "The report was downloaded but could not be saved online.",
-        variant: "destructive",
-        duration: 3000,
-      });
+    } catch (uploadError) {
+      console.error('Error uploading PDF to storage:', uploadError);
+      // Don't throw the error, as we've already given the user the local download
     }
+    
+    toast({
+      title: "Report Downloaded",
+      description: "The report has been successfully downloaded.",
+      duration: 1000,
+    });
   } catch (error) {
     console.error('Error generating PDF:', error);
-    toast({
-      title: "Error",
-      description: "Failed to generate PDF from report data.",
-      variant: "destructive",
-      duration: 3000,
-    });
+    throw new Error('Failed to generate PDF from report data');
+  }
+};
+
+// Helper function to upload PDF to Supabase storage
+export const uploadPdfToStorage = async (reportId: string, pdfBlob: Blob): Promise<string | null> => {
+  try {
+    // Upload the PDF file
+    const filePath = `${reportId}.pdf`;
+    console.log('Uploading PDF to storage path:', filePath);
+    
+    const { data, error } = await supabase.storage
+      .from('reports')
+      .upload(filePath, pdfBlob, {
+        contentType: 'application/pdf',
+        upsert: true,
+        cacheControl: '3600'
+      });
+    
+    if (error) {
+      console.error('Error uploading to storage:', error);
+      return null;
+    }
+    
+    // Get the public URL
+    const { data: urlData } = await supabase.storage
+      .from('reports')
+      .getPublicUrl(filePath);
+    
+    console.log('Storage upload successful, public URL:', urlData?.publicUrl);
+    return urlData?.publicUrl || null;
+  } catch (error) {
+    console.error('Unexpected error in upload process:', error);
+    return null;
   }
 };

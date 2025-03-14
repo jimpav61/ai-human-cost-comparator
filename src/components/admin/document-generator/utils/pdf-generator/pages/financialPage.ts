@@ -54,7 +54,7 @@ ${brandRed} rg
     content += `
 (Included Voice Minutes:) Tj
 190 0 Td
-(600 minutes/month) Tj
+(${includedMinutes} minutes/month) Tj
 -190 -25 Td`;
     
     if (callVolume > 0) {
