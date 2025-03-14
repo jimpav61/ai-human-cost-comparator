@@ -11,7 +11,7 @@ import { verifyReportsBucket } from "./bucketUtils";
  * @param fileName The name to save the file as
  * @returns URL to the saved file or null if there was an error
  */
-export async function savePDFToStorage(pdfDoc: jsPDF, fileName: string): Promise<string | null> {
+export async function savePDFToStorage(pdfDoc: jsPDF, fileName: string, isAdmin: boolean = false): Promise<string | null> {
   try {
     console.log("Starting PDF storage process for", fileName);
     
@@ -19,11 +19,13 @@ export async function savePDFToStorage(pdfDoc: jsPDF, fileName: string): Promise
     const bucketExists = await verifyReportsBucket();
     if (!bucketExists) {
       console.error("Failed to verify or create reports bucket");
-      toast({
-        title: "Storage Error",
-        description: "Unable to access storage. Your report was downloaded locally but not saved to the cloud.",
-        variant: "destructive"
-      });
+      if (isAdmin) {
+        toast({
+          title: "Storage Error",
+          description: "Unable to access storage. Your report was downloaded locally but not saved to the cloud.",
+          variant: "destructive"
+        });
+      }
       return null;
     }
     
@@ -50,11 +52,13 @@ export async function savePDFToStorage(pdfDoc: jsPDF, fileName: string): Promise
     
     if (error) {
       console.error("Error uploading PDF to storage:", error);
-      toast({
-        title: "Upload Failed",
-        description: "Your report was downloaded locally but could not be saved to the cloud.",
-        variant: "destructive"
-      });
+      if (isAdmin) {
+        toast({
+          title: "Upload Failed",
+          description: "Your report was downloaded locally but could not be saved to the cloud.",
+          variant: "destructive"
+        });
+      }
       throw error;
     }
     
@@ -79,11 +83,13 @@ export async function savePDFToStorage(pdfDoc: jsPDF, fileName: string): Promise
       const savedFile = fileList.find(f => f.name === filePath);
       if (savedFile) {
         console.log("✅ Confirmed file was saved to bucket:", savedFile);
-        toast({
-          title: "Report Saved",
-          description: "Your report was successfully saved to the cloud.",
-          variant: "default"
-        });
+        if (isAdmin) {
+          toast({
+            title: "Report Saved",
+            description: "Your report was successfully saved to the cloud.",
+            variant: "default"
+          });
+        }
       } else {
         console.warn("File doesn't appear in bucket listing yet. This could be due to eventual consistency.");
       }

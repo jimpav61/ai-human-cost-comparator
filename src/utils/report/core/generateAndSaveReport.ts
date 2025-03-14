@@ -9,7 +9,7 @@ import { verifyReportsBucket } from "../bucketUtils";
 
 export async function generateAndSaveReport(
   lead: Lead,
-  options: { skipStorage?: boolean; retryCount?: number } = {}
+  options: { skipStorage?: boolean; retryCount?: number; isAdmin?: boolean } = {}
 ): Promise<ReportGenerationResult> {
   try {
     console.log("Starting report generation and save process for lead:", lead.id);
@@ -19,11 +19,13 @@ export async function generateAndSaveReport(
       const bucketExists = await verifyReportsBucket();
       if (!bucketExists) {
         console.warn("Reports bucket could not be verified or created");
-        toast({
-          title: "Storage Warning",
-          description: "Cloud storage is not available. Your report will be downloaded only.",
-          variant: "destructive"
-        });
+        if (options.isAdmin) {
+          toast({
+            title: "Storage Warning",
+            description: "Cloud storage is not available. Your report will be downloaded only.",
+            variant: "destructive"
+          });
+        }
       } else {
         console.log("✅ Storage bucket verified and ready for saving");
       }
@@ -54,7 +56,8 @@ export async function generateAndSaveReport(
       doc,
       lead,
       fileName,
-      maxRetries
+      maxRetries,
+      options.isAdmin
     );
     
     if (!result.reportId || !result.pdfUrl) {

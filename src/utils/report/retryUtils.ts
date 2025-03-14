@@ -14,7 +14,8 @@ export async function saveReportToStorageWithRetry(
   pdfDoc: jsPDF,
   lead: Lead,
   fileName: string,
-  maxRetries: number = 3
+  maxRetries: number = 3,
+  isAdmin: boolean = false
 ): Promise<{ reportId: string | null; pdfUrl: string | null }> {
   let attempts = 0;
   let success = false;
@@ -25,11 +26,13 @@ export async function saveReportToStorageWithRetry(
   const bucketVerified = await verifyReportsBucket();
   if (!bucketVerified) {
     console.error("Failed to verify or create reports bucket");
-    toast({
-      title: "Storage Error",
-      description: "Cloud storage is unavailable. Your report was downloaded locally only.",
-      variant: "destructive"
-    });
+    if (isAdmin) {
+      toast({
+        title: "Storage Error",
+        description: "Cloud storage is unavailable. Your report was downloaded locally only.",
+        variant: "destructive"
+      });
+    }
     return { reportId: null, pdfUrl: null };
   }
   
@@ -41,7 +44,7 @@ export async function saveReportToStorageWithRetry(
     
     try {
       // Save PDF to storage
-      pdfUrl = await savePDFToStorage(pdfDoc, fileName);
+      pdfUrl = await savePDFToStorage(pdfDoc, fileName, isAdmin);
       
       if (!pdfUrl) {
         console.error("Failed to get PDF URL from storage on attempt", attempts);
@@ -66,7 +69,7 @@ export async function saveReportToStorageWithRetry(
       console.error(`Attempt ${attempts} failed:`, error);
       
       // If this was the last attempt, show an error
-      if (attempts >= maxRetries) {
+      if (attempts >= maxRetries && isAdmin) {
         toast({
           title: "Error Saving Report",
           description: "We couldn't save your report to the cloud. Please try again later.",
