@@ -4,6 +4,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { toast } from "@/hooks/use-toast";
 import { generateAndUploadPDF } from "./pdfGeneration";
 import { getSafeFileName } from "@/utils/report/validation";
+import { toJson } from "@/hooks/calculator/supabase-types";
 
 // Find existing reports for a lead or generate new one
 export const findOrGenerateReport = async (lead: Lead, setIsLoading: (isLoading: boolean) => void) => {
@@ -102,8 +103,8 @@ export const findOrGenerateReport = async (lead: Lead, setIsLoading: (isLoading:
         company_name: lead.company_name,
         email: lead.email,
         phone_number: lead.phone_number || null,
-        calculator_inputs: lead.calculator_inputs,
-        calculator_results: lead.calculator_results,
+        calculator_inputs: toJson(lead.calculator_inputs),
+        calculator_results: toJson(lead.calculator_results),
         report_date: new Date().toISOString()
       };
       

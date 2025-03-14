@@ -4,6 +4,7 @@ import { saveReportData } from "./databaseUtils";
 import { Lead } from "@/types/leads";
 import { jsPDF } from "jspdf";
 import { toast } from "@/hooks/use-toast";
+import { ReportGenerationResult } from "./types";
 
 /**
  * Save a report to storage with retry mechanism
@@ -13,7 +14,7 @@ export async function saveReportToStorageWithRetry(
   lead: Lead,
   fileName: string,
   maxRetries: number = 3
-): Promise<{ reportId: string | null; pdfUrl: string | null }> {
+): Promise<ReportGenerationResult> {
   let attempts = 0;
   let success = false;
   let pdfUrl: string | null = null;
@@ -57,5 +58,10 @@ export async function saveReportToStorageWithRetry(
     }
   }
   
-  return { reportId, pdfUrl };
+  return { 
+    success, 
+    message: success ? "Report saved successfully" : "Failed to save report",
+    reportId, 
+    pdfUrl 
+  };
 }

@@ -30,22 +30,22 @@ export async function generateAndSaveReport(
     
     // Save the report with retry mechanism
     const maxRetries = options.retryCount || 3;
-    const { reportId, pdfUrl } = await saveReportToStorageWithRetry(
+    const result = await saveReportToStorageWithRetry(
       doc,
       lead,
       fileName,
       maxRetries
     );
     
-    if (!reportId || !pdfUrl) {
+    if (!result.reportId || !result.pdfUrl) {
       throw new Error("Failed to save report after multiple attempts");
     }
     
     return {
       success: true,
       message: "Report generated and saved successfully",
-      reportId,
-      pdfUrl,
+      reportId: result.reportId,
+      pdfUrl: result.pdfUrl,
     };
   } catch (error) {
     console.error("Error in generateAndSaveReport:", error);

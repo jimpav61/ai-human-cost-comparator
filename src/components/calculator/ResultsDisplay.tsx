@@ -9,6 +9,7 @@ import { generateAndDownloadReport } from '@/utils/report/generateReport';
 import { Lead } from '@/types/leads';
 import { toast } from '@/components/ui/use-toast';
 import { supabase } from '@/integrations/supabase/client';
+import { toJson } from "@/hooks/calculator/supabase-types";
 
 interface ResultsDisplayProps {
   results: CalculationResults;
@@ -77,7 +78,7 @@ export const ResultsDisplay: React.FC<ResultsDisplayProps> = ({
         // Create the lead first to ensure it exists
         const { data: newLead, error: createError } = await supabase
           .from('leads')
-          .insert([{
+          .insert({
             id: leadForReport.id,
             name: leadForReport.name,
             company_name: leadForReport.company_name,
@@ -86,11 +87,11 @@ export const ResultsDisplay: React.FC<ResultsDisplayProps> = ({
             website: leadForReport.website,
             industry: leadForReport.industry,
             employee_count: leadForReport.employee_count,
-            calculator_inputs: leadForReport.calculator_inputs,
-            calculator_results: leadForReport.calculator_results,
+            calculator_inputs: toJson(leadForReport.calculator_inputs),
+            calculator_results: toJson(leadForReport.calculator_results),
             proposal_sent: false,
             form_completed: true
-          }])
+          })
           .select();
         
         if (createError) {

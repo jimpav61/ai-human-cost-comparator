@@ -3,6 +3,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { ReportData } from "./types";
 import { Lead } from "@/types/leads";
 import { v4 as uuidv4 } from 'uuid';
+import { toJson } from "@/hooks/calculator/supabase-types";
 
 /**
  * Check if the user is authenticated
@@ -40,7 +41,7 @@ export async function saveReportData(
       // Insert the lead first
       const { error: insertError } = await supabase
         .from('leads')
-        .insert([{
+        .insert({
           id: lead.id,
           name: lead.name,
           company_name: lead.company_name,
@@ -49,12 +50,12 @@ export async function saveReportData(
           website: lead.website,
           industry: lead.industry,
           employee_count: lead.employee_count,
-          calculator_inputs: lead.calculator_inputs,
-          calculator_results: lead.calculator_results,
+          calculator_inputs: toJson(lead.calculator_inputs),
+          calculator_results: toJson(lead.calculator_results),
           proposal_sent: lead.proposal_sent || false,
           created_at: lead.created_at || new Date().toISOString(),
           updated_at: new Date().toISOString()
-        }]);
+        });
       
       if (insertError) {
         console.error("Error inserting lead:", insertError);
@@ -70,19 +71,22 @@ export async function saveReportData(
     // Insert the report data
     const { data, error } = await supabase
       .from('proposal_revisions')
-      .insert([{
+      .insert({
         id: reportId,
         lead_id: lead.id,
-        company_name: lead.company_name,
-        contact_name: lead.name,
-        email: lead.email,
-        phone_number: lead.phone_number,
-        calculator_inputs: lead.calculator_inputs,
-        calculator_results: lead.calculator_results,
-        report_date: new Date().toISOString(),
-        pdf_url: pdfUrl,
-        version: version
-      }]);
+        proposal_content: JSON.stringify({
+          company_name: lead.company_name,
+          contact_name: lead.name,
+          email: lead.email,
+          phone_number: lead.phone_number,
+          calculator_inputs: lead.calculator_inputs,
+          calculator_results: lead.calculator_results,
+          pdf_url: pdfUrl
+        }),
+        title: `${lead.company_name} Report`,
+        version_number: version,
+        is_sent: false
+      });
     
     if (error) {
       console.error("Error saving report data:", error);
