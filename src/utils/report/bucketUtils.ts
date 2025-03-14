@@ -49,3 +49,123 @@ export async function verifyReportsBucket(): Promise<boolean> {
     return false;
   }
 }
+
+/**
+ * Test storage bucket connectivity and report diagnostic information
+ * This is a utility function for debugging storage issues
+ */
+export async function testStorageBucketConnectivity(): Promise<{
+  success: boolean;
+  bucketExists: boolean;
+  filesCount: number;
+  authStatus: boolean;
+  error?: any;
+}> {
+  try {
+    // Check authentication status
+    const { data: { session } } = await supabase.auth.getSession();
+    const authStatus = !!session;
+    
+    console.log("[DIAGNOSTIC] Storage connectivity test initiated");
+    console.log("[DIAGNOSTIC] Auth status:", authStatus ? "Authenticated" : "Not authenticated");
+    
+    // Try to get bucket info
+    const { data: buckets, error: bucketsError } = await supabase.storage.listBuckets();
+    
+    if (bucketsError) {
+      console.error("[DIAGNOSTIC] Error listing buckets:", bucketsError);
+      return {
+        success: false,
+        bucketExists: false,
+        filesCount: 0,
+        authStatus,
+        error: bucketsError
+      };
+    }
+    
+    console.log("[DIAGNOSTIC] Available buckets:", buckets.map(b => b.name).join(", "));
+    
+    // Check if reports bucket exists
+    const reportsBucket = buckets.find(b => b.name === 'reports');
+    const bucketExists = !!reportsBucket;
+    
+    if (!bucketExists) {
+      console.log("[DIAGNOSTIC] Reports bucket does not exist in the list of available buckets");
+      return {
+        success: false,
+        bucketExists: false,
+        filesCount: 0, 
+        authStatus,
+        error: "Bucket not found"
+      };
+    }
+    
+    // Try to list files to verify access
+    const { data: files, error: listError } = await supabase.storage.from('reports').list();
+    
+    if (listError) {
+      console.error("[DIAGNOSTIC] Error listing files in 'reports' bucket:", listError);
+      return {
+        success: false,
+        bucketExists: true,
+        filesCount: 0,
+        authStatus,
+        error: listError
+      };
+    }
+    
+    console.log("[DIAGNOSTIC] Successfully accessed 'reports' bucket");
+    console.log("[DIAGNOSTIC] Files in bucket:", files.length);
+    if (files.length > 0) {
+      console.log("[DIAGNOSTIC] First few files:", files.slice(0, 5).map(f => f.name).join(", "));
+    }
+    
+    return {
+      success: true,
+      bucketExists: true,
+      filesCount: files.length,
+      authStatus
+    };
+  } catch (error) {
+    console.error("[DIAGNOSTIC] Unexpected error in storage connectivity test:", error);
+    return {
+      success: false,
+      bucketExists: false,
+      filesCount: 0,
+      authStatus: false,
+      error
+    };
+  }
+}
+
+/**
+ * Attempt to create the reports bucket if it doesn't exist
+ * and set up proper RLS policies
+ */
+export async function createReportsBucket(): Promise<boolean> {
+  try {
+    console.log("[DIAGNOSTIC] Attempting to create 'reports' bucket...");
+    
+    const { error } = await supabase.storage.createBucket('reports', {
+      public: true,
+      fileSizeLimit: 5242880 // 5MB
+    });
+    
+    if (error) {
+      console.error("[DIAGNOSTIC] Error creating 'reports' bucket:", error);
+      
+      if (error.message.includes("already exists")) {
+        console.log("[DIAGNOSTIC] Bucket already exists, this is not an error");
+        return true;
+      }
+      
+      return false;
+    }
+    
+    console.log("[DIAGNOSTIC] Successfully created 'reports' bucket");
+    return true;
+  } catch (error) {
+    console.error("[DIAGNOSTIC] Unexpected error creating 'reports' bucket:", error);
+    return false;
+  }
+}
