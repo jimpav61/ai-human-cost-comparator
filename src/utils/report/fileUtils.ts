@@ -10,6 +10,18 @@ import { checkUserAuthentication } from "./databaseUtils";
 export async function savePDFToStorage(reportId: string, pdfBlob: Blob): Promise<string | null> {
   try {
     console.log("Saving PDF to storage for report ID:", reportId);
+    console.log("PDF Blob size:", pdfBlob.size, "bytes");
+    
+    // Verify the blob is not empty or invalid
+    if (!pdfBlob || pdfBlob.size === 0) {
+      console.error("Invalid PDF blob - empty or zero size");
+      toast({
+        title: "Report Error",
+        description: "Could not generate a valid PDF file",
+        variant: "destructive"
+      });
+      return null;
+    }
     
     // Verify the bucket is accessible before attempting upload
     const bucketAccessible = await verifyReportsBucket();
@@ -40,25 +52,13 @@ export async function savePDFToStorage(reportId: string, pdfBlob: Blob): Promise
     const filePath = `${reportId}.pdf`;
     
     console.log("Uploading to bucket 'reports' with path:", filePath);
-    console.log("PDF Blob size:", pdfBlob.size, "bytes");
-    
-    // Ensure PDF blob is valid
-    if (!pdfBlob || pdfBlob.size === 0) {
-      console.error("Invalid PDF blob - empty or missing");
-      toast({
-        title: "Report Error",
-        description: "Could not generate a valid PDF file",
-        variant: "destructive"
-      });
-      return null;
-    }
     
     // Upload the PDF to Supabase storage
     const { data, error } = await supabase.storage
       .from('reports')
       .upload(filePath, pdfBlob, {
         contentType: 'application/pdf',
-        upsert: true,
+        upsert: true, // Overwrite if exists
         cacheControl: '3600'
       });
     
@@ -114,6 +114,8 @@ export async function savePDFToStorage(reportId: string, pdfBlob: Blob): Promise
     // Verify the URL is accessible
     try {
       const response = await fetch(urlData.publicUrl, { method: 'HEAD' });
+      console.log(`URL accessibility check result: status ${response.status}`);
+      
       if (!response.ok) {
         console.error(`PDF URL check failed with status ${response.status}`);
         toast({

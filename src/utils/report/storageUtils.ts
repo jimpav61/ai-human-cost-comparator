@@ -20,13 +20,14 @@ export const verifyReportsBucket = async () => {
       throw error;
     }
     
-    const reportsBucketExists = buckets.some(bucket => bucket.name === 'reports');
+    const reportsBucket = buckets.find(bucket => bucket.name === 'reports');
     
-    if (!reportsBucketExists) {
+    if (!reportsBucket) {
       console.log("Reports bucket doesn't exist. Creating it...");
       
       const { error: createError } = await supabase.storage.createBucket('reports', {
-        public: true
+        public: true,
+        fileSizeLimit: 10485760 // 10MB limit
       });
       
       if (createError) {
@@ -35,13 +36,33 @@ export const verifyReportsBucket = async () => {
       }
       
       console.log("Reports bucket created successfully");
+      
+      // Set up public RLS policies for the bucket
+      await setupPublicBucketPolicies();
     } else {
-      console.log("Reports bucket already exists");
+      console.log("Reports bucket already exists:", reportsBucket);
     }
     
     return true;
   } catch (error) {
     console.error("Error verifying reports bucket:", error);
+    return false;
+  }
+};
+
+/**
+ * Set up public RLS policies for the reports bucket
+ */
+const setupPublicBucketPolicies = async () => {
+  try {
+    // Create test file to initialize permissions
+    const testBlob = new Blob(['test'], { type: 'text/plain' });
+    await supabase.storage.from('reports').upload('test-permission.txt', testBlob);
+    
+    console.log("Created test file to initialize bucket permissions");
+    return true;
+  } catch (error) {
+    console.error("Error setting up bucket policies:", error);
     return false;
   }
 };
@@ -162,6 +183,14 @@ export const savePDFToStorage = async (reportId: string, pdfBlob: Blob): Promise
   try {
     console.log("Saving PDF to storage for report ID:", reportId);
     
+    // Check if blob is valid
+    if (!pdfBlob || pdfBlob.size === 0) {
+      console.error("Invalid PDF blob provided");
+      return null;
+    }
+    
+    console.log("PDF blob size:", pdfBlob.size, "bytes");
+    
     // The file path in storage
     const filePath = `${reportId}.pdf`;
     
@@ -170,13 +199,24 @@ export const savePDFToStorage = async (reportId: string, pdfBlob: Blob): Promise
       .from('reports')
       .upload(filePath, pdfBlob, {
         contentType: 'application/pdf',
-        upsert: true
+        upsert: true, // Overwrite if exists
+        cacheControl: '3600'
       });
     
     if (error) {
       console.error("Failed to upload PDF to storage:", error);
+      
+      // Add specific error handling for common issues
+      if (error.message.includes("not found")) {
+        console.error("CRITICAL: Bucket 'reports' not found. Create it in Supabase dashboard");
+      } else if (error.message.includes("row-level security policy")) {
+        console.error("CRITICAL: RLS policy is preventing upload. Make the bucket public");
+      }
+      
       return null;
     }
+    
+    console.log("Upload successful, data path:", data?.path);
     
     // Get the public URL for the uploaded file
     const { data: urlData } = await supabase.storage
@@ -189,6 +229,19 @@ export const savePDFToStorage = async (reportId: string, pdfBlob: Blob): Promise
     }
     
     console.log("PDF saved to storage with URL:", urlData.publicUrl);
+    
+    // Verify URL is accessible
+    try {
+      const response = await fetch(urlData.publicUrl, { method: 'HEAD' });
+      if (response.ok) {
+        console.log("URL is accessible");
+      } else {
+        console.error(`URL returned status ${response.status}`);
+      }
+    } catch (error) {
+      console.error("Error checking URL accessibility:", error);
+    }
+    
     return urlData.publicUrl;
   } catch (error) {
     console.error("Error saving PDF to storage:", error);

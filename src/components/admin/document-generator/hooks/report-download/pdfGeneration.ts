@@ -208,6 +208,12 @@ export const generateAndUploadPDF = async (report: any, lead: Lead) => {
       
       if (uploadError) {
         console.error('Error uploading PDF to storage:', uploadError);
+        console.log('Upload error details:', {
+          message: uploadError.message,
+          name: uploadError.name,
+          code: uploadError.code,
+          details: uploadError.details
+        });
         
         if (uploadError.message.includes('The resource already exists')) {
           console.log('File already exists in storage. This is not an error.');
@@ -231,6 +237,7 @@ export const generateAndUploadPDF = async (report: any, lead: Lead) => {
       }
     } catch (uploadError) {
       console.error('Error during storage upload process:', uploadError);
+      console.log('Upload error details:', uploadError);
     }
     
     toast({
