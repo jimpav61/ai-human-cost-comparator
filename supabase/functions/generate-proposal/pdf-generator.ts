@@ -41,8 +41,12 @@ export function generateProfessionalProposal(lead: any): string {
       savingsPercentage = 0
     } = lead.calculator_results;
     
+    // Generate the PDF as a valid PDF document with proper header
+    const pdfHeader = '%PDF-1.4';
+    const timestamp = new Date().toISOString();
+    
     // Create a PDF document with proposal information
-    const content = `%PDF-1.4
+    const content = `${pdfHeader}
 1 0 obj
 << /Type /Catalog /Pages 2 0 R >>
 endobj
@@ -84,6 +88,8 @@ BT
 (Savings Percentage: ${formatPercentage(savingsPercentage)}) Tj
 0 -25 Td
 (Contact us today to implement this solution for your business.) Tj
+0 -15 Td
+(Generated: ${timestamp}) Tj
 ET
 endstream
 endobj
@@ -102,7 +108,8 @@ startxref
 1414
 %%EOF`;
 
-    // Important: Return the raw PDF content (handler will encode it to base64)
+    // Return the valid PDF content - this is critical
+    console.log("Generated valid PDF with proper PDF header");
     return content;
   } catch (error) {
     console.error('Error generating PDF:', error);

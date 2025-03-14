@@ -22,6 +22,8 @@ serve(async (req) => {
     console.log("Lead ID:", lead.id);
     console.log("Company:", lead.company_name);
     console.log("Debug mode:", debug);
+    console.log("Mode:", mode);
+    console.log("Return Content:", returnContent);
     console.log("Calculator inputs type:", typeof lead.calculator_inputs);
     console.log("Calculator results type:", typeof lead.calculator_results);
     
@@ -64,7 +66,8 @@ serve(async (req) => {
     return new Response(
       JSON.stringify({ 
         success: false, 
-        error: error.message
+        error: error.message,
+        stack: error.stack
       }),
       {
         headers: {

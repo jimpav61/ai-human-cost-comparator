@@ -26,9 +26,10 @@ export async function handlePreviewRequest(lead: any, shouldReturnContent: boole
       }, null, 2));
     }
     
-    // Create the PDF content
+    // Create the PDF content - this needs to be a valid PDF string
     const pdfContent = generateProfessionalProposal(lead);
     console.log("PDF content generated successfully, length:", pdfContent.length);
+    console.log("PDF starts with:", pdfContent.substring(0, 20)); // Check the first 20 chars
     
     // Enhanced debugging
     if (debug) {
