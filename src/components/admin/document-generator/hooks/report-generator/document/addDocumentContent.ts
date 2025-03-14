@@ -1,5 +1,5 @@
 
-import { ProcessedLeadData } from "../processLeadData";
+import { ProcessedLeadData } from "../types";
 import { JsPDFWithAutoTable } from '@/components/calculator/pdf/types';
 import { addHeaderSection } from '@/components/calculator/pdf/sections/headerSection';
 import { addPlanSection } from '@/components/calculator/pdf/sections/planSection';

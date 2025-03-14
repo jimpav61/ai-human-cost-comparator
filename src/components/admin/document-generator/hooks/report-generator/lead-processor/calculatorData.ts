@@ -1,11 +1,20 @@
 
 import { Lead } from "@/types/leads";
 import { AI_RATES } from "@/constants/pricing";
+import { SharedResults } from "../../../types";
+
+interface CalculatorDataResult {
+  safeResults: SharedResults;
+  tierKey: "starter" | "growth" | "premium";
+  aiTypeToUse: "chatbot" | "voice" | "both" | "conversationalVoice" | "both-premium";
+  includedVoiceMinutes: number;
+  extraVoiceMinutes: number;
+}
 
 /**
  * Processes calculator data from the lead
  */
-export function getCalculatorData(lead: Lead) {
+export function getCalculatorData(lead: Lead): CalculatorDataResult {
   // Use the calculator inputs from lead or fallback to defaults
   const inputs = lead.calculator_inputs || {
     aiType: 'chatbot',
@@ -31,16 +40,31 @@ export function getCalculatorData(lead: Lead) {
   const extraVoiceMinutes = inputs.callVolume || 0;
   
   // Ensure calculator_results has all required properties with fallbacks
-  let safeResults = {
+  let safeResults: SharedResults = {
     aiCostMonthly: {
       voice: 0,
       chatbot: 0,
       total: 0,
       setupFee: 0,
     },
-    basePriceMonthly: AI_RATES.chatbot[tierKey].base,
-    tierKey,
-    aiType: aiTypeToUse
+    basePriceMonthly: AI_RATES.chatbot[tierKey as "starter" | "growth" | "premium"].base,
+    humanCostMonthly: 0,
+    monthlySavings: 0,
+    yearlySavings: 0,
+    savingsPercentage: 0,
+    breakEvenPoint: {
+      voice: 0,
+      chatbot: 0
+    },
+    humanHours: {
+      dailyPerEmployee: 0,
+      weeklyTotal: 0,
+      monthlyTotal: 0,
+      yearlyTotal: 0
+    },
+    annualPlan: 0,
+    tierKey: tierKey as "starter" | "growth" | "premium",
+    aiType: aiTypeToUse as "chatbot" | "voice" | "both" | "conversationalVoice" | "both-premium"
   };
   
   if (lead.calculator_results) {
@@ -56,31 +80,34 @@ export function getCalculatorData(lead: Lead) {
         total: 0,
         setupFee: 0,
         ...((lead.calculator_results.aiCostMonthly || {}) as any)
-      }
+      },
+      // Ensure tierKey and aiType are set
+      tierKey: (lead.calculator_results.tierKey || tierKey) as "starter" | "growth" | "premium",
+      aiType: (lead.calculator_results.aiType || aiTypeToUse) as "chatbot" | "voice" | "both" | "conversationalVoice" | "both-premium"
     };
     
     // Ensure setupFee exists (this is the property causing the error)
     if (!safeResults.aiCostMonthly.setupFee) {
       console.warn("setupFee missing, adding default value based on tier");
-      safeResults.aiCostMonthly.setupFee = AI_RATES.chatbot[tierKey].setupFee;
+      safeResults.aiCostMonthly.setupFee = AI_RATES.chatbot[tierKey as "starter" | "growth" | "premium"].setupFee;
     }
     
     // Ensure other required properties exist
     if (!safeResults.aiCostMonthly.total) {
       safeResults.aiCostMonthly.total = safeResults.basePriceMonthly || 
-        AI_RATES.chatbot[tierKey].base;
+        AI_RATES.chatbot[tierKey as "starter" | "growth" | "premium"].base;
     }
     
     if (!safeResults.basePriceMonthly) {
-      safeResults.basePriceMonthly = AI_RATES.chatbot[tierKey].base;
+      safeResults.basePriceMonthly = AI_RATES.chatbot[tierKey as "starter" | "growth" | "premium"].base;
     }
   } else {
     // If no calculator results exist, create default values
     console.warn("No calculator results found, using fallback values");
     
     // Default values used only if no calculator results exist
-    const setupFee = AI_RATES.chatbot[tierKey].setupFee;
-    const baseMonthlyPrice = AI_RATES.chatbot[tierKey].base;
+    const setupFee = AI_RATES.chatbot[tierKey as "starter" | "growth" | "premium"].setupFee;
+    const baseMonthlyPrice = AI_RATES.chatbot[tierKey as "starter" | "growth" | "premium"].base;
     let additionalVoiceCost = 0;
     
     if (extraVoiceMinutes > 0 && tierKey !== 'starter') {
@@ -106,16 +133,16 @@ export function getCalculatorData(lead: Lead) {
         monthlyTotal: 850,
         yearlyTotal: 10200
       },
-      annualPlan: AI_RATES.chatbot[tierKey].annualPrice,
-      tierKey,
-      aiType: aiTypeToUse
+      annualPlan: AI_RATES.chatbot[tierKey as "starter" | "growth" | "premium"].annualPrice,
+      tierKey: tierKey as "starter" | "growth" | "premium",
+      aiType: aiTypeToUse as "chatbot" | "voice" | "both" | "conversationalVoice" | "both-premium"
     };
   }
 
   return {
     safeResults,
-    tierKey,
-    aiTypeToUse,
+    tierKey: tierKey as "starter" | "growth" | "premium",
+    aiTypeToUse: aiTypeToUse as "chatbot" | "voice" | "both" | "conversationalVoice" | "both-premium",
     includedVoiceMinutes,
     extraVoiceMinutes
   };
