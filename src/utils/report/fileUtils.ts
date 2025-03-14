@@ -15,10 +15,22 @@ export async function savePDFToStorage(pdfDoc: jsPDF, fileName: string, isAdmin:
   try {
     console.log("Starting PDF storage process for", fileName);
     
-    // Make sure reports bucket exists
-    const bucketExists = await verifyReportsBucket();
+    // Make sure reports bucket exists with retry logic
+    let bucketExists = false;
+    let retryCount = 0;
+    const maxRetries = 2;
+    
+    while (!bucketExists && retryCount < maxRetries) {
+      bucketExists = await verifyReportsBucket();
+      if (!bucketExists) {
+        console.log(`Bucket verification attempt ${retryCount + 1} failed, retrying...`);
+        retryCount++;
+        await new Promise(resolve => setTimeout(resolve, 500)); // Short delay before retry
+      }
+    }
+    
     if (!bucketExists) {
-      console.error("Failed to verify or create reports bucket");
+      console.error("Failed to verify or create reports bucket after retries");
       if (isAdmin) {
         toast({
           title: "Storage Error",
@@ -42,16 +54,42 @@ export async function savePDFToStorage(pdfDoc: jsPDF, fileName: string, isAdmin:
     console.log("Uploading to path:", filePath);
     console.log("Bucket:", 'reports');
     
-    const { data, error } = await supabase.storage
-      .from('reports')
-      .upload(filePath, pdfBlob, {
-        contentType: 'application/pdf',
-        cacheControl: '3600',
-        upsert: true // Allow overwriting existing files
-      });
+    // Add retry logic for upload
+    let uploadSuccess = false;
+    let uploadAttempt = 0;
+    let uploadData = null;
+    let uploadError = null;
     
-    if (error) {
-      console.error("Error uploading PDF to storage:", error);
+    while (!uploadSuccess && uploadAttempt < 3) {
+      try {
+        const { data, error } = await supabase.storage
+          .from('reports')
+          .upload(filePath, pdfBlob, {
+            contentType: 'application/pdf',
+            cacheControl: '3600',
+            upsert: true // Allow overwriting existing files
+          });
+        
+        if (error) {
+          console.error(`Upload attempt ${uploadAttempt + 1} failed:`, error);
+          uploadError = error;
+          uploadAttempt++;
+          await new Promise(resolve => setTimeout(resolve, 1000)); // 1s delay before retry
+        } else {
+          uploadSuccess = true;
+          uploadData = data;
+          console.log(`✅ PDF successfully uploaded on attempt ${uploadAttempt + 1}:`, data);
+        }
+      } catch (err) {
+        console.error(`Upload attempt ${uploadAttempt + 1} exception:`, err);
+        uploadError = err;
+        uploadAttempt++;
+        await new Promise(resolve => setTimeout(resolve, 1000)); // 1s delay before retry
+      }
+    }
+    
+    if (!uploadSuccess) {
+      console.error("All upload attempts failed:", uploadError);
       if (isAdmin) {
         toast({
           title: "Upload Failed",
@@ -59,10 +97,8 @@ export async function savePDFToStorage(pdfDoc: jsPDF, fileName: string, isAdmin:
           variant: "destructive"
         });
       }
-      throw error;
+      return null;
     }
-    
-    console.log("✅ PDF successfully uploaded:", data);
     
     // Get the public URL
     const { data: urlData } = supabase.storage
@@ -71,18 +107,11 @@ export async function savePDFToStorage(pdfDoc: jsPDF, fileName: string, isAdmin:
     
     console.log("Generated public URL:", urlData);
     
-    // Double check that the file was actually saved by listing the bucket contents
-    const { data: fileList, error: listError } = await supabase.storage
-      .from('reports')
-      .list();
-      
-    if (listError) {
-      console.error("Error listing bucket contents:", listError);
-    } else {
-      console.log("Current files in bucket:", fileList);
-      const savedFile = fileList.find(f => f.name === filePath);
-      if (savedFile) {
-        console.log("✅ Confirmed file was saved to bucket:", savedFile);
+    // Verify file was saved by checking if URL is accessible
+    try {
+      const checkResponse = await fetch(urlData.publicUrl, { method: 'HEAD' });
+      if (checkResponse.ok) {
+        console.log("✅ URL is accessible:", checkResponse.status);
         if (isAdmin) {
           toast({
             title: "Report Saved",
@@ -91,8 +120,11 @@ export async function savePDFToStorage(pdfDoc: jsPDF, fileName: string, isAdmin:
           });
         }
       } else {
-        console.warn("File doesn't appear in bucket listing yet. This could be due to eventual consistency.");
+        console.warn("URL verification failed with status:", checkResponse.status);
       }
+    } catch (err) {
+      console.warn("Error checking URL accessibility:", err);
+      // Continue anyway since this is just a verification step
     }
     
     return urlData.publicUrl;

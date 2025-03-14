@@ -5,7 +5,7 @@ import { generateReportPDF } from "../pdf/generator";
 import { saveReportToStorageWithRetry } from "../retryUtils";
 import { ReportGenerationResult } from "../types";
 import { getSafeFileName } from "../validation";
-import { verifyReportsBucket } from "../bucketUtils";
+import { testStorageBucketConnectivity } from "../bucketUtils";
 
 export async function generateAndSaveReport(
   lead: Lead,
@@ -14,20 +14,22 @@ export async function generateAndSaveReport(
   try {
     console.log("Starting report generation and save process for lead:", lead.id);
     
-    // First, check if the reports bucket exists
+    // Run storage diagnostics first to identify potential issues
     if (!options.skipStorage) {
-      const bucketExists = await verifyReportsBucket();
-      if (!bucketExists) {
-        console.warn("Reports bucket could not be verified or created");
+      const diagnostics = await testStorageBucketConnectivity();
+      console.log("Storage diagnostics:", diagnostics);
+      
+      if (!diagnostics.success) {
+        console.warn("Storage diagnostics failed:", diagnostics.error);
         if (options.isAdmin) {
           toast({
             title: "Storage Warning",
-            description: "Cloud storage is not available. Your report will be downloaded only.",
+            description: "Cloud storage connectivity check failed. Will attempt to save anyway.",
             variant: "destructive"
           });
         }
       } else {
-        console.log("✅ Storage bucket verified and ready for saving");
+        console.log("✅ Storage diagnostics passed, bucket exists:", diagnostics.bucketExists);
       }
     }
     
@@ -50,8 +52,8 @@ export async function generateAndSaveReport(
     
     console.log("Attempting to save report to storage...");
     
-    // Save the report with retry mechanism
-    const maxRetries = options.retryCount || 3;
+    // Save the report with retry mechanism and increased retry count
+    const maxRetries = options.retryCount || 4; // Increase default retries
     const result = await saveReportToStorageWithRetry(
       doc,
       lead,
@@ -62,7 +64,13 @@ export async function generateAndSaveReport(
     
     if (!result.reportId || !result.pdfUrl) {
       console.error("Failed to save report after multiple attempts");
-      throw new Error("Failed to save report after multiple attempts");
+      
+      // Just return success for downloaded PDF even if cloud save failed
+      return {
+        success: true,
+        message: "Report generated and downloaded successfully, but cloud save failed.",
+        pdfDoc: doc
+      };
     }
     
     console.log("✅ Report saved successfully with ID:", result.reportId);
@@ -73,6 +81,7 @@ export async function generateAndSaveReport(
       message: "Report generated and saved successfully",
       reportId: result.reportId,
       pdfUrl: result.pdfUrl,
+      pdfDoc: doc
     };
   } catch (error) {
     console.error("Error in generateAndSaveReport:", error);

@@ -13,12 +13,23 @@ export const saveProposalPDF = (doc: JsPDFWithAutoTable, lead: Lead): void => {
     // Save the document with proper company name
     doc.save(`${safeCompanyName}-Proposal.pdf`);
     
+    // Log successful download for debugging
+    console.log("✅ Proposal document downloaded successfully");
+    
     toast({
       title: "Success",
       description: "Proposal generated and downloaded successfully",
     });
   } catch (error) {
     console.error("Error saving proposal document:", error);
+    
+    // Log detailed error for debugging
+    console.error("Detailed error information:", {
+      error: error instanceof Error ? error.message : String(error),
+      stack: error instanceof Error ? error.stack : undefined,
+      lead: lead.id
+    });
+    
     toast({
       title: "Error",
       description: `Failed to save proposal: ${error instanceof Error ? error.message : 'Unknown error'}`,

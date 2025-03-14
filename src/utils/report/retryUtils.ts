@@ -4,7 +4,6 @@ import { saveReportData } from "./databaseUtils";
 import { Lead } from "@/types/leads";
 import { jsPDF } from "jspdf";
 import { toast } from "@/hooks/use-toast";
-import { ReportGenerationResult } from "./types";
 import { verifyReportsBucket } from "./bucketUtils";
 
 /**
@@ -22,8 +21,19 @@ export async function saveReportToStorageWithRetry(
   let pdfUrl: string | null = null;
   let reportId: string | null = null;
   
-  // First, make sure the bucket exists
-  const bucketVerified = await verifyReportsBucket();
+  // First, make sure the bucket exists with multiple verification attempts
+  let bucketVerified = false;
+  let bucketAttempts = 0;
+  
+  while (!bucketVerified && bucketAttempts < 2) {
+    bucketVerified = await verifyReportsBucket();
+    if (!bucketVerified) {
+      console.log(`Bucket verification attempt ${bucketAttempts + 1} failed`);
+      bucketAttempts++;
+      await new Promise(resolve => setTimeout(resolve, 1000));
+    }
+  }
+  
   if (!bucketVerified) {
     console.error("Failed to verify or create reports bucket");
     if (isAdmin) {
@@ -43,7 +53,7 @@ export async function saveReportToStorageWithRetry(
     console.log(`Attempt ${attempts} of ${maxRetries} to save report...`);
     
     try {
-      // Save PDF to storage
+      // Save PDF to storage with progressively longer delays between retries
       pdfUrl = await savePDFToStorage(pdfDoc, fileName, isAdmin);
       
       if (!pdfUrl) {
@@ -77,8 +87,9 @@ export async function saveReportToStorageWithRetry(
         });
       }
       
-      // Wait briefly before retrying
-      await new Promise(resolve => setTimeout(resolve, 1000));
+      // Wait between retries with exponential backoff
+      const delayMs = Math.min(1000 * Math.pow(2, attempts - 1), 5000);
+      await new Promise(resolve => setTimeout(resolve, delayMs));
     }
   }
   

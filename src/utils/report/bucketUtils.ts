@@ -10,11 +10,24 @@ export async function verifyReportsBucket(): Promise<boolean> {
   try {
     console.log("Verifying reports bucket existence...");
     
-    // Improved bucket check using direct listBuckets method
-    const { data: buckets, error: listError } = await supabase.storage.listBuckets();
+    // First check if the bucket exists by attempting to list files
+    const { data: fileList, error: listError } = await supabase.storage
+      .from('reports')
+      .list('', { limit: 1 });
     
-    if (listError) {
-      console.error("Error listing buckets:", listError);
+    // If we can list files without error, the bucket exists
+    if (!listError) {
+      console.log("Reports bucket exists and is accessible");
+      return true;
+    }
+    
+    console.log("Reports bucket not found or not accessible, checking all buckets...");
+    
+    // If listing failed, check more directly with listBuckets
+    const { data: buckets, error: bucketsError } = await supabase.storage.listBuckets();
+    
+    if (bucketsError) {
+      console.error("Error listing buckets:", bucketsError);
       return false;
     }
     
@@ -40,6 +53,18 @@ export async function verifyReportsBucket(): Promise<boolean> {
     }
     
     console.log("Created 'reports' bucket successfully:", data);
+    
+    // Verify the creation by listing the bucket contents
+    const { error: verifyError } = await supabase.storage
+      .from('reports')
+      .list('', { limit: 1 });
+    
+    if (verifyError) {
+      console.error("Error verifying new bucket:", verifyError);
+      return false;
+    }
+    
+    console.log("Successfully verified new reports bucket");
     return true;
   } catch (error) {
     console.error("Error in verifyReportsBucket:", error);
@@ -57,7 +82,14 @@ export async function testStorageBucketConnectivity() {
     const { data: sessionData } = await supabase.auth.getSession();
     const isAuthenticated = !!sessionData.session;
     
-    // List buckets to check general storage access
+    // First try to directly access the reports bucket
+    const { data: reportsList, error: reportsError } = await supabase.storage
+      .from('reports')
+      .list('', { limit: 1 });
+      
+    const reportsAccessible = !reportsError;
+    
+    // List all buckets to check general storage access
     const { data: buckets, error: listError } = await supabase.storage.listBuckets();
     
     // Check if reports bucket exists
@@ -85,7 +117,8 @@ export async function testStorageBucketConnectivity() {
       authStatus: isAuthenticated,
       bucketExists: reportsBucketExists,
       storageAccessible: !listError,
-      error: listError,
+      reportsAccessible: reportsAccessible,
+      error: listError || reportsError,
       bucketList: buckets || []
     };
   } catch (error) {
@@ -95,6 +128,7 @@ export async function testStorageBucketConnectivity() {
       authStatus: false,
       bucketExists: false,
       storageAccessible: false,
+      reportsAccessible: false,
       error,
       bucketList: []
     };
