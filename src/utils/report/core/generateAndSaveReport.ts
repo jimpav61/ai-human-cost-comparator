@@ -19,11 +19,19 @@ export async function generateAndSaveReport(
       const bucketExists = await verifyReportsBucket();
       if (!bucketExists) {
         console.warn("Reports bucket could not be verified or created");
+        toast({
+          title: "Storage Warning",
+          description: "Cloud storage is not available. Your report will be downloaded only.",
+          variant: "destructive"
+        });
+      } else {
+        console.log("✅ Storage bucket verified and ready for saving");
       }
     }
     
     // Generate the PDF document
     const doc = generateReportPDF(lead);
+    console.log("✅ PDF document generated successfully");
     
     // Get a safe filename
     const safeFileName = getSafeFileName(lead);
@@ -31,11 +39,14 @@ export async function generateAndSaveReport(
     
     // If skipStorage is true, just return success without saving
     if (options.skipStorage) {
+      console.log("Storage skipped as requested");
       return {
         success: true,
         message: "Report generated successfully (storage skipped)",
       };
     }
+    
+    console.log("Attempting to save report to storage...");
     
     // Save the report with retry mechanism
     const maxRetries = options.retryCount || 3;
@@ -47,8 +58,12 @@ export async function generateAndSaveReport(
     );
     
     if (!result.reportId || !result.pdfUrl) {
+      console.error("Failed to save report after multiple attempts");
       throw new Error("Failed to save report after multiple attempts");
     }
+    
+    console.log("✅ Report saved successfully with ID:", result.reportId);
+    console.log("✅ Report URL:", result.pdfUrl);
     
     return {
       success: true,

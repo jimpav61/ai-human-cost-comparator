@@ -25,8 +25,15 @@ export async function saveReportToStorageWithRetry(
   const bucketVerified = await verifyReportsBucket();
   if (!bucketVerified) {
     console.error("Failed to verify or create reports bucket");
+    toast({
+      title: "Storage Error",
+      description: "Cloud storage is unavailable. Your report was downloaded locally only.",
+      variant: "destructive"
+    });
     return { reportId: null, pdfUrl: null };
   }
+  
+  console.log("✅ Storage bucket verified before retry attempt");
   
   while (attempts < maxRetries && !success) {
     attempts++;
@@ -37,15 +44,21 @@ export async function saveReportToStorageWithRetry(
       pdfUrl = await savePDFToStorage(pdfDoc, fileName);
       
       if (!pdfUrl) {
+        console.error("Failed to get PDF URL from storage on attempt", attempts);
         throw new Error("Failed to get PDF URL from storage");
       }
+      
+      console.log(`✅ PDF saved to storage on attempt ${attempts}, URL:`, pdfUrl);
       
       // Save report data to the database
       reportId = await saveReportData(lead, pdfUrl);
       
       if (!reportId) {
+        console.error("Failed to save report data to database on attempt", attempts);
         throw new Error("Failed to save report data to database");
       }
+      
+      console.log(`✅ Report data saved to database on attempt ${attempts}, ID:`, reportId);
       
       success = true;
       console.log("Report saved successfully:", { reportId, pdfUrl });
@@ -56,7 +69,7 @@ export async function saveReportToStorageWithRetry(
       if (attempts >= maxRetries) {
         toast({
           title: "Error Saving Report",
-          description: "We couldn't save your report. Please try again later.",
+          description: "We couldn't save your report to the cloud. Please try again later.",
           variant: "destructive",
         });
       }

@@ -19,8 +19,15 @@ export async function savePDFToStorage(pdfDoc: jsPDF, fileName: string): Promise
     const bucketExists = await verifyReportsBucket();
     if (!bucketExists) {
       console.error("Failed to verify or create reports bucket");
+      toast({
+        title: "Storage Error",
+        description: "Unable to access storage. Your report was downloaded locally but not saved to the cloud.",
+        variant: "destructive"
+      });
       return null;
     }
+    
+    console.log("✅ Reports bucket verified successfully");
     
     // First convert the PDF to a blob
     const pdfBlob = await convertPDFToBlob(pdfDoc);
@@ -43,10 +50,15 @@ export async function savePDFToStorage(pdfDoc: jsPDF, fileName: string): Promise
     
     if (error) {
       console.error("Error uploading PDF to storage:", error);
+      toast({
+        title: "Upload Failed",
+        description: "Your report was downloaded locally but could not be saved to the cloud.",
+        variant: "destructive"
+      });
       throw error;
     }
     
-    console.log("PDF successfully uploaded:", data);
+    console.log("✅ PDF successfully uploaded:", data);
     
     // Get the public URL
     const { data: urlData } = supabase.storage
@@ -66,7 +78,12 @@ export async function savePDFToStorage(pdfDoc: jsPDF, fileName: string): Promise
       console.log("Current files in bucket:", fileList);
       const savedFile = fileList.find(f => f.name === filePath);
       if (savedFile) {
-        console.log("Confirmed file was saved to bucket:", savedFile);
+        console.log("✅ Confirmed file was saved to bucket:", savedFile);
+        toast({
+          title: "Report Saved",
+          description: "Your report was successfully saved to the cloud.",
+          variant: "default"
+        });
       } else {
         console.warn("File doesn't appear in bucket listing yet. This could be due to eventual consistency.");
       }
