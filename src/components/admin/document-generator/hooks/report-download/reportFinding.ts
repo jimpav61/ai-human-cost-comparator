@@ -4,6 +4,7 @@ import { toast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 import { generateAndUploadPDF } from "./pdfGeneration";
 import { getSafeFileName } from "@/utils/report/validation";
+import { verifyReportsBucket } from "@/utils/report/bucketUtils";
 
 // Find and download a report for a given lead
 export async function findAndDownloadReport(lead: Lead, setIsLoading: (loading: boolean) => void) {
@@ -16,6 +17,20 @@ export async function findAndDownloadReport(lead: Lead, setIsLoading: (loading: 
     if (!lead.id) {
       console.error("Missing lead ID, cannot search for reports");
       throw new Error("Missing lead ID");
+    }
+
+    // First, make sure the reports bucket exists
+    const bucketExists = await verifyReportsBucket();
+    if (!bucketExists) {
+      console.error("Reports bucket doesn't exist or can't be accessed");
+      toast({
+        title: "Storage Error",
+        description: "The reports storage is not properly configured. Please contact support.",
+        variant: "destructive",
+        duration: 5000,
+      });
+      setIsLoading(false);
+      return;
     }
 
     // Get exact lead ID for consistent searching
@@ -44,26 +59,50 @@ export async function findAndDownloadReport(lead: Lead, setIsLoading: (loading: 
       console.log("Looking for PDF file with name:", reportFilePath);
       
       // Get the file directly using the report UUID
-      const { data: urlData } = await supabase.storage
+      const { data: urlData, error: urlError } = await supabase.storage
         .from('reports')
         .getPublicUrl(reportFilePath);
         
       if (urlData?.publicUrl) {
         console.log("Found PDF using report UUID. Downloading from URL:", urlData.publicUrl);
         
-        // Create download link
-        const link = document.createElement('a');
-        link.href = urlData.publicUrl;
-        link.download = `${getSafeFileName(lead)}-ChatSites-ROI-Report.pdf`;
-        document.body.appendChild(link);
-        link.click();
-        document.body.removeChild(link);
-        
-        toast({
-          title: "Report Downloaded",
-          description: "The report has been successfully downloaded.",
-          duration: 3000,
-        });
+        // Verify the URL is accessible before creating the download link
+        try {
+          const response = await fetch(urlData.publicUrl, { method: 'HEAD' });
+          if (!response.ok) {
+            console.log(`Report exists in database but file not found in storage. Status: ${response.status}`);
+            console.log("Generating a new PDF...");
+            await generateAndUploadPDF(reports[0], lead);
+            setIsLoading(false);
+            return;
+          }
+          
+          // Create download link
+          const link = document.createElement('a');
+          link.href = urlData.publicUrl;
+          link.download = `${getSafeFileName(lead)}-ChatSites-ROI-Report.pdf`;
+          document.body.appendChild(link);
+          link.click();
+          document.body.removeChild(link);
+          
+          toast({
+            title: "Report Downloaded",
+            description: "The report has been successfully downloaded.",
+            duration: 3000,
+          });
+          setIsLoading(false);
+          return;
+        } catch (fetchError) {
+          console.error("Error verifying PDF URL accessibility:", fetchError);
+          console.log("Attempting to regenerate the PDF...");
+          await generateAndUploadPDF(reports[0], lead);
+          setIsLoading(false);
+          return;
+        }
+      } else if (urlError) {
+        console.error("Error getting public URL:", urlError);
+        console.log("No file found with report UUID. Trying to generate a new PDF.");
+        await generateAndUploadPDF(reports[0], lead);
         setIsLoading(false);
         return;
       } else {
