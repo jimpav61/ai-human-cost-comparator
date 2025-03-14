@@ -40,32 +40,40 @@ export const useSavedReports = (leadId?: string) => {
         console.log("📊 REPORT FINDER: Checking storage files:", storageFiles.map(f => f.name));
         
         // Look for exact lead ID match in filenames
-        const matchingFile = storageFiles.find(file => file.name.includes(leadId));
+        const matchingFiles = storageFiles.filter(file => file.name.includes(leadId));
         
-        if (matchingFile) {
-          console.log(`📊 REPORT FINDER: Found exact match in storage: ${matchingFile.name}`);
+        if (matchingFiles.length > 0) {
+          console.log(`📊 REPORT FINDER: Found ${matchingFiles.length} matches in storage`);
           
-          // Get the public URL
-          const { data: urlData } = await supabase.storage
-            .from('reports')
-            .getPublicUrl(matchingFile.name);
-            
-          if (urlData?.publicUrl) {
-            // Create a report object from the file
-            const storageReport: SavedReport = {
-              id: matchingFile.name.replace('.pdf', ''),
-              company_name: "Report from Storage",
-              contact_name: "Unknown",
-              email: "",
-              phone_number: "",
-              report_date: new Date().toISOString(),
-              calculator_inputs: {},
-              calculator_results: {},
-              lead_id: leadId,
-              pdf_url: urlData.publicUrl
-            };
-            
-            setReports([storageReport]);
+          const reportPromises = matchingFiles.map(async (file) => {
+            // Get the public URL
+            const { data: urlData } = await supabase.storage
+              .from('reports')
+              .getPublicUrl(file.name);
+              
+            if (urlData?.publicUrl) {
+              // Create a report object from the file
+              return {
+                id: file.name.replace('.pdf', ''),
+                company_name: "Report from Storage",
+                contact_name: "Unknown",
+                email: "",
+                phone_number: "",
+                report_date: new Date().toISOString(),
+                calculator_inputs: {},
+                calculator_results: {},
+                lead_id: leadId,
+                pdf_url: urlData.publicUrl
+              } as SavedReport;
+            }
+            return null;
+          });
+          
+          const foundReports = (await Promise.all(reportPromises)).filter(Boolean) as SavedReport[];
+          
+          if (foundReports.length > 0) {
+            console.log(`📊 REPORT FINDER: Successfully processed ${foundReports.length} reports`);
+            setReports(foundReports);
             setIsLoading(false);
             return;
           }
@@ -85,19 +93,24 @@ export const useSavedReports = (leadId?: string) => {
         console.log(`📊 REPORT FINDER: Found ${leadIdMatches.length} reports by lead_id match`);
         
         // For each database report, check if there's a corresponding PDF file
-        for (const report of leadIdMatches) {
+        const reportPromises = leadIdMatches.map(async (report) => {
           const pdfFileName = `${report.id}.pdf`;
           
-          const { data: fileData, error: fileError } = await supabase.storage
+          const { data: fileData } = await supabase.storage
             .from('reports')
             .getPublicUrl(pdfFileName);
             
-          if (!fileError && fileData?.publicUrl) {
-            report.pdf_url = fileData.publicUrl;
+          if (fileData?.publicUrl) {
+            return {
+              ...report,
+              pdf_url: fileData.publicUrl
+            } as SavedReport;
           }
-        }
+          return report as SavedReport;
+        });
         
-        setReports(leadIdMatches);
+        const processedReports = await Promise.all(reportPromises);
+        setReports(processedReports);
         setIsLoading(false);
         return;
       }

@@ -28,11 +28,16 @@ export async function findAndDownloadReport(lead: Lead, setIsLoading: (loading: 
     if (storageFiles && storageFiles.length > 0) {
       console.log("All files in reports bucket:", storageFiles.map(f => f.name));
       
-      // Look for any file that contains the lead ID
-      const matchingFile = storageFiles.find(file => file.name.includes(lead.id));
+      // IMPROVED: First look for direct lead ID exact matches
+      const directMatches = storageFiles.filter(file => 
+        file.name.includes(lead.id)
+      );
       
-      if (matchingFile) {
-        console.log("Found matching file by lead ID:", matchingFile.name);
+      if (directMatches.length > 0) {
+        console.log("Found direct lead ID matches:", directMatches.map(f => f.name));
+        
+        // Use the first match (most recent if sorted by filename)
+        const matchingFile = directMatches[0];
         
         // Get the public URL
         const { data: urlData } = await supabase.storage
@@ -58,18 +63,25 @@ export async function findAndDownloadReport(lead: Lead, setIsLoading: (loading: 
           setIsLoading(false);
           return;
         }
-      } else {
-        // If no direct ID match, try company name matching as fallback
+      } 
+      
+      // Second attempt: If no direct ID match, try company name matching as fallback
+      if (lead.company_name) {
         console.log("No exact lead ID match, trying company name fallback...");
-        const companyNameMatches = lead.company_name ? storageFiles.filter(file => 
-          file.name.toLowerCase().includes(lead.company_name.toLowerCase().replace(/[^a-z0-9]/gi, ''))
-        ) : [];
         
-        if (companyNameMatches.length > 0) {
-          console.log("Found potential company name matches:", companyNameMatches.map(f => f.name));
+        // Normalize company name for comparison (remove spaces and special chars)
+        const normalizedCompanyName = lead.company_name.toLowerCase().replace(/[^a-z0-9]/gi, '');
+        
+        const companyMatches = storageFiles.filter(file => {
+          const fileName = file.name.toLowerCase();
+          return fileName.includes(normalizedCompanyName);
+        });
+        
+        if (companyMatches.length > 0) {
+          console.log("Found potential company name matches:", companyMatches.map(f => f.name));
           
           // Use the most recent file (assuming filename sorting works)
-          const mostRecentMatch = companyNameMatches[0];
+          const mostRecentMatch = companyMatches[0];
           
           // Get the public URL
           const { data: urlData } = await supabase.storage
