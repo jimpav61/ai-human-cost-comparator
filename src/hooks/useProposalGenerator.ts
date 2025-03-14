@@ -26,16 +26,25 @@ export function useProposalGenerator() {
       const proposalData = generateProposal(lead);
 
       // Call the Supabase Edge Function to generate PDF
+      console.log('Calling generate-proposal edge function with lead data...');
       const { data, error } = await supabase.functions.invoke('generate-proposal', {
-        body: { lead: { ...lead, proposalData } }
+        body: { 
+          lead: { ...lead, proposalData },
+          mode: "preview",
+          returnContent: false
+        }
       });
 
-      if (error) throw error;
+      if (error) {
+        console.error('Edge function error:', error);
+        throw error;
+      }
 
       // Verify the data structure returned from the edge function
       console.log('Response from generate-proposal edge function:', data);
       
       if (!data || !data.pdf) {
+        console.error('Invalid response structure:', data);
         throw new Error('Invalid response from proposal generator');
       }
 

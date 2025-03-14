@@ -27,6 +27,7 @@ export async function handlePreviewRequest(lead: any, shouldReturnContent: boole
       console.log("Returning raw proposal content as requested");
       return new Response(
         JSON.stringify({
+          success: true,
           proposalContent: pdfContent,
           title: `Proposal for ${companyName}`,
           notes: `Generated proposal for ${companyName} on ${new Date().toLocaleString()}`,
@@ -43,42 +44,23 @@ export async function handlePreviewRequest(lead: any, shouldReturnContent: boole
     }
     
     // For client.invoke() method, return base64 encoded PDF
-    const isInvokeMethod = true; // Default to safer option
-    console.log("Is using invoke method:", isInvokeMethod);
-    
-    if (isInvokeMethod) {
-      console.log("Returning base64 encoded PDF for invoke method");
-      // Convert to base64 for easy transmission through JSON
-      const base64Content = btoa(pdfContent);
-      return new Response(
-        JSON.stringify({
-          success: true,
-          pdf: base64Content,
-          message: "Proposal generated successfully"
-        }),
-        {
-          headers: {
-            ...corsHeaders,
-            "Content-Type": "application/json",
-          },
-          status: 200,
-        }
-      );
-    } else {
-      // For direct fetch, return the PDF as binary data
-      console.log("Returning binary PDF for direct fetch");
-      return new Response(
-        pdfContent,
-        {
-          headers: {
-            ...corsHeaders,
-            "Content-Type": "application/pdf",
-            "Content-Disposition": `attachment; filename="proposal-${safeCompanyName}.pdf"`,
-          },
-          status: 200,
-        }
-      );
-    }
+    console.log("Returning base64 encoded PDF for invoke method");
+    // Convert string content to base64 for easy transmission through JSON
+    const base64Content = btoa(pdfContent);
+    return new Response(
+      JSON.stringify({
+        success: true,
+        pdf: base64Content,
+        message: "Proposal generated successfully"
+      }),
+      {
+        headers: {
+          ...corsHeaders,
+          "Content-Type": "application/json",
+        },
+        status: 200,
+      }
+    );
   } catch (pdfError) {
     console.error("Error generating PDF:", pdfError);
     return new Response(
