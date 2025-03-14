@@ -4,6 +4,7 @@ import { Lead } from "@/types/leads";
 import { toast } from "@/hooks/use-toast";
 import { findOrGenerateReport } from "./report-download/reportFinding";
 import { testStorageBucketConnectivity } from "@/utils/report/storageUtils";
+import { supabase } from "@/integrations/supabase/client";
 
 export const useReportDownload = () => {
   const [isLoading, setIsLoading] = useState(false);
@@ -19,6 +20,24 @@ export const useReportDownload = () => {
       // Run a storage diagnostic check before attempting to find/generate the report
       const diagnosticResult = await testStorageBucketConnectivity();
       console.log("Storage diagnostic before report generation:", diagnosticResult);
+      
+      // Verify that the lead exists in the database
+      const { data: existingLead, error: checkError } = await supabase
+        .from('leads')
+        .select('id')
+        .eq('id', lead.id)
+        .maybeSingle();
+      
+      if (checkError || !existingLead) {
+        console.error("Lead doesn't exist in database:", checkError);
+        toast({
+          title: "Error",
+          description: "Lead not found in database. Cannot generate report.",
+          variant: "destructive"
+        });
+        setIsLoading(false);
+        return;
+      }
       
       // Proceed with existing report finding/generation
       await findOrGenerateReport(lead, setIsLoading);

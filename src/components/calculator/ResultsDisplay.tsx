@@ -8,6 +8,7 @@ import type { LeadData } from './types';
 import { generateAndDownloadReport } from '@/utils/report/generateReport';
 import { Lead } from '@/types/leads';
 import { toast } from '@/components/ui/use-toast';
+import { supabase } from '@/integrations/supabase/client';
 
 interface ResultsDisplayProps {
   results: CalculationResults;
@@ -25,6 +26,7 @@ export const ResultsDisplay: React.FC<ResultsDisplayProps> = ({
   leadData,
 }) => {
   const [showDetails, setShowDetails] = useState(false);
+  const [isDownloading, setIsDownloading] = useState(false);
   const pricingDetails = calculatePricingDetails(inputs);
   const tierDisplayName = getTierDisplayName(inputs.aiTier);
   const aiTypeDisplay = getAITypeDisplay(inputs.aiType);
@@ -56,13 +58,62 @@ export const ResultsDisplay: React.FC<ResultsDisplayProps> = ({
     form_completed: true
   };
 
-  const handleDownloadReport = () => {
+  const handleDownloadReport = async () => {
     try {
+      setIsDownloading(true);
       console.log("Downloading report with lead ID:", leadForReport.id);
       console.log("Full lead object for report:", JSON.stringify(leadForReport));
-      generateAndDownloadReport(leadForReport);
+      
+      // First ensure the lead exists in the database
+      const { data: existingLead, error: checkError } = await supabase
+        .from('leads')
+        .select('id')
+        .eq('id', leadForReport.id)
+        .single();
+      
+      if (checkError || !existingLead) {
+        console.log("Lead doesn't exist in database yet, creating it first");
+        
+        // Create the lead first to ensure it exists
+        const { data: newLead, error: createError } = await supabase
+          .from('leads')
+          .insert([{
+            id: leadForReport.id,
+            name: leadForReport.name,
+            company_name: leadForReport.company_name,
+            email: leadForReport.email,
+            phone_number: leadForReport.phone_number,
+            website: leadForReport.website,
+            industry: leadForReport.industry,
+            employee_count: leadForReport.employee_count,
+            calculator_inputs: leadForReport.calculator_inputs,
+            calculator_results: leadForReport.calculator_results,
+            proposal_sent: false,
+            form_completed: true
+          }])
+          .select();
+        
+        if (createError) {
+          console.error("Error creating lead:", createError);
+          throw new Error("Failed to create lead before generating report");
+        }
+        
+        console.log("Lead created successfully:", newLead);
+      }
+      
+      // Now generate and download the report
+      await generateAndDownloadReport(leadForReport);
+      setIsDownloading(false);
+      
+      toast({
+        title: "Report Downloaded",
+        description: "Your ROI report has been successfully downloaded.",
+        variant: "default"
+      });
     } catch (error) {
       console.error("Error downloading report:", error);
+      setIsDownloading(false);
+      
       toast({
         title: "Error",
         description: "Failed to download report. Please try again.",
@@ -85,9 +136,10 @@ export const ResultsDisplay: React.FC<ResultsDisplayProps> = ({
         <div className="mt-4">
           <button
             onClick={handleDownloadReport}
-            className="w-full bg-brand-600 hover:bg-brand-700 text-white font-medium py-3 px-4 rounded-lg transition-colors duration-200"
+            disabled={isDownloading}
+            className="w-full bg-brand-600 hover:bg-brand-700 text-white font-medium py-3 px-4 rounded-lg transition-colors duration-200 disabled:opacity-50"
           >
-            Download Detailed Report
+            {isDownloading ? "Processing..." : "Download Detailed Report"}
           </button>
         </div>
       )}

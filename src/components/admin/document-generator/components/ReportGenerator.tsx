@@ -40,6 +40,16 @@ export const ReportGenerator = ({ lead }: ReportGeneratorProps) => {
         console.log("Storage diagnostic check passed, proceeding with report download");
       }
       
+      // Ensure the lead exists in the database before proceeding
+      if (!lead.id) {
+        toast({
+          title: "Error", 
+          description: "Lead ID is missing or invalid",
+          variant: "destructive"
+        });
+        return;
+      }
+      
       // Proceed with report download
       await handleDownloadReport(lead);
     } catch (error) {

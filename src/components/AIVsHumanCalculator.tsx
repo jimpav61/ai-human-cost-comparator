@@ -75,42 +75,14 @@ export const AIVsHumanCalculator: React.FC<AIVsHumanCalculatorProps> = ({ leadDa
   const handleGenerateReport = async () => {
     try {
       // Simply mark the report as generated for UI purposes
-      // Without attempting to save to the proposal_revisions table
       setReportGenerated(true);
       toast({
         title: "Report Generated",
-        description: "A detailed report has been prepared for you to review.",
+        description: "A detailed report has been prepared for you to review and download.",
       });
       
-      // Optional: Still save to generated_reports table if it's useful
-      const reportId = crypto.randomUUID();
-      
-      const reportData = {
-        id: reportId,
-        contact_name: leadData.name,
-        company_name: leadData.companyName,
-        email: leadData.email,
-        phone_number: leadData.phoneNumber || null,
-        calculator_inputs: toJson(calculatorInputs),
-        calculator_results: toJson(calculationResults),
-        report_date: new Date().toISOString()
-      };
-      
-      console.log("Saving report data to database:", reportData);
-      
-      try {
-        const { error } = await supabase
-          .from('generated_reports')
-          .insert(reportData);
-
-        if (error) {
-          console.error('Error saving report to database:', error);
-          // Don't throw, just log - allow the user experience to continue
-        }
-      } catch (dbError) {
-        console.error('Database operation error:', dbError);
-        // Don't throw, just log - allow the user experience to continue
-      }
+      // We're not creating a report in the database here anymore
+      // This will happen only when the user clicks the download button
     } catch (error) {
       console.error('Error handling report generation:', error);
       toast({

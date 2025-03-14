@@ -92,9 +92,35 @@ export const findOrGenerateReport = async (lead: Lead, setIsLoading: (isLoading:
     if (lead.calculator_results) {
       console.log('No reports found, generating new report from lead data');
       
+      // First, create a new report record in the database
+      const reportId = crypto.randomUUID();
+      
+      const reportData = {
+        id: reportId,
+        lead_id: lead.id,
+        contact_name: lead.name,
+        company_name: lead.company_name,
+        email: lead.email,
+        phone_number: lead.phone_number || null,
+        calculator_inputs: lead.calculator_inputs,
+        calculator_results: lead.calculator_results,
+        report_date: new Date().toISOString()
+      };
+      
+      console.log("Creating new report in database:", reportData);
+      
+      const { data, error } = await supabase
+        .from('generated_reports')
+        .insert(reportData);
+      
+      if (error) {
+        console.error('Error creating report in database:', error);
+        // Continue with report generation even if saving to database fails
+      }
+      
       // Create a temporary report object
       const tempReport = {
-        id: lead.id,
+        id: reportId,
         lead_id: lead.id,
         company_name: lead.company_name,
         contact_name: lead.name,
