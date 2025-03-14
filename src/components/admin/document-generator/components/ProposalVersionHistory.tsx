@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
@@ -10,7 +9,7 @@ import { useProposalRevisions, ProposalRevision } from '../hooks/useProposalRevi
 import { Loader2, FileDown, Clock, Calendar } from "lucide-react";
 import { saveAs } from 'file-saver';
 import { toast } from "@/hooks/use-toast";
-import { getSafeFileName } from "@/utils/report/validation";
+import { getSafeFileName, getSafeFileNameWithOptions } from "@/utils/report/validation";
 
 interface ProposalVersionHistoryProps {
   lead: Lead;
@@ -28,7 +27,6 @@ export const ProposalVersionHistory = ({ lead, isOpen, onClose }: ProposalVersio
     isLoading 
   } = useProposalRevisions();
   
-  // Load revisions when dialog opens
   useEffect(() => {
     if (isOpen && lead?.id) {
       loadRevisions();
@@ -56,7 +54,6 @@ export const ProposalVersionHistory = ({ lead, isOpen, onClose }: ProposalVersio
       setGeneratingPdf(revision.id);
       console.log("Starting download of revision:", revision.id);
       
-      // Generate PDF from the revision
       const pdfContent = await generatePdfFromRevision(revision);
       
       if (!pdfContent) {
@@ -66,10 +63,8 @@ export const ProposalVersionHistory = ({ lead, isOpen, onClose }: ProposalVersio
       console.log("PDF content received, length:", pdfContent.length);
       console.log("PDF content starts with:", typeof pdfContent === 'string' ? pdfContent.substring(0, 20) : 'Not a string');
       
-      // Convert content to blob based on content type
       let pdfBlob;
       if (typeof pdfContent === 'string') {
-        // Check if it's a base64 string
         if (pdfContent.startsWith('data:application/pdf;base64,')) {
           console.log("Converting base64 to blob");
           const base64Data = pdfContent.split(',')[1];
@@ -88,7 +83,6 @@ export const ProposalVersionHistory = ({ lead, isOpen, onClose }: ProposalVersio
           pdfBlob = new Blob(byteArrays, { type: 'application/pdf' });
         } else {
           console.log("Treating as base64 PDF content");
-          // Assume it's a base64 string without the data URL prefix
           try {
             const byteCharacters = atob(pdfContent);
             const byteArrays = [];
@@ -105,7 +99,6 @@ export const ProposalVersionHistory = ({ lead, isOpen, onClose }: ProposalVersio
             pdfBlob = new Blob(byteArrays, { type: 'application/pdf' });
           } catch (e) {
             console.error("Error decoding base64:", e);
-            // If fails, try as raw content
             pdfBlob = new Blob([pdfContent], { type: 'application/pdf' });
           }
         }
@@ -113,14 +106,11 @@ export const ProposalVersionHistory = ({ lead, isOpen, onClose }: ProposalVersio
         throw new Error('Invalid PDF content type');
       }
       
-      // Generate filename
-      const companyName = lead.company_name || 'Client';
-      const safeCompanyName = getSafeFileName(companyName, { maxLength: 40, replaceChar: '-' });
+      const safeCompanyName = getSafeFileName(lead);
       const filename = `${safeCompanyName}_v${revision.version_number}.pdf`;
       
       console.log("Saving PDF as:", filename);
       
-      // Save the file
       saveAs(pdfBlob, filename);
       
       toast({
@@ -141,7 +131,6 @@ export const ProposalVersionHistory = ({ lead, isOpen, onClose }: ProposalVersio
     }
   };
   
-  // Format date for display
   const formatDate = (dateString: string) => {
     const date = new Date(dateString);
     return date.toLocaleDateString() + ' ' + date.toLocaleTimeString();
