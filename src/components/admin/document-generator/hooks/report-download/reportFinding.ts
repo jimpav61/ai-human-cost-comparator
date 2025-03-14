@@ -40,7 +40,7 @@ export async function findAndDownloadReport(lead: Lead, setIsLoading: (loading: 
     try {
       const { data: storageFiles, error: storageError } = await supabase
         .storage
-        .from('reports')
+        .from('generated_reports')
         .list();
         
       if (storageError) {
@@ -59,7 +59,7 @@ export async function findAndDownloadReport(lead: Lead, setIsLoading: (loading: 
           
           // Get the public URL
           const { data: urlData } = await supabase.storage
-            .from('reports')
+            .from('generated_reports')
             .getPublicUrl(matchingFile.name);
             
           if (urlData?.publicUrl) {
@@ -88,61 +88,17 @@ export async function findAndDownloadReport(lead: Lead, setIsLoading: (loading: 
       console.error("Error checking storage:", storageCheckError);
     }
     
-    // Final attempt: Generate new report from the lead data
-    console.log("No existing report found, generating new report from lead data");
+    // If no report found, notify the user that they need to generate one first
+    console.log("No existing report found, notifying user to generate one first");
+    setIsLoading(false);
     
-    // Verify the lead data contains calculator results
-    if (!lead.calculator_results || !lead.calculator_inputs) {
-      throw new Error("Lead does not have calculator results. Please add calculator data first.");
-    }
+    toast({
+      title: "No Report Found",
+      description: "There is no existing report for this lead. Please generate a report from the calculator data first.",
+      variant: "destructive",
+      duration: 3000,
+    });
     
-    // Create a new report record in the database
-    const safeCompanyName = getSafeFileName(lead);
-    // Use a proper UUID for the reportId instead of a random string
-    const reportId = crypto.randomUUID();
-    
-    console.log("Creating new report in database with ID:", reportId);
-    
-    // Create insertion object without explicit 'id' field to let Supabase handle it
-    const newReportData = {
-      lead_id: lead.id,
-      company_name: lead.company_name,
-      contact_name: lead.name,
-      email: lead.email,
-      phone_number: lead.phone_number,
-      calculator_results: lead.calculator_results,
-      calculator_inputs: lead.calculator_inputs,
-      report_date: new Date().toISOString()
-    };
-    
-    const { data: insertedReport, error: insertError } = await supabase
-      .from('generated_reports')
-      .insert(newReportData)
-      .select('*')
-      .single();
-      
-    if (insertError) {
-      console.error("Error creating report record:", insertError);
-      console.log("Continuing with report generation despite record creation error");
-    }
-    
-    // Use the inserted report if available, otherwise create a new one
-    const reportToUse = insertedReport || {
-      id: reportId,
-      lead_id: lead.id,
-      company_name: lead.company_name,
-      contact_name: lead.name,
-      email: lead.email,
-      phone_number: lead.phone_number,
-      calculator_results: lead.calculator_results,
-      calculator_inputs: lead.calculator_inputs
-    };
-    
-    // Generate the PDF with the lead data - ensure we pass the full report data
-    console.log("Generating PDF from lead data");
-    await generateAndUploadPDF(reportToUse, lead);
-    
-    console.log("Successfully generated and downloaded report");
     console.log("---------- ADMIN REPORT DOWNLOAD ATTEMPT ENDED ----------");
     
   } catch (error) {

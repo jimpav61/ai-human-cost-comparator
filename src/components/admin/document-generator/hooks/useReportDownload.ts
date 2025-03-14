@@ -19,11 +19,12 @@ export const useReportDownload = () => {
         title: "Error",
         description: error instanceof Error 
           ? error.message 
-          : "Failed to download report.",
+          : "Failed to download report. No report exists for this lead.",
         variant: "destructive",
       });
       setIsLoading(false);
     } finally {
+      setIsLoading(false);
       console.log("---------- ADMIN REPORT DOWNLOAD ATTEMPT ENDED ----------");
     }
   };
