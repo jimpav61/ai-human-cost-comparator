@@ -6,6 +6,8 @@ import { escapePdfText } from "../pdf-utils.ts";
  * Generate the next steps page content for the proposal PDF
  */
 export function generateNextStepsPageContent(data: ProposalData): string {
+  console.log("Generating next steps page for", data.companyName);
+  
   const {
     brandRed,
     companyName

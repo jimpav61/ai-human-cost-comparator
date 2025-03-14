@@ -52,11 +52,14 @@ export async function generateProposalFromSavedData(leadId: string) {
     console.log("Lead data fetched and enhanced successfully:");
     console.log("- ID:", enhancedLead.id);
     console.log("- Company:", enhancedLead.company_name);
-    console.log("- Calculator results available:", !!enhancedLead.calculator_results);
-    console.log("- Calculator results:", JSON.stringify(enhancedLead.calculator_results).substring(0, 100) + "...");
     
-    // Call the Edge Function to generate the proposal
-    const { data: proposalData, error: proposalError } = await supabase.functions.invoke(
+    // Use a timeout to ensure we don't hang forever
+    const timeoutPromise = new Promise((_, reject) => {
+      setTimeout(() => reject(new Error("Proposal generation timed out")), 30000);
+    });
+    
+    // Create the function invocation promise
+    const functionPromise = supabase.functions.invoke(
       "generate-proposal",
       {
         body: {
@@ -67,6 +70,12 @@ export async function generateProposalFromSavedData(leadId: string) {
         }
       }
     );
+    
+    // Race the function call against the timeout
+    const { data: proposalData, error: proposalError } = await Promise.race([
+      functionPromise,
+      timeoutPromise
+    ]) as any;
     
     if (proposalError) {
       console.error("Error from edge function:", proposalError);
@@ -97,9 +106,17 @@ export async function generateProposalFromSavedData(leadId: string) {
     console.error("Error in generateProposalFromSavedData:", error);
     
     // Format the error message for better user feedback
-    const errorMessage = error instanceof Error 
-      ? error.message 
-      : "Unknown error generating proposal";
+    let errorMessage = "Unknown error generating proposal";
+    
+    if (error instanceof Error) {
+      if (error.message.includes("Failed to fetch") || 
+          error.message.includes("NetworkError") || 
+          error.message.includes("timed out")) {
+        errorMessage = "Failed to connect to the Edge Function. Please check your network connection and try again.";
+      } else {
+        errorMessage = error.message;
+      }
+    }
     
     // Show toast notification
     toast({
@@ -109,6 +126,6 @@ export async function generateProposalFromSavedData(leadId: string) {
     });
     
     // Rethrow for upstream handling
-    throw error;
+    throw new Error(errorMessage);
   }
 }

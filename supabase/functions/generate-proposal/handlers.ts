@@ -11,6 +11,7 @@ export async function handleProposalGeneration(req: Request): Promise<Response> 
     const corsHeaders = {
       'Access-Control-Allow-Origin': '*',
       'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
+      'Access-Control-Allow-Methods': 'POST, OPTIONS',
     };
     
     // Parse request body
@@ -74,6 +75,7 @@ export async function handleProposalGeneration(req: Request): Promise<Response> 
           'Content-Type': 'application/json',
           'Access-Control-Allow-Origin': '*',
           'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
+          'Access-Control-Allow-Methods': 'POST, OPTIONS',
         }
       }
     );

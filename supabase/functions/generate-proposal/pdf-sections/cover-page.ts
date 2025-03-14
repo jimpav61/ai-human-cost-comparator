@@ -6,6 +6,13 @@ import { escapePdfText } from "../pdf-utils.ts";
  * Generate the cover page content for the proposal PDF
  */
 export function generateCoverPageContent(data: ProposalData): string {
+  console.log("Generating cover page with data:", { 
+    companyName: data.companyName,
+    contactName: data.contactName,
+    tierName: data.tierName,
+    formattedDate: data.formattedDate
+  });
+  
   const {
     brandRed,
     companyName,
