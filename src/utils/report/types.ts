@@ -7,7 +7,7 @@ export interface ReportGenerationResult {
   message: string;
   reportId?: string;
   pdfUrl?: string;
-  pdfDoc?: jsPDF; // Add this property to fix the type error
+  pdfDoc?: jsPDF;
 }
 
 export interface ReportData {
