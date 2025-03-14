@@ -47,6 +47,7 @@ export async function generateAndSaveReport(
       return {
         success: true,
         message: "Report generated successfully (storage skipped)",
+        pdfDoc: doc
       };
     }
     
