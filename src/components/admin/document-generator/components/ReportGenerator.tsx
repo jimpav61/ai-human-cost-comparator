@@ -1,8 +1,9 @@
+
 import { Lead } from "@/types/leads";
-import { useReportDownload } from "@/hooks/useReportDownload";
+import { useReportDownload } from "../hooks/useReportDownload";
 import { toast } from "@/hooks/use-toast";
 import { FileSpreadsheet } from "lucide-react";
-import { DownloadButton } from "@/components/ui/download-button";
+import { Button } from "@/components/ui/button";
 import { testStorageBucketConnectivity } from "@/utils/report/storageUtils";
 
 interface ReportGeneratorProps {
@@ -53,15 +54,14 @@ export const ReportGenerator = ({ lead }: ReportGeneratorProps) => {
 
   return (
     <div className="space-y-4">
-      <DownloadButton
-        hasDownloaded={false}
-        label="Generate ROI Report"
-        downloadedLabel="Download ROI Report"
-        icon={<FileSpreadsheet className="h-4 w-4 mr-2" />}
+      <Button
+        disabled={isLoading}
         onClick={handleGenerateReport}
         className="bg-primary text-white px-4 py-2 rounded disabled:opacity-50 min-w-[200px]"
-        // Remove the loading prop as it doesn't exist on DownloadButtonProps
-      />
+      >
+        <FileSpreadsheet className="h-4 w-4 mr-2" />
+        {isLoading ? "Generating..." : "Generate ROI Report"}
+      </Button>
     </div>
   );
 };
