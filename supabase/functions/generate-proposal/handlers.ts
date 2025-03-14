@@ -17,7 +17,17 @@ export async function handlePreviewRequest(lead: any, shouldReturnContent: boole
     
     // Do not clone the lead - use the original data exactly as received
     console.log("Using exact lead data for proposal generation (no cloning)");
-    console.log("Lead calculator_results for PDF generation:", JSON.stringify(lead.calculator_results, null, 2));
+    
+    // Enhanced debugging
+    if (debug) {
+      console.log("LEAD DATA FOR PDF GENERATION:");
+      console.log("- company_name:", lead.company_name);
+      console.log("- calculator_results sample:", JSON.stringify({
+        humanCostMonthly: lead.calculator_results.humanCostMonthly,
+        aiCostMonthly: lead.calculator_results.aiCostMonthly,
+        monthlySavings: lead.calculator_results.monthlySavings
+      }, null, 2));
+    }
     
     // Create a professional multi-page proposal PDF with actual lead data
     const pdfContent = generateProfessionalProposal(lead);
@@ -54,43 +64,34 @@ export async function handlePreviewRequest(lead: any, shouldReturnContent: boole
       );
     }
     
-    // For client.invoke() method, return base64 encoded PDF
-    console.log("Returning base64 encoded PDF for invoke method");
+    // For client.invoke() method, convert raw PDF to base64
+    console.log("Converting raw PDF to base64 for response");
     
-    // Check if content already starts with PDF header
-    let base64Content;
-    if (pdfContent.startsWith('%PDF-')) {
-      console.log("Content is a raw PDF - encoding to base64");
-      // Convert raw PDF to base64
-      const encoder = new TextEncoder();
-      const pdfData = encoder.encode(pdfContent);
-      base64Content = btoa(String.fromCharCode(...new Uint8Array(pdfData)));
-      
-      if (debug) {
-        console.log("Base64 encoding details:");
-        console.log("- Original content length:", pdfContent.length);
-        console.log("- Encoded content length:", base64Content.length);
-        console.log("- First 30 chars of encoded content:", base64Content.substring(0, 30));
-      }
-    } else {
-      // Already encoded or in another format
-      console.log("Content may already be encoded, using as is");
-      base64Content = pdfContent;
-      
-      if (debug) {
-        console.log("Using content as-is:");
-        console.log("- Content format check:", pdfContent.substring(0, 20));
-      }
+    // Check if content is a valid PDF
+    if (!pdfContent.startsWith('%PDF-')) {
+      console.error("Generated content is not a valid PDF");
+      throw new Error("Failed to generate a valid PDF document");
+    }
+    
+    // Convert raw PDF to base64
+    const encoder = new TextEncoder();
+    const pdfData = encoder.encode(pdfContent);
+    const base64Content = btoa(String.fromCharCode(...new Uint8Array(pdfData)));
+    
+    if (debug) {
+      console.log("Base64 encoding details:");
+      console.log("- Original content length:", pdfContent.length);
+      console.log("- Encoded content length:", base64Content.length);
+      console.log("- First 30 chars of encoded content:", base64Content.substring(0, 30));
     }
     
     console.log("Base64 PDF created successfully, length:", base64Content.length);
-    console.log("Base64 PDF sample (first 30 chars):", base64Content.substring(0, 30));
     
     return new Response(
       JSON.stringify({
         success: true,
         pdf: base64Content,
-        format: pdfContent.startsWith('%PDF-') ? 'raw-pdf-encoded-to-base64' : 'existing-format',
+        format: 'raw-pdf-encoded-to-base64',
         message: "Proposal generated successfully"
       }),
       {
