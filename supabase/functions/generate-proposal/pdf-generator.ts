@@ -2,9 +2,6 @@
 // PDF Generation Utilities
 // This file contains functions to generate a PDF proposal document
 
-// Import needed modules
-import { encode as base64Encode } from "https://deno.land/std@0.170.0/encoding/base64.ts";
-
 // Helper function to format currency
 const formatCurrency = (value: number): string => {
   return new Intl.NumberFormat('en-US', {

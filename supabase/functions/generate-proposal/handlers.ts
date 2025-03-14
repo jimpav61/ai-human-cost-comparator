@@ -60,8 +60,8 @@ export async function handlePreviewRequest(lead: any, shouldReturnContent: boole
       );
     }
     
-    // For client.invoke() method, convert raw PDF to base64
-    console.log("Converting raw PDF to base64 for response");
+    // For client.invoke() method, properly encode the PDF
+    console.log("Encoding PDF for response");
     
     // Check if content is a valid PDF
     if (!pdfContent.startsWith('%PDF-')) {
@@ -85,7 +85,7 @@ export async function handlePreviewRequest(lead: any, shouldReturnContent: boole
     
     console.log("Base64 PDF created successfully, length:", base64Content.length);
     
-    // Return the base64 encoded PDF
+    // Return the base64 encoded PDF - CRITICAL: format must be exactly as frontend expects
     return new Response(
       JSON.stringify({
         success: true,
@@ -107,7 +107,8 @@ export async function handlePreviewRequest(lead: any, shouldReturnContent: boole
     return new Response(
       JSON.stringify({ 
         error: "Failed to generate PDF: " + pdfError.message,
-        stack: pdfError.stack 
+        stack: pdfError.stack,
+        success: false  // Explicitly mark as failed for frontend compatibility
       }),
       {
         headers: {
