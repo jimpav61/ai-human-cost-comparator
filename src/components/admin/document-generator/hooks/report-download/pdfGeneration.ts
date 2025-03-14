@@ -1,4 +1,3 @@
-
 import { Lead } from "@/types/leads";
 import { toast } from "@/hooks/use-toast";
 import { ensureCompleteCalculatorResults } from "@/hooks/calculator/supabase-types";
@@ -205,17 +204,27 @@ export const generateAndUploadPDF = async (report: any, lead: Lead) => {
           phone_number: lead.phone_number
         })
         .select('id');
-      
-      if (dbError) {
-        console.error('Error saving report to database:', dbError);
-      } else {
-        console.log('Report saved to database successfully:', dbData);
-      }
-      
-      // Upload to Supabase storage with the report ID as the filename
-      const storageFilePath = `${report.id}.pdf`;
-      console.log('Uploading to storage path:', storageFilePath);
-      
+    
+    if (dbError) {
+      console.error('Error saving report to database:', dbError);
+    } else {
+      console.log('Report saved to database successfully:', dbData);
+    }
+    
+    // Upload to Supabase storage with the report ID as the filename
+    const storageFilePath = `${report.id}.pdf`;
+    console.log('Uploading to storage path:', storageFilePath);
+    
+    // Get blob from the SAME document that was saved locally
+    const pdfBlob = await docToBlob(doc);
+    console.log('PDF blob size:', pdfBlob.size, 'bytes');
+    
+    // Add debugging to check authentication status before upload
+    const { data: { session } } = await supabase.auth.getSession();
+    console.log('Current auth session:', session ? 'Authenticated' : 'Not authenticated');
+    
+    // Try upload with more detailed error handling
+    try {
       const { data: uploadData, error: uploadError } = await supabase.storage
         .from('reports')
         .upload(storageFilePath, pdfBlob, {
@@ -227,10 +236,13 @@ export const generateAndUploadPDF = async (report: any, lead: Lead) => {
         console.error('Error uploading PDF to storage:', uploadError);
         console.log('Upload error details:', {
           message: uploadError.message,
-          name: uploadError.name
+          name: uploadError.name,
+          statusCode: uploadError.statusCode,
+          details: uploadError.details
         });
         
-        if (uploadError.message.includes('The resource already exists')) {
+        // More specific error handling for common errors
+        if (uploadError.message.includes("The resource already exists")) {
           console.log('File already exists in storage. This is not an error.');
           
           // Get the public URL for the existing file
@@ -278,7 +290,6 @@ export const generateAndUploadPDF = async (report: any, lead: Lead) => {
       }
     } catch (uploadError) {
       console.error('Error during storage upload process:', uploadError);
-      console.log('Upload error details:', uploadError);
     }
     
     toast({

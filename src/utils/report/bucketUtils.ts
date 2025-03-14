@@ -94,7 +94,7 @@ export async function verifyReportsBucket(): Promise<boolean> {
 
 /**
  * Create proper RLS policies for the reports bucket
- * This is called after bucket creation but will now work independently 
+ * This ensures that the bucket can be written to and read from
  */
 export async function createReportsBucketPolicies(): Promise<boolean> {
   try {
