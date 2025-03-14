@@ -22,8 +22,8 @@ export async function findAndDownloadReport(lead: Lead, setIsLoading: (loading: 
     const exactLeadId = lead.id.trim();
     console.log("Using exact lead ID for matching:", exactLeadId);
     
-    // FIRST: Check the database for reports with this lead ID
-    console.log("Starting with database check for lead ID:", exactLeadId);
+    // FIRST: Check the database for reports with this lead ID to get the report UUID
+    console.log("Checking database for reports with lead ID:", exactLeadId);
     
     const { data: reports, error } = await supabase
       .from('generated_reports')
@@ -35,47 +35,39 @@ export async function findAndDownloadReport(lead: Lead, setIsLoading: (loading: 
     if (error) {
       console.error("Error checking database for reports:", error);
     } else if (reports && reports.length > 0) {
-      console.log("Found report in database:", reports[0].id);
+      console.log("Found report in database with ID:", reports[0].id);
       
-      // Try to find existing PDF in storage first using report ID
-      const reportId = reports[0].id;
-      const reportFilePath = `${reportId}.pdf`;
+      // Use the report UUID to find the PDF in storage
+      const reportUuid = reports[0].id;
+      const reportFilePath = `${reportUuid}.pdf`;
       
-      const { data: fileExists } = await supabase.storage
+      console.log("Looking for PDF file with name:", reportFilePath);
+      
+      // Get the file directly using the report UUID
+      const { data: urlData } = await supabase.storage
         .from('reports')
-        .list('', {
-          search: reportFilePath
-        });
+        .getPublicUrl(reportFilePath);
         
-      if (fileExists && fileExists.length > 0) {
-        // File exists in storage, download it
-        console.log("Found existing PDF file in storage:", reportFilePath);
-        const { data: urlData } = await supabase.storage
-          .from('reports')
-          .getPublicUrl(reportFilePath);
-          
-        if (urlData?.publicUrl) {
-          console.log("Downloading report from URL:", urlData.publicUrl);
-          
-          // Create download link
-          const link = document.createElement('a');
-          link.href = urlData.publicUrl;
-          link.download = `${getSafeFileName(lead)}-ChatSites-ROI-Report.pdf`;
-          document.body.appendChild(link);
-          link.click();
-          document.body.removeChild(link);
-          
-          toast({
-            title: "Report Downloaded",
-            description: "The report has been successfully downloaded.",
-            duration: 3000,
-          });
-          setIsLoading(false);
-          return;
-        }
+      if (urlData?.publicUrl) {
+        console.log("Found PDF using report UUID. Downloading from URL:", urlData.publicUrl);
+        
+        // Create download link
+        const link = document.createElement('a');
+        link.href = urlData.publicUrl;
+        link.download = `${getSafeFileName(lead)}-ChatSites-ROI-Report.pdf`;
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+        
+        toast({
+          title: "Report Downloaded",
+          description: "The report has been successfully downloaded.",
+          duration: 3000,
+        });
+        setIsLoading(false);
+        return;
       } else {
-        // No file found, but we have report data - generate new PDF
-        console.log("No existing PDF found, generating new PDF from report data:", reportId);
+        console.log("No file found with report UUID. Trying to generate a new PDF.");
         await generateAndUploadPDF(reports[0], lead);
         setIsLoading(false);
         return;
@@ -84,8 +76,8 @@ export async function findAndDownloadReport(lead: Lead, setIsLoading: (loading: 
       console.log("No reports found in database for lead ID:", exactLeadId);
     }
     
-    // SECOND: If no report in database, check storage for any file with the lead ID
-    console.log("Checking 'reports' storage bucket for files with lead ID:", exactLeadId);
+    // SECOND: Fall back to checking for any files in storage that might match the lead
+    console.log("Checking storage for any files related to this lead...");
     
     const { data: storageFiles, error: storageError } = await supabase
       .storage
@@ -93,24 +85,32 @@ export async function findAndDownloadReport(lead: Lead, setIsLoading: (loading: 
       .list();
       
     if (storageError) {
-      console.error("Error listing storage files in 'reports' bucket:", storageError);
+      console.error("Error listing storage files:", storageError);
       throw new Error("Unable to access reports storage");
     }
     
     if (storageFiles && storageFiles.length > 0) {
       console.log("All files in reports bucket:", storageFiles.map(f => f.name));
       
-      // Look for files containing lead ID in any part of filename
-      // Using a more flexible approach than the previous strict matching
-      const potentialMatches = storageFiles.filter(file => 
+      // Try multiple approaches to find a matching file
+      
+      // 1. Try files with exact lead ID in name
+      let matchingFile = storageFiles.find(file => 
         file.name.includes(exactLeadId)
       );
       
-      if (potentialMatches.length > 0) {
-        console.log("Found potential lead ID matches:", potentialMatches.map(f => f.name));
+      // 2. If no match, try with company name as fallback
+      if (!matchingFile && lead.company_name) {
+        const safeCompanyName = getSafeFileName(lead);
+        console.log("Trying to match by company name:", safeCompanyName);
         
-        // Use the first match (most recent if sorted by filename)
-        const matchingFile = potentialMatches[0];
+        matchingFile = storageFiles.find(file => 
+          file.name.toLowerCase().includes(safeCompanyName.toLowerCase())
+        );
+      }
+      
+      if (matchingFile) {
+        console.log("Found potential matching file:", matchingFile.name);
         
         // Get the public URL
         const { data: urlData } = await supabase.storage
@@ -135,23 +135,19 @@ export async function findAndDownloadReport(lead: Lead, setIsLoading: (loading: 
           });
           setIsLoading(false);
           return;
-        } else {
-          console.error("Failed to get public URL for matching file:", matchingFile.name);
         }
       } else {
-        console.log("No lead ID matches found in storage files");
+        console.log("No matching files found in storage for this lead");
       }
-    } else {
-      console.log("No files found in 'reports' bucket or bucket is empty");
     }
     
     // If we got here, no report was found
-    console.log("No existing report found with lead ID:", exactLeadId);
+    console.log("No existing report found for lead:", exactLeadId);
     setIsLoading(false);
     
     toast({
       title: "No Report Found",
-      description: "No existing report found for this lead. Please generate a report first.",
+      description: "No report exists for this lead. Please generate a report first.",
       variant: "destructive",
       duration: 3000,
     });
