@@ -3,7 +3,6 @@ import { Lead } from "@/types/leads";
 import { FileBarChart } from "lucide-react";
 import { DownloadButton } from "./DownloadButton";
 import { useDownloadState } from "../hooks/useDownloadState";
-import { useState } from "react";
 import { useReportDownload } from "../hooks/useReportDownload";
 
 interface ReportGeneratorProps {

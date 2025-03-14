@@ -2,6 +2,7 @@
 import React from 'react';
 import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
+import { Loader2 } from "lucide-react";
 
 interface DownloadButtonProps {
   hasDownloaded: boolean;
@@ -10,6 +11,7 @@ interface DownloadButtonProps {
   icon: React.ReactNode;
   onClick: () => void;
   className?: string;
+  loading?: boolean;
 }
 
 export const DownloadButton = ({
@@ -18,7 +20,8 @@ export const DownloadButton = ({
   downloadedLabel,
   icon,
   onClick,
-  className
+  className,
+  loading = false
 }: DownloadButtonProps) => {
   return (
     <Button
@@ -26,8 +29,13 @@ export const DownloadButton = ({
       variant={hasDownloaded ? "secondary" : "default"}
       size="sm"
       className={cn("flex items-center", className)}
+      disabled={loading}
     >
-      {icon}
+      {loading ? (
+        <Loader2 className="h-4 w-4 mr-1 animate-spin" />
+      ) : (
+        icon
+      )}
       {hasDownloaded ? downloadedLabel : label}
     </Button>
   );
