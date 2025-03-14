@@ -93,8 +93,9 @@ ${brandRed} rg
 0 -20 Td
 (${safePhoneNumber}) Tj
 
-0 -40 Td
+BT
 /F2 14 Tf
+60 90 Td
 ${brandRed} rg
 (Selected Plan: ${tierName} - ${aiTypeDisplay}) Tj
 0 0 0 rg
