@@ -1,4 +1,3 @@
-
 import { 
   formatPdfCurrency, 
   formatPdfPercentage, 
@@ -117,7 +116,7 @@ export function extractProposalData(lead: any): ProposalData {
   const formattedDate = `${today.toLocaleString('default', { month: 'long' })} ${today.getDate()}, ${today.getFullYear()}`;
   
   // Brand Colors
-  const brandRed = "#ff432a";
+  const brandRed = "1 0.322 0.157"; // RGB equivalent of #f65228
   
   // Create formatted values for display
   const formattedHumanCost = formatPdfCurrency(humanCostMonthly);
