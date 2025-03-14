@@ -139,8 +139,8 @@ export const generateAndUploadPDF = async (report: any, lead: Lead) => {
     const tierName = getTierName(tierKey);
     const aiType = getAiTypeName(aiTypeKey);
     
-    // IMPORTANT: Using consistent PDF generation parameters
-    const pdfParams = {
+    // Generate the PDF using the EXACT SAME parameters for both download and storage
+    const doc = generatePDF({
       contactInfo: report.contact_name || lead.name || 'Valued Client',
       companyName: report.company_name || lead.company_name || 'Your Company',
       email: report.email || lead.email || 'client@example.com',
@@ -158,24 +158,18 @@ export const generateAndUploadPDF = async (report: any, lead: Lead) => {
       aiPlacements: getAiPlacements(),
       tierName: tierName,
       aiType: aiType
-    };
+    });
     
-    // Generate the PDF using the stored calculator results with corrected voice minutes
-    const doc = generatePDF(pdfParams);
-    
-    // Store the exact same PDF version that will be downloaded
-    console.log('PDF generated and about to be saved locally and to storage');
-    
-    // Save the PDF locally first to ensure user gets what they expect
+    // First - save the exact document locally for immediate download
     doc.save(fileName);
     console.log('PDF generated and saved locally as:', fileName);
     
-    // Also upload to Supabase storage - ENSURING we use the exact same PDF blob
+    // Then - DIRECTLY upload the same document to storage
     try {
-      console.log('Attempting to save PDF to Supabase storage...');
+      console.log('Uploading the exact same PDF to Supabase storage...');
       console.log('Report ID (used as filename in storage):', report.id);
       
-      // Get the PDF as binary data from the same document
+      // Get blob from the SAME document that was saved locally
       const pdfBlob = await docToBlob(doc);
       console.log('PDF blob size:', pdfBlob.size, 'bytes');
       
@@ -217,7 +211,6 @@ export const generateAndUploadPDF = async (report: any, lead: Lead) => {
         console.log('Upload error details:', {
           message: uploadError.message,
           name: uploadError.name
-          // Removed the properties that don't exist on StorageError type
         });
         
         if (uploadError.message.includes('The resource already exists')) {
