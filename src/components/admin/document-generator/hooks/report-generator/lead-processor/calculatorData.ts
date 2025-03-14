@@ -64,7 +64,8 @@ export function getCalculatorData(lead: Lead): CalculatorDataResult {
     },
     annualPlan: 0,
     tierKey: tierKey as "starter" | "growth" | "premium",
-    aiType: aiTypeToUse as "chatbot" | "voice" | "both" | "conversationalVoice" | "both-premium"
+    aiType: aiTypeToUse as "chatbot" | "voice" | "both" | "conversationalVoice" | "both-premium",
+    includedVoiceMinutes: includedVoiceMinutes // Add the required includedVoiceMinutes property
   };
   
   if (lead.calculator_results) {
@@ -83,7 +84,9 @@ export function getCalculatorData(lead: Lead): CalculatorDataResult {
       },
       // Ensure tierKey and aiType are set
       tierKey: (lead.calculator_results.tierKey || tierKey) as "starter" | "growth" | "premium",
-      aiType: (lead.calculator_results.aiType || aiTypeToUse) as "chatbot" | "voice" | "both" | "conversationalVoice" | "both-premium"
+      aiType: (lead.calculator_results.aiType || aiTypeToUse) as "chatbot" | "voice" | "both" | "conversationalVoice" | "both-premium",
+      // Ensure includedVoiceMinutes is set
+      includedVoiceMinutes: lead.calculator_results.includedVoiceMinutes ?? includedVoiceMinutes
     };
     
     // Ensure setupFee exists (this is the property causing the error)
@@ -135,7 +138,8 @@ export function getCalculatorData(lead: Lead): CalculatorDataResult {
       },
       annualPlan: AI_RATES.chatbot[tierKey as "starter" | "growth" | "premium"].annualPrice,
       tierKey: tierKey as "starter" | "growth" | "premium",
-      aiType: aiTypeToUse as "chatbot" | "voice" | "both" | "conversationalVoice" | "both-premium"
+      aiType: aiTypeToUse as "chatbot" | "voice" | "both" | "conversationalVoice" | "both-premium",
+      includedVoiceMinutes: includedVoiceMinutes // Add the required includedVoiceMinutes property
     };
   }
 
