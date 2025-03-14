@@ -4,7 +4,7 @@ import { useProposalGenerator } from "@/hooks/useProposalGenerator";
 import { toast } from "@/hooks/use-toast";
 import { Button } from "@/components/ui/button";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
-import { AlertCircle, CheckCircle2 } from "lucide-react";
+import { AlertCircle, CheckCircle2, Info } from "lucide-react";
 import { useState } from "react";
 
 interface ProposalGeneratorProps {
@@ -16,6 +16,7 @@ interface ProposalGeneratorProps {
 export const ProposalGenerator = ({ lead, onLeadUpdated, onProposalGenerated }: ProposalGeneratorProps) => {
   const { generating, generationError, proposalPdf, generationSuccess, generateProposal } = useProposalGenerator();
   const [retryCount, setRetryCount] = useState(0);
+  const [showHelp, setShowHelp] = useState(false);
 
   const handleGenerateProposal = async () => {
     try {
@@ -30,6 +31,8 @@ export const ProposalGenerator = ({ lead, onLeadUpdated, onProposalGenerated }: 
       }
       
       console.log("Starting proposal generation for lead:", lead.id);
+      console.log("Calculator inputs:", lead.calculator_inputs);
+      console.log("Calculator results:", lead.calculator_results);
       
       // Generate the proposal
       const pdf = await generateProposal(lead);
@@ -84,6 +87,16 @@ export const ProposalGenerator = ({ lead, onLeadUpdated, onProposalGenerated }: 
         </Alert>
       )}
       
+      {!lead.calculator_results && !generationError && (
+        <Alert className="bg-yellow-50 border-yellow-200">
+          <Info className="h-4 w-4 text-yellow-600" />
+          <AlertTitle className="text-yellow-800">Information</AlertTitle>
+          <AlertDescription className="text-yellow-700">
+            This lead doesn't have calculator results. The system will create default values when you generate a proposal.
+          </AlertDescription>
+        </Alert>
+      )}
+      
       {generationError && (
         <div className="space-y-2">
           <Alert variant="destructive">
@@ -93,13 +106,37 @@ export const ProposalGenerator = ({ lead, onLeadUpdated, onProposalGenerated }: 
               {generationError}
             </AlertDescription>
           </Alert>
-          <Button 
-            variant="outline" 
-            onClick={handleRetry}
-            className="mt-2"
-          >
-            Retry Generation
-          </Button>
+          <div className="flex space-x-2">
+            <Button 
+              variant="outline" 
+              onClick={handleRetry}
+              className="mt-2"
+            >
+              Retry Generation
+            </Button>
+            <Button
+              variant="ghost"
+              onClick={() => setShowHelp(!showHelp)}
+              className="mt-2"
+            >
+              {showHelp ? "Hide Help" : "Show Help"}
+            </Button>
+          </div>
+          
+          {showHelp && (
+            <Alert className="bg-blue-50 border-blue-200 mt-2">
+              <Info className="h-4 w-4 text-blue-600" />
+              <AlertTitle className="text-blue-800">Troubleshooting</AlertTitle>
+              <AlertDescription className="text-blue-700">
+                <ul className="list-disc pl-5 mt-2 space-y-1">
+                  <li>Check that the lead has calculator inputs defined</li>
+                  <li>Try editing the lead to update calculator settings</li>
+                  <li>Make sure both aiTier and aiType are set correctly</li>
+                  <li>For voice plans, ensure callVolume is properly defined</li>
+                </ul>
+              </AlertDescription>
+            </Alert>
+          )}
         </div>
       )}
     </div>
