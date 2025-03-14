@@ -1,3 +1,4 @@
+
 import { Lead } from "@/types/leads";
 import { toast } from "@/hooks/use-toast";
 import { ensureCompleteCalculatorResults } from "@/hooks/calculator/supabase-types";
@@ -205,98 +206,107 @@ export const generateAndUploadPDF = async (report: any, lead: Lead) => {
         })
         .select('id');
     
-    if (dbError) {
-      console.error('Error saving report to database:', dbError);
-    } else {
-      console.log('Report saved to database successfully:', dbData);
-    }
-    
-    // Upload to Supabase storage with the report ID as the filename
-    const storageFilePath = `${report.id}.pdf`;
-    console.log('Uploading to storage path:', storageFilePath);
-    
-    // Get blob from the SAME document that was saved locally
-    const pdfBlob = await docToBlob(doc);
-    console.log('PDF blob size:', pdfBlob.size, 'bytes');
-    
-    // Add debugging to check authentication status before upload
-    const { data: { session } } = await supabase.auth.getSession();
-    console.log('Current auth session:', session ? 'Authenticated' : 'Not authenticated');
-    
-    // Try upload with more detailed error handling
-    try {
-      const { data: uploadData, error: uploadError } = await supabase.storage
-        .from('reports')
-        .upload(storageFilePath, pdfBlob, {
-          contentType: 'application/pdf',
-          upsert: true
-        });
+      if (dbError) {
+        console.error('Error saving report to database:', dbError);
+      } else {
+        console.log('Report saved to database successfully:', dbData);
+      }
       
-      if (uploadError) {
-        console.error('Error uploading PDF to storage:', uploadError);
-        console.log('Upload error details:', {
-          message: uploadError.message,
-          name: uploadError.name,
-          statusCode: uploadError.statusCode,
-          details: uploadError.details
-        });
+      // Upload to Supabase storage with the report ID as the filename
+      const storageFilePath = `${report.id}.pdf`;
+      console.log('Uploading to storage path:', storageFilePath);
+      
+      // Get blob from the SAME document that was saved locally
+      const pdfBlob = await docToBlob(doc);
+      console.log('PDF blob size:', pdfBlob.size, 'bytes');
+      
+      // Add debugging to check authentication status before upload
+      const { data: { session } } = await supabase.auth.getSession();
+      console.log('Current auth session:', session ? 'Authenticated' : 'Not authenticated');
+      
+      // Try upload with more detailed error handling
+      try {
+        const { data: uploadData, error: uploadError } = await supabase.storage
+          .from('reports')
+          .upload(storageFilePath, pdfBlob, {
+            contentType: 'application/pdf',
+            upsert: true
+          });
         
-        // More specific error handling for common errors
-        if (uploadError.message.includes("The resource already exists")) {
-          console.log('File already exists in storage. This is not an error.');
+        if (uploadError) {
+          console.error('Error uploading PDF to storage:', uploadError);
+          console.log('Upload error details:', {
+            message: uploadError.message,
+            name: uploadError.name,
+            statusCode: uploadError.statusCode,
+            details: uploadError.details
+          });
           
-          // Get the public URL for the existing file
+          // More specific error handling for common errors
+          if (uploadError.message.includes("The resource already exists")) {
+            console.log('File already exists in storage. This is not an error.');
+            
+            // Get the public URL for the existing file
+            const { data: urlData } = await supabase.storage
+              .from('reports')
+              .getPublicUrl(storageFilePath);
+              
+            console.log('Existing file URL:', urlData?.publicUrl);
+          } else if (uploadError.message.includes('bucket') && uploadError.message.includes('not found')) {
+            console.error('CRITICAL: The storage bucket "reports" does not exist - attempting to create it now');
+            
+            // Last resort: create bucket directly
+            const { error: createBucketError } = await supabase.storage.createBucket('reports', {
+              public: true
+            });
+            
+            if (createBucketError) {
+              console.error('Failed to create reports bucket:', createBucketError);
+            } else {
+              console.log('Created reports bucket successfully, retrying upload');
+              // Retry the upload after bucket creation
+              const { data: retryData, error: retryError } = await supabase.storage
+                .from('reports')
+                .upload(storageFilePath, pdfBlob, {
+                  contentType: 'application/pdf',
+                  upsert: true
+                });
+                
+              if (retryError) {
+                console.error('Retry upload failed:', retryError);
+              } else {
+                console.log('Retry upload succeeded:', retryData);
+              }
+            }
+          }
+        } else {
+          console.log('PDF successfully uploaded to storage:', uploadData?.path);
+          
+          // Get the public URL
           const { data: urlData } = await supabase.storage
             .from('reports')
             .getPublicUrl(storageFilePath);
             
-          console.log('Existing file URL:', urlData?.publicUrl);
-        } else if (uploadError.message.includes('bucket') && uploadError.message.includes('not found')) {
-          console.error('CRITICAL: The storage bucket "reports" does not exist - attempting to create it now');
-          
-          // Last resort: create bucket directly
-          const { error: createBucketError } = await supabase.storage.createBucket('reports', {
-            public: true
-          });
-          
-          if (createBucketError) {
-            console.error('Failed to create reports bucket:', createBucketError);
-          } else {
-            console.log('Created reports bucket successfully, retrying upload');
-            // Retry the upload after bucket creation
-            const { data: retryData, error: retryError } = await supabase.storage
-              .from('reports')
-              .upload(storageFilePath, pdfBlob, {
-                contentType: 'application/pdf',
-                upsert: true
-              });
-              
-            if (retryError) {
-              console.error('Retry upload failed:', retryError);
-            } else {
-              console.log('Retry upload succeeded:', retryData);
-            }
-          }
+          console.log('Public URL for uploaded file:', urlData?.publicUrl);
         }
-      } else {
-        console.log('PDF successfully uploaded to storage:', uploadData?.path);
-        
-        // Get the public URL
-        const { data: urlData } = await supabase.storage
-          .from('reports')
-          .getPublicUrl(storageFilePath);
-          
-        console.log('Public URL for uploaded file:', urlData?.publicUrl);
+      } catch (uploadError) {
+        console.error('Error during storage upload process:', uploadError);
       }
-    } catch (uploadError) {
-      console.error('Error during storage upload process:', uploadError);
+      
+      toast({
+        title: "Report Downloaded",
+        description: "The report has been successfully downloaded and saved.",
+        duration: 3000,
+      });
+    } catch (error) {
+      console.error('Error uploading to storage:', error);
+      toast({
+        title: "Storage Error",
+        description: "The report was downloaded but could not be saved online.",
+        variant: "destructive",
+        duration: 3000,
+      });
     }
-    
-    toast({
-      title: "Report Downloaded",
-      description: "The report has been successfully downloaded and saved.",
-      duration: 3000,
-    });
   } catch (error) {
     console.error('Error generating PDF:', error);
     toast({
