@@ -11,7 +11,8 @@ export const usePdfPreview = () => {
       console.log("Creating PDF preview from content", { 
         contentType: typeof content,
         contentLength: content.length,
-        contentStart: content.substring(0, 50) + '...' 
+        contentStart: content.substring(0, 100).replace(/\n/g, '\\n') + '...',
+        isPdf: content.startsWith('%PDF-')
       });
       
       // Revoke previous URL if it exists
@@ -21,41 +22,69 @@ export const usePdfPreview = () => {
       
       let pdfBlob: Blob;
       
-      // Check what format the content is in
-      if (content.startsWith('JVB')) {
-        console.log("Content appears to be in PDF base64 format");
-        // It's already a PDF, start from the beginning
+      // Check if content is already a PDF document
+      if (content.startsWith('%PDF-')) {
+        console.log("Content is a raw PDF document");
+        const encoder = new TextEncoder();
+        const pdfData = encoder.encode(content);
+        pdfBlob = new Blob([pdfData], { type: 'application/pdf' });
+      }
+      // Check if the content is base64 encoded PDF (usually starts with "JVB")
+      else if (/^[A-Za-z0-9+/=]+$/.test(content) && content.length > 100) {
+        console.log("Content appears to be base64 encoded data");
         try {
-          const binaryData = atob(content);
-          const bytes = new Uint8Array(binaryData.length);
-          for (let i = 0; i < binaryData.length; i++) {
-            bytes[i] = binaryData.charCodeAt(i);
+          const binaryString = atob(content);
+          const bytes = new Uint8Array(binaryString.length);
+          for (let i = 0; i < binaryString.length; i++) {
+            bytes[i] = binaryString.charCodeAt(i);
           }
           pdfBlob = new Blob([bytes], { type: 'application/pdf' });
           console.log("Successfully converted base64 to PDF blob");
         } catch (e) {
-          console.error("Error converting base64 to PDF:", e);
-          throw new Error("Invalid PDF format from base64");
+          console.error("Error decoding base64 content:", e);
+          throw new Error("Failed to decode PDF content: " + e.message);
         }
-      } else if (content.startsWith('data:application/pdf;base64,')) {
-        console.log("Content appears to be in data URL format");
-        // It has a data URL prefix
+      }
+      // Check if it's a data URL
+      else if (content.startsWith('data:application/pdf;base64,')) {
+        console.log("Content is a data URL");
         try {
-          const pdfData = content.split(',')[1];
-          const binaryData = atob(pdfData);
-          const bytes = new Uint8Array(binaryData.length);
-          for (let i = 0; i < binaryData.length; i++) {
-            bytes[i] = binaryData.charCodeAt(i);
+          const base64Data = content.split(',')[1];
+          const binaryString = atob(base64Data);
+          const bytes = new Uint8Array(binaryString.length);
+          for (let i = 0; i < binaryString.length; i++) {
+            bytes[i] = binaryString.charCodeAt(i);
           }
           pdfBlob = new Blob([bytes], { type: 'application/pdf' });
-          console.log("Successfully converted data URL to PDF blob");
         } catch (e) {
-          console.error("Error converting data URL to PDF:", e);
-          throw new Error("Invalid PDF format from data URL");
+          console.error("Error processing data URL:", e);
+          throw new Error("Failed to process data URL: " + e.message);
         }
-      } else {
-        console.log("Content appears to be raw PDF or other format, trying as-is");
-        // It's probably raw PDF content
+      }
+      // Handle JSON string (sometimes our API returns JSON instead of binary data)
+      else if (content.startsWith('{') && content.includes('"pdf":')) {
+        console.log("Content appears to be JSON with PDF data");
+        try {
+          const jsonData = JSON.parse(content);
+          if (jsonData.pdf) {
+            const binaryString = atob(jsonData.pdf);
+            const bytes = new Uint8Array(binaryString.length);
+            for (let i = 0; i < binaryString.length; i++) {
+              bytes[i] = binaryString.charCodeAt(i);
+            }
+            pdfBlob = new Blob([bytes], { type: 'application/pdf' });
+            console.log("Successfully extracted PDF from JSON");
+          } else {
+            throw new Error("JSON does not contain PDF data");
+          }
+        } catch (e) {
+          console.error("Error processing JSON PDF data:", e);
+          throw new Error("Failed to process JSON PDF data: " + e.message);
+        }
+      }
+      // Fall back to treating it as raw content
+      else {
+        console.log("Content format not recognized, trying as raw content");
         pdfBlob = new Blob([content], { type: 'application/pdf' });
       }
       
@@ -63,13 +92,14 @@ export const usePdfPreview = () => {
       const url = URL.createObjectURL(pdfBlob);
       console.log("Created object URL for PDF preview:", url);
       setCurrentPdfPreviewUrl(url);
+      setShowPdfPreview(true);
       
       return url;
     } catch (error) {
       console.error("Error previewing PDF:", error);
       toast({
         title: "Error",
-        description: "Could not preview PDF. The content may not be in valid format.",
+        description: "Could not preview PDF. " + (error instanceof Error ? error.message : "Invalid content format."),
         variant: "destructive",
       });
       return null;

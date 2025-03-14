@@ -46,9 +46,23 @@ export async function handlePreviewRequest(lead: any, shouldReturnContent: boole
     
     // For client.invoke() method, return base64 encoded PDF
     console.log("Returning base64 encoded PDF for invoke method");
-    // Convert string content to base64 for easy transmission through JSON
-    const base64Content = btoa(pdfContent);
+    
+    // Check if content already starts with PDF header
+    let base64Content;
+    if (pdfContent.startsWith('%PDF-')) {
+      console.log("Content is a raw PDF - encoding to base64");
+      // Convert raw PDF to base64
+      const encoder = new TextEncoder();
+      const pdfData = encoder.encode(pdfContent);
+      base64Content = btoa(String.fromCharCode(...new Uint8Array(pdfData)));
+    } else {
+      // Already encoded or in another format
+      console.log("Content may already be encoded, using as is");
+      base64Content = pdfContent;
+    }
+    
     console.log("Base64 PDF created successfully, length:", base64Content.length);
+    console.log("Base64 PDF sample (first 30 chars):", base64Content.substring(0, 30));
     
     return new Response(
       JSON.stringify({

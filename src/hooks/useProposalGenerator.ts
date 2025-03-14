@@ -19,17 +19,24 @@ export function useProposalGenerator() {
       // Log the lead data for debugging
       console.log('Generating proposal for lead:', {
         id: lead.id,
-        calculatorResults: lead.calculator_results
+        calculatorResults: JSON.stringify(lead.calculator_results, null, 2)
       });
 
+      // Ensure calculator_inputs and calculator_results are properly set
+      const safetyLead = {
+        ...lead,
+        calculator_inputs: lead.calculator_inputs || {},
+        calculator_results: lead.calculator_results || {}
+      };
+
       // Generate proposal data using our utility
-      const proposalData = generateProposal(lead);
+      const proposalData = generateProposal(safetyLead);
 
       // Call the Supabase Edge Function to generate PDF
       console.log('Calling generate-proposal edge function with lead data...');
       const { data, error } = await supabase.functions.invoke('generate-proposal', {
         body: { 
-          lead: { ...lead, proposalData },
+          lead: { ...safetyLead, proposalData },
           mode: "preview",
           returnContent: false
         }
@@ -37,7 +44,7 @@ export function useProposalGenerator() {
 
       if (error) {
         console.error('Edge function error:', error);
-        throw error;
+        throw new Error(`Edge function error: ${error.message}`);
       }
 
       // Verify the data structure returned from the edge function
@@ -45,8 +52,11 @@ export function useProposalGenerator() {
       
       if (!data || !data.pdf) {
         console.error('Invalid response structure:', data);
-        throw new Error('Invalid response from proposal generator');
+        throw new Error('Invalid response from proposal generator: No PDF data returned');
       }
+
+      console.log('PDF data received, length:', data.pdf.length);
+      console.log('PDF data sample (first 30 chars):', data.pdf.substring(0, 30));
 
       setProposalPdf(data.pdf);
       setGenerationSuccess(true);

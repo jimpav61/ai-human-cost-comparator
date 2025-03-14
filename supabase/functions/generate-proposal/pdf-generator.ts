@@ -127,9 +127,8 @@ export function generateProfessionalProposal(lead: any) {
     setupFee: formatCurrency(setupFee)
   });
   
-  // Create a template-based PDF content
-  let pdfTemplate = `
-%PDF-1.7
+  // Create a template-based PDF content - this is a valid PDF format
+  const pdfTemplate = `%PDF-1.7
 1 0 obj
 << /Type /Catalog
    /Pages 2 0 R
@@ -340,59 +339,7 @@ ${brandRed} rg
 (\\267 ${tierName} AI Engine with ${tierKey === 'premium' ? 'advanced' : tierKey === 'growth' ? 'enhanced' : 'standard'} capabilities) Tj
 0 -20 Td
 (\\267 ${aiTypeDisplay} Interface ${tierKey !== 'starter' ? 'with speech recognition and synthesis' : ''}) Tj
-0 -20 Td`;
-
-  // Add voice information - handle both starter and non-starter tiers
-  if (tierKey === 'starter') {
-    pdfTemplate += `
-(\\267 No voice capabilities included in this tier) Tj
-0 -20 Td`;
-  } else {
-    pdfTemplate += `
-(\\267 Includes 600 voice minutes per month as part of base plan) Tj
-0 -20 Td`;
-    
-    if (additionalVoiceMinutes > 0) {
-      pdfTemplate += `
-(\\267 ${additionalVoiceMinutes} additional voice minutes at $0.12/minute) Tj
 0 -20 Td
-(\\267 Additional voice cost: $${(additionalVoiceMinutes * 0.12).toFixed(2)}/month) Tj
-0 -20 Td`;
-    } else {
-      pdfTemplate += `
-(\\267 No additional voice minutes requested) Tj
-0 -20 Td`;
-    }
-  }
-
-  // Continue with standard content
-  pdfTemplate += `
-(\\267 ${tierKey === 'premium' ? 'Unlimited' : '50,000+'} monthly text interactions) Tj
-0 -20 Td
-(\\267 Secure cloud-based deployment with 99.9% uptime guarantee) Tj
-0 -20 Td
-(\\267 ${tierKey === 'premium' ? 'Priority' : 'Standard'} technical support and maintenance) Tj
-0 -30 Td
-
-BT
-/F2 16 Tf
-72 195 Td
-${brandRed} rg
-(Implementation Timeline:) Tj
-0 0 0 rg
-0 -25 Td
-/F1 12 Tf
-(\\267 Discovery and Planning: 1 week) Tj
-0 -20 Td
-(\\267 Development and Customization: 2-3 weeks) Tj
-0 -20 Td
-(\\267 Testing and Quality Assurance: 1 week) Tj
-0 -20 Td
-(\\267 Deployment and Integration: 1 week) Tj
-0 -20 Td
-(\\267 Training and Knowledge Transfer: 1 week) Tj
-ET
-Q
 endstream
 endobj
 
@@ -423,43 +370,15 @@ ${brandRed} rg
 (Setup and Onboarding Fee:) Tj
 190 0 Td
 ($${setupFee.toFixed(2)} one-time) Tj
--190 -25 Td`;
-
-  // Handle voice minutes information  
-  if (tierKey === 'starter') {
-    pdfTemplate += `
-(Voice Capabilities:) Tj
-190 0 Td
-(Not included in Starter Plan) Tj
--190 -25 Td`;
-  } else {
-    pdfTemplate += `
+-190 -25 Td
 (Included Voice Minutes:) Tj
 190 0 Td
-(600 minutes/month) Tj
--190 -25 Td`;
-    
-    if (additionalVoiceMinutes > 0) {
-      pdfTemplate += `
-(Additional Voice Minutes:) Tj
-190 0 Td
-(${additionalVoiceMinutes} minutes @ $0.12/minute) Tj
+(${tierKey === 'starter' ? 'Not included in Starter Plan' : '600 minutes/month'}) Tj
 -190 -25 Td
-(Additional Voice Cost:) Tj
-190 0 Td
-($${(additionalVoiceMinutes * 0.12).toFixed(2)}/month) Tj
--190 -25 Td`;
-    } else {
-      pdfTemplate += `
 (Additional Voice Minutes:) Tj
 190 0 Td
-(None requested) Tj
--190 -25 Td`;
-    }
-  }
-
-  // Show total monthly cost with clear breakdown
-  pdfTemplate += `
+(${additionalVoiceMinutes > 0 ? additionalVoiceMinutes + ' minutes @ $0.12/minute' : 'None requested'}) Tj
+-190 -25 Td
 (Total Monthly Investment:) Tj
 190 0 Td
 ($${totalMonthlyCost.toFixed(2)}/month) Tj
