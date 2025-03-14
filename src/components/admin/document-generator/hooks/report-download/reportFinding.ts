@@ -35,53 +35,19 @@ export async function findAndDownloadReport(lead: Lead, setIsLoading: (loading: 
       throw new Error("Unable to access reports storage");
     }
     
-    console.log("All files in reports bucket:", storageFiles?.map(f => f.name) || []);
-    
     if (storageFiles && storageFiles.length > 0) {
-      // First, check for exact filename match with leadId.pdf
-      const exactFileMatch = storageFiles.find(file => 
-        file.name === `${exactLeadId}.pdf`
-      );
+      console.log("All files in reports bucket:", storageFiles.map(f => f.name));
       
-      if (exactFileMatch) {
-        console.log("Found exact filename match:", exactFileMatch.name);
-        
-        // Get the public URL
-        const { data: urlData } = await supabase.storage
-          .from('reports')
-          .getPublicUrl(exactFileMatch.name);
-          
-        if (urlData?.publicUrl) {
-          console.log("Downloading report from URL:", urlData.publicUrl);
-          
-          // Create download link
-          const link = document.createElement('a');
-          link.href = urlData.publicUrl;
-          link.download = `${getSafeFileName(lead)}-ChatSites-ROI-Report.pdf`;
-          document.body.appendChild(link);
-          link.click();
-          document.body.removeChild(link);
-          
-          toast({
-            title: "Report Downloaded",
-            description: "The report has been successfully downloaded.",
-            duration: 3000,
-          });
-          setIsLoading(false);
-          return;
-        }
-      }
-      
-      // If no exact match, look for partial matches
-      const partialMatches = storageFiles.filter(file => 
+      // STRICT MATCHING: Only look for the exact lead ID in filenames
+      const exactMatches = storageFiles.filter(file => 
         file.name.includes(exactLeadId)
       );
       
-      if (partialMatches.length > 0) {
-        console.log("Found partial lead ID matches:", partialMatches.map(f => f.name));
+      if (exactMatches.length > 0) {
+        console.log("Found exact lead ID matches:", exactMatches.map(f => f.name));
         
         // Use the first match (most recent if sorted by filename)
-        const matchingFile = partialMatches[0];
+        const matchingFile = exactMatches[0];
         
         // Get the public URL
         const { data: urlData } = await supabase.storage
@@ -110,7 +76,7 @@ export async function findAndDownloadReport(lead: Lead, setIsLoading: (loading: 
           console.error("Failed to get public URL for matching file:", matchingFile.name);
         }
       } else {
-        console.log("No lead ID matches found in storage files");
+        console.log("No exact lead ID matches found in storage files");
       }
     } else {
       console.log("No files found in 'reports' bucket or bucket is empty");
