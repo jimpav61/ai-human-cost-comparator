@@ -2,8 +2,9 @@
 import { Lead } from "@/types/leads";
 import { FileBarChart } from "lucide-react";
 import { DownloadButton } from "./DownloadButton";
-import { generateAndDownloadReport } from "@/utils/report/generateReport";
 import { useDownloadState } from "../hooks/useDownloadState";
+import { useState } from "react";
+import { useReportDownload } from "../hooks/useReportDownload";
 
 interface ReportGeneratorProps {
   lead: Lead;
@@ -11,16 +12,15 @@ interface ReportGeneratorProps {
 
 export const ReportGenerator = ({ lead }: ReportGeneratorProps) => {
   const { hasDownloaded, markAsDownloaded } = useDownloadState({ id: `report-${lead.id}` });
-
-  const handleGenerateReport = () => {
+  const { isLoading, handleDownloadReport } = useReportDownload();
+  
+  const handleGenerateReport = async () => {
     try {
-      console.log("Generating ROI analysis report for lead:", lead.name);
-      const success = generateAndDownloadReport(lead);
-      if (success) {
-        markAsDownloaded();
-      }
+      console.log("Downloading ROI analysis report for lead:", lead.name);
+      await handleDownloadReport(lead);
+      markAsDownloaded();
     } catch (error) {
-      console.error("Error generating report:", error);
+      console.error("Error downloading report:", error);
     }
   };
 
@@ -32,6 +32,7 @@ export const ReportGenerator = ({ lead }: ReportGeneratorProps) => {
       icon={<FileBarChart className="h-4 w-4 mr-1" />}
       onClick={handleGenerateReport}
       className="bg-emerald-600 hover:bg-emerald-700"
+      loading={isLoading}
     />
   );
 };
