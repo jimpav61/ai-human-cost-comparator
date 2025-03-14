@@ -54,6 +54,24 @@ export async function savePDFToStorage(pdfDoc: jsPDF, fileName: string): Promise
       .getPublicUrl(filePath);
     
     console.log("Generated public URL:", urlData);
+    
+    // Double check that the file was actually saved by listing the bucket contents
+    const { data: fileList, error: listError } = await supabase.storage
+      .from('reports')
+      .list();
+      
+    if (listError) {
+      console.error("Error listing bucket contents:", listError);
+    } else {
+      console.log("Current files in bucket:", fileList);
+      const savedFile = fileList.find(f => f.name === filePath);
+      if (savedFile) {
+        console.log("Confirmed file was saved to bucket:", savedFile);
+      } else {
+        console.warn("File doesn't appear in bucket listing yet. This could be due to eventual consistency.");
+      }
+    }
+    
     return urlData.publicUrl;
   } catch (error) {
     console.error("Error in savePDFToStorage:", error);
