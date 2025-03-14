@@ -14,10 +14,21 @@ export const ProposalGenerator = ({ lead, onLeadUpdated, onProposalGenerated }: 
 
   const handleGenerateProposal = async () => {
     try {
+      // Check if lead has required data
+      if (!lead?.id) {
+        toast({
+          title: "Error",
+          description: "Lead data is incomplete",
+          variant: "destructive"
+        });
+        return;
+      }
+      
+      // Generate the proposal
       const pdf = await generateProposal(lead);
       
       // Call both callbacks if provided
-      if (onProposalGenerated) {
+      if (onProposalGenerated && pdf) {
         onProposalGenerated(pdf);
       }
       
@@ -26,6 +37,7 @@ export const ProposalGenerator = ({ lead, onLeadUpdated, onProposalGenerated }: 
         onLeadUpdated(lead);
       }
     } catch (error) {
+      console.error("Error in proposal generation:", error);
       toast({
         title: "Error",
         description: generationError || "Failed to generate proposal",

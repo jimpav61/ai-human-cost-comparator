@@ -80,8 +80,8 @@ export const ProposalVersionHistory = ({ lead, isOpen, onClose }: ProposalVersio
       
       // Generate filename
       const companyName = lead.company_name || 'Client';
-      const safeCompanyName = companyName.replace(/[^a-z0-9]/gi, '_').toLowerCase();
-      const filename = `${safeCompanyName}_proposal_v${revision.version_number}.pdf`;
+      const safeCompanyName = getSafeFileName(companyName, { maxLength: 40, replaceChar: '-' });
+      const filename = `${safeCompanyName}_v${revision.version_number}.pdf`;
       
       // Save the file
       saveAs(pdfBlob, filename);

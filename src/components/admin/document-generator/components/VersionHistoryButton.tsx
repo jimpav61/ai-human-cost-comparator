@@ -24,11 +24,12 @@ export const VersionHistoryButton = ({ lead }: VersionHistoryButtonProps) => {
     <>
       <Button
         variant="outline"
-        className="flex items-center space-x-1"
+        className="flex items-center gap-1"
         onClick={handleOpenDialog}
+        size="sm"
       >
-        <History className="h-4 w-4 mr-1" />
-        Version History
+        <History className="h-4 w-4" />
+        <span>Version History</span>
       </Button>
       
       {isDialogOpen && (
