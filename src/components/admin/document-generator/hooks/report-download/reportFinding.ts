@@ -16,10 +16,9 @@ export const findOrGenerateReport = async (lead: Lead, setIsLoading: (isLoading:
       throw new Error("Lead ID is missing");
     }
     
-    // First, try to find the report in the database by lead_id only
+    // First, try to find the report in the database by lead_id
     console.log("Searching for report with lead_id:", lead.id);
     
-    // Try direct lead_id match - no fallbacks
     const { data: reportResults, error: searchError } = await supabase
       .from('generated_reports')
       .select('*')
@@ -46,61 +45,41 @@ export const findOrGenerateReport = async (lead: Lead, setIsLoading: (isLoading:
     const report = reportResults[0];
     console.log('Found report for lead:', report.id);
     
-    // Check the storage bucket for the PDF file
+    // Direct download from storage using the report ID
     const pdfFileName = `${report.id}.pdf`;
     console.log('Looking for PDF file:', pdfFileName);
     
-    try {
-      // Get the public URL directly
-      const { data: urlData } = await supabase.storage
-        .from('reports')
-        .getPublicUrl(pdfFileName);
-      
-      if (!urlData || !urlData.publicUrl) {
-        console.log('No public URL found for PDF');
-        throw new Error('Report file not found in storage');
-      }
-      
-      console.log('Found stored PDF, downloading from:', urlData.publicUrl);
-      
-      // Verify the URL is accessible
-      try {
-        const response = await fetch(urlData.publicUrl, { method: 'HEAD' });
-        
-        if (!response.ok) {
-          console.error(`PDF URL check failed with status ${response.status}`);
-          throw new Error(`Report file not accessible (status ${response.status})`);
-        }
-      } catch (checkError) {
-        console.error("Error verifying PDF URL:", checkError);
-        throw new Error("Report file could not be accessed");
-      }
-      
-      // Trigger direct download of the PDF using the URL
-      const link = document.createElement('a');
-      link.href = urlData.publicUrl;
-      const safeCompanyName = getSafeFileName(lead);
-      link.download = `${safeCompanyName}-ChatSites-ROI-Report.pdf`;
-      document.body.appendChild(link);
-      link.click();
-      document.body.removeChild(link);
-      
-      toast({
-        title: "Report Downloaded",
-        description: "The report has been successfully downloaded.",
-        duration: 1000,
-      });
-      
-    } catch (storageError) {
-      console.error('Error accessing stored PDF:', storageError);
+    const { data: urlData } = await supabase.storage
+      .from('reports')
+      .getPublicUrl(pdfFileName);
+    
+    if (!urlData || !urlData.publicUrl) {
+      console.error('No public URL found for PDF');
       toast({
         title: "Report Error",
-        description: storageError instanceof Error ? storageError.message : "Unable to download report file.",
+        description: "Report file not found in storage.",
         variant: "destructive",
       });
-    } finally {
       setIsLoading(false);
+      return;
     }
+    
+    console.log('Found stored PDF, downloading from:', urlData.publicUrl);
+    
+    // Trigger direct download of the PDF using the URL
+    const link = document.createElement('a');
+    link.href = urlData.publicUrl;
+    const safeCompanyName = getSafeFileName(lead);
+    link.download = `${safeCompanyName}-ChatSites-ROI-Report.pdf`;
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    
+    toast({
+      title: "Report Downloaded",
+      description: "The report has been successfully downloaded.",
+      duration: 1000,
+    });
     
   } catch (error) {
     console.error("Error in findOrGenerateReport:", error);
@@ -109,6 +88,8 @@ export const findOrGenerateReport = async (lead: Lead, setIsLoading: (isLoading:
       description: error instanceof Error ? error.message : "An unexpected error occurred.",
       variant: "destructive",
     });
+  } finally {
     setIsLoading(false);
+    console.log("---------- ADMIN REPORT DOWNLOAD ATTEMPT ENDED ----------");
   }
 };
