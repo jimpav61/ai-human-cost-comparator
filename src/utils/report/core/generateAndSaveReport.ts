@@ -10,7 +10,7 @@ import {
 } from "../storageUtils";
 import { generateReportPDF } from "../pdf/generator";
 import { convertPDFToBlob } from "../pdf/conversion";
-import { ensureLeadHasValidId, getSafeFileName } from "../validation";
+import { getSafeFileName } from "../validation";
 
 /**
  * Generate a PDF report for a lead and save it to database and storage
@@ -39,9 +39,8 @@ export async function generateAndSaveReport(lead: Lead): Promise<ReportGeneratio
     if (!session) {
       console.warn("User is not authenticated - report will be generated for download only");
       // Continue with PDF generation for download only
-      const validatedLead = ensureLeadHasValidId(lead);
-      const pdfDoc = generateReportPDF(validatedLead);
-      pdfDoc.save(`${getSafeFileName(validatedLead)}-ChatSites-ROI-Report.pdf`);
+      const pdfDoc = generateReportPDF(lead);
+      pdfDoc.save(`${getSafeFileName(lead)}-ChatSites-ROI-Report.pdf`);
       
       toast({
         title: "Report Generated",
@@ -66,9 +65,8 @@ export async function generateAndSaveReport(lead: Lead): Promise<ReportGeneratio
       });
       
       // Still generate PDF for download even if we can't save to storage
-      const validatedLead = ensureLeadHasValidId(lead);
-      const pdfDoc = generateReportPDF(validatedLead);
-      pdfDoc.save(`${getSafeFileName(validatedLead)}-ChatSites-ROI-Report.pdf`);
+      const pdfDoc = generateReportPDF(lead);
+      pdfDoc.save(`${getSafeFileName(lead)}-ChatSites-ROI-Report.pdf`);
       
       return {
         success: false,
@@ -76,11 +74,10 @@ export async function generateAndSaveReport(lead: Lead): Promise<ReportGeneratio
       };
     }
 
-    // Ensure lead has valid ID
-    const validatedLead = ensureLeadHasValidId(lead);
-    console.log("Report generator: Validated lead ID:", validatedLead.id);
+    // All leads already have valid UUIDs, no need to validate
+    console.log("Report generator: Using lead ID:", lead.id);
 
-    const reportId = await saveReportData(validatedLead);
+    const reportId = await saveReportData(lead);
     if (!reportId) {
       toast({
         title: "Database Error",
@@ -89,8 +86,8 @@ export async function generateAndSaveReport(lead: Lead): Promise<ReportGeneratio
       });
       
       // Still generate PDF for download
-      const pdfDoc = generateReportPDF(validatedLead);
-      pdfDoc.save(`${getSafeFileName(validatedLead)}-ChatSites-ROI-Report.pdf`);
+      const pdfDoc = generateReportPDF(lead);
+      pdfDoc.save(`${getSafeFileName(lead)}-ChatSites-ROI-Report.pdf`);
       
       return {
         success: false,
@@ -100,7 +97,7 @@ export async function generateAndSaveReport(lead: Lead): Promise<ReportGeneratio
 
     // Generate and save PDF
     try {
-      const pdfDoc = generateReportPDF(validatedLead);
+      const pdfDoc = generateReportPDF(lead);
       
       // Save PDF to Supabase storage
       const pdfBlob = await convertPDFToBlob(pdfDoc);
@@ -130,7 +127,7 @@ export async function generateAndSaveReport(lead: Lead): Promise<ReportGeneratio
         });
         
         // Still allow user to download the PDF
-        pdfDoc.save(`${getSafeFileName(validatedLead)}-ChatSites-ROI-Report.pdf`);
+        pdfDoc.save(`${getSafeFileName(lead)}-ChatSites-ROI-Report.pdf`);
         
         return {
           success: true,  // Still return success since report data was saved

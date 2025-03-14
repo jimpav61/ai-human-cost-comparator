@@ -1,7 +1,4 @@
 
-import { v4 as uuidv4 } from 'uuid';
-import { Lead } from "@/types/leads";
-
 /**
  * Utility function to sanitize company name for use in filenames
  */
@@ -45,22 +42,4 @@ export const validateCalculatorInputs = (inputs: any): boolean => {
   // Check for required fields
   const requiredFields = ['aiTier', 'aiType'];
   return requiredFields.every(field => field in inputs);
-};
-
-/**
- * Ensures a lead has a valid UUID
- * If the lead has a temporary ID (starting with 'temp-'), this function
- * replaces it with a valid UUID to ensure compatibility with storage systems
- */
-export const ensureLeadHasValidId = (lead: Lead): Lead => {
-  // If lead doesn't have an ID or has a temporary ID, generate a UUID
-  if (!lead.id || lead.id.startsWith('temp-')) {
-    // Create a copy of the lead to avoid mutating the original
-    const validatedLead = { ...lead };
-    validatedLead.id = uuidv4();
-    return validatedLead;
-  }
-  
-  // If ID is already valid, return the lead as is
-  return lead;
 };

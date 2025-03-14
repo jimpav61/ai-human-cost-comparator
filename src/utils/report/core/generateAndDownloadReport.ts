@@ -3,7 +3,7 @@ import { Lead } from "@/types/leads";
 import { toast } from "@/components/ui/use-toast";
 import { generateReportPDF } from "../pdf/generator";
 import { convertPDFToBlob } from "../pdf/conversion";
-import { ensureLeadHasValidId, getSafeFileName } from "../validation";
+import { getSafeFileName } from "../validation";
 import { supabase } from "@/integrations/supabase/client";
 import { verifyReportsBucket, saveReportToStorageWithRetry } from "../storageUtils";
 
@@ -25,15 +25,14 @@ export function generateAndDownloadReport(lead: Lead): boolean {
       return false;
     }
     
-    // Ensure lead has a valid UUID - replace temp-id with a real UUID
-    const leadWithValidId = ensureLeadHasValidId(lead);
-    console.log("Using lead with validated ID:", leadWithValidId.id);
+    // No need to validate ID - all leads already have valid UUIDs
+    console.log("Using lead with ID:", lead.id);
     
     // Generate PDF
-    const pdfDoc = generateReportPDF(leadWithValidId);
+    const pdfDoc = generateReportPDF(lead);
     
     // Create safe filename
-    const safeFileName = getSafeFileName(leadWithValidId);
+    const safeFileName = getSafeFileName(lead);
     
     // Save/download the document for the user
     pdfDoc.save(`${safeFileName}-ChatSites-ROI-Report.pdf`);
@@ -61,7 +60,7 @@ export function generateAndDownloadReport(lead: Lead): boolean {
         }
         
         // Attempt to save to storage
-        saveReportToStorageWithRetry(leadWithValidId, pdfDoc)
+        saveReportToStorageWithRetry(lead, pdfDoc)
           .then(result => {
             if (result.success) {
               console.log("Front-end report saved to database and storage successfully:", result);
