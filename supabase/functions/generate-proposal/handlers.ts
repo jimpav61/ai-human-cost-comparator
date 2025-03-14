@@ -36,7 +36,7 @@ export async function handlePreviewRequest(lead: any, returnContent = false, deb
         companyName: lead.company_name,
         calculatorResultsType: typeof lead.calculator_results,
         hasCalculatorInputs: !!lead.calculator_inputs,
-        apiVersion: "2.7"
+        apiVersion: "2.8"
       } : undefined
     };
     

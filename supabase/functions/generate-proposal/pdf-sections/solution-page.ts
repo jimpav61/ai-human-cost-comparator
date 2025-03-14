@@ -1,0 +1,123 @@
+
+import { ProposalData } from "../pdf-data-extractor.ts";
+import { formatPdfNumber } from "../pdf-utils.ts";
+
+/**
+ * Generate the solution page content for the proposal PDF
+ */
+export function generateSolutionPageContent(data: ProposalData): string {
+  const {
+    brandRed,
+    companyName,
+    tierName,
+    tierKey,
+    aiTypeDisplay,
+    additionalVoiceMinutes,
+    includedVoiceMinutes
+  } = data;
+
+  let content = `q
+${brandRed} rg
+0 792 612 -70 re f
+0 0 0 rg
+BT
+/F2 24 Tf
+72 740 Td
+1 1 1 rg
+(RECOMMENDED SOLUTION) Tj
+0 0 0 rg
+0 -45 Td
+/F2 18 Tf
+${brandRed} rg
+(${tierName} - ${aiTypeDisplay}) Tj
+0 0 0 rg
+0 -30 Td
+/F1 12 Tf
+(Based on your specific business requirements, we recommend our ${tierName} with) Tj
+0 -20 Td
+(${aiTypeDisplay} capabilities as the optimal solution for ${companyName}.) Tj
+0 -40 Td
+/F2 16 Tf
+${brandRed} rg
+(Solution Features:) Tj
+0 0 0 rg
+0 -25 Td
+/F1 12 Tf
+(\\267 Customized AI model trained on your business knowledge and processes) Tj
+0 -20 Td
+(\\267 Advanced natural language processing for accurate understanding of customer inquiries) Tj
+0 -20 Td
+(\\267 ${aiTypeDisplay} interface for versatile customer engagement) Tj
+0 -20 Td
+(\\267 Integration capabilities with your existing systems and workflows) Tj
+0 -20 Td
+(\\267 Comprehensive analytics dashboard for performance monitoring) Tj
+0 -20 Td
+(\\267 Regular updates and continuous improvement of AI capabilities) Tj
+0 0 0 rg
+0 -40 Td
+/F2 16 Tf
+${brandRed} rg
+(Technical Specifications:) Tj
+0 0 0 rg
+0 -25 Td
+/F1 12 Tf
+(\\267 ${tierName} AI Engine with ${tierKey === 'premium' ? 'advanced' : tierKey === 'growth' ? 'enhanced' : 'standard'} capabilities) Tj
+0 -20 Td
+(\\267 ${aiTypeDisplay} Interface ${tierKey !== 'starter' ? 'with speech recognition and synthesis' : ''}) Tj
+0 -20 Td`;
+
+  // Add voice information based on tier and type
+  if (tierKey === 'starter') {
+    content += `
+(\\267 No voice capabilities included in this tier) Tj
+0 -20 Td`;
+  } else {
+    content += `
+(\\267 Includes ${includedVoiceMinutes} voice minutes per month as part of base plan) Tj
+0 -20 Td`;
+    
+    if (additionalVoiceMinutes > 0) {
+      content += `
+(\\267 ${formatPdfNumber(additionalVoiceMinutes)} additional voice minutes at $0.12/minute) Tj
+0 -20 Td
+(\\267 Additional voice cost: $${(additionalVoiceMinutes * 0.12).toFixed(2)}/month) Tj
+0 -20 Td`;
+    } else {
+      content += `
+(\\267 No additional voice minutes requested) Tj
+0 -20 Td`;
+    }
+  }
+
+  // Continue with standard content
+  content += `
+(\\267 ${tierKey === 'premium' ? 'Unlimited' : '50,000+'} monthly text interactions) Tj
+0 -20 Td
+(\\267 Secure cloud-based deployment with 99.9% uptime guarantee) Tj
+0 -20 Td
+(\\267 ${tierKey === 'premium' ? 'Priority' : 'Standard'} technical support and maintenance) Tj
+0 -30 Td
+
+BT
+/F2 16 Tf
+72 195 Td
+${brandRed} rg
+(Implementation Timeline:) Tj
+0 0 0 rg
+0 -25 Td
+/F1 12 Tf
+(\\267 Discovery and Planning: 1 week) Tj
+0 -20 Td
+(\\267 Development and Customization: 2-3 weeks) Tj
+0 -20 Td
+(\\267 Testing and Quality Assurance: 1 week) Tj
+0 -20 Td
+(\\267 Deployment and Integration: 1 week) Tj
+0 -20 Td
+(\\267 Training and Knowledge Transfer: 1 week) Tj
+ET
+Q`;
+
+  return content;
+}
