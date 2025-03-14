@@ -71,7 +71,7 @@ serve(async (req) => {
     console.log("Version:", version);
     console.log("Calculator inputs type:", typeof lead.calculator_inputs);
     console.log("Calculator results type:", typeof lead.calculator_results);
-    console.log("API Version: 2.6"); // Updated version info to ensure change detection
+    console.log("API Version: 2.7"); // Updated version number
     
     // CRITICAL: Ensure calculator_results is an object not a string
     if (!lead.calculator_results) {
@@ -223,7 +223,7 @@ serve(async (req) => {
         success: false, 
         error: error.message,
         stack: error.stack,
-        version: "2.6" // Updated version to ensure change detection
+        version: "2.7" // Updated version number
       }),
       {
         headers: {

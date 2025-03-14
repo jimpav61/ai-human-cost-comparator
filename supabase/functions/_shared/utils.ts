@@ -1,87 +1,54 @@
 
+// Utility functions shared across edge functions
+
+// CORS headers for cross-origin requests
+export const corsHeaders = {
+  'Access-Control-Allow-Origin': '*',
+  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
+  'Access-Control-Allow-Methods': 'GET, POST, PUT, DELETE, OPTIONS'
+};
+
 /**
- * Safely formats a currency value with $ symbol, commas, and 2 decimal places
+ * Format a number as currency
  */
-export function formatCurrency(value: number): string {
-  try {
-    // Ensure value is a valid number
-    const num = typeof value === 'number' ? value : 0;
-    
-    // Format with $ symbol, commas, and fixed 2 decimal places
-    return '$' + num.toLocaleString('en-US', {
-      minimumFractionDigits: 0,
-      maximumFractionDigits: 0
-    });
-  } catch (error) {
-    console.error('Error formatting currency:', error);
-    return '$0';
-  }
+export function formatCurrency(amount: number): string {
+  return new Intl.NumberFormat('en-US', {
+    style: 'currency',
+    currency: 'USD',
+    minimumFractionDigits: 0,
+    maximumFractionDigits: 0
+  }).format(amount);
 }
 
 /**
- * Safely formats a percentage value with % symbol
+ * Get a safe filename from a potentially unsafe string
  */
-export function formatPercentage(value: number): string {
-  try {
-    // Ensure value is a valid number
-    const num = typeof value === 'number' ? value : 0;
-    
-    // Format with % symbol and no decimal places
-    return Math.round(num) + '%';
-  } catch (error) {
-    console.error('Error formatting percentage:', error);
-    return '0%';
-  }
-}
-
-/**
- * Safely formats a number with commas and optional decimal places
- */
-export function formatNumber(value: number, decimalPlaces: number = 0): string {
-  try {
-    // Ensure value is a valid number
-    const num = typeof value === 'number' ? value : 0;
-    
-    // Format with commas and specified decimal places
-    return num.toLocaleString('en-US', {
-      minimumFractionDigits: decimalPlaces,
-      maximumFractionDigits: decimalPlaces
-    });
-  } catch (error) {
-    console.error('Error formatting number:', error);
-    return '0';
-  }
-}
-
-/**
- * Sanitizes a string for use as a filename
- * @param input The input string to sanitize
- * @param options Optional configuration
- * @returns A safe filename string
- */
-export function getSafeFileName(
-  input: string, 
-  options: { maxLength?: number; replaceChar?: string } = {}
-): string {
-  // Set default options
-  const maxLength = options.maxLength || 50;
-  const replaceChar = options.replaceChar || '_';
+export function getSafeFileName(input: string | { company_name?: string }, options: { maxLength?: number, replaceChar?: string } = {}): string {
+  // Default options
+  const { maxLength = 40, replaceChar = '-' } = options;
   
-  // Replace invalid characters and trim
-  let safeStr = input
-    .replace(/[^a-z0-9]/gi, replaceChar) // Replace invalid chars with replacement char
-    .replace(new RegExp(`\\${replaceChar}+`, 'g'), replaceChar) // Collapse multiple replacement chars
-    .replace(new RegExp(`^\\${replaceChar}|\\${replaceChar}$`, 'g'), ''); // Remove leading/trailing replacement chars
+  // Handle object input (extract company_name)
+  let str = typeof input === 'object' ? (input.company_name || 'Proposal') : input;
   
-  // Truncate if needed
-  if (safeStr.length > maxLength) {
-    safeStr = safeStr.substring(0, maxLength);
-    
-    // If truncated at a replacement char, remove it
-    if (safeStr.endsWith(replaceChar)) {
-      safeStr = safeStr.substring(0, safeStr.length - 1);
-    }
+  // Replace invalid file name characters with the replacement character
+  let safeName = str.replace(/[<>:"\/\\|?*\x00-\x1F]/g, replaceChar);
+  
+  // Remove multiple consecutive replacement characters
+  safeName = safeName.replace(new RegExp(`${replaceChar}+`, 'g'), replaceChar);
+  
+  // Trim replacement characters from beginning and end
+  safeName = safeName.replace(new RegExp(`^${replaceChar}|${replaceChar}$`, 'g'), '');
+  
+  // Limit length
+  if (safeName.length > maxLength) {
+    safeName = safeName.substring(0, maxLength);
   }
   
-  return safeStr || 'document'; // Fallback if empty
+  // Ensure we don't end with a replacement character
+  safeName = safeName.replace(new RegExp(`${replaceChar}$`), '');
+  
+  // Add timestamp for uniqueness
+  const timestamp = new Date().toISOString().replace(/[:.]/g, '-').substring(0, 19);
+  
+  return `${safeName}-Proposal-${timestamp}`;
 }

@@ -35,7 +35,7 @@ export async function handlePreviewRequest(lead: any, shouldReturnContent: boole
           success: false, 
           error: "Invalid calculator results data",
           details: "The calculator_results property is missing or not an object",
-          version: "2.5"
+          version: "2.7" // Increment version for tracking
         }),
         {
           headers: {
@@ -67,6 +67,7 @@ export async function handlePreviewRequest(lead: any, shouldReturnContent: boole
     
     console.log("PDF content generated successfully, length:", pdfContent.length);
     console.log("PDF starts with:", pdfContent.substring(0, 20)); // Check the first 20 chars
+    console.log("Content starts with PDF header:", pdfContent.startsWith('%PDF-')); // Critical check
     
     // Enhanced debugging
     if (debug) {
@@ -109,7 +110,7 @@ export async function handlePreviewRequest(lead: any, shouldReturnContent: boole
           format: 'base64',
           contentType: 'application/pdf',
           message: "Proposal generated successfully",
-          version: "2.5", 
+          version: "2.7", // Increment version
           timestamp: new Date().toISOString()
         }),
         {
@@ -153,7 +154,7 @@ export async function handlePreviewRequest(lead: any, shouldReturnContent: boole
         format: 'base64',
         contentType: 'application/pdf',
         message: "Proposal generated successfully",
-        version: "2.5", 
+        version: "2.7", // Increment version 
         timestamp: new Date().toISOString()
       }),
       {
@@ -171,7 +172,7 @@ export async function handlePreviewRequest(lead: any, shouldReturnContent: boole
         success: false, 
         error: "Failed to generate PDF: " + pdfError.message,
         stack: pdfError.stack,
-        version: "2.5"
+        version: "2.7" // Increment version
       }),
       {
         headers: {
@@ -195,7 +196,7 @@ export function handleEmailRequest(lead: any) {
       success: true,
       message: "Proposal has been sent to " + lead.email,
       timestamp: new Date().toISOString(),
-      version: "2.5"
+      version: "2.7" // Increment version
     }),
     {
       headers: {
@@ -208,7 +209,7 @@ export function handleEmailRequest(lead: any) {
 }
 
 /**
- * NEW FUNCTION: Validates and sanitizes calculator results
+ * Validates and sanitizes calculator results
  * Ensures all required properties exist and provides default values for missing ones
  */
 function validateAndSanitizeResults(results: any, debug = false): any {

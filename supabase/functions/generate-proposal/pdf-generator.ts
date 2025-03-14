@@ -30,9 +30,6 @@ export function generateProfessionalProposal(lead: any): string {
     };
   }
   
-  // Log the entire calculator_results for debugging
-  console.log("CALCULATOR RESULTS FOR PDF GENERATION:", JSON.stringify(sanitizedLead.calculator_results, null, 2));
-  
   // Company information - use exactly what's in the lead
   const companyName = sanitizedLead.company_name || 'Client';
   const contactName = sanitizedLead.name || 'Valued Client';
@@ -59,31 +56,6 @@ export function generateProfessionalProposal(lead: any): string {
     setupFee: 749
   };
   
-  // Print all values to ensure they're being used correctly
-  console.log("TEMPLATE VALUES:", {
-    companyName,
-    contactName,
-    humanCostMonthly,
-    basePriceMonthly,
-    monthlySavings,
-    yearlySavings,
-    savingsPercentage,
-    tierKey,
-    aiType,
-    aiCostMonthly
-  });
-  
-  // Simple lookup tables for tier and AI type display names
-  const tierName = tierKey === 'starter' ? 'Starter Plan' : 
-                  tierKey === 'growth' ? 'Growth Plan' : 
-                  tierKey === 'premium' ? 'Premium Plan' : 'Growth Plan';
-  
-  const aiTypeDisplay = aiType === 'chatbot' ? 'Text Only' : 
-                      aiType === 'voice' ? 'Basic Voice' : 
-                      aiType === 'conversationalVoice' ? 'Conversational Voice' : 
-                      aiType === 'both' ? 'Text & Basic Voice' : 
-                      aiType === 'both-premium' ? 'Text & Conversational Voice' : 'Text Only';
-  
   // Get additional values directly from the calculator data
   const setupFee = aiCostMonthly.setupFee;
   const totalMonthlyCost = aiCostMonthly.total;
@@ -108,10 +80,34 @@ export function generateProfessionalProposal(lead: any): string {
   // Brand Colors
   const brandRed = "#f65228"; // Corrected to your brand color
   
-  // Now let's create the PDF template with placeholders
-  // This is our static template - we'll just replace the values directly
-  let pdfTemplate = `
-%PDF-1.7
+  console.log("TEMPLATE VALUES:", {
+    companyName,
+    contactName,
+    humanCostMonthly,
+    basePriceMonthly,
+    monthlySavings,
+    yearlySavings,
+    savingsPercentage,
+    tierKey,
+    aiType,
+    aiCostMonthly,
+    additionalVoiceMinutes
+  });
+  
+  // Simple lookup tables for tier and AI type display names
+  const tierName = tierKey === 'starter' ? 'Starter Plan' : 
+                  tierKey === 'growth' ? 'Growth Plan' : 
+                  tierKey === 'premium' ? 'Premium Plan' : 'Growth Plan';
+  
+  const aiTypeDisplay = aiType === 'chatbot' ? 'Text Only' : 
+                      aiType === 'voice' ? 'Basic Voice' : 
+                      aiType === 'conversationalVoice' ? 'Conversational Voice' : 
+                      aiType === 'both' ? 'Text & Basic Voice' : 
+                      aiType === 'both-premium' ? 'Text & Conversational Voice' : 'Text Only';
+  
+  // CRITICAL: Generate valid PDF syntax (must start with %PDF-1.7)
+  // This is the raw PDF content that will be returned
+  const pdfTemplate = `%PDF-1.7
 1 0 obj
 << /Type /Catalog
    /Pages 2 0 R
@@ -325,30 +321,32 @@ ${brandRed} rg
 0 -20 Td`;
 
   // Add voice information based on tier and type
+  let pdfContent = pdfTemplate;
+  
   if (tierKey === 'starter') {
-    pdfTemplate += `
+    pdfContent += `
 (\\267 No voice capabilities included in this tier) Tj
 0 -20 Td`;
   } else {
-    pdfTemplate += `
+    pdfContent += `
 (\\267 Includes 600 voice minutes per month as part of base plan) Tj
 0 -20 Td`;
     
     if (additionalVoiceMinutes > 0) {
-      pdfTemplate += `
+      pdfContent += `
 (\\267 ${additionalVoiceMinutes} additional voice minutes at $0.12/minute) Tj
 0 -20 Td
 (\\267 Additional voice cost: $${(additionalVoiceMinutes * 0.12).toFixed(2)}/month) Tj
 0 -20 Td`;
     } else {
-      pdfTemplate += `
+      pdfContent += `
 (\\267 No additional voice minutes requested) Tj
 0 -20 Td`;
     }
   }
 
   // Continue with standard content
-  pdfTemplate += `
+  pdfContent += `
 (\\267 ${tierKey === 'premium' ? 'Unlimited' : '50,000+'} monthly text interactions) Tj
 0 -20 Td
 (\\267 Secure cloud-based deployment with 99.9% uptime guarantee) Tj
@@ -409,20 +407,20 @@ ${brandRed} rg
 
   // Handle voice minutes information 
   if (tierKey === 'starter') {
-    pdfTemplate += `
+    pdfContent += `
 (Voice Capabilities:) Tj
 190 0 Td
 (Not included in Starter Plan) Tj
 -190 -25 Td`;
   } else {
-    pdfTemplate += `
+    pdfContent += `
 (Included Voice Minutes:) Tj
 190 0 Td
 (600 minutes/month) Tj
 -190 -25 Td`;
     
     if (additionalVoiceMinutes > 0) {
-      pdfTemplate += `
+      pdfContent += `
 (Additional Voice Minutes:) Tj
 190 0 Td
 (${additionalVoiceMinutes} minutes @ $0.12/minute) Tj
@@ -432,7 +430,7 @@ ${brandRed} rg
 ($${(additionalVoiceMinutes * 0.12).toFixed(2)}/month) Tj
 -190 -25 Td`;
     } else {
-      pdfTemplate += `
+      pdfContent += `
 (Additional Voice Minutes:) Tj
 190 0 Td
 (None requested) Tj
@@ -441,7 +439,7 @@ ${brandRed} rg
   }
 
   // Show total monthly cost with clear breakdown
-  pdfTemplate += `
+  pdfContent += `
 (Total Monthly Investment:) Tj
 190 0 Td
 ($${totalMonthlyCost.toFixed(2)}/month) Tj
@@ -657,12 +655,18 @@ trailer
 >>
 startxref
 15179
-%%EOF
-`;
+%%EOF`;
 
+  // Log debugging info
   console.log("==== PDF GENERATION COMPLETE ====");
-  console.log("PDF template length:", pdfTemplate.length);
-  console.log("PDF starts with:", pdfTemplate.substring(0, 20));
+  console.log("PDF content length:", pdfContent.length);
+  console.log("PDF starts with:", pdfContent.substring(0, 20));
   
-  return pdfTemplate;
+  // Critical: ensure we have a valid PDF that starts with %PDF-
+  if (!pdfContent.startsWith('%PDF-')) {
+    console.error("CRITICAL: Generated content is not a valid PDF - missing %PDF- header");
+    throw new Error("Failed to generate a valid PDF document");
+  }
+  
+  return pdfContent;
 }
