@@ -15,7 +15,13 @@ serve(async (req) => {
   try {
     // Parse the request body
     const requestData = await req.json();
-    const { lead, mode = "preview", returnContent = false, debug = false } = requestData;
+    const { 
+      lead, 
+      mode = "preview", 
+      returnContent = false, 
+      debug = false,
+      version = null 
+    } = requestData;
     
     // Log the received data for debugging (sensitive info redacted)
     console.log("=== RECEIVED ENHANCED PROPOSAL GENERATION REQUEST ===");
@@ -24,9 +30,10 @@ serve(async (req) => {
     console.log("Debug mode:", debug);
     console.log("Mode:", mode);
     console.log("Return Content:", returnContent);
+    console.log("Version:", version);
     console.log("Calculator inputs type:", typeof lead.calculator_inputs);
     console.log("Calculator results type:", typeof lead.calculator_results);
-    console.log("API Version: 2.0"); // Added version info to ensure change detection
+    console.log("API Version: 2.1"); // Updated version info to ensure change detection
     
     // CRITICAL: Ensure calculator_results is an object not a string
     if (!lead.calculator_results || typeof lead.calculator_results !== 'object') {
@@ -43,6 +50,16 @@ serve(async (req) => {
       }
     }
     
+    // Include version information if provided
+    if (version) {
+      lead.version_info = {
+        version_number: version,
+        created_at: new Date().toISOString(),
+        notes: `Version ${version}`
+      };
+      console.log("Added version info:", lead.version_info);
+    }
+    
     // DEBUG: Log key values we'll use in the proposal
     console.log("CRITICAL VALUES FOR PROPOSAL:");
     console.log("humanCostMonthly:", lead.calculator_results.humanCostMonthly);
@@ -50,6 +67,8 @@ serve(async (req) => {
     console.log("monthlySavings:", lead.calculator_results.monthlySavings);
     console.log("yearlySavings:", lead.calculator_results.yearlySavings);
     console.log("savingsPercentage:", lead.calculator_results.savingsPercentage);
+    console.log("tierKey:", lead.calculator_results.tierKey);
+    console.log("aiType:", lead.calculator_results.aiType);
     console.log("Processing timestamp:", new Date().toISOString());
     
     // Determine if this is a preview or email request
@@ -70,7 +89,7 @@ serve(async (req) => {
         success: false, 
         error: error.message,
         stack: error.stack,
-        version: "2.0" // Added version to ensure change detection
+        version: "2.1" // Updated version to ensure change detection
       }),
       {
         headers: {

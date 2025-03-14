@@ -162,6 +162,56 @@ export const useProposalRevisions = () => {
     }
   };
   
+  // Generate a PDF from a specific revision
+  const generatePdfFromRevision = async (revision: ProposalRevision) => {
+    try {
+      setIsLoading(true);
+      
+      // Extract lead data from the proposal content
+      let leadData: any;
+      try {
+        leadData = JSON.parse(revision.proposal_content);
+      } catch (e) {
+        // If content isn't valid JSON, use a simpler object
+        leadData = {
+          id: revision.lead_id,
+          version_info: {
+            version_number: revision.version_number,
+            created_at: revision.created_at,
+            notes: revision.notes
+          }
+        };
+      }
+      
+      // Call the edge function to generate the PDF
+      const { data, error } = await supabase.functions.invoke('generate-proposal', {
+        body: { 
+          lead: leadData,
+          mode: "preview",
+          returnContent: true,
+          version: revision.version_number
+        }
+      });
+      
+      if (error) throw error;
+      
+      setIsLoading(false);
+      
+      return data.pdf;
+    } catch (error) {
+      console.error("Error generating PDF from revision:", error);
+      setIsLoading(false);
+      
+      toast({
+        title: "Error",
+        description: `Failed to generate PDF: ${error instanceof Error ? error.message : 'Unknown error'}`,
+        variant: "destructive",
+      });
+      
+      throw error;
+    }
+  };
+  
   // Update an existing proposal revision
   const updateProposalRevision = async (
     revisionId: string,
@@ -216,6 +266,7 @@ export const useProposalRevisions = () => {
     getNextVersionNumber,
     saveProposalRevision,
     getLatestProposalRevision,
+    generatePdfFromRevision,
     updateProposalRevision
   };
 };

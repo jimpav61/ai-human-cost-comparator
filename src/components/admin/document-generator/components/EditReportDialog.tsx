@@ -10,6 +10,8 @@ import { useEditReportState } from "../hooks/useEditReportState";
 import { CalculatorInputs } from "@/hooks/calculator/types";
 import { performCalculations } from "@/hooks/calculator/calculations";
 import { DEFAULT_AI_RATES } from "@/constants/pricing"; 
+import { useProposalRevisions } from "../hooks/useProposalRevisions";
+import { toast } from "@/components/ui/use-toast";
 
 interface EditProposalDialogProps {
   isOpen: boolean;
@@ -31,6 +33,9 @@ export const EditReportDialog = ({ isOpen, onClose, lead, onSave }: EditProposal
     handleAITypeChange,
     handleSave: originalHandleSave
   } = useEditReportState(lead, onSave, onClose);
+  
+  // Add proposal revision hooks for version tracking
+  const { saveProposalRevision, getNextVersionNumber, isLoading: isSavingProposal } = useProposalRevisions();
   
   // Current values - ensure we have non-null values for all fields
   const callVolume = editableLead.calculator_inputs?.callVolume ?? 0;
@@ -127,6 +132,79 @@ export const EditReportDialog = ({ isOpen, onClose, lead, onSave }: EditProposal
     onClose();
   };
   
+  // New handler to generate a proposal version with current settings
+  const handleGenerateProposal = async () => {
+    try {
+      // Create a deep copy of the lead with current dialog values
+      const leadWithCurrentValues = JSON.parse(JSON.stringify(editableLead));
+      
+      // Ensure calculator results reflect current dialog settings
+      if (!leadWithCurrentValues.calculator_results) {
+        leadWithCurrentValues.calculator_results = {};
+      }
+      
+      // Use the same calculation logic as in handleSave to ensure consistency
+      const tier = aiTier;
+      const tierBasePrices = {
+        starter: 99,
+        growth: 229,
+        premium: 429
+      };
+      const basePrice = tierBasePrices[tier as keyof typeof tierBasePrices];
+      const additionalVoiceMinutes = tier !== 'starter' ? callVolume : 0;
+      const additionalVoiceCost = tier !== 'starter' ? additionalVoiceMinutes * 0.12 : 0;
+      const totalCost = basePrice + additionalVoiceCost;
+      
+      // Update calculator results with current dialog values
+      leadWithCurrentValues.calculator_results.tierKey = tier;
+      leadWithCurrentValues.calculator_results.aiType = aiType;
+      leadWithCurrentValues.calculator_results.basePriceMonthly = basePrice;
+      leadWithCurrentValues.calculator_results.aiCostMonthly = {
+        ...leadWithCurrentValues.calculator_results.aiCostMonthly,
+        voice: additionalVoiceCost,
+        chatbot: basePrice,
+        total: totalCost
+      };
+      
+      // Add version metadata
+      const nextVersionNumber = await getNextVersionNumber(lead.id);
+      
+      // Generate plan display names
+      const planName = tier === 'starter' ? 'Starter Plan' : 
+                      tier === 'growth' ? 'Growth Plan' : 'Premium Plan';
+      
+      const aiTypeDisplay = aiType === 'chatbot' ? 'Text Only' : 
+                           aiType === 'voice' ? 'Basic Voice' : 
+                           aiType === 'conversationalVoice' ? 'Conversational Voice' : 
+                           aiType === 'both' ? 'Text & Basic Voice' : 
+                           aiType === 'both-premium' ? 'Text & Conversational Voice' : 'Custom';
+      
+      // Save the proposal revision with version info
+      await saveProposalRevision(
+        lead.id,
+        JSON.stringify(leadWithCurrentValues),
+        `${planName} - ${aiTypeDisplay}`,
+        `Version ${nextVersionNumber} created from current settings. Plan: ${planName}, Type: ${aiTypeDisplay}`
+      );
+      
+      toast({
+        title: "Success",
+        description: `Proposal version ${nextVersionNumber} created successfully`,
+      });
+      
+      // Also save the updated lead data
+      onSave(leadWithCurrentValues);
+      
+    } catch (error) {
+      console.error("Error generating proposal version:", error);
+      toast({
+        title: "Error",
+        description: `Failed to create proposal version: ${error instanceof Error ? error.message : 'Unknown error'}`,
+        variant: "destructive",
+      });
+    }
+  };
+  
   // Determine if we should show voice minutes input
   const showVoiceMinutes = aiTier !== 'starter' && 
     (aiType === 'voice' || aiType === 'conversationalVoice' || aiType === 'both' || aiType === 'both-premium');
@@ -158,9 +236,19 @@ export const EditReportDialog = ({ isOpen, onClose, lead, onSave }: EditProposal
           )}
         </div>
         
-        <DialogFooter>
-          <Button variant="outline" onClick={onClose}>Cancel</Button>
-          <Button onClick={handleSave}>Save</Button>
+        <DialogFooter className="flex flex-col sm:flex-row gap-2">
+          <Button 
+            variant="secondary" 
+            onClick={handleGenerateProposal}
+            disabled={isSavingProposal}
+            className="w-full sm:w-auto"
+          >
+            {isSavingProposal ? "Creating..." : "Generate Proposal Version"}
+          </Button>
+          <div className="flex justify-end space-x-2 w-full">
+            <Button variant="outline" onClick={onClose}>Cancel</Button>
+            <Button onClick={handleSave}>Save Changes</Button>
+          </div>
         </DialogFooter>
       </DialogContent>
     </Dialog>
