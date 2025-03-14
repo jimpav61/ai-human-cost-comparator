@@ -9,7 +9,8 @@ import { Lead } from "@/types/leads";
 import { useProposalRevisions, ProposalRevision } from '../hooks/useProposalRevisions';
 import { Loader2, FileDown, Clock, Calendar } from "lucide-react";
 import { saveAs } from 'file-saver';
-import { getSafeFileName } from "@/hooks/calculator/supabase-types";
+// Import getSafeFileName from the utils file instead
+import { getSafeFileName } from "@/utils/report/validation";
 
 interface ProposalVersionHistoryProps {
   lead: Lead;

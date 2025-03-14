@@ -5,17 +5,25 @@ import { toast } from "@/hooks/use-toast";
 
 interface ProposalGeneratorProps {
   lead: Lead;
+  onLeadUpdated?: (updatedLead: Lead) => void;
   onProposalGenerated?: (proposalPdf: string) => void;
 }
 
-export const ProposalGenerator = ({ lead, onProposalGenerated }: ProposalGeneratorProps) => {
+export const ProposalGenerator = ({ lead, onLeadUpdated, onProposalGenerated }: ProposalGeneratorProps) => {
   const { generating, generationError, proposalPdf, generationSuccess, generateProposal } = useProposalGenerator();
 
   const handleGenerateProposal = async () => {
     try {
       const pdf = await generateProposal(lead);
+      
+      // Call both callbacks if provided
       if (onProposalGenerated) {
         onProposalGenerated(pdf);
+      }
+      
+      // If the lead was updated during proposal generation, notify parent
+      if (onLeadUpdated) {
+        onLeadUpdated(lead);
       }
     } catch (error) {
       toast({
