@@ -10,6 +10,9 @@ export const useReportDownload = () => {
   const [isLoading, setIsLoading] = useState(false);
   
   const handleDownloadReport = async (lead: Lead) => {
+
+    console.log(" **************************** Lead 3: ", lead);
+    return;
     try {
       setIsLoading(true);
       

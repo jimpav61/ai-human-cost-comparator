@@ -15,8 +15,8 @@ export const ReportGenerator = ({ lead }: ReportGeneratorProps) => {
 
   const handleGenerateReport = async () => {
 
-    console.log(" **************************** Lead: ", lead);
-    return;
+    console.log(" **************************** Lead 1: ", lead);
+   
 
     try {
       console.log("Starting report generation and download for lead:", lead.id);

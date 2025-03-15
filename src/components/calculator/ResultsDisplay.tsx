@@ -60,6 +60,10 @@ export const ResultsDisplay: React.FC<ResultsDisplayProps> = ({
   };
 
   const handleDownloadReport = async () => {
+
+    console.log(" **************************** Lead 2: ");
+
+    return;
     try {
       setIsDownloading(true);
       console.log("Downloading report with lead ID:", leadForReport.id);
