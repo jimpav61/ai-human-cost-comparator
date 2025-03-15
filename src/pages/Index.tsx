@@ -22,6 +22,8 @@ const Index = () => {
     });
   };
 
+  // Peter's test 
+  
   const handleAdminClick = () => {
     // Improved admin navigation with fallback
     try {
