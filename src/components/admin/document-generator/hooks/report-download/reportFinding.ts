@@ -62,7 +62,7 @@ export const findOrGenerateReport = async (lead: Lead, setIsLoading: (isLoading:
               const safeCompanyName = getSafeFileName(lead);
               link.download = `${safeCompanyName}-ChatSites-ROI-Report.pdf`;
               document.body.appendChild(link);
-              link.click();
+              //link.click();
               document.body.removeChild(link);
               
               toast({
@@ -87,14 +87,14 @@ export const findOrGenerateReport = async (lead: Lead, setIsLoading: (isLoading:
       // If stored PDF not found or not accessible, generate from report data
       console.log('No stored PDF found or not accessible, generating from report data');
 
-      console.log(" **************************** Lead 6: ", lead);
+      console.log(" **************************** Lead 5: ", lead);
 
       
 
       return;
-      await generateAndUploadPDF(report, lead);
-      setIsLoading(false);
-      return;
+      // await generateAndUploadPDF(report, lead);
+      // setIsLoading(false);
+      // return;
     }
     
     // If no reports were found, generate a new one if we have calculator data
@@ -143,9 +143,9 @@ export const findOrGenerateReport = async (lead: Lead, setIsLoading: (isLoading:
       console.log(" **************************** Lead 7: ", tempReport);
 
       return;
-      await generateAndUploadPDF(tempReport, lead);
-      setIsLoading(false);
-      return;
+      // await generateAndUploadPDF(tempReport, lead);
+      // setIsLoading(false);
+      // return;
     }
     
     // If we get here, no reports were found and no calculator data exists
