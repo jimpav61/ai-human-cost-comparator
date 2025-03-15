@@ -15,7 +15,7 @@ export const findOrGenerateReport = async (lead: Lead, setIsLoading: (isLoading:
     console.log('Lead ID for report download:', lead.id);
     console.log('Lead calculator_inputs:', lead.calculator_inputs);
     console.log('Lead calculator_results:', lead.calculator_results);
-    
+    console.log(" **************************** Lead 5: ", lead);
     // Check if lead ID exists
     if (!lead.id) {
       throw new Error("Lead ID is missing");
@@ -41,7 +41,7 @@ export const findOrGenerateReport = async (lead: Lead, setIsLoading: (isLoading:
       // Look for stored PDF in Supabase storage
       const pdfFileName = `${report.id}.pdf`;
       console.log('Checking for PDF file:', pdfFileName);
-      
+      console.log(" **************************** Lead 6 reportResults: ", reportResults);
       try {
         // Get the public URL directly
         const { data: urlData } = await supabase.storage
@@ -54,7 +54,7 @@ export const findOrGenerateReport = async (lead: Lead, setIsLoading: (isLoading:
           // Verify the URL is accessible
           try {
             const response = await fetch(urlData.publicUrl, { method: 'HEAD' });
-            
+            console.log(" **************************** Lead 7 response: ", response);
             if (response.ok) {
               // Trigger direct download of the PDF using the URL
               const link = document.createElement('a');
