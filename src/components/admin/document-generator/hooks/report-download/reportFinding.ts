@@ -9,7 +9,7 @@ import { toJson } from "@/hooks/calculator/supabase-types";
 // Find existing reports for a lead or generate new one
 export const findOrGenerateReport = async (lead: Lead, setIsLoading: (isLoading: boolean) => void) => {
   console.log(" **************************** Lead 4: ", lead);
-  
+  return;
   try {
     console.log('---------- ADMIN REPORT DOWNLOAD ATTEMPT ----------');
     console.log('Lead ID for report download:', lead.id);
