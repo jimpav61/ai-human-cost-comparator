@@ -1,4 +1,3 @@
-
 import { Lead } from "@/types/leads";
 import { AI_RATES } from "@/constants/pricing";
 import { SharedResults } from "../../../types";
@@ -33,8 +32,7 @@ export function getCalculatorData(lead: Lead): CalculatorDataResult {
   const aiTypeToUse = inputs.aiType || 'chatbot';
   
   // Calculate included voice minutes based on tier
-  const includedVoiceMinutes = tierKey === 'starter' ? 0 : 
-                              (tierKey === 'growth' ? 600 : 1200);
+  const includedVoiceMinutes = tierKey === 'starter' ? 0 : 600;
   
   // Get voice minutes data
   const extraVoiceMinutes = inputs.callVolume || 0;
