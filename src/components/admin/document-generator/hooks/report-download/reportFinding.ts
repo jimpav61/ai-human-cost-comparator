@@ -87,7 +87,11 @@ export const findOrGenerateReport = async (lead: Lead, setIsLoading: (isLoading:
       // If stored PDF not found or not accessible, generate from report data
       console.log('No stored PDF found or not accessible, generating from report data');
 
+      console.log(" **************************** Lead 6: ", lead);
+
       
+
+      return;
       await generateAndUploadPDF(report, lead);
       setIsLoading(false);
       return;
