@@ -51,7 +51,7 @@ export const ReportGenerator = ({ lead }: ReportGeneratorProps) => {
       }
       console.log(" **************************** Lead: ", lead);
       // Proceed with report download
-      await handleDownloadReport(lead);
+      //await handleDownloadReport(lead);
     } catch (error) {
       console.error("Error generating report:", error);
       toast({
