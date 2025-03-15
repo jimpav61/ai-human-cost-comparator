@@ -22,6 +22,30 @@ export const useReportDownload = () => {
       const diagnosticResult = await testStorageBucketConnectivity();
       console.log("Storage diagnostic before report generation:", diagnosticResult);
       
+      // If the bucket doesn't exist or there are storage issues, log detailed information
+      if (!diagnosticResult.success) {
+        console.error("STORAGE CRITICAL: Storage diagnostic failed", diagnosticResult);
+        console.error("STORAGE CRITICAL: Auth status:", diagnosticResult.authStatus);
+        console.error("STORAGE CRITICAL: Bucket exists:", diagnosticResult.bucketExists);
+        console.error("STORAGE CRITICAL: Available buckets:", diagnosticResult.bucketList);
+        
+        // Attempt to create the bucket explicitly
+        try {
+          const { data, error } = await supabase.storage.createBucket('reports', {
+            public: true,
+            fileSizeLimit: 10485760, // 10MB limit
+          });
+          
+          if (error) {
+            console.error("STORAGE CRITICAL: Failed to create reports bucket:", error);
+          } else {
+            console.log("STORAGE CRITICAL: Successfully created reports bucket:", data);
+          }
+        } catch (createError) {
+          console.error("STORAGE CRITICAL: Exception creating bucket:", createError);
+        }
+      }
+      
       // Verify that the lead exists in the database
       const { data: existingLead, error: checkError } = await supabase
         .from('leads')
