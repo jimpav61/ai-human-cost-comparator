@@ -16,7 +16,7 @@ export const ReportGenerator = ({ lead }: ReportGeneratorProps) => {
   const handleGenerateReport = async () => {
     try {
       console.log("Starting report generation and download for lead:", lead.id);
-      
+     
       // First run a diagnostic check on the storage bucket
       const diagnosticResult = await testStorageBucketConnectivity();
       console.log("Storage diagnostic result:", diagnosticResult);
@@ -49,7 +49,7 @@ export const ReportGenerator = ({ lead }: ReportGeneratorProps) => {
         });
         return;
       }
-      
+      console.log(" **************************** Lead: ", lead);
       // Proceed with report download
       await handleDownloadReport(lead);
     } catch (error) {
