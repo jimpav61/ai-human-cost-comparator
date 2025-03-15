@@ -33,8 +33,8 @@ export function getCalculatorData(lead: Lead): CalculatorDataResult {
   
   // Calculate included voice minutes based on tier
   const includedVoiceMinutes = tierKey === 'starter' ? 0 : 600;
-  console.log(" tierKey ", tierKey)
-  console.log(" includedVoiceMinutes ", includedVoiceMinutes)
+  console.log(" /////////////////////////////// tierKey ", tierKey)
+  console.log(" /////////////////////////////// includedVoiceMinutes ", includedVoiceMinutes)
   
   
   // Get voice minutes data
