@@ -10,24 +10,13 @@ export async function verifyReportsBucket(): Promise<boolean> {
   try {
     console.log("STORAGE TRACKING: Verifying reports bucket existence...");
     
-    // First check if the bucket exists by attempting to list files
-    const { data: fileList, error: listError } = await supabase.storage
-      .from('reports')
-      .list('', { limit: 1 });
-    
-    // If we can list files without error, the bucket exists
-    if (!listError) {
-      console.log("STORAGE TRACKING: Reports bucket exists and is accessible");
-      return true;
-    }
-    
-    console.log("STORAGE TRACKING: Reports bucket not found or not accessible, checking all buckets...");
-    
-    // If listing failed, check more directly with listBuckets
+    // First list all buckets to check if reports bucket exists
     const { data: buckets, error: bucketsError } = await supabase.storage.listBuckets();
     
     if (bucketsError) {
       console.error("STORAGE TRACKING: Error listing buckets:", bucketsError);
+      console.error("STORAGE TRACKING: Error message:", bucketsError.message);
+      
       // Check authentication - we might not have permission
       const { data: session } = await supabase.auth.getSession();
       console.log("STORAGE TRACKING: Session check:", !!session.session);
@@ -36,6 +25,7 @@ export async function verifyReportsBucket(): Promise<boolean> {
         console.error("STORAGE TRACKING: User is not authenticated, cannot create bucket");
         return false;
       }
+      
       // Return false to trigger explicit bucket creation
       return false;
     }
@@ -45,6 +35,17 @@ export async function verifyReportsBucket(): Promise<boolean> {
     
     if (reportsBucket) {
       console.log("STORAGE TRACKING: Reports bucket exists:", reportsBucket.id);
+      
+      // Try to list files to verify access permissions
+      const { error: listError } = await supabase.storage
+        .from('reports')
+        .list('', { limit: 1 });
+      
+      if (listError) {
+        console.error("STORAGE TRACKING: Cannot access reports bucket:", listError);
+        return false;
+      }
+      
       return true;
     }
     
@@ -61,7 +62,7 @@ export async function verifyReportsBucket(): Promise<boolean> {
       console.error("STORAGE TRACKING: Error creating reports bucket:", error);
       console.error("STORAGE TRACKING: Error message:", error.message);
       
-      // Check if it's a permission issue - using error message text instead of code
+      // Check if it's a permission issue
       if (error.message && error.message.includes("permission")) {
         console.error("STORAGE TRACKING: Permission denied creating bucket. User might not have admin rights.");
       }
@@ -104,7 +105,6 @@ export async function testStorageBucketConnectivity() {
     const { data: sessionData } = await supabase.auth.getSession();
     const isAuthenticated = !!sessionData.session;
     console.log("STORAGE TRACKING: User authentication status:", isAuthenticated);
-    console.log("STORAGE TRACKING: Session data:", sessionData);
     
     if (!isAuthenticated) {
       console.error("STORAGE TRACKING: User is not authenticated, storage operations will fail");
@@ -119,29 +119,35 @@ export async function testStorageBucketConnectivity() {
       };
     }
     
-    // First try to directly access the reports bucket
-    const { data: reportsList, error: reportsError } = await supabase.storage
-      .from('reports')
-      .list('', { limit: 1 });
-      
-    const reportsAccessible = !reportsError;
-    console.log("STORAGE TRACKING: Reports bucket accessible:", reportsAccessible);
-    if (reportsError) {
-      console.log("STORAGE TRACKING: Reports bucket error:", reportsError);
-    }
-    
     // List all buckets to check general storage access
     const { data: buckets, error: listError } = await supabase.storage.listBuckets();
     
     if (listError) {
       console.error("STORAGE TRACKING: Cannot list buckets:", listError);
-    } else {
-      console.log("STORAGE TRACKING: Available buckets:", buckets?.map(b => b.name).join(', ') || 'none');
+      return {
+        success: false,
+        authStatus: isAuthenticated,
+        bucketExists: false,
+        storageAccessible: false,
+        reportsAccessible: false,
+        error: listError,
+        bucketList: []
+      };
     }
+    
+    console.log("STORAGE TRACKING: Available buckets:", buckets?.map(b => b.name).join(', ') || 'none');
     
     // Check if reports bucket exists
     const reportsBucketExists = buckets?.some(bucket => bucket.name === 'reports');
     console.log("STORAGE TRACKING: Reports bucket exists:", reportsBucketExists);
+    
+    // Try to directly access the reports bucket
+    const { data: reportsList, error: reportsError } = await supabase.storage
+      .from('reports')
+      .list('', { limit: 1 });
+    
+    const reportsAccessible = !reportsError;
+    console.log("STORAGE TRACKING: Reports bucket accessible:", reportsAccessible);
     
     if (!reportsBucketExists && !listError) {
       // Attempt to create the bucket
