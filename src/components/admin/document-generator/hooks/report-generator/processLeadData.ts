@@ -46,8 +46,7 @@ export const processLeadData = (lead: Lead): ProcessedLeadData => {
   const aiTypeToUse = inputs.aiType || 'chatbot';
   
   // Calculate included voice minutes based on tier
-  const includedVoiceMinutes = tierToUse === 'starter' ? 0 : 
-                              (tierToUse === 'growth' ? 600 : 1200);
+  const includedVoiceMinutes = tierToUse === 'starter' ? 0 : 600;
   
   // Get voice minutes data
   const extraVoiceMinutes = inputs.callVolume || 0;
