@@ -12,7 +12,7 @@ export const useReportDownload = () => {
   const handleDownloadReport = async (lead: Lead) => {
 
     console.log(" **************************** Lead 3: ", lead);
-    return;
+    
     try {
       setIsLoading(true);
       
