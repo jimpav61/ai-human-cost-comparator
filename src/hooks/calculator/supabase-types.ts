@@ -17,6 +17,8 @@ export function ensureCompleteCalculatorResults(calculatorResults: any): any {
   
   // Calculate included voice minutes based on tier
   const includedVoiceMinutes = tierKey === 'starter' ? 0 : 600;
+  console.log(" tierKey ", tierKey)
+  console.log(" includedVoiceMinutes ", includedVoiceMinutes)
   
   // Ensure aiCostMonthly exists with all required properties
   results.aiCostMonthly = results.aiCostMonthly || {};
