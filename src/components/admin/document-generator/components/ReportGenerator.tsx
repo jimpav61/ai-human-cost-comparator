@@ -4,7 +4,7 @@ import { useReportDownload } from "../hooks/useReportDownload";
 import { toast } from "@/hooks/use-toast";
 import { FileSpreadsheet } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { testStorageBucketConnectivity } from "@/utils/report/storageUtils";
+import { testStorageBucketConnectivity } from "@/utils/report/bucketUtils";
 
 interface ReportGeneratorProps {
   lead: Lead;
@@ -14,10 +14,8 @@ export const ReportGenerator = ({ lead }: ReportGeneratorProps) => {
   const { isLoading, handleDownloadReport } = useReportDownload();
 
   const handleGenerateReport = async () => {
-
     console.log(" **************************** Lead 1: ", lead);
    
-
     try {
       console.log("Starting report generation and download for lead:", lead.id);
      
@@ -33,7 +31,7 @@ export const ReportGenerator = ({ lead }: ReportGeneratorProps) => {
             description: "Reports storage bucket not found. Report will be downloaded only.",
             variant: "destructive"
           });
-        } else if (!diagnosticResult.authStatus) {
+        } else if (diagnosticResult.authStatus === false) {
           toast({
             title: "Authentication Required",
             description: "You need to be logged in to save reports to storage.",

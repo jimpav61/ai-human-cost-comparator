@@ -58,6 +58,11 @@ export async function verifyReportsBucket(): Promise<boolean> {
  */
 export async function testStorageBucketConnectivity() {
   try {
+    // Check if user is authenticated
+    const { data: authData } = await supabase.auth.getSession();
+    const isAuthenticated = !!authData.session;
+    console.log("STORAGE DIAGNOSTIC: User authenticated:", isAuthenticated);
+    
     // First list buckets to check if storage API is accessible
     const { data: buckets, error: listError } = await supabase.storage.listBuckets();
     
@@ -67,6 +72,7 @@ export async function testStorageBucketConnectivity() {
         success: false,
         storageAccessible: false,
         bucketExists: false,
+        authStatus: isAuthenticated,
         error: listError,
         bucketList: []
       };
@@ -111,6 +117,7 @@ export async function testStorageBucketConnectivity() {
       storageAccessible: true,
       bucketExists: reportsBucketExists,
       reportsAccessible: reportsAccessible,
+      authStatus: isAuthenticated,
       error: reportsError,
       bucketList: buckets || []
     };
@@ -121,6 +128,7 @@ export async function testStorageBucketConnectivity() {
       storageAccessible: false,
       bucketExists: false,
       reportsAccessible: false,
+      authStatus: false,
       error,
       bucketList: []
     };

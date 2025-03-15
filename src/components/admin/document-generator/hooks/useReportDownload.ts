@@ -3,7 +3,7 @@ import { useState } from "react";
 import { Lead } from "@/types/leads";
 import { toast } from "@/hooks/use-toast";
 import { findOrGenerateReport } from "./report-download/reportFinding";
-import { testStorageBucketConnectivity } from "@/utils/report/storageUtils";
+import { testStorageBucketConnectivity } from "@/utils/report/bucketUtils";
 import { supabase } from "@/integrations/supabase/client";
 
 export const useReportDownload = () => {
