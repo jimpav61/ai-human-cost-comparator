@@ -17,7 +17,7 @@ export const ReportGenerator = ({ lead }: ReportGeneratorProps) => {
 
     console.log(" **************************** Lead: ", lead);
     return;
-    
+
     try {
       console.log("Starting report generation and download for lead:", lead.id);
      
@@ -74,7 +74,7 @@ export const ReportGenerator = ({ lead }: ReportGeneratorProps) => {
         className="bg-primary text-white px-4 py-2 rounded disabled:opacity-50 min-w-[200px]"
       >
         <FileSpreadsheet className="h-4 w-4 mr-2" />
-        {isLoading ? "Generating..." : "Generate ROI Report"}
+        {isLoading ? "Generating..." : "Generate ROI Peter Report"}
       </Button>
     </div>
   );
