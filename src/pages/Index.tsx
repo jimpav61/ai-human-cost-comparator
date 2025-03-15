@@ -22,7 +22,7 @@ const Index = () => {
     });
   };
 
-  // Peter's test 
+  // Peter's test TEST TEST
   
   const handleAdminClick = () => {
     // Improved admin navigation with fallback
