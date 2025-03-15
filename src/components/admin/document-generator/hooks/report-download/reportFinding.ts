@@ -9,7 +9,7 @@ import { toJson } from "@/hooks/calculator/supabase-types";
 // Find existing reports for a lead or generate new one
 export const findOrGenerateReport = async (lead: Lead, setIsLoading: (isLoading: boolean) => void) => {
   console.log(" **************************** Lead 4: ", lead);
-  return;
+  
   try {
     console.log('---------- ADMIN REPORT DOWNLOAD ATTEMPT ----------');
     console.log('Lead ID for report download:', lead.id);
@@ -87,8 +87,7 @@ export const findOrGenerateReport = async (lead: Lead, setIsLoading: (isLoading:
       // If stored PDF not found or not accessible, generate from report data
       console.log('No stored PDF found or not accessible, generating from report data');
 
-      console.log(" **************************** Lead 5: ", lead);
-      return;
+      
       await generateAndUploadPDF(report, lead);
       setIsLoading(false);
       return;
@@ -135,7 +134,11 @@ export const findOrGenerateReport = async (lead: Lead, setIsLoading: (isLoading:
         calculator_inputs: lead.calculator_inputs,
         calculator_results: lead.calculator_results
       };
-      
+      console.log(" **************************** Lead 6: ", lead);
+
+      console.log(" **************************** Lead 7: ", tempReport);
+
+      return;
       await generateAndUploadPDF(tempReport, lead);
       setIsLoading(false);
       return;
