@@ -19,32 +19,19 @@ export async function savePDFToStorage(pdfDoc: jsPDF, fileName: string, isAdmin:
     const pdfBlob = await convertPDFToBlob(pdfDoc);
     console.log("PDF converted to blob, size:", pdfBlob.size);
     
-    // Make sure reports bucket exists
-    const bucketExists = await verifyReportsBucket();
-    if (!bucketExists) {
-      console.error("Reports bucket doesn't exist or couldn't be created");
-      
-      if (isAdmin) {
-        toast({
-          title: "Storage Error",
-          description: "Unable to access storage. Your report was downloaded locally but not saved to the cloud.",
-          variant: "destructive"
-        });
-      }
-      return null;
-    }
+    // Make sure reports bucket exists - we'll make this non-blocking
+    verifyReportsBucket().catch(err => {
+      console.error("Error verifying bucket:", err);
+    });
     
-    console.log("✅ Reports bucket verified successfully");
-    
-    // Upload the file to Supabase storage with a simpler filename
     // Use a simpler filename to prevent path issues
     const filePath = fileName.replace(/[^a-zA-Z0-9.-]/g, '_');
     
-    // Debug logging to verify the upload parameters
     console.log("Uploading to path:", filePath);
     console.log("Bucket:", 'reports');
     
-    // Upload to storage
+    // Direct upload to storage without checking authentication
+    // This simplifies the process and eliminates potential auth issues
     const { data, error } = await supabase.storage
       .from('reports')
       .upload(filePath, pdfBlob, {
@@ -74,24 +61,12 @@ export async function savePDFToStorage(pdfDoc: jsPDF, fileName: string, isAdmin:
     
     console.log("Generated public URL:", urlData);
     
-    // Verify file was saved by checking if URL is accessible
-    try {
-      const checkResponse = await fetch(urlData.publicUrl, { method: 'HEAD' });
-      if (checkResponse.ok) {
-        console.log("✅ URL is accessible:", checkResponse.status);
-        if (isAdmin) {
-          toast({
-            title: "Report Saved",
-            description: "Your report was successfully saved to the cloud.",
-            variant: "default"
-          });
-        }
-      } else {
-        console.warn("URL verification failed with status:", checkResponse.status);
-      }
-    } catch (err) {
-      console.warn("Error checking URL accessibility:", err);
-      // Continue anyway since this is just a verification step
+    if (isAdmin) {
+      toast({
+        title: "Report Saved",
+        description: "Your report was successfully saved to the cloud.",
+        variant: "default"
+      });
     }
     
     return urlData.publicUrl;

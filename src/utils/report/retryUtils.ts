@@ -4,7 +4,6 @@ import { saveReportData } from "./databaseUtils";
 import { Lead } from "@/types/leads";
 import { jsPDF } from "jspdf";
 import { toast } from "@/hooks/use-toast";
-import { verifyReportsBucket } from "./bucketUtils";
 
 /**
  * Save a report to storage with retry mechanism
@@ -21,32 +20,7 @@ export async function saveReportToStorageWithRetry(
   let pdfUrl: string | null = null;
   let reportId: string | null = null;
   
-  // First, make sure the bucket exists with multiple verification attempts
-  let bucketVerified = false;
-  let bucketAttempts = 0;
-  
-  while (!bucketVerified && bucketAttempts < 2) {
-    bucketVerified = await verifyReportsBucket();
-    if (!bucketVerified) {
-      console.log(`Bucket verification attempt ${bucketAttempts + 1} failed`);
-      bucketAttempts++;
-      await new Promise(resolve => setTimeout(resolve, 1000));
-    }
-  }
-  
-  if (!bucketVerified) {
-    console.error("Failed to verify or create reports bucket");
-    if (isAdmin) {
-      toast({
-        title: "Storage Error",
-        description: "Cloud storage is unavailable. Your report was downloaded locally only.",
-        variant: "destructive"
-      });
-    }
-    return { reportId: null, pdfUrl: null };
-  }
-  
-  console.log("✅ Storage bucket verified before retry attempt");
+  console.log("Starting report save with retry mechanism");
   
   while (attempts < maxRetries && !success) {
     attempts++;
@@ -74,11 +48,9 @@ export async function saveReportToStorageWithRetry(
       console.log(`✅ Report data saved to database on attempt ${attempts}, ID:`, reportId);
       
       success = true;
-      console.log("Report saved successfully:", { reportId, pdfUrl });
     } catch (error) {
       console.error(`Attempt ${attempts} failed:`, error);
       
-      // If this was the last attempt, show an error
       if (attempts >= maxRetries && isAdmin) {
         toast({
           title: "Error Saving Report",

@@ -1,4 +1,3 @@
-
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "@/hooks/use-toast";
 
@@ -8,88 +7,30 @@ import { toast } from "@/hooks/use-toast";
  */
 export async function verifyReportsBucket(): Promise<boolean> {
   try {
-    console.log("STORAGE TRACKING: Verifying reports bucket existence...");
+    console.log("Verifying reports bucket existence...");
     
-    // First check if the bucket exists by attempting to list files
-    const { data: fileList, error: listError } = await supabase.storage
-      .from('reports')
-      .list('', { limit: 1 });
-    
-    // If we can list files without error, the bucket exists
-    if (!listError) {
-      console.log("STORAGE TRACKING: Reports bucket exists and is accessible");
-      return true;
-    }
-    
-    console.log("STORAGE TRACKING: Reports bucket not found or not accessible, checking all buckets...");
-    
-    // If listing failed, check more directly with listBuckets
-    const { data: buckets, error: bucketsError } = await supabase.storage.listBuckets();
-    
-    if (bucketsError) {
-      console.error("STORAGE TRACKING: Error listing buckets:", bucketsError);
-      // Check authentication - we might not have permission
-      const { data: session } = await supabase.auth.getSession();
-      console.log("STORAGE TRACKING: Session check:", !!session.session);
-      
-      if (!session.session) {
-        console.error("STORAGE TRACKING: User is not authenticated, cannot create bucket");
-        return false;
-      }
-      // Return false to trigger explicit bucket creation
-      return false;
-    }
-    
-    // Check if the 'reports' bucket exists in the returned buckets
-    const reportsBucket = buckets?.find(bucket => bucket.name === 'reports');
-    
-    if (reportsBucket) {
-      console.log("STORAGE TRACKING: Reports bucket exists:", reportsBucket.id);
-      return true;
-    }
-    
-    console.log("STORAGE TRACKING: Reports bucket not found, creating now...");
-    
-    // Create the bucket if it doesn't exist
+    // Simplified approach - try to create the bucket anyway
+    // If it already exists, Supabase will return an error we can safely ignore
     const { data, error } = await supabase.storage.createBucket('reports', {
-      public: true, // Make reports publicly accessible
+      public: true,
       fileSizeLimit: 10485760, // 10MB limit
     });
     
     if (error) {
-      // Log detailed error information
-      console.error("STORAGE TRACKING: Error creating reports bucket:", error);
-      console.error("STORAGE TRACKING: Error message:", error.message);
-      
-      // Check if it's a permission issue - using error message text instead of code
-      if (error.message && error.message.includes("permission")) {
-        console.error("STORAGE TRACKING: Permission denied creating bucket. User might not have admin rights.");
-      }
-      // Check if it's already exists (this is actually good)
-      else if (error.message && error.message.includes("already exists")) {
-        console.log("STORAGE TRACKING: Bucket already exists - this is fine");
+      // If the error message contains "already exists", we can consider this a success
+      if (error.message && error.message.includes("already exists")) {
+        console.log("Bucket already exists - this is fine");
         return true;
       }
       
+      console.error("Error creating bucket:", error);
       return false;
     }
     
-    console.log("STORAGE TRACKING: Created 'reports' bucket successfully:", data);
-    
-    // Verify the creation by listing the bucket contents
-    const { error: verifyError } = await supabase.storage
-      .from('reports')
-      .list('', { limit: 1 });
-    
-    if (verifyError) {
-      console.error("STORAGE TRACKING: Error verifying new bucket:", verifyError);
-      return false;
-    }
-    
-    console.log("STORAGE TRACKING: Successfully verified new reports bucket");
+    console.log("Created 'reports' bucket successfully:", data);
     return true;
   } catch (error) {
-    console.error("STORAGE TRACKING: Error in verifyReportsBucket:", error);
+    console.error("Error in verifyReportsBucket:", error);
     return false;
   }
 }
