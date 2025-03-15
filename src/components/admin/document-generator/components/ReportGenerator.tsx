@@ -14,6 +14,10 @@ export const ReportGenerator = ({ lead }: ReportGeneratorProps) => {
   const { isLoading, handleDownloadReport } = useReportDownload();
 
   const handleGenerateReport = async () => {
+
+    console.log(" **************************** Lead: ", lead);
+    return;
+    
     try {
       console.log("Starting report generation and download for lead:", lead.id);
      
@@ -49,9 +53,9 @@ export const ReportGenerator = ({ lead }: ReportGeneratorProps) => {
         });
         return;
       }
-      console.log(" **************************** Lead: ", lead);
+      
       // Proceed with report download
-      //await handleDownloadReport(lead);
+      await handleDownloadReport(lead);
     } catch (error) {
       console.error("Error generating report:", error);
       toast({
