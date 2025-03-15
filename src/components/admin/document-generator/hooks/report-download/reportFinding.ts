@@ -8,14 +8,12 @@ import { toJson } from "@/hooks/calculator/supabase-types";
 
 // Find existing reports for a lead or generate new one
 export const findOrGenerateReport = async (lead: Lead, setIsLoading: (isLoading: boolean) => void) => {
-  console.log(" **************************** Lead 4: ", lead);
   
   try {
     console.log('---------- ADMIN REPORT DOWNLOAD ATTEMPT ----------');
     console.log('Lead ID for report download:', lead.id);
     console.log('Lead calculator_inputs:', lead.calculator_inputs);
     console.log('Lead calculator_results:', lead.calculator_results);
-    console.log(" **************************** Lead 5: ", lead);
     // Check if lead ID exists
     if (!lead.id) {
       throw new Error("Lead ID is missing");
@@ -41,7 +39,6 @@ export const findOrGenerateReport = async (lead: Lead, setIsLoading: (isLoading:
       // Look for stored PDF in Supabase storage
       const pdfFileName = `${report.id}.pdf`;
       console.log('Checking for PDF file:', pdfFileName);
-      console.log(" **************************** Lead 6 reportResults: ", reportResults);
       try {
         // Get the public URL directly
         const { data: urlData } = await supabase.storage
@@ -54,7 +51,7 @@ export const findOrGenerateReport = async (lead: Lead, setIsLoading: (isLoading:
           // Verify the URL is accessible
           try {
             const response = await fetch(urlData.publicUrl, { method: 'HEAD' });
-            console.log(" **************************** Lead 7 response: ", response);
+            
             if (response.ok) {
               // Trigger direct download of the PDF using the URL
               const link = document.createElement('a');
@@ -62,7 +59,7 @@ export const findOrGenerateReport = async (lead: Lead, setIsLoading: (isLoading:
               const safeCompanyName = getSafeFileName(lead);
               link.download = `${safeCompanyName}-ChatSites-ROI-Report.pdf`;
               document.body.appendChild(link);
-              //link.click();
+              link.click();
               document.body.removeChild(link);
               
               toast({
@@ -87,14 +84,9 @@ export const findOrGenerateReport = async (lead: Lead, setIsLoading: (isLoading:
       // If stored PDF not found or not accessible, generate from report data
       console.log('No stored PDF found or not accessible, generating from report data');
 
-      console.log(" **************************** Lead 5: ", lead);
-
-      
-
+      await generateAndUploadPDF(report, lead);
+      setIsLoading(false);
       return;
-      // await generateAndUploadPDF(report, lead);
-      // setIsLoading(false);
-      // return;
     }
     
     // If no reports were found, generate a new one if we have calculator data
@@ -138,14 +130,10 @@ export const findOrGenerateReport = async (lead: Lead, setIsLoading: (isLoading:
         calculator_inputs: lead.calculator_inputs,
         calculator_results: lead.calculator_results
       };
-      console.log(" **************************** Lead 6: ", lead);
-
-      console.log(" **************************** Lead 7: ", tempReport);
-
+      
+      await generateAndUploadPDF(tempReport, lead);
+      setIsLoading(false);
       return;
-      // await generateAndUploadPDF(tempReport, lead);
-      // setIsLoading(false);
-      // return;
     }
     
     // If we get here, no reports were found and no calculator data exists
