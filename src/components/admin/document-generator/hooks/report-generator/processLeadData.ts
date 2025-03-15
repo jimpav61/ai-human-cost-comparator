@@ -47,7 +47,7 @@ export const processLeadData = (lead: Lead): ProcessedLeadData => {
   
   // Calculate included voice minutes based on tier
   const includedVoiceMinutes = tierToUse === 'starter' ? 0 : 600;
-  console.log(" /////////////////////////////// tierKey ", tierKey)
+  console.log(" /////////////////////////////// tierToUse ", tierToUse)
   console.log(" /////////////////////////////// includedVoiceMinutes ", includedVoiceMinutes)
   
   

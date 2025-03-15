@@ -57,16 +57,14 @@ export async function verifyReportsBucket(): Promise<boolean> {
     if (error) {
       // Log detailed error information
       console.error("Error creating reports bucket:", error);
-      console.error("Error code:", error.code);
       console.error("Error message:", error.message);
-      console.error("Error details:", error.details);
       
-      // Check if it's a permission issue
-      if (error.message.includes("permission") || error.code === "42501") {
+      // Check if it's a permission issue - using error message text instead of code
+      if (error.message && error.message.includes("permission")) {
         console.error("STORAGE CRITICAL: Permission denied creating bucket. User might not have admin rights.");
       }
       // Check if it's already exists (this is actually good)
-      else if (error.message.includes("already exists")) {
+      else if (error.message && error.message.includes("already exists")) {
         console.log("Bucket already exists - this is fine");
         return true;
       }
