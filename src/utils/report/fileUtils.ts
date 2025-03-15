@@ -19,10 +19,8 @@ export async function savePDFToStorage(pdfDoc: jsPDF, fileName: string, isAdmin:
     const pdfBlob = await convertPDFToBlob(pdfDoc);
     console.log("PDF converted to blob, size:", pdfBlob.size);
     
-    // Make sure reports bucket exists - we'll make this non-blocking
-    verifyReportsBucket().catch(err => {
-      console.error("Error verifying bucket:", err);
-    });
+    // Make sure reports bucket exists before uploading
+    await verifyReportsBucket();
     
     // Use a simpler filename to prevent path issues
     const filePath = fileName.replace(/[^a-zA-Z0-9.-]/g, '_');
@@ -30,8 +28,7 @@ export async function savePDFToStorage(pdfDoc: jsPDF, fileName: string, isAdmin:
     console.log("Uploading to path:", filePath);
     console.log("Bucket:", 'reports');
     
-    // Direct upload to storage without checking authentication
-    // This simplifies the process and eliminates potential auth issues
+    // Upload with simple configuration and no auth check
     const { data, error } = await supabase.storage
       .from('reports')
       .upload(filePath, pdfBlob, {
@@ -41,7 +38,9 @@ export async function savePDFToStorage(pdfDoc: jsPDF, fileName: string, isAdmin:
       });
     
     if (error) {
-      console.error("Error uploading to storage:", error);
+      console.error("Storage upload error:", error.message);
+      console.error("Error details:", error);
+      
       if (isAdmin) {
         toast({
           title: "Upload Failed",

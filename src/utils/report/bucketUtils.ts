@@ -1,3 +1,4 @@
+
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "@/hooks/use-toast";
 
@@ -9,22 +10,38 @@ export async function verifyReportsBucket(): Promise<boolean> {
   try {
     console.log("Verifying reports bucket existence...");
     
-    // Simplified approach - try to create the bucket anyway
-    // If it already exists, Supabase will return an error we can safely ignore
+    // First, check if the bucket already exists
+    const { data: buckets, error: listError } = await supabase.storage.listBuckets();
+    
+    if (listError) {
+      console.error("Error listing buckets:", listError);
+      return false;
+    }
+    
+    const reportsBucketExists = buckets?.some(bucket => bucket.name === 'reports');
+    console.log("Reports bucket exists:", reportsBucketExists);
+    
+    if (reportsBucketExists) {
+      console.log("Reports bucket already exists, no need to create it");
+      return true;
+    }
+    
+    // If the bucket doesn't exist, create it
+    console.log("Creating reports bucket...");
     const { data, error } = await supabase.storage.createBucket('reports', {
-      public: true,
+      public: true, // Make it publicly accessible
       fileSizeLimit: 10485760, // 10MB limit
     });
     
     if (error) {
-      // If the error message contains "already exists", we can consider this a success
-      if (error.message && error.message.includes("already exists")) {
-        console.log("Bucket already exists - this is fine");
+      // If there's an error other than "already exists", log it
+      if (!error.message?.includes("already exists")) {
+        console.error("Error creating bucket:", error);
+        return false;
+      } else {
+        console.log("Bucket already exists (from error message)");
         return true;
       }
-      
-      console.error("Error creating bucket:", error);
-      return false;
     }
     
     console.log("Created 'reports' bucket successfully:", data);
@@ -41,80 +58,68 @@ export async function verifyReportsBucket(): Promise<boolean> {
  */
 export async function testStorageBucketConnectivity() {
   try {
-    // Check if user is authenticated
-    const { data: sessionData } = await supabase.auth.getSession();
-    const isAuthenticated = !!sessionData.session;
-    console.log("STORAGE TRACKING: User authentication status:", isAuthenticated);
-    console.log("STORAGE TRACKING: Session data:", sessionData);
+    // First list buckets to check if storage API is accessible
+    const { data: buckets, error: listError } = await supabase.storage.listBuckets();
     
-    if (!isAuthenticated) {
-      console.error("STORAGE TRACKING: User is not authenticated, storage operations will fail");
+    if (listError) {
+      console.error("STORAGE DIAGNOSTIC: Cannot list buckets:", listError);
       return {
         success: false,
-        authStatus: false,
-        bucketExists: false,
         storageAccessible: false,
-        reportsAccessible: false,
-        error: new Error("User not authenticated"),
+        bucketExists: false,
+        error: listError,
         bucketList: []
       };
     }
     
-    // First try to directly access the reports bucket
-    const { data: reportsList, error: reportsError } = await supabase.storage
-      .from('reports')
-      .list('', { limit: 1 });
-      
-    const reportsAccessible = !reportsError;
-    console.log("STORAGE TRACKING: Reports bucket accessible:", reportsAccessible);
-    if (reportsError) {
-      console.log("STORAGE TRACKING: Reports bucket error:", reportsError);
-    }
-    
-    // List all buckets to check general storage access
-    const { data: buckets, error: listError } = await supabase.storage.listBuckets();
-    
-    if (listError) {
-      console.error("STORAGE TRACKING: Cannot list buckets:", listError);
-    } else {
-      console.log("STORAGE TRACKING: Available buckets:", buckets?.map(b => b.name).join(', ') || 'none');
-    }
+    console.log("STORAGE DIAGNOSTIC: Available buckets:", buckets?.map(b => b.name).join(', ') || 'none');
     
     // Check if reports bucket exists
     const reportsBucketExists = buckets?.some(bucket => bucket.name === 'reports');
-    console.log("STORAGE TRACKING: Reports bucket exists:", reportsBucketExists);
+    console.log("STORAGE DIAGNOSTIC: Reports bucket exists:", reportsBucketExists);
     
-    if (!reportsBucketExists && !listError) {
+    if (!reportsBucketExists) {
+      console.log("STORAGE DIAGNOSTIC: Reports bucket does not exist, attempting to create it");
+      
       // Attempt to create the bucket
-      console.log("STORAGE TRACKING: Attempting to create reports bucket");
-      const { error: createError } = await supabase.storage.createBucket('reports', {
+      const { data: createData, error: createError } = await supabase.storage.createBucket('reports', {
         public: true,
         fileSizeLimit: 10485760, // 10MB
       });
       
       if (createError) {
-        console.error("STORAGE TRACKING: Failed to create reports bucket:", createError);
+        console.error("STORAGE DIAGNOSTIC: Failed to create reports bucket:", createError);
       } else {
-        console.log("STORAGE TRACKING: Successfully created reports bucket during diagnostic");
+        console.log("STORAGE DIAGNOSTIC: Successfully created reports bucket");
       }
     }
     
+    // Try to access the reports bucket regardless of whether it existed before
+    const { data: reportsList, error: reportsError } = await supabase.storage
+      .from('reports')
+      .list('', { limit: 1 });
+    
+    const reportsAccessible = !reportsError;
+    console.log("STORAGE DIAGNOSTIC: Reports bucket accessible:", reportsAccessible);
+    
+    if (reportsError) {
+      console.log("STORAGE DIAGNOSTIC: Reports bucket access error:", reportsError);
+    }
+    
     return {
-      success: !listError && (reportsBucketExists || !listError),
-      authStatus: isAuthenticated,
+      success: reportsBucketExists && reportsAccessible,
+      storageAccessible: true,
       bucketExists: reportsBucketExists,
-      storageAccessible: !listError,
       reportsAccessible: reportsAccessible,
-      error: listError || reportsError,
+      error: reportsError,
       bucketList: buckets || []
     };
   } catch (error) {
-    console.error("STORAGE TRACKING: Diagnostic error:", error);
+    console.error("STORAGE DIAGNOSTIC: Unexpected error:", error);
     return {
       success: false,
-      authStatus: false,
-      bucketExists: false,
       storageAccessible: false,
+      bucketExists: false,
       reportsAccessible: false,
       error,
       bucketList: []

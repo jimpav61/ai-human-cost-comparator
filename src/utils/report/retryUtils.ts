@@ -27,7 +27,7 @@ export async function saveReportToStorageWithRetry(
     console.log(`Attempt ${attempts} of ${maxRetries} to save report...`);
     
     try {
-      // Save PDF to storage with progressively longer delays between retries
+      // First attempt to save the PDF to storage
       pdfUrl = await savePDFToStorage(pdfDoc, fileName, isAdmin);
       
       if (!pdfUrl) {
@@ -37,7 +37,7 @@ export async function saveReportToStorageWithRetry(
       
       console.log(`✅ PDF saved to storage on attempt ${attempts}, URL:`, pdfUrl);
       
-      // Save report data to the database
+      // If PDF storage was successful, save the report data to the database
       reportId = await saveReportData(lead, pdfUrl);
       
       if (!reportId) {
@@ -54,15 +54,25 @@ export async function saveReportToStorageWithRetry(
       if (attempts >= maxRetries && isAdmin) {
         toast({
           title: "Error Saving Report",
-          description: "We couldn't save your report to the cloud. Please try again later.",
+          description: "We couldn't save your report to the cloud. The report has been downloaded locally.",
           variant: "destructive",
         });
       }
       
-      // Wait between retries with exponential backoff
+      // Wait between retries with exponential backoff (starting with 1s, then 2s, then 4s)
       const delayMs = Math.min(1000 * Math.pow(2, attempts - 1), 5000);
+      console.log(`Waiting ${delayMs}ms before retry ${attempts + 1}...`);
       await new Promise(resolve => setTimeout(resolve, delayMs));
     }
+  }
+  
+  if (!success && isAdmin) {
+    // If we weren't able to save to the cloud after all retries, notify the user that at least they have a local copy
+    toast({
+      title: "Report Downloaded",
+      description: "The report has been downloaded to your device, but we couldn't save it to the cloud.",
+      variant: "default"
+    });
   }
   
   return { reportId, pdfUrl };
