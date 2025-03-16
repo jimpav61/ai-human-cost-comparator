@@ -47,39 +47,49 @@ export async function savePDFToStorage(pdfDoc: jsPDF, fileName: string, isAdmin:
     const pdfBlob = await convertPDFToBlob(pdfDoc);
     console.log("PDF converted to blob, size:", pdfBlob.size);
     
-    // Check if the reports bucket exists, try to create it if not
+    // Make sure the reports bucket exists before uploading
     try {
-      // Try to list files to check if bucket exists and is accessible
-      const { data: bucketList, error: bucketError } = await supabase.storage.listBuckets();
+      // First check if bucket exists by listing buckets
+      const { data: buckets, error: bucketsError } = await supabase.storage.listBuckets();
       
-      let bucketExists = false;
-      if (bucketError) {
-        console.error("Error checking bucket existence:", bucketError);
+      if (bucketsError) {
+        console.error("Error checking buckets:", bucketsError);
       } else {
-        bucketExists = bucketList?.some(bucket => bucket.name === 'reports') || false;
-        console.log("Bucket check result:", bucketExists ? "reports bucket exists" : "reports bucket not found");
-      }
-      
-      if (!bucketExists) {
-        console.log("Attempting to create reports bucket...");
-        const { data: newBucket, error: createError } = await supabase.storage.createBucket('reports', { 
-          public: true,
-          fileSizeLimit: 10485760 // 10MB
-        });
+        const reportsBucketExists = buckets?.some(bucket => bucket.name === 'reports') || false;
+        console.log("Reports bucket exists:", reportsBucketExists);
         
-        if (createError) {
-          console.error("Failed to create reports bucket:", createError);
-        } else {
-          console.log("Successfully created reports bucket:", newBucket);
+        // If reports bucket doesn't exist, create it
+        if (!reportsBucketExists) {
+          console.log("Reports bucket not found, creating it...");
+          
+          try {
+            const { data: createData, error: createError } = await supabase.storage
+              .createBucket('reports', { 
+                public: true,
+                fileSizeLimit: 10485760 // 10MB limit
+              });
+              
+            if (createError) {
+              console.error("Failed to create reports bucket:", createError);
+              // Try to continue anyway - bucket might exist but we can't see it
+            } else {
+              console.log("Successfully created reports bucket");
+            }
+          } catch (createError) {
+            console.error("Error creating bucket:", createError);
+            // Continue anyway - the bucket might exist despite the error
+          }
         }
       }
     } catch (bucketCheckError) {
-      console.error("Error during bucket check/creation:", bucketCheckError);
+      console.error("Error checking/creating buckets:", bucketCheckError);
+      // Try to continue anyway
     }
     
     // Use a simpler filename to prevent path issues, with timestamp to avoid conflicts
     const timestamp = new Date().getTime();
-    const filePath = `${fileName.replace(/[^a-zA-Z0-9.-]/g, '_')}_${timestamp}.pdf`;
+    const safeFileName = fileName.replace(/[^a-zA-Z0-9.-]/g, '_');
+    const filePath = `${safeFileName}_${timestamp}.pdf`;
     
     console.log("Uploading to path:", filePath);
     console.log("Bucket:", 'reports');
@@ -97,11 +107,36 @@ export async function savePDFToStorage(pdfDoc: jsPDF, fileName: string, isAdmin:
       console.error("Storage upload error:", error.message);
       console.error("Error details:", error);
       
-      // Check for specific error types and log additional debug info
+      // Additional diagnostic information
       if (error.message.includes("storage/object-not-found")) {
         console.error("The path might be invalid");
       } else if (error.message.includes("Permission denied")) {
         console.error("User lacks permission to upload to the reports bucket");
+        
+        // Try again with a super simple configuration
+        console.log("Attempting simplified upload as fallback...");
+        const fallbackFilePath = `report_${timestamp}.pdf`;
+        
+        const { data: fallbackData, error: fallbackError } = await supabase.storage
+          .from('reports')
+          .upload(fallbackFilePath, pdfBlob, { 
+            upsert: true 
+          });
+          
+        if (!fallbackError) {
+          console.log("Fallback upload succeeded!");
+          // Get URL for the fallback file
+          const { data: fallbackUrlData } = await supabase.storage
+            .from('reports')
+            .getPublicUrl(fallbackFilePath);
+            
+          if (fallbackUrlData?.publicUrl) {
+            console.log("Generated fallback public URL:", fallbackUrlData.publicUrl);
+            return fallbackUrlData.publicUrl;
+          }
+        } else {
+          console.error("Fallback upload also failed:", fallbackError);
+        }
       } else if (error.message.includes("not found")) {
         console.error("Bucket might not exist, detailed error:", error);
         

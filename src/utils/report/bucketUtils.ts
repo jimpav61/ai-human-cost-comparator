@@ -132,7 +132,7 @@ export async function testStorageBucketConnectivity() {
         console.error("STORAGE DIAGNOSTIC: Error listing buckets:", listBucketsError);
         bucketsError = listBucketsError;
       } else {
-        bucketsList = availableBuckets;
+        bucketsList = availableBuckets || [];
         console.log("STORAGE DIAGNOSTIC: Available buckets:", bucketsList.map(b => b.name).join(', '));
         
         // Check if reports bucket exists
