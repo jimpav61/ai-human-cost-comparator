@@ -3,7 +3,6 @@ import { supabase } from "@/integrations/supabase/client";
 import { toast } from "@/hooks/use-toast";
 import { convertPDFToBlob } from "./pdf/conversion";
 import { jsPDF } from "jspdf";
-import { verifyReportsBucket } from "./bucketUtils";
 
 /**
  * Save a PDF file to Supabase storage
@@ -47,22 +46,6 @@ export async function savePDFToStorage(pdfDoc: jsPDF, fileName: string, isAdmin:
     // First convert the PDF to a blob
     const pdfBlob = await convertPDFToBlob(pdfDoc);
     console.log("PDF converted to blob, size:", pdfBlob.size);
-    
-    // Make sure reports bucket exists before uploading
-    const bucketExists = await verifyReportsBucket();
-    console.log("Bucket verified accessible:", bucketExists);
-    
-    if (!bucketExists) {
-      console.error("Cannot access reports bucket - permission issue or bucket not configured");
-      if (isAdmin) {
-        toast({
-          title: "Storage Access Error",
-          description: "Cannot access reports storage. Your report was downloaded locally only.",
-          variant: "destructive"
-        });
-      }
-      return null;
-    }
     
     // Use a simpler filename to prevent path issues, with timestamp to avoid conflicts
     const timestamp = new Date().getTime();
