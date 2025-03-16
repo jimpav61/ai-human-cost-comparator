@@ -8,6 +8,7 @@ import { CompanyDisplay } from "../../CompanyDisplay";
 import { ContactDisplay } from "../../ContactDisplay";
 import { DateDisplay } from "../../DateDisplay";
 import { DocumentGenerator } from "../../DocumentGenerator";
+import { StorageVerificationButton } from "../../StorageVerificationButton";
 
 interface MobileLeadsViewProps {
   leads: Lead[];
@@ -97,6 +98,7 @@ export const MobileLeadsView = ({ leads, onEdit }: MobileLeadsViewProps) => {
                         <Pencil className="h-4 w-4 mr-1" />
                         Edit
                       </Button>
+                      <StorageVerificationButton lead={lead} />
                       <DocumentGenerator lead={lead} />
                     </div>
                   </div>

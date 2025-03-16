@@ -14,6 +14,7 @@ import { CompanyDisplay } from "../../CompanyDisplay";
 import { ContactDisplay } from "../../ContactDisplay";
 import { DateDisplay } from "../../DateDisplay";
 import { DocumentGenerator } from "../../DocumentGenerator";
+import { StorageVerificationButton } from "../../StorageVerificationButton";
 
 interface DesktopLeadsTableProps {
   leads: Lead[];
@@ -56,7 +57,7 @@ export const DesktopLeadsTable = ({ leads, onEdit }: DesktopLeadsTableProps) => 
               <TableCell className="whitespace-nowrap">
                 <DateDisplay dateString={lead.created_at} />
               </TableCell>
-              <TableCell className="text-right" style={{ minWidth: "320px" }}>
+              <TableCell className="text-right" style={{ minWidth: "420px" }}>
                 <div className="flex justify-end space-x-2">
                   <Button
                     size="sm"
@@ -66,6 +67,7 @@ export const DesktopLeadsTable = ({ leads, onEdit }: DesktopLeadsTableProps) => 
                     <Pencil className="h-4 w-4 mr-1" />
                     Edit
                   </Button>
+                  <StorageVerificationButton lead={lead} />
                   <DocumentGenerator lead={lead} />
                 </div>
               </TableCell>

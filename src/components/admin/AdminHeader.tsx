@@ -1,154 +1,53 @@
-import { Button } from "@/components/ui/button";
-import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-  DialogTrigger,
-} from "@/components/ui/dialog";
-import { Input } from "@/components/ui/input";
-import { useState } from "react";
-import { supabase } from "@/integrations/supabase/client";
-import { toast } from "@/components/ui/use-toast";
-import { useNavigate } from "react-router-dom";
 
-export const AdminHeader = ({ isLoading = false }) => {
-  const [newAdminEmail, setNewAdminEmail] = useState('');
-  const [isAddingAdmin, setIsAddingAdmin] = useState(false);
+import { useNavigate } from "react-router-dom";
+import { Button } from "@/components/ui/button";
+import { FixStorageButton } from "./FixStorageButton";
+import { LogOut } from "lucide-react";
+import { supabase } from "@/integrations/supabase/client";
+import { toast } from "@/hooks/use-toast";
+
+interface AdminHeaderProps {
+  isLoading: boolean;
+}
+
+export const AdminHeader = ({ isLoading }: AdminHeaderProps) => {
   const navigate = useNavigate();
 
-  const handleLogout = async () => {
+  const handleSignOut = async () => {
     try {
-      console.log("Logging out user");
+      const { error } = await supabase.auth.signOut();
       
-      // Clean up local storage manually first to ensure we're starting fresh
-      localStorage.removeItem('supabase.auth.token');
-      
-      // Direct approach without checking for session
-      await supabase.auth.signOut();
-      
-      console.log("Logout successful");
-      toast({
-        title: "Success",
-        description: "Logged out successfully",
-      });
-      
-      // Force hard reload to clear any cached auth state
-      window.location.href = '/';
-    } catch (error: any) {
-      console.error("Logout error:", error);
-      
-      // Even if there's an error, we'll force navigation to home
-      window.location.href = '/';
-      
-      toast({
-        title: "Notification",
-        description: "You have been logged out",
-      });
-    }
-  };
-
-  const handleGoBack = () => {
-    // Use navigate instead of window.location to prevent page reload
-    navigate('/');
-  };
-
-  const handleAddAdmin = async () => {
-    if (!newAdminEmail.trim()) {
-      toast({
-        title: "Error",
-        description: "Please enter a valid email address",
-        variant: "destructive",
-      });
-      return;
-    }
-    
-    setIsAddingAdmin(true);
-    
-    try {
-      console.log("Adding new admin:", newAdminEmail);
-      const { error } = await supabase
-        .from('allowed_admins')
-        .insert([{ email: newAdminEmail }]);
-
       if (error) {
-        console.error("Error adding admin:", error);
         throw error;
       }
-
-      console.log("Admin added successfully");
-      toast({
-        title: "Success",
-        description: "New admin added successfully",
-      });
-
-      setNewAdminEmail('');
+      
+      navigate("/auth");
     } catch (error: any) {
-      console.error('Error adding admin:', error);
       toast({
-        title: "Error",
-        description: "Failed to add new admin: " + (error.message || "Unknown error"),
+        title: "Error signing out",
+        description: error.message,
         variant: "destructive",
       });
-    } finally {
-      setIsAddingAdmin(false);
     }
   };
 
   return (
-    <div className="flex justify-between items-center mb-8">
-      <h1 className="text-3xl font-bold">Admin Dashboard</h1>
-      
-      <div className="flex items-center gap-4">
-        <Dialog>
-          <DialogTrigger asChild>
-            <Button variant="outline" disabled={isLoading}>Add Admin User</Button>
-          </DialogTrigger>
-          <DialogContent>
-            <DialogHeader>
-              <DialogTitle>Add New Admin</DialogTitle>
-            </DialogHeader>
-            <div className="space-y-4 py-4">
-              <div className="space-y-2">
-                <Input
-                  placeholder="Enter admin email"
-                  value={newAdminEmail}
-                  onChange={(e) => setNewAdminEmail(e.target.value)}
-                />
-              </div>
-              <Button 
-                onClick={handleAddAdmin}
-                disabled={isAddingAdmin}
-              >
-                {isAddingAdmin ? (
-                  <>
-                    <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
-                    Adding Admin...
-                  </>
-                ) : (
-                  "Add Admin"
-                )}
-              </Button>
-            </div>
-          </DialogContent>
-        </Dialog>
-        
-        <Button 
+    <header className="bg-white border-b border-gray-200 py-4">
+      <div className="container max-w-[1920px] mx-auto px-4 flex justify-between items-center">
+        <div className="flex items-center">
+          <h1 className="text-xl font-bold text-gray-900 mr-4">Admin Dashboard</h1>
+          {!isLoading && <FixStorageButton />}
+        </div>
+        <Button
           variant="outline"
-          onClick={handleGoBack}
+          size="sm"
+          onClick={handleSignOut}
           disabled={isLoading}
         >
-          Go Back
-        </Button>
-        
-        <Button 
-          variant="destructive"
-          onClick={handleLogout}
-          disabled={isLoading}
-        >
-          Logout
+          <LogOut className="h-4 w-4 mr-2" />
+          Sign Out
         </Button>
       </div>
-    </div>
+    </header>
   );
 };
