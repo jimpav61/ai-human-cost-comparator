@@ -64,37 +64,28 @@ export async function saveReportToStorageWithRetry(
     lead.id = uuidv4();
   }
   
-  // REMOVED: No longer creating bucket here
-  // Check if reports bucket exists but don't try to create it
-  try {
-    const { data: buckets, error: bucketsError } = await supabase.storage.listBuckets();
-    
-    if (bucketsError) {
-      console.error("Error checking buckets:", bucketsError);
-    } else {
-      const reportsBucketExists = buckets?.some(bucket => bucket.name === 'reports') || false;
-      console.log("Reports bucket exists:", reportsBucketExists);
-      
-      if (!reportsBucketExists) {
-        console.error("Reports bucket does not exist. Cannot save report.");
-        if (isAdmin) {
-          toast({
-            title: "Storage Error",
-            description: "Reports storage bucket not found. Your report was downloaded locally only.",
-            variant: "destructive"
-          });
-        }
-        return { reportId: null, pdfUrl: null };
-      }
+  // Check bucket accessibility directly
+  const { data: bucketTest, error: bucketError } = await supabase.storage
+    .from('reports')
+    .list('', { limit: 1 });
+  
+  if (bucketError) {
+    console.error("Cannot access reports bucket:", bucketError);
+    if (isAdmin) {
+      toast({
+        title: "Storage Error",
+        description: "Cannot access reports bucket. Your report was downloaded locally only.",
+        variant: "destructive"
+      });
     }
-  } catch (bucketError) {
-    console.error("Unexpected error checking buckets:", bucketError);
-    // Continue anyway, the upload will fail if bucket doesn't exist
+    return { reportId: null, pdfUrl: null };
   }
+  
+  console.log("Successfully verified reports bucket access");
   
   // CRITICAL FIX: ALWAYS use lead UUID as the only filename format
   // This is the standardized format: {leadId}.pdf
-  // Override any provided filename to ensure we're always using the UUID format
+  // Override any provided filename to ensure consistent naming
   const standardFileName = `${lead.id}.pdf`;
   console.log("Standardizing filename to UUID-based format:", standardFileName);
   
@@ -113,18 +104,17 @@ export async function saveReportToStorageWithRetry(
       
       console.log(`✅ PDF saved to storage on attempt ${attempts}, URL:`, pdfUrl);
       
-      // After successful storage, verify the file exists by trying to access it
-      try {
-        const response = await fetch(pdfUrl);
-        if (!response.ok) {
-          console.error(`File verification failed: HTTP ${response.status}`);
-          throw new Error(`File verification failed: HTTP ${response.status}`);
-        }
-        console.log("✅ File verified accessible at URL");
-      } catch (fetchError) {
-        console.error("Error verifying file accessibility:", fetchError);
-        // Continue anyway since the upload reported success
+      // After successful storage, verify the file exists
+      const { data: fileList, error: listError } = await supabase.storage
+        .from('reports')
+        .list('', { search: standardFileName });
+      
+      if (listError || !fileList || !fileList.find(f => f.name === standardFileName)) {
+        console.error("File verification failed - file not found in bucket listing");
+        throw new Error("File verification failed - file not found after upload");
       }
+      
+      console.log("✅ File verified in storage listing");
       
       // If PDF storage was successful, save the report data to the database
       reportId = await saveReportData(lead, pdfUrl);
@@ -143,7 +133,7 @@ export async function saveReportToStorageWithRetry(
       if (attempts >= maxRetries && isAdmin) {
         toast({
           title: "Error Saving Report",
-          description: "We couldn't save your report to the cloud. The report has been downloaded locally.",
+          description: "We couldn't save your report to the cloud after multiple attempts. The report has been downloaded locally.",
           variant: "destructive",
         });
       }
@@ -166,7 +156,7 @@ export async function saveReportToStorageWithRetry(
       // If we weren't able to save to the cloud after all retries, notify the user that at least they have a local copy
       toast({
         title: "Report Downloaded",
-        description: "The report has been downloaded to your device, but we couldn't save it to the cloud.",
+        description: "The report has been downloaded to your device, but we couldn't save it to the cloud after multiple attempts.",
         variant: "default"
       });
     }

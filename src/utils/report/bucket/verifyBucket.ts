@@ -27,30 +27,7 @@ export async function verifyReportsBucket(): Promise<boolean> {
     
     console.log("User authenticated with ID:", authData.session.user.id);
     
-    // First check if reports bucket exists
-    const { data: bucketList, error: bucketError } = await supabase.storage.listBuckets();
-    
-    if (bucketError) {
-      console.error("Error listing buckets:", bucketError);
-      return false;
-    }
-    
-    console.log("BUCKET TEST: All available buckets:", bucketList ? bucketList.map(b => b.name).join(', ') : 'none');
-    
-    const reportsBucketExists = bucketList.some(bucket => bucket.name === 'reports');
-    console.log("BUCKET TEST: Reports bucket exists in bucket list:", reportsBucketExists);
-    
-    if (!reportsBucketExists) {
-      console.error("Reports bucket not found");
-      toast({
-        title: "Storage Error",
-        description: "Reports storage bucket not found. Please contact support.",
-        variant: "destructive"
-      });
-      return false;
-    }
-    
-    // Test if we can access the bucket by listing a single file
+    // Direct access test using a simpler approach - try to list files
     const { data: fileList, error: listError } = await supabase.storage
       .from('reports')
       .list('', { limit: 1 });
@@ -68,15 +45,18 @@ export async function verifyReportsBucket(): Promise<boolean> {
         });
       } else {
         console.error("Error accessing reports bucket:", listError.message);
+        toast({
+          title: "Storage Error",
+          description: "Cannot access reports storage bucket. Please contact support.",
+          variant: "destructive"
+        });
       }
       
       return false;
     }
     
-    console.log("BUCKET TEST: Reports bucket is accessible, found files:", fileList?.length || 0);
-    if (fileList && fileList.length > 0) {
-      console.log("BUCKET TEST: First few files:", fileList.slice(0, 3).map(f => f.name).join(', '));
-    }
+    console.log("BUCKET TEST: Reports bucket is accessible, files listing succeeded");
+    console.log("BUCKET TEST: Found", fileList?.length || 0, "files");
     
     return true;
   } catch (error) {

@@ -47,104 +47,87 @@ export async function savePDFToStorage(pdfDoc: jsPDF, fileName: string, isAdmin:
     const pdfBlob = await convertPDFToBlob(pdfDoc);
     console.log("PDF converted to blob, size:", pdfBlob.size);
     
-    // REMOVED: No longer attempting to create bucket here
-    // Assume bucket exists, just verify we can access it
-    try {
-      // First check if bucket exists by listing buckets
-      const { data: buckets, error: bucketsError } = await supabase.storage.listBuckets();
-      
-      if (bucketsError) {
-        console.error("Error checking buckets:", bucketsError);
-      } else {
-        const reportsBucketExists = buckets?.some(bucket => bucket.name === 'reports') || false;
-        console.log("Reports bucket exists:", reportsBucketExists);
-        
-        if (!reportsBucketExists) {
-          console.error("Reports bucket not found. Cannot save report.");
-          if (isAdmin) {
-            toast({
-              title: "Storage Error",
-              description: "Reports bucket not found. Your report was downloaded locally only.",
-              variant: "destructive"
-            });
-          }
-          return null;
-        }
-      }
-    } catch (bucketCheckError) {
-      console.error("Error checking buckets:", bucketCheckError);
-      // Continue anyway, we'll see if the upload works
-    }
-    
-    // Validate that fileName is in UUID.pdf format
-    // This helps ensure consistency across the system
+    // Validate UUID format for consistency
     const uuidPattern = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}\.pdf$/i;
     if (!fileName.match(uuidPattern)) {
-      console.warn("WARNING: Filename does not appear to be in UUID.pdf format:", fileName);
-      console.warn("This may cause storage verification issues. Proceeding with provided filename.");
+      console.warn("Non-UUID filename provided:", fileName);
+      // Don't throw error, just log the warning
     }
     
     console.log("Uploading to path:", fileName);
     console.log("Bucket:", 'reports');
     
-    // Upload with explicit content type to ensure proper handling
-    const { data, error } = await supabase.storage
+    // First verify bucket is accessible by listing files
+    const { data: bucketFiles, error: listError } = await supabase.storage
       .from('reports')
-      .upload(fileName, pdfBlob, {
+      .list('', { limit: 1 });
+    
+    if (listError) {
+      console.error("Cannot access reports bucket:", listError);
+      if (isAdmin) {
+        toast({
+          title: "Storage Error",
+          description: "Cannot access reports bucket. Report downloaded locally only.",
+          variant: "destructive"
+        });
+      }
+      return null;
+    }
+    
+    console.log("Successfully verified bucket access before upload");
+    
+    // Upload with multiple retries
+    let uploadSuccess = false;
+    let uploadError = null;
+    let data = null;
+    
+    // Try different upload configurations
+    const uploadConfigs = [
+      // Standard upload with content type
+      {
         contentType: 'application/pdf',
         cacheControl: '3600',
-        upsert: true // Allow overwriting existing files
-      });
+        upsert: true
+      },
+      // Simple upload with just upsert
+      { 
+        upsert: true 
+      },
+      // Basic upload with no options
+      {}
+    ];
     
-    if (error) {
-      console.error("Storage upload error:", error.message);
-      console.error("Error details:", error);
+    for (const config of uploadConfigs) {
+      if (uploadSuccess) break;
       
-      // Additional diagnostic information
-      if (error.message.includes("storage/object-not-found")) {
-        console.error("The path might be invalid");
-      } else if (error.message.includes("Permission denied")) {
-        console.error("User lacks permission to upload to the reports bucket");
+      try {
+        console.log("Attempting upload with config:", config);
         
-        // Try again with a super simple configuration
-        console.log("Attempting simplified upload as fallback...");
-        
-        const { data: fallbackData, error: fallbackError } = await supabase.storage
+        const result = await supabase.storage
           .from('reports')
-          .upload(fileName, pdfBlob, { 
-            upsert: true 
-          });
-          
-        if (!fallbackError) {
-          console.log("Fallback upload succeeded!");
-          // Get URL for the fallback file
-          const { data: fallbackUrlData } = await supabase.storage
-            .from('reports')
-            .getPublicUrl(fileName);
-            
-          if (fallbackUrlData?.publicUrl) {
-            console.log("Generated fallback public URL:", fallbackUrlData.publicUrl);
-            return fallbackUrlData.publicUrl;
-          }
-        } else {
-          console.error("Fallback upload also failed:", fallbackError);
-        }
-      } else if (error.message.includes("not found")) {
-        console.error("Bucket might not exist, detailed error:", error);
+          .upload(fileName, pdfBlob, config);
         
-        // Additional debug - check what buckets are available
-        try {
-          const { data: availableBuckets } = await supabase.storage.listBuckets();
-          console.log("Available buckets:", availableBuckets);
-        } catch (listError) {
-          console.error("Unable to list buckets:", listError);
+        if (result.error) {
+          console.error("Upload attempt failed:", result.error);
+          uploadError = result.error;
+        } else {
+          console.log("Upload successful with config:", config);
+          data = result.data;
+          uploadSuccess = true;
+          break;
         }
+      } catch (e) {
+        console.error("Exception during upload attempt:", e);
+        uploadError = e;
       }
-      
+    }
+    
+    if (!uploadSuccess) {
+      console.error("All upload attempts failed. Last error:", uploadError);
       if (isAdmin) {
         toast({
           title: "Upload Failed",
-          description: `Your report was downloaded locally but could not be saved to the cloud. Error: ${error.message}`,
+          description: "Report downloaded locally but cloud save failed after multiple attempts.",
           variant: "destructive"
         });
       }
@@ -165,12 +148,31 @@ export async function savePDFToStorage(pdfDoc: jsPDF, fileName: string, isAdmin:
     
     console.log("Generated public URL:", urlData.publicUrl);
     
-    if (isAdmin) {
-      toast({
-        title: "Report Saved",
-        description: "Your report was successfully saved to the cloud.",
-        variant: "default"
+    // Verify the file exists by listing it
+    const { data: verifyData, error: verifyError } = await supabase.storage
+      .from('reports')
+      .list('', { 
+        search: fileName 
       });
+    
+    if (verifyError || !verifyData || !verifyData.find(f => f.name === fileName)) {
+      console.error("File verification failed - upload appeared successful but file not found in listing");
+      if (isAdmin) {
+        toast({
+          title: "Storage Warning",
+          description: "Upload appeared successful but file verification failed. Report downloaded locally.",
+          variant: "default"
+        });
+      }
+    } else {
+      console.log("✅ File verified in storage listing");
+      if (isAdmin) {
+        toast({
+          title: "Report Saved",
+          description: "Your report was successfully saved to the cloud.",
+          variant: "default"
+        });
+      }
     }
     
     return urlData.publicUrl;
