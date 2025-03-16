@@ -4,6 +4,7 @@ import { saveReportData } from "./databaseUtils";
 import { Lead } from "@/types/leads";
 import { jsPDF } from "jspdf";
 import { toast } from "@/hooks/use-toast";
+import { supabase } from "@/integrations/supabase/client";
 
 /**
  * Save a report to storage with retry mechanism
@@ -21,6 +22,22 @@ export async function saveReportToStorageWithRetry(
   let reportId: string | null = null;
   
   console.log("Starting report save with retry mechanism");
+  
+  // First check authentication
+  const { data: authData } = await supabase.auth.getSession();
+  const isAuthenticated = !!authData.session;
+  
+  if (!isAuthenticated) {
+    console.error("User is not authenticated, cannot save to storage");
+    if (isAdmin) {
+      toast({
+        title: "Authentication Required",
+        description: "You need to be logged in to save reports to storage. The report was downloaded locally.",
+        variant: "destructive"
+      });
+    }
+    return { reportId: null, pdfUrl: null };
+  }
   
   while (attempts < maxRetries && !success) {
     attempts++;

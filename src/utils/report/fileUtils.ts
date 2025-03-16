@@ -15,12 +15,39 @@ export async function savePDFToStorage(pdfDoc: jsPDF, fileName: string, isAdmin:
   try {
     console.log("Starting PDF storage process for", fileName);
     
+    // First check if user is authenticated
+    const { data: authData } = await supabase.auth.getSession();
+    if (!authData.session) {
+      console.error("User is not authenticated, cannot save to storage");
+      if (isAdmin) {
+        toast({
+          title: "Authentication Required",
+          description: "You need to be logged in to save reports to storage. The report was downloaded locally.",
+          variant: "destructive"
+        });
+      }
+      return null;
+    }
+    
     // First convert the PDF to a blob
     const pdfBlob = await convertPDFToBlob(pdfDoc);
     console.log("PDF converted to blob, size:", pdfBlob.size);
     
     // Make sure reports bucket exists before uploading
-    await verifyReportsBucket();
+    const bucketExists = await verifyReportsBucket();
+    console.log("Bucket exists or was created:", bucketExists);
+    
+    if (!bucketExists) {
+      console.error("Reports bucket does not exist and could not be created");
+      if (isAdmin) {
+        toast({
+          title: "Storage Error",
+          description: "Could not access or create the reports storage. Your report was downloaded locally.",
+          variant: "destructive"
+        });
+      }
+      return null;
+    }
     
     // Use a simpler filename to prevent path issues
     const filePath = fileName.replace(/[^a-zA-Z0-9.-]/g, '_');
@@ -28,7 +55,7 @@ export async function savePDFToStorage(pdfDoc: jsPDF, fileName: string, isAdmin:
     console.log("Uploading to path:", filePath);
     console.log("Bucket:", 'reports');
     
-    // Upload with simple configuration and no auth check
+    // Upload with explicit content type to ensure proper handling
     const { data, error } = await supabase.storage
       .from('reports')
       .upload(filePath, pdfBlob, {
@@ -54,7 +81,7 @@ export async function savePDFToStorage(pdfDoc: jsPDF, fileName: string, isAdmin:
     console.log("✅ PDF successfully uploaded:", data);
     
     // Get the public URL
-    const { data: urlData } = supabase.storage
+    const { data: urlData } = await supabase.storage
       .from('reports')
       .getPublicUrl(filePath);
     

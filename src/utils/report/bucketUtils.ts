@@ -10,11 +10,29 @@ export async function verifyReportsBucket(): Promise<boolean> {
   try {
     console.log("Verifying reports bucket existence...");
     
+    // Check authentication first
+    const { data: authData } = await supabase.auth.getSession();
+    const isAuthenticated = !!authData.session;
+    
+    if (!isAuthenticated) {
+      console.error("User is not authenticated, cannot verify bucket");
+      return false;
+    }
+    
     // First, check if the bucket already exists
     const { data: buckets, error: listError } = await supabase.storage.listBuckets();
     
     if (listError) {
       console.error("Error listing buckets:", listError);
+      // Try explicit check for the reports bucket as fallback
+      const { data: reportsList, error: reportsError } = await supabase.storage
+        .from('reports')
+        .list('', { limit: 1 });
+        
+      if (!reportsError) {
+        console.log("Reports bucket exists based on list attempt");
+        return true;
+      }
       return false;
     }
     
@@ -45,6 +63,18 @@ export async function verifyReportsBucket(): Promise<boolean> {
     }
     
     console.log("Created 'reports' bucket successfully:", data);
+    
+    // Verify it was created by trying to list files
+    const { data: verifyList, error: verifyError } = await supabase.storage
+      .from('reports')
+      .list('', { limit: 1 });
+      
+    if (verifyError) {
+      console.error("Error verifying new bucket:", verifyError);
+      return false;
+    }
+    
+    console.log("Successfully verified new reports bucket");
     return true;
   } catch (error) {
     console.error("Error in verifyReportsBucket:", error);
@@ -84,7 +114,7 @@ export async function testStorageBucketConnectivity() {
     const reportsBucketExists = buckets?.some(bucket => bucket.name === 'reports');
     console.log("STORAGE DIAGNOSTIC: Reports bucket exists:", reportsBucketExists);
     
-    if (!reportsBucketExists) {
+    if (!reportsBucketExists && isAuthenticated) {
       console.log("STORAGE DIAGNOSTIC: Reports bucket does not exist, attempting to create it");
       
       // Attempt to create the bucket
@@ -113,7 +143,7 @@ export async function testStorageBucketConnectivity() {
     }
     
     return {
-      success: reportsBucketExists && reportsAccessible,
+      success: (reportsBucketExists || isAuthenticated) && reportsAccessible,
       storageAccessible: true,
       bucketExists: reportsBucketExists,
       reportsAccessible: reportsAccessible,
