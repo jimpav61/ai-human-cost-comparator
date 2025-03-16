@@ -27,6 +27,38 @@ export async function verifyReportsBucket(): Promise<boolean> {
     
     console.log("User authenticated with ID:", authData.session.user.id);
     
+    // First attempt to list all buckets to see if 'reports' exists
+    const { data: bucketList, error: bucketError } = await supabase.storage.listBuckets();
+    console.log("Available buckets:", bucketList);
+    
+    if (bucketError) {
+      console.error("Error listing buckets:", bucketError);
+    } else {
+      const reportsBucketExists = bucketList.some(bucket => bucket.name === 'reports');
+      console.log("Reports bucket exists in bucket list:", reportsBucketExists);
+      
+      if (!reportsBucketExists) {
+        console.log("Reports bucket not found, attempting to create it...");
+        try {
+          const { data: createData, error: createError } = await supabase.storage
+            .createBucket('reports', { 
+              public: true,
+              fileSizeLimit: 10485760 // 10MB
+            });
+            
+          if (createError) {
+            console.error("Failed to create reports bucket:", createError);
+          } else {
+            console.log("Successfully created reports bucket");
+            // Return early since we just created the bucket
+            return true;
+          }
+        } catch (createBucketError) {
+          console.error("Error creating reports bucket:", createBucketError);
+        }
+      }
+    }
+    
     // Instead of checking if bucket exists, test if we can access it
     // by trying to list a single file
     const { data: fileList, error: listError } = await supabase.storage
@@ -65,6 +97,8 @@ export async function verifyReportsBucket(): Promise<boolean> {
  */
 export async function testStorageBucketConnectivity() {
   try {
+    console.log("BUCKET TEST: Starting comprehensive storage diagnostic");
+    
     // Check if user is authenticated
     const { data: authData, error: authError } = await supabase.auth.getSession();
     
@@ -86,6 +120,52 @@ export async function testStorageBucketConnectivity() {
     const userId = isAuthenticated ? authData.session.user.id : null;
     
     console.log("STORAGE DIAGNOSTIC: User authenticated:", isAuthenticated, "User ID:", userId);
+    
+    // First check which buckets are available
+    let bucketsList = [];
+    let bucketsError = null;
+    
+    try {
+      const { data: availableBuckets, error: listBucketsError } = await supabase.storage.listBuckets();
+      
+      if (listBucketsError) {
+        console.error("STORAGE DIAGNOSTIC: Error listing buckets:", listBucketsError);
+        bucketsError = listBucketsError;
+      } else {
+        bucketsList = availableBuckets;
+        console.log("STORAGE DIAGNOSTIC: Available buckets:", bucketsList.map(b => b.name).join(', '));
+        
+        // Check if reports bucket exists
+        const reportsBucketExists = bucketsList.some(bucket => bucket.name === 'reports');
+        console.log("STORAGE DIAGNOSTIC: Reports bucket exists:", reportsBucketExists);
+        
+        // If reports bucket doesn't exist, try to create it
+        if (!reportsBucketExists) {
+          console.log("STORAGE DIAGNOSTIC: Reports bucket not found, attempting to create it...");
+          
+          try {
+            const { data: createData, error: createError } = await supabase.storage
+              .createBucket('reports', { 
+                public: true,
+                fileSizeLimit: 10485760 // 10MB
+              });
+              
+            if (createError) {
+              console.error("STORAGE DIAGNOSTIC: Failed to create reports bucket:", createError);
+            } else {
+              console.log("STORAGE DIAGNOSTIC: Successfully created reports bucket");
+              // Add the newly created bucket to our list
+              bucketsList.push({ name: 'reports', id: 'reports' });
+            }
+          } catch (createError) {
+            console.error("STORAGE DIAGNOSTIC: Error creating bucket:", createError);
+          }
+        }
+      }
+    } catch (bucketsCheckError) {
+      console.error("STORAGE DIAGNOSTIC: Unexpected error listing buckets:", bucketsCheckError);
+      bucketsError = bucketsCheckError;
+    }
     
     // Directly test if we can access the reports bucket
     const { data: reportsList, error: reportsError } = await supabase.storage
@@ -133,7 +213,9 @@ export async function testStorageBucketConnectivity() {
       authStatus: isAuthenticated,
       userId: userId,
       error: reportsError,
-      uploadPermissionTest
+      uploadPermissionTest,
+      availableBuckets: bucketsList.map(b => b.name),
+      bucketsError
     };
   } catch (error) {
     console.error("STORAGE DIAGNOSTIC: Unexpected error:", error);

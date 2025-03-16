@@ -64,6 +64,37 @@ export async function saveReportToStorageWithRetry(
     lead.id = uuidv4();
   }
   
+  // First check if the reports bucket exists and is accessible
+  try {
+    const { data: buckets, error: bucketsError } = await supabase.storage.listBuckets();
+    
+    console.log("Available storage buckets:", buckets?.map(b => b.name));
+    
+    const reportsBucketExists = buckets?.some(bucket => bucket.name === 'reports') || false;
+    
+    if (!reportsBucketExists || bucketsError) {
+      console.log("Reports bucket not found or error listing buckets, attempting to create it...");
+      
+      try {
+        const { data: createData, error: createError } = await supabase.storage
+          .createBucket('reports', { 
+            public: true,
+            fileSizeLimit: 10485760 // 10MB
+          });
+          
+        if (createError) {
+          console.error("Failed to create reports bucket:", createError);
+        } else {
+          console.log("Successfully created reports bucket");
+        }
+      } catch (createError) {
+        console.error("Error creating bucket:", createError);
+      }
+    }
+  } catch (bucketsCheckError) {
+    console.error("Error checking/creating buckets:", bucketsCheckError);
+  }
+  
   // Add timestamp to filename to avoid conflicts
   const timestamp = new Date().getTime();
   const uniqueFileName = `${fileName.replace(/[^a-zA-Z0-9.-]/g, '_')}_${timestamp}.pdf`;

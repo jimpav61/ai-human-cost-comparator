@@ -47,6 +47,36 @@ export async function savePDFToStorage(pdfDoc: jsPDF, fileName: string, isAdmin:
     const pdfBlob = await convertPDFToBlob(pdfDoc);
     console.log("PDF converted to blob, size:", pdfBlob.size);
     
+    // Check if the reports bucket exists, try to create it if not
+    try {
+      // Try to list files to check if bucket exists and is accessible
+      const { data: bucketList, error: bucketError } = await supabase.storage.listBuckets();
+      
+      let bucketExists = false;
+      if (bucketError) {
+        console.error("Error checking bucket existence:", bucketError);
+      } else {
+        bucketExists = bucketList?.some(bucket => bucket.name === 'reports') || false;
+        console.log("Bucket check result:", bucketExists ? "reports bucket exists" : "reports bucket not found");
+      }
+      
+      if (!bucketExists) {
+        console.log("Attempting to create reports bucket...");
+        const { data: newBucket, error: createError } = await supabase.storage.createBucket('reports', { 
+          public: true,
+          fileSizeLimit: 10485760 // 10MB
+        });
+        
+        if (createError) {
+          console.error("Failed to create reports bucket:", createError);
+        } else {
+          console.log("Successfully created reports bucket:", newBucket);
+        }
+      }
+    } catch (bucketCheckError) {
+      console.error("Error during bucket check/creation:", bucketCheckError);
+    }
+    
     // Use a simpler filename to prevent path issues, with timestamp to avoid conflicts
     const timestamp = new Date().getTime();
     const filePath = `${fileName.replace(/[^a-zA-Z0-9.-]/g, '_')}_${timestamp}.pdf`;
@@ -67,11 +97,21 @@ export async function savePDFToStorage(pdfDoc: jsPDF, fileName: string, isAdmin:
       console.error("Storage upload error:", error.message);
       console.error("Error details:", error);
       
-      // Check for specific error types
+      // Check for specific error types and log additional debug info
       if (error.message.includes("storage/object-not-found")) {
         console.error("The path might be invalid");
       } else if (error.message.includes("Permission denied")) {
         console.error("User lacks permission to upload to the reports bucket");
+      } else if (error.message.includes("not found")) {
+        console.error("Bucket might not exist, detailed error:", error);
+        
+        // Additional debug - check what buckets are available
+        try {
+          const { data: availableBuckets } = await supabase.storage.listBuckets();
+          console.log("Available buckets:", availableBuckets);
+        } catch (listError) {
+          console.error("Unable to list buckets:", listError);
+        }
       }
       
       if (isAdmin) {
