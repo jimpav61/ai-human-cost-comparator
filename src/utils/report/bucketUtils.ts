@@ -74,6 +74,8 @@ export async function testStorageBucketConnectivity() {
         success: false,
         storageAccessible: false,
         bucketAccessible: false,
+        bucketExists: false, // Add for backward compatibility
+        bucketList: [], // Add for backward compatibility
         authStatus: false,
         authError: authError,
         error: "Authentication error",
@@ -126,6 +128,8 @@ export async function testStorageBucketConnectivity() {
       success: reportsAccessible,
       storageAccessible: true,
       bucketAccessible: reportsAccessible,
+      bucketExists: reportsAccessible, // Add for backward compatibility
+      bucketList: reportsAccessible ? ['reports'] : [], // Add for backward compatibility
       authStatus: isAuthenticated,
       userId: userId,
       error: reportsError,
@@ -137,6 +141,8 @@ export async function testStorageBucketConnectivity() {
       success: false,
       storageAccessible: false,
       bucketAccessible: false,
+      bucketExists: false, // Add for backward compatibility
+      bucketList: [], // Add for backward compatibility
       authStatus: false,
       error,
     };

@@ -29,7 +29,7 @@ export async function generateAndSaveReport(
           });
         }
       } else {
-        console.log("✅ Storage diagnostics passed, bucket exists:", diagnostics.bucketExists);
+        console.log("✅ Storage diagnostics passed, bucket accessible:", diagnostics.bucketAccessible);
       }
     }
     

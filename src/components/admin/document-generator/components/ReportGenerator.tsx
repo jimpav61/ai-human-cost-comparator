@@ -25,7 +25,7 @@ export const ReportGenerator = ({ lead }: ReportGeneratorProps) => {
       
       if (!diagnosticResult.success) {
         console.error("Storage diagnostic check failed before attempting report download", diagnosticResult.error);
-        if (!diagnosticResult.bucketExists) {
+        if (!diagnosticResult.bucketAccessible) {
           toast({
             title: "Storage Warning",
             description: "Reports storage bucket not found. Report will be downloaded only.",

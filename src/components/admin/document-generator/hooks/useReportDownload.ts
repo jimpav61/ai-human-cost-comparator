@@ -26,8 +26,8 @@ export const useReportDownload = () => {
       if (!diagnosticResult.success) {
         console.error("STORAGE CRITICAL: Storage diagnostic failed", diagnosticResult);
         console.error("STORAGE CRITICAL: Auth status:", diagnosticResult.authStatus);
-        console.error("STORAGE CRITICAL: Bucket exists:", diagnosticResult.bucketExists);
-        console.error("STORAGE CRITICAL: Available buckets:", diagnosticResult.bucketList);
+        console.error("STORAGE CRITICAL: Bucket accessible:", diagnosticResult.bucketAccessible);
+        console.error("STORAGE CRITICAL: Available resources:", diagnosticResult.bucketExists ? ['reports'] : []);
         
         // Attempt to create the bucket explicitly
         try {
