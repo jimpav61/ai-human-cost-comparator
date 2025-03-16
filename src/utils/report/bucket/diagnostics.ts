@@ -48,8 +48,6 @@ export async function testStorageBucketConnectivity() {
         // Check if reports bucket exists
         const reportsBucketExists = bucketsList.some(bucket => bucket.name === 'reports');
         console.log("STORAGE DIAGNOSTIC: Reports bucket exists:", reportsBucketExists);
-        
-        // REMOVED: No longer attempting to create bucket here
       }
     } catch (bucketsCheckError) {
       console.error("STORAGE DIAGNOSTIC: Unexpected error listing buckets:", bucketsCheckError);
@@ -66,6 +64,11 @@ export async function testStorageBucketConnectivity() {
     
     if (reportsError) {
       console.error("STORAGE DIAGNOSTIC: Reports bucket access error:", reportsError);
+    } else {
+      console.log("STORAGE DIAGNOSTIC: Found files in reports bucket:", reportsList?.length || 0);
+      if (reportsList && reportsList.length > 0) {
+        console.log("STORAGE DIAGNOSTIC: Sample files:", reportsList.slice(0, 3).map(f => f.name).join(', '));
+      }
     }
     
     // Only test upload if we can access the bucket

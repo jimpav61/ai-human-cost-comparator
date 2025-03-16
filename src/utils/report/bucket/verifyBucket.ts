@@ -29,15 +29,16 @@ export async function verifyReportsBucket(): Promise<boolean> {
     
     // First check if reports bucket exists
     const { data: bucketList, error: bucketError } = await supabase.storage.listBuckets();
-    console.log("Available buckets:", bucketList);
     
     if (bucketError) {
       console.error("Error listing buckets:", bucketError);
       return false;
     }
     
+    console.log("BUCKET TEST: All available buckets:", bucketList ? bucketList.map(b => b.name).join(', ') : 'none');
+    
     const reportsBucketExists = bucketList.some(bucket => bucket.name === 'reports');
-    console.log("Reports bucket exists in bucket list:", reportsBucketExists);
+    console.log("BUCKET TEST: Reports bucket exists in bucket list:", reportsBucketExists);
     
     if (!reportsBucketExists) {
       console.error("Reports bucket not found");
@@ -72,7 +73,11 @@ export async function verifyReportsBucket(): Promise<boolean> {
       return false;
     }
     
-    console.log("Reports bucket is accessible");
+    console.log("BUCKET TEST: Reports bucket is accessible, found files:", fileList?.length || 0);
+    if (fileList && fileList.length > 0) {
+      console.log("BUCKET TEST: First few files:", fileList.slice(0, 3).map(f => f.name).join(', '));
+    }
+    
     return true;
   } catch (error) {
     console.error("Error in verifyReportsBucket:", error);
