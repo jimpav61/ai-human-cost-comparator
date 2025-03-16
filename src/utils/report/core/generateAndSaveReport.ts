@@ -4,7 +4,6 @@ import { toast } from "@/hooks/use-toast";
 import { generateReportPDF } from "../pdf/generator";
 import { saveReportToStorageWithRetry } from "../retryUtils";
 import { ReportGenerationResult } from "../types";
-import { getSafeFileName } from "../validation";
 import { testStorageBucketConnectivity } from "../bucketUtils";
 
 export async function generateAndSaveReport(
@@ -52,10 +51,9 @@ export async function generateAndSaveReport(
     // Save the report with retry mechanism and increased retry count
     const maxRetries = options.retryCount || 4; // Increase default retries
     
-    // CRITICAL: We deliberately ignore the filename format from getSafeFileName()
-    // and let saveReportToStorageWithRetry use the standardized UUID format
+    // Always use standardized UUID format for filenames, ignoring any other format
     const fileName = `${lead.id}.pdf`;
-    console.log("Using standardized filename format:", fileName);
+    console.log("Using standardized UUID filename format:", fileName);
     
     const result = await saveReportToStorageWithRetry(
       doc,

@@ -85,7 +85,7 @@ export async function saveReportToStorageWithRetry(
   
   // CRITICAL FIX: ALWAYS use lead UUID as the only filename format
   // This is the standardized format: {leadId}.pdf
-  // Ignore the incoming fileName parameter completely
+  // Override any provided filename to ensure we're always using the UUID format
   const standardFileName = `${lead.id}.pdf`;
   console.log("Standardizing filename to UUID-based format:", standardFileName);
   

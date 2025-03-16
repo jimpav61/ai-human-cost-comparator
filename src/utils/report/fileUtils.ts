@@ -86,11 +86,12 @@ export async function savePDFToStorage(pdfDoc: jsPDF, fileName: string, isAdmin:
       // Try to continue anyway
     }
     
-    // CRITICAL: Validate that fileName is in UUID.pdf format
-    // This is a safeguard - the caller should already be using the correct format
-    if (!fileName.match(/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}\.pdf$/i)) {
+    // Validate that fileName is in UUID.pdf format
+    // This helps ensure consistency across the system
+    const uuidPattern = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}\.pdf$/i;
+    if (!fileName.match(uuidPattern)) {
       console.warn("WARNING: Filename does not appear to be in UUID.pdf format:", fileName);
-      console.warn("Will continue with provided filename, but this may cause storage verification issues");
+      console.warn("This may cause storage verification issues. Proceeding with provided filename.");
     }
     
     console.log("Uploading to path:", fileName);

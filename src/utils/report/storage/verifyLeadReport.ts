@@ -47,7 +47,7 @@ export async function verifyLeadReportStorage(lead: Lead): Promise<{
     
     // Primary filename format is the UUID-based standardized format
     const standardFileName = `${lead.id}.pdf`;
-    console.log("Looking for file with exact standardized name:", standardFileName);
+    console.log("Looking for file with standardized UUID format:", standardFileName);
     
     // List all files in the reports bucket with detailed logging
     console.log("Listing files in reports bucket...");
@@ -101,6 +101,7 @@ export async function verifyLeadReportStorage(lead: Lead): Promise<{
     
     // Fallback: Look for files with any variations of the UUID
     // This helps catch files that might have been saved with different formats
+    // This is mainly for backward compatibility with older files
     const uuidVariants = [
       `${lead.id}.pdf`,
       `${lead.id}_report.pdf`,
