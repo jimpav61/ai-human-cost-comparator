@@ -5,6 +5,7 @@ import { Lead } from "@/types/leads";
 import { jsPDF } from "jspdf";
 import { toast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
+import { v4 as uuidv4 } from 'uuid';
 
 /**
  * Save a report to storage with retry mechanism
@@ -22,9 +23,25 @@ export async function saveReportToStorageWithRetry(
   let reportId: string | null = null;
   
   console.log("Starting report save with retry mechanism");
+  console.log("Lead ID:", lead.id);
+  console.log("Lead company name:", lead.company_name);
+  console.log("Filename:", fileName);
   
   // First check authentication
-  const { data: authData } = await supabase.auth.getSession();
+  const { data: authData, error: authError } = await supabase.auth.getSession();
+  
+  if (authError) {
+    console.error("Authentication error:", authError.message);
+    if (isAdmin) {
+      toast({
+        title: "Authentication Error",
+        description: "Session verification failed. The report was downloaded locally.",
+        variant: "destructive"
+      });
+    }
+    return { reportId: null, pdfUrl: null };
+  }
+  
   const isAuthenticated = !!authData.session;
   
   if (!isAuthenticated) {
@@ -39,13 +56,25 @@ export async function saveReportToStorageWithRetry(
     return { reportId: null, pdfUrl: null };
   }
   
+  console.log("User authenticated with ID:", authData.session.user.id);
+  
+  // Ensure the lead ID exists
+  if (!lead.id) {
+    console.error("Lead ID is missing, generating temporary ID");
+    lead.id = uuidv4();
+  }
+  
+  // Add timestamp to filename to avoid conflicts
+  const timestamp = new Date().getTime();
+  const uniqueFileName = `${fileName.replace(/[^a-zA-Z0-9.-]/g, '_')}_${timestamp}.pdf`;
+  
   while (attempts < maxRetries && !success) {
     attempts++;
     console.log(`Attempt ${attempts} of ${maxRetries} to save report...`);
     
     try {
       // First attempt to save the PDF to storage
-      pdfUrl = await savePDFToStorage(pdfDoc, fileName, isAdmin);
+      pdfUrl = await savePDFToStorage(pdfDoc, uniqueFileName, isAdmin);
       
       if (!pdfUrl) {
         console.error("Failed to get PDF URL from storage on attempt", attempts);
@@ -83,13 +112,21 @@ export async function saveReportToStorageWithRetry(
     }
   }
   
-  if (!success && isAdmin) {
-    // If we weren't able to save to the cloud after all retries, notify the user that at least they have a local copy
-    toast({
-      title: "Report Downloaded",
-      description: "The report has been downloaded to your device, but we couldn't save it to the cloud.",
-      variant: "default"
-    });
+  if (success) {
+    console.log("Successfully saved report after", attempts, "attempts");
+    console.log("Report ID:", reportId);
+    console.log("PDF URL:", pdfUrl);
+  } else {
+    console.error("Failed to save report after", maxRetries, "attempts");
+    
+    if (isAdmin) {
+      // If we weren't able to save to the cloud after all retries, notify the user that at least they have a local copy
+      toast({
+        title: "Report Downloaded",
+        description: "The report has been downloaded to your device, but we couldn't save it to the cloud.",
+        variant: "default"
+      });
+    }
   }
   
   return { reportId, pdfUrl };

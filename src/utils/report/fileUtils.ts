@@ -16,7 +16,20 @@ export async function savePDFToStorage(pdfDoc: jsPDF, fileName: string, isAdmin:
     console.log("Starting PDF storage process for", fileName);
     
     // First check if user is authenticated
-    const { data: authData } = await supabase.auth.getSession();
+    const { data: authData, error: authError } = await supabase.auth.getSession();
+    
+    if (authError) {
+      console.error("Authentication error:", authError.message);
+      if (isAdmin) {
+        toast({
+          title: "Authentication Error",
+          description: "Session verification failed. The report was downloaded locally.",
+          variant: "destructive"
+        });
+      }
+      return null;
+    }
+    
     if (!authData.session) {
       console.error("User is not authenticated, cannot save to storage");
       if (isAdmin) {
@@ -28,6 +41,8 @@ export async function savePDFToStorage(pdfDoc: jsPDF, fileName: string, isAdmin:
       }
       return null;
     }
+    
+    console.log("User authenticated with ID:", authData.session.user.id);
     
     // First convert the PDF to a blob
     const pdfBlob = await convertPDFToBlob(pdfDoc);
@@ -49,8 +64,9 @@ export async function savePDFToStorage(pdfDoc: jsPDF, fileName: string, isAdmin:
       return null;
     }
     
-    // Use a simpler filename to prevent path issues
-    const filePath = fileName.replace(/[^a-zA-Z0-9.-]/g, '_');
+    // Use a simpler filename to prevent path issues, with timestamp to avoid conflicts
+    const timestamp = new Date().getTime();
+    const filePath = `${fileName.replace(/[^a-zA-Z0-9.-]/g, '_')}_${timestamp}.pdf`;
     
     console.log("Uploading to path:", filePath);
     console.log("Bucket:", 'reports');
@@ -67,11 +83,19 @@ export async function savePDFToStorage(pdfDoc: jsPDF, fileName: string, isAdmin:
     if (error) {
       console.error("Storage upload error:", error.message);
       console.error("Error details:", error);
+      console.error("Error status:", error.statusCode);
+      
+      // Check for specific error types
+      if (error.message.includes("storage/object-not-found")) {
+        console.error("The reports bucket might exist but the path is invalid");
+      } else if (error.message.includes("Permission denied")) {
+        console.error("User lacks permission to upload to the reports bucket");
+      }
       
       if (isAdmin) {
         toast({
           title: "Upload Failed",
-          description: "Your report was downloaded locally but could not be saved to the cloud.",
+          description: `Your report was downloaded locally but could not be saved to the cloud. Error: ${error.message}`,
           variant: "destructive"
         });
       }
@@ -85,7 +109,12 @@ export async function savePDFToStorage(pdfDoc: jsPDF, fileName: string, isAdmin:
       .from('reports')
       .getPublicUrl(filePath);
     
-    console.log("Generated public URL:", urlData);
+    if (!urlData?.publicUrl) {
+      console.error("Failed to generate public URL");
+      return null;
+    }
+    
+    console.log("Generated public URL:", urlData.publicUrl);
     
     if (isAdmin) {
       toast({
