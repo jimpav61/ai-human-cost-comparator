@@ -2,7 +2,7 @@
 import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { FixStorageButton } from "./FixStorageButton";
-import { LogOut } from "lucide-react";
+import { LogOut, Wrench } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "@/hooks/use-toast";
 
@@ -36,7 +36,28 @@ export const AdminHeader = ({ isLoading }: AdminHeaderProps) => {
       <div className="container max-w-[1920px] mx-auto px-4 flex justify-between items-center">
         <div className="flex items-center">
           <h1 className="text-xl font-bold text-gray-900 mr-4">Admin Dashboard</h1>
-          {!isLoading && <FixStorageButton />}
+          {!isLoading && (
+            <div className="flex items-center">
+              <FixStorageButton />
+              <div className="ml-2 hidden md:block">
+                <Button 
+                  size="sm" 
+                  variant="outline" 
+                  className="flex items-center border-amber-500 bg-amber-50 text-amber-700 hover:bg-amber-100"
+                  onClick={() => {
+                    toast({
+                      title: "Storage Tip",
+                      description: "If report downloads work but storage checks fail, the reports bucket might need configuration. Use the Fix Storage button.",
+                      variant: "warning",
+                    });
+                  }}
+                >
+                  <Wrench className="h-4 w-4 mr-1" />
+                  Storage Help
+                </Button>
+              </div>
+            </div>
+          )}
         </div>
         <Button
           variant="outline"

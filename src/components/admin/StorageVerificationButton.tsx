@@ -37,6 +37,17 @@ export const StorageVerificationButton = ({ lead }: StorageVerificationButtonPro
           description: `Error: ${result.error.message || "Unknown error"}`,
           variant: "destructive",
         });
+        
+        // Suggest fixing storage if authentication or access errors
+        if (result.error.message?.includes("not authenticated") || 
+            result.error.message?.includes("access") ||
+            result.error.message?.includes("permission")) {
+          toast({
+            title: "Storage Setup Required",
+            description: "Click the 'Fix Storage Issues' button in the header to resolve this issue.",
+            variant: "warning",
+          });
+        }
       } else if (result.exists) {
         toast({
           title: "Report Found",
@@ -46,7 +57,7 @@ export const StorageVerificationButton = ({ lead }: StorageVerificationButtonPro
       } else {
         toast({
           title: "No Report Found",
-          description: `No report files found for ${result.companyName}`,
+          description: `No report files found for ${result.companyName}. Try generating a report first.`,
           variant: "warning",
         });
       }

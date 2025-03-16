@@ -47,7 +47,7 @@ export const FixStorageButton = () => {
       variant="outline"
       onClick={handleFixStorage}
       disabled={isFixing}
-      className="ml-2"
+      className="bg-green-50 border-green-500 text-green-700 hover:bg-green-100"
     >
       <Wrench className="h-4 w-4 mr-1" />
       {isFixing ? "Fixing..." : "Fix Storage Issues"}
