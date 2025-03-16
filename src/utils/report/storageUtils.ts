@@ -146,7 +146,7 @@ export async function fixReportStorageIssues(): Promise<{
       };
     }
     
-    // 2. Ensure the reports bucket exists with public access
+    // 2. Verify the reports bucket exists (but don't try to create it)
     const { data: buckets, error: bucketsError } = await supabase.storage.listBuckets();
     
     if (bucketsError) {
@@ -163,27 +163,34 @@ export async function fixReportStorageIssues(): Promise<{
     console.log("Reports bucket found?", !!reportsBucket);
     
     if (!reportsBucket) {
-      // Try to create the bucket
-      const { data: newBucket, error: createError } = await supabase.storage.createBucket('reports', {
-        public: true // Make bucket public to ensure URLs work
-      });
-      
-      if (createError) {
-        console.error("Failed to create reports bucket:", createError);
-        return {
-          success: false,
-          message: "Could not create reports bucket",
-          details: { createError }
-        };
-      }
-      
-      console.log("Created new reports bucket:", newBucket);
-      
-      // Add public access policy to bucket
-      // This should be done via RLS policies in SQL, but we can check if it works first
+      // Don't try to create it, just report that it's missing
+      console.error("Reports bucket not found in storage");
+      return {
+        success: false,
+        message: "Reports bucket not found in storage. Please contact an administrator.",
+        details: { existingBuckets: buckets?.map(b => b.name) }
+      };
     }
     
-    // 3. Test upload permission with a sample file
+    console.log("Reports bucket exists:", reportsBucket);
+    
+    // 3. Test if we can list files in the bucket (permission check)
+    const { data: filesList, error: filesError } = await supabase.storage
+      .from('reports')
+      .list('', { limit: 1 });
+      
+    if (filesError) {
+      console.error("Cannot list files in reports bucket:", filesError);
+      return {
+        success: false,
+        message: "Cannot access files in reports bucket. Permission error.",
+        details: { filesError }
+      };
+    }
+    
+    console.log("Successfully listed files in reports bucket:", filesList);
+    
+    // 4. Test upload permission with a sample file
     const testBlob = new Blob(["test file content"], { type: "text/plain" });
     const testFileName = `storage_test_${Date.now()}.txt`;
     
@@ -198,14 +205,14 @@ export async function fixReportStorageIssues(): Promise<{
       console.error("Test upload failed:", uploadError);
       return {
         success: false,
-        message: "Failed to upload test file",
+        message: "Failed to upload test file. Permission error.",
         details: { uploadError }
       };
     }
     
     console.log("Test upload succeeded:", uploadData);
     
-    // 4. Verify public access to the test file
+    // 5. Verify public access to the test file
     const { data: urlData } = await supabase.storage
       .from('reports')
       .getPublicUrl(testFileName);
@@ -235,7 +242,7 @@ export async function fixReportStorageIssues(): Promise<{
       console.error("Failed to access public URL:", fetchError);
     }
     
-    // 5. Clean up the test file
+    // 6. Clean up the test file
     await supabase.storage
       .from('reports')
       .remove([testFileName]);

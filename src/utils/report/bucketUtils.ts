@@ -1,4 +1,3 @@
-
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "@/hooks/use-toast";
 
@@ -27,7 +26,7 @@ export async function verifyReportsBucket(): Promise<boolean> {
     
     console.log("User authenticated with ID:", authData.session.user.id);
     
-    // First, check if the bucket already exists
+    // Check if the bucket already exists
     const { data: buckets, error: listError } = await supabase.storage.listBuckets();
     
     if (listError) {
@@ -66,38 +65,16 @@ export async function verifyReportsBucket(): Promise<boolean> {
       return true;
     }
     
-    // If the bucket doesn't exist, try creating it
-    console.log("Creating reports bucket...");
-    const { data, error } = await supabase.storage.createBucket('reports', {
-      public: true, // Make it publicly accessible
-      fileSizeLimit: 10485760, // 10MB limit
+    // IMPORTANT CHANGE: Don't try to create the bucket if it doesn't exist
+    // Instead, log that it's missing and return false
+    console.error("Reports bucket does not exist and we're not trying to create it");
+    toast({
+      title: "Storage Error",
+      description: "Reports bucket is missing. Please ask an administrator to create it.",
+      variant: "destructive"
     });
     
-    if (error) {
-      // If there's an error other than "already exists", log it
-      if (!error.message?.includes("already exists")) {
-        console.error("Error creating bucket:", error);
-        return false;
-      } else {
-        console.log("Bucket already exists (from error message)");
-        return true;
-      }
-    }
-    
-    console.log("Created 'reports' bucket successfully:", data);
-    
-    // Verify it was created by trying to list files
-    const { data: verifyList, error: verifyError } = await supabase.storage
-      .from('reports')
-      .list('', { limit: 1 });
-      
-    if (verifyError) {
-      console.error("Error verifying new bucket:", verifyError);
-      return false;
-    }
-    
-    console.log("Successfully verified new reports bucket");
-    return true;
+    return false;
   } catch (error) {
     console.error("Error in verifyReportsBucket:", error);
     return false;
