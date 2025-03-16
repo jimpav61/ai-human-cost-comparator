@@ -64,23 +64,32 @@ export async function saveReportToStorageWithRetry(
     lead.id = uuidv4();
   }
   
-  // First create the reports bucket if it doesn't exist already
+  // REMOVED: No longer creating bucket here
+  // Check if reports bucket exists but don't try to create it
   try {
-    const { data: createData, error: createError } = await supabase.storage
-      .createBucket('reports', { 
-        public: true,
-        fileSizeLimit: 10485760 // 10MB
-      });
-      
-    if (createError && !createError.message.includes("already exists")) {
-      console.error("Error creating reports bucket:", createError);
-    } else if (!createError) {
-      console.log("Created reports bucket successfully");
+    const { data: buckets, error: bucketsError } = await supabase.storage.listBuckets();
+    
+    if (bucketsError) {
+      console.error("Error checking buckets:", bucketsError);
     } else {
-      console.log("Reports bucket already exists");
+      const reportsBucketExists = buckets?.some(bucket => bucket.name === 'reports') || false;
+      console.log("Reports bucket exists:", reportsBucketExists);
+      
+      if (!reportsBucketExists) {
+        console.error("Reports bucket does not exist. Cannot save report.");
+        if (isAdmin) {
+          toast({
+            title: "Storage Error",
+            description: "Reports storage bucket not found. Your report was downloaded locally only.",
+            variant: "destructive"
+          });
+        }
+        return { reportId: null, pdfUrl: null };
+      }
     }
   } catch (bucketError) {
-    console.error("Unexpected error creating bucket:", bucketError);
+    console.error("Unexpected error checking buckets:", bucketError);
+    // Continue anyway, the upload will fail if bucket doesn't exist
   }
   
   // CRITICAL FIX: ALWAYS use lead UUID as the only filename format

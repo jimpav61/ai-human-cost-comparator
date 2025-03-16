@@ -27,40 +27,29 @@ export async function verifyReportsBucket(): Promise<boolean> {
     
     console.log("User authenticated with ID:", authData.session.user.id);
     
-    // First attempt to list all buckets to see if 'reports' exists
+    // First check if reports bucket exists
     const { data: bucketList, error: bucketError } = await supabase.storage.listBuckets();
     console.log("Available buckets:", bucketList);
     
     if (bucketError) {
       console.error("Error listing buckets:", bucketError);
-    } else {
-      const reportsBucketExists = bucketList.some(bucket => bucket.name === 'reports');
-      console.log("Reports bucket exists in bucket list:", reportsBucketExists);
-      
-      if (!reportsBucketExists) {
-        console.log("Reports bucket not found, attempting to create it...");
-        try {
-          const { data: createData, error: createError } = await supabase.storage
-            .createBucket('reports', { 
-              public: true,
-              fileSizeLimit: 10485760 // 10MB
-            });
-            
-          if (createError) {
-            console.error("Failed to create reports bucket:", createError);
-          } else {
-            console.log("Successfully created reports bucket");
-            // Return early since we just created the bucket
-            return true;
-          }
-        } catch (createBucketError) {
-          console.error("Error creating reports bucket:", createBucketError);
-        }
-      }
+      return false;
     }
     
-    // Instead of checking if bucket exists, test if we can access it
-    // by trying to list a single file
+    const reportsBucketExists = bucketList.some(bucket => bucket.name === 'reports');
+    console.log("Reports bucket exists in bucket list:", reportsBucketExists);
+    
+    if (!reportsBucketExists) {
+      console.error("Reports bucket not found");
+      toast({
+        title: "Storage Error",
+        description: "Reports storage bucket not found. Please contact support.",
+        variant: "destructive"
+      });
+      return false;
+    }
+    
+    // Test if we can access the bucket by listing a single file
     const { data: fileList, error: listError } = await supabase.storage
       .from('reports')
       .list('', { limit: 1 });

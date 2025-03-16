@@ -18,8 +18,8 @@ export async function testStorageBucketConnectivity() {
         success: false,
         storageAccessible: false,
         bucketAccessible: false,
-        bucketExists: false, // Add for backward compatibility
-        bucketList: [], // Add for backward compatibility
+        bucketExists: false,
+        bucketList: [],
         authStatus: false,
         authError: authError,
         error: "Authentication error",
@@ -49,28 +49,7 @@ export async function testStorageBucketConnectivity() {
         const reportsBucketExists = bucketsList.some(bucket => bucket.name === 'reports');
         console.log("STORAGE DIAGNOSTIC: Reports bucket exists:", reportsBucketExists);
         
-        // If reports bucket doesn't exist, try to create it
-        if (!reportsBucketExists) {
-          console.log("STORAGE DIAGNOSTIC: Reports bucket not found, attempting to create it...");
-          
-          try {
-            const { data: createData, error: createError } = await supabase.storage
-              .createBucket('reports', { 
-                public: true,
-                fileSizeLimit: 10485760 // 10MB
-              });
-              
-            if (createError) {
-              console.error("STORAGE DIAGNOSTIC: Failed to create reports bucket:", createError);
-            } else {
-              console.log("STORAGE DIAGNOSTIC: Successfully created reports bucket");
-              // Add the newly created bucket to our list
-              bucketsList.push({ name: 'reports', id: 'reports' });
-            }
-          } catch (createError) {
-            console.error("STORAGE DIAGNOSTIC: Error creating bucket:", createError);
-          }
-        }
+        // REMOVED: No longer attempting to create bucket here
       }
     } catch (bucketsCheckError) {
       console.error("STORAGE DIAGNOSTIC: Unexpected error listing buckets:", bucketsCheckError);
@@ -118,8 +97,8 @@ export async function testStorageBucketConnectivity() {
       success: reportsAccessible,
       storageAccessible: true,
       bucketAccessible: reportsAccessible,
-      bucketExists: reportsAccessible, // Add for backward compatibility
-      bucketList: reportsAccessible ? ['reports'] : [], // Add for backward compatibility
+      bucketExists: reportsAccessible,
+      bucketList: reportsAccessible ? ['reports'] : [],
       authStatus: isAuthenticated,
       userId: userId,
       error: reportsError,
@@ -133,8 +112,8 @@ export async function testStorageBucketConnectivity() {
       success: false,
       storageAccessible: false,
       bucketAccessible: false,
-      bucketExists: false, // Add for backward compatibility
-      bucketList: [], // Add for backward compatibility
+      bucketExists: false,
+      bucketList: [],
       authStatus: false,
       error,
     };

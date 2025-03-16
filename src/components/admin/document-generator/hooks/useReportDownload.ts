@@ -22,28 +22,20 @@ export const useReportDownload = () => {
       const diagnosticResult = await testStorageBucketConnectivity();
       console.log("Storage diagnostic before report generation:", diagnosticResult);
       
-      // If the bucket doesn't exist or there are storage issues, log detailed information
+      // If there are storage issues, log detailed information
       if (!diagnosticResult.success) {
         console.error("STORAGE CRITICAL: Storage diagnostic failed", diagnosticResult);
         console.error("STORAGE CRITICAL: Auth status:", diagnosticResult.authStatus);
         console.error("STORAGE CRITICAL: Bucket accessible:", diagnosticResult.bucketAccessible);
         console.error("STORAGE CRITICAL: Available resources:", diagnosticResult.bucketExists ? ['reports'] : []);
         
-        // Attempt to create the bucket explicitly
-        try {
-          const { data, error } = await supabase.storage.createBucket('reports', {
-            public: true,
-            fileSizeLimit: 10485760, // 10MB limit
-          });
-          
-          if (error) {
-            console.error("STORAGE CRITICAL: Failed to create reports bucket:", error);
-          } else {
-            console.log("STORAGE CRITICAL: Successfully created reports bucket:", data);
-          }
-        } catch (createError) {
-          console.error("STORAGE CRITICAL: Exception creating bucket:", createError);
-        }
+        // REMOVED: No longer attempting to create bucket here
+        // Just notify the user of the storage issue
+        toast({
+          title: "Storage Issue",
+          description: "Cannot access storage bucket. Report will be downloaded locally only.",
+          variant: "destructive"
+        });
       }
       
       // Verify that the lead exists in the database

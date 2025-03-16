@@ -47,7 +47,8 @@ export async function savePDFToStorage(pdfDoc: jsPDF, fileName: string, isAdmin:
     const pdfBlob = await convertPDFToBlob(pdfDoc);
     console.log("PDF converted to blob, size:", pdfBlob.size);
     
-    // Make sure the reports bucket exists before uploading
+    // REMOVED: No longer attempting to create bucket here
+    // Assume bucket exists, just verify we can access it
     try {
       // First check if bucket exists by listing buckets
       const { data: buckets, error: bucketsError } = await supabase.storage.listBuckets();
@@ -58,32 +59,21 @@ export async function savePDFToStorage(pdfDoc: jsPDF, fileName: string, isAdmin:
         const reportsBucketExists = buckets?.some(bucket => bucket.name === 'reports') || false;
         console.log("Reports bucket exists:", reportsBucketExists);
         
-        // If reports bucket doesn't exist, create it
         if (!reportsBucketExists) {
-          console.log("Reports bucket not found, creating it...");
-          
-          try {
-            const { data: createData, error: createError } = await supabase.storage
-              .createBucket('reports', { 
-                public: true,
-                fileSizeLimit: 10485760 // 10MB limit
-              });
-              
-            if (createError) {
-              console.error("Failed to create reports bucket:", createError);
-              // Try to continue anyway - bucket might exist but we can't see it
-            } else {
-              console.log("Successfully created reports bucket");
-            }
-          } catch (createError) {
-            console.error("Error creating bucket:", createError);
-            // Continue anyway - the bucket might exist despite the error
+          console.error("Reports bucket not found. Cannot save report.");
+          if (isAdmin) {
+            toast({
+              title: "Storage Error",
+              description: "Reports bucket not found. Your report was downloaded locally only.",
+              variant: "destructive"
+            });
           }
+          return null;
         }
       }
     } catch (bucketCheckError) {
-      console.error("Error checking/creating buckets:", bucketCheckError);
-      // Try to continue anyway
+      console.error("Error checking buckets:", bucketCheckError);
+      // Continue anyway, we'll see if the upload works
     }
     
     // Validate that fileName is in UUID.pdf format
