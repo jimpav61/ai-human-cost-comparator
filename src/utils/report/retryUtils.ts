@@ -25,7 +25,7 @@ export async function saveReportToStorageWithRetry(
   console.log("Starting report save with retry mechanism");
   console.log("Lead ID:", lead.id);
   console.log("Lead company name:", lead.company_name);
-  console.log("Filename:", fileName);
+  console.log("Provided filename:", fileName);
   
   // First check authentication
   const { data: authData, error: authError } = await supabase.auth.getSession();
@@ -83,10 +83,11 @@ export async function saveReportToStorageWithRetry(
     console.error("Unexpected error creating bucket:", bucketError);
   }
   
-  // CRITICAL FIX: Use lead UUID as primary identifier in filename
-  // Format: {leadId}.pdf or {leadId}_{timestamp}.pdf for uniqueness
-  const timestamp = new Date().getTime();
-  const uniqueFileName = `${lead.id}.pdf`;
+  // CRITICAL FIX: ALWAYS use lead UUID as the only filename format
+  // This is the standardized format: {leadId}.pdf
+  // Ignore the incoming fileName parameter completely
+  const standardFileName = `${lead.id}.pdf`;
+  console.log("Standardizing filename to UUID-based format:", standardFileName);
   
   while (attempts < maxRetries && !success) {
     attempts++;
@@ -94,7 +95,7 @@ export async function saveReportToStorageWithRetry(
     
     try {
       // First attempt to save the PDF to storage
-      pdfUrl = await savePDFToStorage(pdfDoc, uniqueFileName, isAdmin);
+      pdfUrl = await savePDFToStorage(pdfDoc, standardFileName, isAdmin);
       
       if (!pdfUrl) {
         console.error("Failed to get PDF URL from storage on attempt", attempts);

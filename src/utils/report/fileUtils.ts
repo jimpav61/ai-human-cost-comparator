@@ -12,7 +12,7 @@ import { jsPDF } from "jspdf";
  */
 export async function savePDFToStorage(pdfDoc: jsPDF, fileName: string, isAdmin: boolean = false): Promise<string | null> {
   try {
-    console.log("Starting PDF storage process for", fileName);
+    console.log("Starting PDF storage process for file:", fileName);
     
     // First check if user is authenticated
     const { data: authData, error: authError } = await supabase.auth.getSession();
@@ -86,9 +86,12 @@ export async function savePDFToStorage(pdfDoc: jsPDF, fileName: string, isAdmin:
       // Try to continue anyway
     }
     
-    // CRITICAL FIX: Use the provided filename directly - should be lead ID based
-    // Accept the incoming filename as is - no additional sanitization needed
-    // This ensures the filename from retryUtils.ts is used consistently
+    // CRITICAL: Validate that fileName is in UUID.pdf format
+    // This is a safeguard - the caller should already be using the correct format
+    if (!fileName.match(/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}\.pdf$/i)) {
+      console.warn("WARNING: Filename does not appear to be in UUID.pdf format:", fileName);
+      console.warn("Will continue with provided filename, but this may cause storage verification issues");
+    }
     
     console.log("Uploading to path:", fileName);
     console.log("Bucket:", 'reports');
