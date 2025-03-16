@@ -52,8 +52,9 @@ export async function verifyLeadReportStorage(lead: Lead): Promise<{
       };
     }
     
-    // Get company name for pattern matching
-    const safeCompanyName = lead.company_name?.replace(/[^a-zA-Z0-9.-]/g, '_') || '';
+    // CRITICAL FIX: Look for files by lead ID instead of company name
+    // The expected primary filename should be {leadId}.pdf
+    const primaryFileName = `${lead.id}.pdf`;
     
     // List all files in the reports bucket
     const { data: fileList, error: listError } = await supabase.storage
@@ -78,13 +79,12 @@ export async function verifyLeadReportStorage(lead: Lead): Promise<{
     
     console.log("Found", fileList?.length || 0, "files in reports bucket");
     
-    // Filter files that might be related to this lead
-    // This is approximate since we add timestamps to filenames
+    // Filter files specifically by lead ID
     const matchingFiles = fileList?.filter(file => {
-      return file.name.includes(safeCompanyName);
+      return file.name === primaryFileName || file.name.startsWith(`${lead.id}_`);
     }) || [];
     
-    console.log("Found", matchingFiles.length, "potential matching files for company:", safeCompanyName);
+    console.log("Found", matchingFiles.length, "matching files for lead ID:", lead.id);
     
     if (matchingFiles.length > 0) {
       console.log("Matching files:", matchingFiles);

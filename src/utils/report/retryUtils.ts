@@ -83,9 +83,10 @@ export async function saveReportToStorageWithRetry(
     console.error("Unexpected error creating bucket:", bucketError);
   }
   
-  // Add timestamp to filename to avoid conflicts
+  // CRITICAL FIX: Use lead UUID as primary identifier in filename
+  // Format: {leadId}.pdf or {leadId}_{timestamp}.pdf for uniqueness
   const timestamp = new Date().getTime();
-  const uniqueFileName = `${fileName.replace(/[^a-zA-Z0-9.-]/g, '_')}_${timestamp}.pdf`;
+  const uniqueFileName = `${lead.id}.pdf`;
   
   while (attempts < maxRetries && !success) {
     attempts++;

@@ -98,40 +98,55 @@ export const useSavedReports = (leadId?: string) => {
         });
       }
       
-      // Also check storage for PDF files
+      // CRITICAL FIX: Check storage for PDF files using lead ID
       if (searchResults.length > 0) {
         // Check for stored PDF files for each report
         for (const report of searchResults) {
           try {
-            // CRITICAL FIX: Use correct file path format
-            const pdfFileName = `${report.id}.pdf`;
+            // CRITICAL FIX: Use lead ID as the primary filename format
+            // Format: {reportId}.pdf or {leadId}.pdf
+            const possibleFileNames = [
+              `${report.id}.pdf`,              // Report ID
+              `${report.lead_id}.pdf`,         // Lead ID
+              `${leadId}.pdf`                  // The ID we're searching with
+            ];
             
-            console.log("📊 REPORT FINDER: Checking for PDF file:", pdfFileName);
+            console.log("📊 REPORT FINDER: Checking for PDF files with these possible names:", possibleFileNames);
             
-            // Need to first check if file exists before getting public URL
-            const { data: fileData, error: fileError } = await supabase.storage
-              .from('reports')
-              .list('', {
-                search: pdfFileName,
-                limit: 1
-              });
+            // Try to find any of the possible filenames
+            let foundFile = false;
+            
+            for (const pdfFileName of possibleFileNames) {
+              if (foundFile) continue;
               
-            if (fileError) {
-              console.error("📊 REPORT FINDER: Error checking file existence:", fileError);
-            } else if (fileData && fileData.length > 0) {
-              console.log(`📊 REPORT FINDER: Found file in storage: ${fileData[0].name}`);
-              
-              // Now get the public URL
-              const { data: urlData } = await supabase.storage
+              // Check if this specific file exists
+              const { data: fileExists, error: fileError } = await supabase.storage
                 .from('reports')
-                .getPublicUrl(pdfFileName);
-              
-              if (urlData && urlData.publicUrl) {
-                console.log(`📊 REPORT FINDER: Generated public URL for report ${report.id}`);
-                report.pdf_url = urlData.publicUrl;
+                .list('', {
+                  search: pdfFileName,
+                  limit: 1
+                });
+                
+              if (fileError) {
+                console.error(`📊 REPORT FINDER: Error checking for file ${pdfFileName}:`, fileError);
+              } else if (fileExists && fileExists.length > 0) {
+                console.log(`📊 REPORT FINDER: Found file in storage: ${fileExists[0].name}`);
+                
+                // Get the public URL
+                const { data: urlData } = await supabase.storage
+                  .from('reports')
+                  .getPublicUrl(pdfFileName);
+                
+                if (urlData && urlData.publicUrl) {
+                  console.log(`📊 REPORT FINDER: Generated public URL for report ${report.id}`);
+                  report.pdf_url = urlData.publicUrl;
+                  foundFile = true;
+                }
               }
-            } else {
-              console.log(`📊 REPORT FINDER: No file found for ${pdfFileName}`);
+            }
+            
+            if (!foundFile) {
+              console.log(`📊 REPORT FINDER: No files found for report ${report.id}`);
             }
           } catch (fileCheckError) {
             console.error("Error checking for PDF file:", fileCheckError);

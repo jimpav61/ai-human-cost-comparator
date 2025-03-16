@@ -86,18 +86,17 @@ export async function savePDFToStorage(pdfDoc: jsPDF, fileName: string, isAdmin:
       // Try to continue anyway
     }
     
-    // Use a simpler filename to prevent path issues, with timestamp to avoid conflicts
-    const timestamp = new Date().getTime();
-    const safeFileName = fileName.replace(/[^a-zA-Z0-9.-]/g, '_');
-    const filePath = `${safeFileName}_${timestamp}.pdf`;
+    // CRITICAL FIX: Use the provided filename directly - should be lead ID based
+    // Accept the incoming filename as is - no additional sanitization needed
+    // This ensures the filename from retryUtils.ts is used consistently
     
-    console.log("Uploading to path:", filePath);
+    console.log("Uploading to path:", fileName);
     console.log("Bucket:", 'reports');
     
     // Upload with explicit content type to ensure proper handling
     const { data, error } = await supabase.storage
       .from('reports')
-      .upload(filePath, pdfBlob, {
+      .upload(fileName, pdfBlob, {
         contentType: 'application/pdf',
         cacheControl: '3600',
         upsert: true // Allow overwriting existing files
@@ -115,11 +114,10 @@ export async function savePDFToStorage(pdfDoc: jsPDF, fileName: string, isAdmin:
         
         // Try again with a super simple configuration
         console.log("Attempting simplified upload as fallback...");
-        const fallbackFilePath = `report_${timestamp}.pdf`;
         
         const { data: fallbackData, error: fallbackError } = await supabase.storage
           .from('reports')
-          .upload(fallbackFilePath, pdfBlob, { 
+          .upload(fileName, pdfBlob, { 
             upsert: true 
           });
           
@@ -128,7 +126,7 @@ export async function savePDFToStorage(pdfDoc: jsPDF, fileName: string, isAdmin:
           // Get URL for the fallback file
           const { data: fallbackUrlData } = await supabase.storage
             .from('reports')
-            .getPublicUrl(fallbackFilePath);
+            .getPublicUrl(fileName);
             
           if (fallbackUrlData?.publicUrl) {
             console.log("Generated fallback public URL:", fallbackUrlData.publicUrl);
@@ -164,7 +162,7 @@ export async function savePDFToStorage(pdfDoc: jsPDF, fileName: string, isAdmin:
     // Get the public URL
     const { data: urlData } = await supabase.storage
       .from('reports')
-      .getPublicUrl(filePath);
+      .getPublicUrl(fileName);
     
     if (!urlData?.publicUrl) {
       console.error("Failed to generate public URL");
