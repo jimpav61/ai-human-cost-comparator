@@ -37,10 +37,6 @@ export async function generateAndSaveReport(
     const doc = generateReportPDF(lead);
     console.log("✅ PDF document generated successfully");
     
-    // Get a safe filename
-    const safeFileName = getSafeFileName(lead);
-    const fileName = `${safeFileName}_report.pdf`;
-    
     // If skipStorage is true, just return success without saving
     if (options.skipStorage) {
       console.log("Storage skipped as requested");
@@ -55,6 +51,12 @@ export async function generateAndSaveReport(
     
     // Save the report with retry mechanism and increased retry count
     const maxRetries = options.retryCount || 4; // Increase default retries
+    
+    // CRITICAL: We deliberately ignore the filename format from getSafeFileName()
+    // and let saveReportToStorageWithRetry use the standardized UUID format
+    const fileName = `${lead.id}.pdf`;
+    console.log("Using standardized filename format:", fileName);
+    
     const result = await saveReportToStorageWithRetry(
       doc,
       lead,
