@@ -83,6 +83,19 @@ export async function saveReportToStorageWithRetry(
       
       console.log(`✅ PDF saved to storage on attempt ${attempts}, URL:`, pdfUrl);
       
+      // After successful storage, verify the file exists by trying to access it
+      try {
+        const response = await fetch(pdfUrl);
+        if (!response.ok) {
+          console.error(`File verification failed: HTTP ${response.status}`);
+          throw new Error(`File verification failed: HTTP ${response.status}`);
+        }
+        console.log("✅ File verified accessible at URL");
+      } catch (fetchError) {
+        console.error("Error verifying file accessibility:", fetchError);
+        // Continue anyway since the upload reported success
+      }
+      
       // If PDF storage was successful, save the report data to the database
       reportId = await saveReportData(lead, pdfUrl);
       
