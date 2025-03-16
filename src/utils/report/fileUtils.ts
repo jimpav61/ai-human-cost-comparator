@@ -50,14 +50,14 @@ export async function savePDFToStorage(pdfDoc: jsPDF, fileName: string, isAdmin:
     
     // Make sure reports bucket exists before uploading
     const bucketExists = await verifyReportsBucket();
-    console.log("Bucket exists or was created:", bucketExists);
+    console.log("Bucket verified accessible:", bucketExists);
     
     if (!bucketExists) {
-      console.error("Reports bucket does not exist and could not be created");
+      console.error("Cannot access reports bucket - permission issue or bucket not configured");
       if (isAdmin) {
         toast({
-          title: "Storage Error",
-          description: "Could not access or create the reports storage. Your report was downloaded locally.",
+          title: "Storage Access Error",
+          description: "Cannot access reports storage. Your report was downloaded locally only.",
           variant: "destructive"
         });
       }
@@ -83,12 +83,10 @@ export async function savePDFToStorage(pdfDoc: jsPDF, fileName: string, isAdmin:
     if (error) {
       console.error("Storage upload error:", error.message);
       console.error("Error details:", error);
-      // Error statusCode doesn't exist on StorageError type, so we don't reference it
-      console.error("Error status:", error.message); // Log the message instead
       
       // Check for specific error types
       if (error.message.includes("storage/object-not-found")) {
-        console.error("The reports bucket might exist but the path is invalid");
+        console.error("The path might be invalid");
       } else if (error.message.includes("Permission denied")) {
         console.error("User lacks permission to upload to the reports bucket");
       }

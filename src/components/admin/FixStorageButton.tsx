@@ -12,28 +12,43 @@ export const FixStorageButton = () => {
     setIsFixing(true);
     
     try {
+      toast({
+        title: "Checking Storage",
+        description: "Verifying storage access and permissions...",
+        variant: "default",
+      });
+      
       const result = await fixReportStorageIssues();
       
       console.log("Storage fix attempt result:", result);
       
       if (result.success) {
         toast({
-          title: "Storage Issues Fixed",
+          title: "Storage Check Passed",
           description: result.message,
           variant: "default",
         });
       } else {
         toast({
-          title: "Fix Attempt Failed",
+          title: "Storage Issue Detected",
           description: result.message,
           variant: "warning",
         });
+        
+        // If the issue is with permissions, show a more specific message
+        if (result.details?.filesError || result.details?.uploadError) {
+          toast({
+            title: "Permission Issue",
+            description: "You may not have permission to access or modify the reports bucket.",
+            variant: "destructive",
+          });
+        }
       }
     } catch (error) {
       console.error("Error fixing storage:", error);
       toast({
         title: "Operation Failed",
-        description: "An unexpected error occurred while fixing storage issues.",
+        description: "An unexpected error occurred while checking storage access.",
         variant: "destructive",
       });
     } finally {
@@ -47,10 +62,10 @@ export const FixStorageButton = () => {
       variant="outline"
       onClick={handleFixStorage}
       disabled={isFixing}
-      className="bg-green-50 border-green-500 text-green-700 hover:bg-green-100"
+      className="bg-green-50 border-green-500 text-green-700 hover:bg-green-100 font-medium"
     >
       <Wrench className="h-4 w-4 mr-1" />
-      {isFixing ? "Fixing..." : "Fix Storage Issues"}
+      {isFixing ? "Checking Storage..." : "Verify Storage Access"}
     </Button>
   );
 };

@@ -146,14 +146,14 @@ export async function fixReportStorageIssues(): Promise<{
       };
     }
     
-    // 2. Verify the reports bucket exists (but don't try to create it)
+    // 2. Verify the reports bucket exists (without creating it)
     const { data: buckets, error: bucketsError } = await supabase.storage.listBuckets();
     
     if (bucketsError) {
       console.error("Could not list buckets:", bucketsError);
       return {
         success: false,
-        message: "Could not access storage buckets",
+        message: "Could not access storage buckets. Check network connection and permissions.",
         details: { bucketsError }
       };
     }
@@ -163,11 +163,11 @@ export async function fixReportStorageIssues(): Promise<{
     console.log("Reports bucket found?", !!reportsBucket);
     
     if (!reportsBucket) {
-      // Don't try to create it, just report that it's missing
+      // Just report that it's missing without trying to create it
       console.error("Reports bucket not found in storage");
       return {
         success: false,
-        message: "Reports bucket not found in storage. Please contact an administrator.",
+        message: "Reports bucket not found in Supabase storage. This is a configuration issue.",
         details: { existingBuckets: buckets?.map(b => b.name) }
       };
     }
@@ -183,7 +183,7 @@ export async function fixReportStorageIssues(): Promise<{
       console.error("Cannot list files in reports bucket:", filesError);
       return {
         success: false,
-        message: "Cannot access files in reports bucket. Permission error.",
+        message: "Cannot access files in reports bucket. You may not have the required permissions.",
         details: { filesError }
       };
     }
@@ -205,7 +205,7 @@ export async function fixReportStorageIssues(): Promise<{
       console.error("Test upload failed:", uploadError);
       return {
         success: false,
-        message: "Failed to upload test file. Permission error.",
+        message: "Cannot upload files to reports bucket. Permission or configuration issue.",
         details: { uploadError }
       };
     }
@@ -221,7 +221,7 @@ export async function fixReportStorageIssues(): Promise<{
       console.error("Could not get public URL for test file");
       return {
         success: false,
-        message: "Could not generate public URL for test file",
+        message: "Could not generate public URL for test file. Bucket might not be configured as public.",
         details: { urlData }
       };
     }
@@ -234,7 +234,7 @@ export async function fixReportStorageIssues(): Promise<{
       if (!response.ok) {
         return {
           success: false,
-          message: `Public URL not accessible (Status: ${response.status})`,
+          message: `Public URL not accessible (Status: ${response.status}). Bucket might not be publicly accessible.`,
           details: { url: urlData.publicUrl, status: response.status }
         };
       }
@@ -249,7 +249,7 @@ export async function fixReportStorageIssues(): Promise<{
     
     return {
       success: true,
-      message: "Report storage is functioning correctly",
+      message: "Report storage is functioning correctly. Permissions and access verified.",
       details: {
         bucketExists: true,
         uploadWorks: true,
@@ -260,7 +260,7 @@ export async function fixReportStorageIssues(): Promise<{
     console.error("Error in fixReportStorageIssues:", error);
     return {
       success: false,
-      message: "Error fixing storage issues",
+      message: "Error fixing storage issues. See console for details.",
       details: { error }
     };
   }

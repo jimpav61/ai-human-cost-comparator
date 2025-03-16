@@ -1,3 +1,4 @@
+
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "@/hooks/use-toast";
 
@@ -59,18 +60,21 @@ export async function verifyReportsBucket(): Promise<boolean> {
       
       if (accessError) {
         console.error("Bucket exists but cannot access it:", accessError);
+        toast({
+          title: "Storage Permission Issue",
+          description: "You don't have permission to access the reports bucket. Please check your user permissions.",
+          variant: "destructive"
+        });
         return false;
       }
       
       return true;
     }
     
-    // IMPORTANT CHANGE: Don't try to create the bucket if it doesn't exist
-    // Instead, log that it's missing and return false
-    console.error("Reports bucket does not exist and we're not trying to create it");
+    console.error("Reports bucket does not exist in this Supabase project");
     toast({
-      title: "Storage Error",
-      description: "Reports bucket is missing. Please ask an administrator to create it.",
+      title: "Storage Configuration Issue",
+      description: "Reports bucket not found. Please check Supabase storage configuration.",
       variant: "destructive"
     });
     
@@ -168,7 +172,7 @@ export async function testStorageBucketConnectivity() {
     }
     
     return {
-      success: (reportsBucketExists || isAuthenticated) && reportsAccessible,
+      success: reportsBucketExists && reportsAccessible,
       storageAccessible: true,
       bucketExists: reportsBucketExists,
       reportsAccessible: reportsAccessible,
