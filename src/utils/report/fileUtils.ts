@@ -83,7 +83,8 @@ export async function savePDFToStorage(pdfDoc: jsPDF, fileName: string, isAdmin:
     if (error) {
       console.error("Storage upload error:", error.message);
       console.error("Error details:", error);
-      console.error("Error status:", error.statusCode);
+      // Error statusCode doesn't exist on StorageError type, so we don't reference it
+      console.error("Error status:", error.message); // Log the message instead
       
       // Check for specific error types
       if (error.message.includes("storage/object-not-found")) {
