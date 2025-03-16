@@ -45,10 +45,9 @@ export async function verifyLeadReportStorage(lead: Lead): Promise<{
       };
     }
     
-    // CRITICAL FIX: Focus exclusively on UUID as the file identifier
-    // The only valid filename is {leadId}.pdf - this is the standard we enforce
-    const uuidBasedFileName = `${lead.id}.pdf`;
-    console.log("Looking for file with exact name:", uuidBasedFileName);
+    // ONLY look for the standardized UUID-based filename format
+    const standardFileName = `${lead.id}.pdf`;
+    console.log("Looking for file with exact standardized name:", standardFileName);
     
     // List all files in the reports bucket
     const { data: fileList, error: listError } = await supabase.storage
@@ -73,65 +72,31 @@ export async function verifyLeadReportStorage(lead: Lead): Promise<{
     
     console.log("Found", fileList?.length || 0, "files in reports bucket");
     
-    // CRITICAL FIX: Check for exact UUID match first as the primary method
-    const exactUuidMatch = fileList?.find(file => file.name === uuidBasedFileName);
+    // Check ONLY for the exact UUID match - no secondary checks or fallbacks
+    const exactMatch = fileList?.find(file => file.name === standardFileName);
     
-    if (exactUuidMatch) {
-      console.log("✅ Found exact UUID match:", exactUuidMatch.name);
+    if (exactMatch) {
+      console.log("✅ Found exact UUID match:", exactMatch.name);
       
       // Get the public URL for this file to verify it's accessible
       const { data: urlData } = await supabase.storage
         .from('reports')
-        .getPublicUrl(exactUuidMatch.name);
+        .getPublicUrl(exactMatch.name);
       
       console.log("Public URL for exact UUID match:", urlData?.publicUrl);
       
       return {
         exists: true,
         fileList: fileList || [],
-        matchingFiles: [exactUuidMatch],
+        matchingFiles: [exactMatch],
         error: null,
         leadId: lead.id || 'unknown',
         companyName: lead.company_name || 'unknown'
       };
     }
     
-    // Secondary check: look for any file that starts with the UUID
-    // This is fallback for any legacy files
-    const uuidPrefixMatches = fileList?.filter(file => 
-      file.name.startsWith(`${lead.id}.`) || 
-      file.name.startsWith(`${lead.id}_`)
-    ) || [];
-    
-    if (uuidPrefixMatches.length > 0) {
-      console.log("Found", uuidPrefixMatches.length, "files with UUID prefix:", lead.id);
-      console.log("Matching files:", uuidPrefixMatches.map(f => f.name).join(', '));
-      
-      // Get the public URLs for these files to verify they're accessible
-      const urls = await Promise.all(uuidPrefixMatches.map(async (file) => {
-        const { data } = await supabase.storage
-          .from('reports')
-          .getPublicUrl(file.name);
-        return {
-          filename: file.name,
-          url: data?.publicUrl
-        };
-      }));
-      
-      console.log("Public URLs for UUID prefix matches:", urls);
-      
-      return {
-        exists: true,
-        fileList: fileList || [],
-        matchingFiles: uuidPrefixMatches,
-        error: null,
-        leadId: lead.id || 'unknown',
-        companyName: lead.company_name || 'unknown'
-      };
-    }
-    
-    // No matching files found with UUID-based naming
-    console.log("❌ No files found for lead UUID:", lead.id);
+    // No matching file found with strict UUID-based naming
+    console.log("❌ No files found for lead UUID format:", standardFileName);
     
     return {
       exists: false,
