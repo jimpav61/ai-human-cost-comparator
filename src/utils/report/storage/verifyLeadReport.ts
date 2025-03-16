@@ -45,11 +45,12 @@ export async function verifyLeadReportStorage(lead: Lead): Promise<{
       };
     }
     
-    // ONLY look for the standardized UUID-based filename format
+    // Primary filename format is the UUID-based standardized format
     const standardFileName = `${lead.id}.pdf`;
     console.log("Looking for file with exact standardized name:", standardFileName);
     
-    // List all files in the reports bucket
+    // List all files in the reports bucket with detailed logging
+    console.log("Listing files in reports bucket...");
     const { data: fileList, error: listError } = await supabase.storage
       .from('reports')
       .list('', {
@@ -71,8 +72,11 @@ export async function verifyLeadReportStorage(lead: Lead): Promise<{
     }
     
     console.log("Found", fileList?.length || 0, "files in reports bucket");
+    if (fileList && fileList.length > 0) {
+      console.log("Files in bucket:", fileList.map(f => f.name).join(', '));
+    }
     
-    // Check ONLY for the exact UUID match - no secondary checks or fallbacks
+    // First check for exact UUID match - this is the primary standard
     const exactMatch = fileList?.find(file => file.name === standardFileName);
     
     if (exactMatch) {
@@ -95,8 +99,42 @@ export async function verifyLeadReportStorage(lead: Lead): Promise<{
       };
     }
     
-    // No matching file found with strict UUID-based naming
-    console.log("❌ No files found for lead UUID format:", standardFileName);
+    // Fallback: Look for files with any variations of the UUID
+    // This helps catch files that might have been saved with different formats
+    const uuidVariants = [
+      `${lead.id}.pdf`,
+      `${lead.id}_report.pdf`,
+      `${lead.id}_${lead.company_name}.pdf`.replace(/\s+/g, '_'),
+      `${lead.company_name}_${lead.id}.pdf`.replace(/\s+/g, '_')
+    ];
+    
+    console.log("Looking for UUID variations:", uuidVariants);
+    
+    const matchingFiles = fileList?.filter(file => 
+      // Exact matches for our known variations
+      uuidVariants.includes(file.name) ||
+      // Or files that start with the UUID (using any separator)
+      file.name.startsWith(`${lead.id}.`) || 
+      file.name.startsWith(`${lead.id}_`) ||
+      file.name.startsWith(`${lead.id}-`)
+    ) || [];
+    
+    if (matchingFiles.length > 0) {
+      console.log("✅ Found", matchingFiles.length, "matching files with UUID-based format:");
+      matchingFiles.forEach(file => console.log(" - ", file.name));
+      
+      return {
+        exists: true,
+        fileList: fileList || [],
+        matchingFiles,
+        error: null,
+        leadId: lead.id || 'unknown',
+        companyName: lead.company_name || 'unknown'
+      };
+    }
+    
+    // No matching files found
+    console.log("❌ No files found for lead UUID format:", standardFileName, "or any variations");
     
     return {
       exists: false,
