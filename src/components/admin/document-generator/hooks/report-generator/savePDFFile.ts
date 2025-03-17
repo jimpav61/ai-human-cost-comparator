@@ -12,4 +12,7 @@ export const saveReportPDF = (doc: JsPDFWithAutoTable, lead: Lead): void => {
   
   // Save the document with proper company name
   doc.save(fileName);
+  
+  // Log successful download
+  console.log(`✅ Report PDF for ${lead.company_name} saved successfully as "${fileName}"`);
 };

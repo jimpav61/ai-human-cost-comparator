@@ -6,6 +6,7 @@ import { Button } from "@/components/ui/button";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { AlertCircle, CheckCircle2, Info } from "lucide-react";
 import { useState } from "react";
+import { useProposalRevisions } from "../hooks/useProposalRevisions";
 
 interface ProposalGeneratorProps {
   lead: Lead;
@@ -15,6 +16,7 @@ interface ProposalGeneratorProps {
 
 export const ProposalGenerator = ({ lead, onLeadUpdated, onProposalGenerated }: ProposalGeneratorProps) => {
   const { generating, generationError, proposalPdf, generationSuccess, generateProposal } = useProposalGenerator();
+  const { saveProposalRevision } = useProposalRevisions();
   const [retryCount, setRetryCount] = useState(0);
   const [showHelp, setShowHelp] = useState(false);
 
@@ -43,6 +45,37 @@ export const ProposalGenerator = ({ lead, onLeadUpdated, onProposalGenerated }: 
       }
       
       console.log("Proposal generated successfully, PDF length:", pdf.length);
+
+      // IMPORTANT: Save the proposal as a revision
+      try {
+        console.log("Saving proposal as a new revision");
+        const title = `Proposal for ${lead.company_name}`;
+        const notes = JSON.stringify({
+          aiTier: lead.calculator_inputs?.aiTier || lead.calculator_results?.tierKey,
+          aiType: lead.calculator_inputs?.aiType || lead.calculator_results?.aiType,
+          callVolume: lead.calculator_inputs?.callVolume || lead.calculator_results?.additionalVoiceMinutes || 0,
+          basePrice: lead.calculator_results?.basePriceMonthly || 0,
+          totalPrice: lead.calculator_results?.basePriceMonthly || 0
+        });
+        
+        const newRevision = await saveProposalRevision(lead.id, pdf, title, notes);
+        
+        console.log("Proposal saved as revision:", newRevision);
+        
+        toast({
+          title: "Success",
+          description: `Proposal generated and saved as version ${newRevision.version_number}`,
+          variant: "default",
+        });
+      } catch (saveError) {
+        console.error("Error saving proposal revision:", saveError);
+        // Continue anyway since the PDF was generated successfully
+        toast({
+          title: "Warning",
+          description: "Proposal generated but couldn't be saved as a revision",
+          variant: "default",
+        });
+      }
       
       // Call both callbacks if provided
       if (onProposalGenerated && pdf) {

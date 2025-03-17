@@ -1,17 +1,25 @@
 
 import { Lead } from "@/types/leads";
-import { getSafeFileName } from "../report-generator/saveReport";
+import { getSafeFileName } from "../report-generator/fileNameUtils";
 import { JsPDFWithAutoTable } from '@/components/calculator/pdf/types';
 import { toast } from "@/hooks/use-toast";
 
 export const saveProposalPDF = (doc: JsPDFWithAutoTable, lead: Lead): void => {
   try {
     const safeCompanyName = getSafeFileName(lead);
+    const fileName = `${safeCompanyName}-Proposal.pdf`;
     
-    console.log("Document generated, saving as:", `${safeCompanyName}-Proposal.pdf`);
+    console.log("Proposal document generated, saving as:", fileName);
+    console.log("Lead information:", {
+      id: lead.id,
+      companyName: lead.company_name,
+      aiTier: lead.calculator_inputs?.aiTier || lead.calculator_results?.tierKey,
+      aiType: lead.calculator_inputs?.aiType || lead.calculator_results?.aiType,
+      callVolume: lead.calculator_inputs?.callVolume || lead.calculator_results?.additionalVoiceMinutes || 0
+    });
     
     // Save the document with proper company name
-    doc.save(`${safeCompanyName}-Proposal.pdf`);
+    doc.save(fileName);
     
     // Log successful download for debugging
     console.log("✅ Proposal document downloaded successfully");
