@@ -17,6 +17,7 @@ export interface PdfContentParams {
   basePrice: number;
   includedMinutes: number;
   callVolume: number;
+  additionalVoiceMinutes: number;
   voiceCost: number;
   totalPrice: number;
   setupFee: number;

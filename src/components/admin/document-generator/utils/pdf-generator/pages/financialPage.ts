@@ -9,6 +9,7 @@ export function generateFinancialPage(params: PdfContentParams): string {
     aiTier,
     includedMinutes,
     callVolume,
+    additionalVoiceMinutes,
     voiceCost,
     totalPrice,
     humanCostMonthly,
@@ -57,11 +58,14 @@ ${brandRed} rg
 (${includedMinutes} minutes/month) Tj
 -190 -25 Td`;
     
-    if (callVolume > 0) {
+    // Use the explicit additionalVoiceMinutes if available, otherwise fallback to callVolume
+    const voiceMinutes = typeof additionalVoiceMinutes === 'number' ? additionalVoiceMinutes : callVolume;
+    
+    if (voiceMinutes > 0) {
       content += `
 (Additional Voice Minutes:) Tj
 190 0 Td
-(${callVolume} minutes @ $0.12/minute) Tj
+(${voiceMinutes} minutes @ $0.12/minute) Tj
 -190 -25 Td
 (Additional Voice Cost:) Tj
 190 0 Td
