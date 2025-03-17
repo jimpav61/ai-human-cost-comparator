@@ -23,6 +23,7 @@ export async function testStorageBucketConnectivity() {
         authStatus: false,
         authError: authError,
         error: "Authentication error",
+        message: "Authentication error: " + authError.message
       };
     }
     
@@ -40,10 +41,11 @@ export async function testStorageBucketConnectivity() {
         bucketList: [],
         authStatus: false,
         error: new Error("Not authenticated"),
+        message: "User is not authenticated. Sign in to access storage."
       };
     }
     
-    // Direct test for reports bucket
+    // Direct test for reports bucket with minimal request
     const { data: reportsList, error: reportsError } = await supabase.storage
       .from('reports')
       .list('', { limit: 10 });
@@ -73,6 +75,17 @@ export async function testStorageBucketConnectivity() {
         bucketsError = bucketsCheckError;
       }
       
+      // Provide detailed error information
+      let errorMessage = "Cannot access reports bucket. ";
+      
+      if (reportsError.message.includes("Permission denied")) {
+        errorMessage += "Permission denied - check your user roles and bucket policies.";
+      } else if (reportsError.message.includes("not found") || reportsError.message.includes("exist")) {
+        errorMessage += "Bucket not found - it may need to be created.";
+      } else {
+        errorMessage += reportsError.message;
+      }
+      
       return {
         success: false,
         storageAccessible: true,
@@ -82,7 +95,8 @@ export async function testStorageBucketConnectivity() {
         userId: userId,
         error: reportsError,
         availableBuckets: bucketsList.map(b => b.name),
-        bucketsError
+        bucketsError,
+        message: errorMessage
       };
     }
     
@@ -92,7 +106,7 @@ export async function testStorageBucketConnectivity() {
     }
     
     // Perform a test upload and delete to confirm write permissions
-    let uploadPermissionTest = { success: false, error: null };
+    let uploadPermissionTest = { success: false, error: null, message: "" };
     
     try {
       const testBlob = new Blob(["test"], { type: "text/plain" });
@@ -106,17 +120,29 @@ export async function testStorageBucketConnectivity() {
       
       if (uploadError) {
         console.error("STORAGE DIAGNOSTIC: Upload permission test failed:", uploadError);
-        uploadPermissionTest = { success: false, error: uploadError };
+        uploadPermissionTest = { 
+          success: false, 
+          error: uploadError,
+          message: "Upload test failed: " + uploadError.message 
+        };
       } else {
         console.log("STORAGE DIAGNOSTIC: Upload permission test succeeded");
-        uploadPermissionTest = { success: true, error: null };
+        uploadPermissionTest = { 
+          success: true, 
+          error: null,
+          message: "Upload test succeeded" 
+        };
         
         // Clean up test file
         await supabase.storage.from('reports').remove([testPath]);
       }
     } catch (uploadTestError) {
       console.error("STORAGE DIAGNOSTIC: Unexpected error in upload test:", uploadTestError);
-      uploadPermissionTest = { success: false, error: uploadTestError };
+      uploadPermissionTest = { 
+        success: false, 
+        error: uploadTestError,
+        message: "Upload test error: " + (uploadTestError instanceof Error ? uploadTestError.message : String(uploadTestError))
+      };
     }
     
     return {
@@ -131,7 +157,10 @@ export async function testStorageBucketConnectivity() {
       availableBuckets: ['reports'],
       bucketsError: null,
       fileCount: reportsList?.length || 0,
-      fileNames: reportsList?.slice(0, 5).map(f => f.name) || []
+      fileNames: reportsList?.slice(0, 5).map(f => f.name) || [],
+      message: uploadPermissionTest.success 
+        ? "Storage bucket accessible and writable." 
+        : "Storage bucket accessible but write permission issue: " + uploadPermissionTest.message
     };
   } catch (error) {
     console.error("STORAGE DIAGNOSTIC: Unexpected error:", error);
@@ -143,6 +172,7 @@ export async function testStorageBucketConnectivity() {
       bucketList: [],
       authStatus: false,
       error,
+      message: "Unexpected error in storage diagnostic: " + (error instanceof Error ? error.message : String(error))
     };
   }
 }

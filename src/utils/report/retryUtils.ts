@@ -6,6 +6,8 @@ import { jsPDF } from "jspdf";
 import { toast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 import { v4 as uuidv4 } from 'uuid';
+import { uploadPDFToBucket } from "./storage/directUpload";
+import { convertPDFToBlob } from "./pdf/conversion";
 
 /**
  * Save a report to storage with retry mechanism
@@ -64,38 +66,20 @@ export async function saveReportToStorageWithRetry(
     lead.id = uuidv4();
   }
   
-  // Check bucket accessibility directly
-  const { data: bucketTest, error: bucketError } = await supabase.storage
-    .from('reports')
-    .list('', { limit: 1 });
-  
-  if (bucketError) {
-    console.error("Cannot access reports bucket:", bucketError);
-    if (isAdmin) {
-      toast({
-        title: "Storage Error",
-        description: "Cannot access reports bucket. Your report was downloaded locally only.",
-        variant: "destructive"
-      });
-    }
-    return { reportId: null, pdfUrl: null };
-  }
-  
-  console.log("Successfully verified reports bucket access");
-  
   // CRITICAL FIX: ALWAYS use lead UUID as the only filename format
-  // This is the standardized format: {leadId}.pdf
-  // Override any provided filename to ensure consistent naming
   const standardFileName = `${lead.id}.pdf`;
   console.log("Standardizing filename to UUID-based format:", standardFileName);
+  
+  // First convert the PDF to a blob for upload
+  const pdfBlob = await convertPDFToBlob(pdfDoc);
   
   while (attempts < maxRetries && !success) {
     attempts++;
     console.log(`Attempt ${attempts} of ${maxRetries} to save report...`);
     
     try {
-      // First attempt to save the PDF to storage
-      pdfUrl = await savePDFToStorage(pdfDoc, standardFileName, isAdmin);
+      // Use our new direct upload utility to save the PDF to storage
+      pdfUrl = await uploadPDFToBucket(standardFileName, pdfBlob, !isAdmin);
       
       if (!pdfUrl) {
         console.error("Failed to get PDF URL from storage on attempt", attempts);
@@ -103,18 +87,6 @@ export async function saveReportToStorageWithRetry(
       }
       
       console.log(`✅ PDF saved to storage on attempt ${attempts}, URL:`, pdfUrl);
-      
-      // After successful storage, verify the file exists
-      const { data: fileList, error: listError } = await supabase.storage
-        .from('reports')
-        .list('', { search: standardFileName });
-      
-      if (listError || !fileList || !fileList.find(f => f.name === standardFileName)) {
-        console.error("File verification failed - file not found in bucket listing");
-        throw new Error("File verification failed - file not found after upload");
-      }
-      
-      console.log("✅ File verified in storage listing");
       
       // If PDF storage was successful, save the report data to the database
       reportId = await saveReportData(lead, pdfUrl);
@@ -138,7 +110,7 @@ export async function saveReportToStorageWithRetry(
         });
       }
       
-      // Wait between retries with exponential backoff (starting with 1s, then 2s, then 4s)
+      // Wait between retries with exponential backoff
       const delayMs = Math.min(1000 * Math.pow(2, attempts - 1), 5000);
       console.log(`Waiting ${delayMs}ms before retry ${attempts + 1}...`);
       await new Promise(resolve => setTimeout(resolve, delayMs));
@@ -153,7 +125,6 @@ export async function saveReportToStorageWithRetry(
     console.error("Failed to save report after", maxRetries, "attempts");
     
     if (isAdmin) {
-      // If we weren't able to save to the cloud after all retries, notify the user that at least they have a local copy
       toast({
         title: "Report Downloaded",
         description: "The report has been downloaded to your device, but we couldn't save it to the cloud after multiple attempts.",
