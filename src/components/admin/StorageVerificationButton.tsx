@@ -3,7 +3,8 @@ import { useState } from "react";
 import { toast } from "@/hooks/use-toast";
 import { Lead } from "@/types/leads";
 import { Button } from "@/components/ui/button";
-import { verifyLeadReportStorage, fixReportStorageIssues } from "@/utils/report/storageUtils";
+import { verifyLeadReportStorage } from "@/utils/report/storageUtils";
+import { fixReportStorageIssues } from "@/utils/report/storageUtils";
 import { AlertTriangle, CheckCircle2, Database } from "lucide-react";
 
 interface StorageVerificationButtonProps {
@@ -51,7 +52,7 @@ export const StorageVerificationButton = ({ lead }: StorageVerificationButtonPro
       } else if (result.exists) {
         toast({
           title: "Report Found",
-          description: `Found ${result.matchingFiles.length} file(s) for ${result.companyName}`,
+          description: `Found ${result.matchingFiles?.length || 0} file(s) for ${result.companyName}`,
           variant: "default",
         });
       } else {

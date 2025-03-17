@@ -3,14 +3,34 @@ import { supabase } from "@/integrations/supabase/client";
 import { Lead } from "@/types/leads";
 
 /**
+ * Result interface for report verification
+ */
+export interface ReportVerificationResult {
+  exists: boolean;
+  companyName: string;
+  error?: {
+    message: string;
+    code?: string;
+  } | null;
+  publicUrl?: string | null;
+  matchingFiles?: any[];
+}
+
+/**
  * Verify if a report exists in storage for a specific lead
  * @param lead Lead to check for report
- * @returns Promise with URL if found, null if not found
+ * @returns Promise with verification result
  */
-export async function verifyLeadReportStorage(lead: Lead): Promise<string | null> {
+export async function verifyLeadReportStorage(lead: Lead): Promise<ReportVerificationResult> {
   if (!lead || !lead.id) {
     console.error("Cannot verify report: Invalid lead or missing ID");
-    return null;
+    return {
+      exists: false,
+      companyName: lead?.company_name || 'Unknown',
+      error: {
+        message: "Invalid lead or missing ID"
+      }
+    };
   }
   
   try {
@@ -26,7 +46,14 @@ export async function verifyLeadReportStorage(lead: Lead): Promise<string | null
     
     if (bucketError) {
       console.error("Cannot access reports bucket:", bucketError);
-      return null;
+      return {
+        exists: false,
+        companyName: lead.company_name,
+        error: {
+          message: `Cannot access reports bucket: ${bucketError.message}`,
+          code: 'BUCKET_ACCESS_ERROR'
+        }
+      };
     }
     
     // Look for the specific file
@@ -38,7 +65,14 @@ export async function verifyLeadReportStorage(lead: Lead): Promise<string | null
     
     if (listError) {
       console.error("Error listing files in reports bucket:", listError);
-      return null;
+      return {
+        exists: false,
+        companyName: lead.company_name,
+        error: {
+          message: `Error listing files: ${listError.message}`,
+          code: 'LIST_ERROR'
+        }
+      };
     }
     
     // Check if file exists
@@ -46,7 +80,11 @@ export async function verifyLeadReportStorage(lead: Lead): Promise<string | null
     
     if (!reportFile) {
       console.log("No report found for lead:", lead.id);
-      return null;
+      return {
+        exists: false,
+        companyName: lead.company_name,
+        matchingFiles: []
+      };
     }
     
     console.log("Found existing report file:", reportFile.name);
@@ -56,9 +94,20 @@ export async function verifyLeadReportStorage(lead: Lead): Promise<string | null
       .from('reports')
       .getPublicUrl(fileName);
     
-    return urlData?.publicUrl || null;
+    return {
+      exists: true,
+      companyName: lead.company_name,
+      publicUrl: urlData?.publicUrl || null,
+      matchingFiles: [reportFile]
+    };
   } catch (error) {
     console.error("Error in verifyLeadReportStorage:", error);
-    return null;
+    return {
+      exists: false,
+      companyName: lead.company_name || 'Unknown',
+      error: {
+        message: error instanceof Error ? error.message : String(error)
+      }
+    };
   }
 }
