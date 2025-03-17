@@ -58,8 +58,8 @@ ${brandRed} rg
 (${includedMinutes} minutes/month) Tj
 -190 -25 Td`;
     
-    // Use the explicit additionalVoiceMinutes if available, otherwise fallback to callVolume
-    const voiceMinutes = typeof additionalVoiceMinutes === 'number' ? additionalVoiceMinutes : callVolume;
+    // Use the explicit additionalVoiceMinutes directly
+    const voiceMinutes = additionalVoiceMinutes;
     
     if (voiceMinutes > 0) {
       content += `

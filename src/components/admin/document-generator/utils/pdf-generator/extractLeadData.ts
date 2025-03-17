@@ -28,7 +28,9 @@ export function extractLeadData(lead: Lead): PdfContentParams {
       total: 229,
       setupFee: 749
     },
-    annualPlan: 2290
+    annualPlan: 2290,
+    includedVoiceMinutes: 600,
+    additionalVoiceMinutes: 0
   };
 
   // Use calculator_results if available, otherwise use defaults
@@ -71,7 +73,7 @@ export function extractLeadData(lead: Lead): PdfContentParams {
     }
   } 
   // Then try results.additionalVoiceMinutes (might have been calculated)
-  else if (typeof results.additionalVoiceMinutes === 'number') {
+  else if ('additionalVoiceMinutes' in results && typeof results.additionalVoiceMinutes === 'number') {
     additionalVoiceMinutes = results.additionalVoiceMinutes;
   }
   // Finally, calculate voice cost directly from results if available
