@@ -12,6 +12,7 @@ import { performCalculations } from "@/hooks/calculator/calculations";
 import { DEFAULT_AI_RATES } from "@/constants/pricing"; 
 import { useProposalRevisions } from "../hooks/useProposalRevisions";
 import { toast } from "@/components/ui/use-toast";
+import { generateProposalPdf } from "../utils/proposalPdfGenerator";
 
 interface EditProposalDialogProps {
   isOpen: boolean;
@@ -73,6 +74,7 @@ export const EditReportDialog = ({ isOpen, onClose, lead, onSave }: EditProposal
     // If aiTier is starter, force callVolume to 0
     if (leadToSave.calculator_inputs.aiTier === 'starter') {
       leadToSave.calculator_inputs.callVolume = 0;
+      leadToSave.calculator_inputs.aiType = 'chatbot';
       console.log("Reset callVolume to 0 for starter plan");
     }
     
@@ -108,7 +110,7 @@ export const EditReportDialog = ({ isOpen, onClose, lead, onSave }: EditProposal
       updatedResults.basePriceMonthly = tierBasePrices[tier];
       
       // Calculate additional voice cost
-      const additionalVoiceMinutes = recalcInputs.callVolume || 0;
+      const additionalVoiceMinutes = tier === 'starter' ? 0 : recalcInputs.callVolume || 0;
       const additionalVoiceCost = tier !== 'starter' ? additionalVoiceMinutes * 0.12 : 0;
       
       // Update voice cost in results
@@ -116,6 +118,9 @@ export const EditReportDialog = ({ isOpen, onClose, lead, onSave }: EditProposal
       updatedResults.aiCostMonthly.chatbot = updatedResults.basePriceMonthly;
       // Recalculate total based on base + voice
       updatedResults.aiCostMonthly.total = updatedResults.basePriceMonthly + additionalVoiceCost;
+      
+      // Make sure additionalVoiceMinutes is set in the results
+      updatedResults.additionalVoiceMinutes = additionalVoiceMinutes;
       
       // Update the lead with new calculation results
       leadToSave.calculator_results = updatedResults;
@@ -151,6 +156,8 @@ export const EditReportDialog = ({ isOpen, onClose, lead, onSave }: EditProposal
         premium: 429
       };
       const basePrice = tierBasePrices[tier as keyof typeof tierBasePrices];
+      
+      // Force zero additional minutes for starter tier
       const additionalVoiceMinutes = tier !== 'starter' ? callVolume : 0;
       const additionalVoiceCost = tier !== 'starter' ? additionalVoiceMinutes * 0.12 : 0;
       const totalCost = basePrice + additionalVoiceCost;
@@ -159,12 +166,27 @@ export const EditReportDialog = ({ isOpen, onClose, lead, onSave }: EditProposal
       leadWithCurrentValues.calculator_results.tierKey = tier;
       leadWithCurrentValues.calculator_results.aiType = aiType;
       leadWithCurrentValues.calculator_results.basePriceMonthly = basePrice;
+      leadWithCurrentValues.calculator_results.additionalVoiceMinutes = additionalVoiceMinutes;
       leadWithCurrentValues.calculator_results.aiCostMonthly = {
-        ...leadWithCurrentValues.calculator_results.aiCostMonthly,
+        ...leadWithCurrentValues.calculator_results.aiCostMonthly || {},
         voice: additionalVoiceCost,
         chatbot: basePrice,
         total: totalCost
       };
+      
+      // Make sure calculator_inputs are also updated to match
+      if (!leadWithCurrentValues.calculator_inputs) {
+        leadWithCurrentValues.calculator_inputs = {};
+      }
+      
+      leadWithCurrentValues.calculator_inputs.aiTier = tier;
+      leadWithCurrentValues.calculator_inputs.aiType = aiType;
+      leadWithCurrentValues.calculator_inputs.callVolume = additionalVoiceMinutes;
+      
+      console.log("Generating proposal with updated lead:", leadWithCurrentValues);
+      
+      // Generate the proposal content
+      const proposalContent = generateProposalPdf(leadWithCurrentValues);
       
       // Add version metadata
       const nextVersionNumber = await getNextVersionNumber(lead.id);
@@ -182,9 +204,9 @@ export const EditReportDialog = ({ isOpen, onClose, lead, onSave }: EditProposal
       // Save the proposal revision with version info
       await saveProposalRevision(
         lead.id,
-        JSON.stringify(leadWithCurrentValues),
+        proposalContent,
         `${planName} - ${aiTypeDisplay}`,
-        `Version ${nextVersionNumber} created from current settings. Plan: ${planName}, Type: ${aiTypeDisplay}`
+        `Version ${nextVersionNumber} created. Plan: ${planName}, Type: ${aiTypeDisplay}, Additional Minutes: ${additionalVoiceMinutes}`
       );
       
       toast({
