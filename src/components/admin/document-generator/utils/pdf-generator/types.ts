@@ -8,6 +8,8 @@ export interface PdfContentParams {
   email: string;
   phoneNumber: string;
   industry: string;
+  website: string;
+  employeeCount: number;
   aiTier: string;
   aiType: string;
   tierName: string;
