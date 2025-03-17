@@ -7,12 +7,14 @@ import { PdfContentParams } from "./types";
  * Using exact values from calculator_results without modification
  */
 export function extractLeadData(lead: Lead): PdfContentParams {
-  // Extract lead information
+  // Extract lead information - preserve ALL contact details
   const companyName = lead.company_name || 'Client';
   const contactName = lead.name || 'Client';
   const email = lead.email || 'client@example.com';
   const phoneNumber = lead.phone_number || 'Not provided';
   const industry = lead.industry || 'Technology';
+  const website = lead.website || '';
+  const employeeCount = lead.employee_count || 0;
   
   // CRITICAL: Use exact calculator results without any processing
   const calculatorResults = lead.calculator_results;
@@ -59,6 +61,8 @@ export function extractLeadData(lead: Lead): PdfContentParams {
     email,
     phoneNumber,
     industry,
+    website,
+    employeeCount,
     aiTier,
     aiType,
     tierName,

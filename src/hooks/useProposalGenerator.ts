@@ -33,6 +33,17 @@ export function useProposalGenerator() {
         throw new Error("Lead ID is required");
       }
       
+      // Preserve all client contact information
+      const clientInfo = {
+        name: lead.name,
+        email: lead.email,
+        company_name: lead.company_name,
+        phone_number: lead.phone_number,
+        industry: lead.industry,
+        employee_count: lead.employee_count,
+        website: lead.website
+      };
+      
       // Check if calculator_results exists
       if (!lead.calculator_results) {
         console.error("Missing calculator_results");

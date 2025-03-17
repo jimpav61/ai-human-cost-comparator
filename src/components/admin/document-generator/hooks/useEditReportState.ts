@@ -1,166 +1,141 @@
 
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import { Lead } from "@/types/leads";
+import { toast } from "@/hooks/use-toast";
 
-export const useEditReportState = (
-  lead: Lead,
+export function useEditReportState(
+  initialLead: Lead,
   onSave: (updatedLead: Lead) => void,
   onClose: () => void
-) => {
-  // Create deep copy of lead to avoid reference issues
+) {
+  // Deep clone lead to avoid reference issues
   const [editableLead, setEditableLead] = useState<Lead>(() => {
-    const leadCopy = JSON.parse(JSON.stringify(lead));
+    const leadCopy = JSON.parse(JSON.stringify(initialLead));
     
-    // Make sure calculator_inputs exists and has correct values
+    // Ensure calculator_inputs exists
     if (!leadCopy.calculator_inputs) {
-      leadCopy.calculator_inputs = {
-        aiTier: 'growth',
-        aiType: 'both',
-        callVolume: 0,
-        chatVolume: 2000,
-        role: 'customerService',
-        numEmployees: leadCopy.employee_count || 5,
-        avgCallDuration: 0,
-        avgChatLength: 0,
-        avgChatResolutionTime: 0
-      };
+      leadCopy.calculator_inputs = {};
+    }
+    
+    // Ensure aiTier has a value
+    if (!leadCopy.calculator_inputs.aiTier) {
+      leadCopy.calculator_inputs.aiTier = 'growth';
+    }
+    
+    // Ensure aiType has a value
+    if (!leadCopy.calculator_inputs.aiType) {
+      leadCopy.calculator_inputs.aiType = 'both';
     }
     
     // Ensure callVolume is a number
-    if (typeof leadCopy.calculator_inputs.callVolume === 'string') {
-      leadCopy.calculator_inputs.callVolume = parseInt(leadCopy.calculator_inputs.callVolume, 10) || 0;
+    const callVolume = leadCopy.calculator_inputs.callVolume;
+    if (typeof callVolume === 'string') {
+      leadCopy.calculator_inputs.callVolume = parseInt(callVolume, 10) || 0;
+    } else if (callVolume === undefined || callVolume === null) {
+      leadCopy.calculator_inputs.callVolume = 0;
     }
     
     return leadCopy;
   });
   
-  // Update the editable lead when the original lead changes
-  useEffect(() => {
-    console.log("useEditReportState: lead prop changed");
-    console.log("New lead aiTier:", lead.calculator_inputs?.aiTier);
-    console.log("New lead aiType:", lead.calculator_inputs?.aiType);
-    console.log("New lead callVolume:", lead.calculator_inputs?.callVolume);
-    
-    const leadCopy = JSON.parse(JSON.stringify(lead));
-    
-    // Make sure calculator_inputs exists
-    if (!leadCopy.calculator_inputs) {
-      leadCopy.calculator_inputs = {
-        aiTier: 'growth',
-        aiType: 'both',
-        callVolume: 0,
-        chatVolume: 2000,
-        role: 'customerService',
-        numEmployees: leadCopy.employee_count || 5,
-        avgCallDuration: 0,
-        avgChatLength: 0,
-        avgChatResolutionTime: 0
-      };
-    }
-    
-    // Ensure callVolume is a number
-    if (typeof leadCopy.calculator_inputs.callVolume === 'string') {
-      leadCopy.calculator_inputs.callVolume = parseInt(leadCopy.calculator_inputs.callVolume, 10) || 0;
-    }
-    
-    setEditableLead(leadCopy);
-  }, [lead]);
-  
-  // Handle changes to call volume
-  const handleCallVolumeChange = (value: number | string) => {
-    const numValue = typeof value === 'string' ? parseInt(value, 10) || 0 : value;
-    console.log("Setting callVolume to:", numValue);
-    
-    setEditableLead(prev => {
-      // Create deep copy to avoid reference issues
-      const updated = JSON.parse(JSON.stringify(prev));
-      
-      // Update the callVolume
-      if (!updated.calculator_inputs) {
-        updated.calculator_inputs = {};
-      }
-      updated.calculator_inputs.callVolume = numValue;
-      
-      return updated;
-    });
-  };
-  
-  // Handle changes to AI tier
+  // Handle aiTier change
   const handleAITierChange = (value: string) => {
-    const newAiTier = value as 'starter' | 'growth' | 'premium';
-    console.log("Setting aiTier to:", newAiTier);
-    
-    setEditableLead(prev => {
-      // Create deep copy to avoid reference issues
-      const updated = JSON.parse(JSON.stringify(prev));
+    console.log("Changing AI tier to:", value);
+    setEditableLead(prevLead => {
+      const updatedLead = { ...prevLead };
       
-      if (!updated.calculator_inputs) {
-        updated.calculator_inputs = {};
+      if (!updatedLead.calculator_inputs) {
+        updatedLead.calculator_inputs = {};
       }
       
-      // Get current AI type
-      let newAiType = updated.calculator_inputs.aiType || 'both';
+      updatedLead.calculator_inputs.aiTier = value;
       
-      // Ensure AI type is compatible with the selected tier
-      if (newAiTier === 'starter' && newAiType !== 'chatbot') {
-        newAiType = 'chatbot';
-      } else if (newAiTier === 'premium') {
-        if (newAiType === 'voice') {
-          newAiType = 'conversationalVoice';
-        } else if (newAiType === 'both') {
-          newAiType = 'both-premium';
-        }
-      } else if (newAiTier === 'growth') {
-        if (newAiType === 'conversationalVoice') {
-          newAiType = 'voice';
-        } else if (newAiType === 'both-premium') {
-          newAiType = 'both';
+      // If downgraded to starter, reset voice settings
+      if (value === 'starter') {
+        updatedLead.calculator_inputs.aiType = 'chatbot';
+        updatedLead.calculator_inputs.callVolume = 0;
+      }
+      
+      // If upgraded to premium from a non-premium tier and using voice features
+      if (value === 'premium' && prevLead.calculator_inputs?.aiTier !== 'premium') {
+        const currentAiType = updatedLead.calculator_inputs.aiType;
+        if (currentAiType === 'voice') {
+          updatedLead.calculator_inputs.aiType = 'conversationalVoice';
+        } else if (currentAiType === 'both') {
+          updatedLead.calculator_inputs.aiType = 'both-premium';
         }
       }
       
-      // Update tier and type
-      updated.calculator_inputs.aiTier = newAiTier;
-      updated.calculator_inputs.aiType = newAiType;
-      
-      // Reset callVolume to 0 for starter tier since it doesn't support voice
-      if (newAiTier === 'starter') {
-        updated.calculator_inputs.callVolume = 0;
-      }
-      
-      return updated;
+      return updatedLead;
     });
   };
   
-  // Handle changes to AI type
+  // Handle aiType change
   const handleAITypeChange = (value: string) => {
-    const newAiType = value as 'chatbot' | 'voice' | 'both' | 'conversationalVoice' | 'both-premium';
-    console.log("Setting aiType to:", newAiType);
-    
-    setEditableLead(prev => {
-      // Create deep copy to avoid reference issues
-      const updated = JSON.parse(JSON.stringify(prev));
+    console.log("Changing AI type to:", value);
+    setEditableLead(prevLead => {
+      const updatedLead = { ...prevLead };
       
-      if (!updated.calculator_inputs) {
-        updated.calculator_inputs = {};
+      if (!updatedLead.calculator_inputs) {
+        updatedLead.calculator_inputs = {};
       }
       
-      updated.calculator_inputs.aiType = newAiType;
+      updatedLead.calculator_inputs.aiType = value;
       
-      return updated;
+      // Handle tier upgrades based on selected AI type
+      if ((value === 'conversationalVoice' || value === 'both-premium') && 
+          updatedLead.calculator_inputs.aiTier !== 'premium') {
+        updatedLead.calculator_inputs.aiTier = 'premium';
+      }
+      
+      // If voice features selected but on starter plan, upgrade to growth
+      if ((value === 'voice' || value === 'both') && 
+          updatedLead.calculator_inputs.aiTier === 'starter') {
+        updatedLead.calculator_inputs.aiTier = 'growth';
+      }
+      
+      return updatedLead;
     });
   };
   
-  // Handle saving changes
+  // Handle callVolume change
+  const handleCallVolumeChange = (value: number) => {
+    console.log("Changing call volume to:", value);
+    setEditableLead(prevLead => {
+      const updatedLead = { ...prevLead };
+      
+      if (!updatedLead.calculator_inputs) {
+        updatedLead.calculator_inputs = {};
+      }
+      
+      // Store as number
+      updatedLead.calculator_inputs.callVolume = value;
+      
+      return updatedLead;
+    });
+  };
+  
+  // Handle save
   const handleSave = () => {
-    console.log("Saving changes:", editableLead);
-    onSave(editableLead);
+    // Preserve all client contact information
+    const updatedLead = { ...editableLead };
+    
+    console.log("Saving edited lead:", updatedLead);
+    onSave(updatedLead);
+    onClose();
+    
+    toast({
+      title: "Success",
+      description: "Proposal settings updated successfully",
+      variant: "default"
+    });
   };
   
   return {
     editableLead,
-    handleCallVolumeChange,
     handleAITierChange,
     handleAITypeChange,
+    handleCallVolumeChange,
     handleSave
   };
-};
+}
