@@ -17,9 +17,10 @@ export const VoiceMinutesSelector = ({ value, onChange, currentTier }: VoiceMinu
   // Handle disabled state for starter tier
   const isDisabled = currentTier === 'starter';
   
-  // If switching to starter tier, automatically set voice minutes to 0
+  // If switching to starter tier, immediately set voice minutes to 0
   React.useEffect(() => {
     if (currentTier === 'starter' && value !== 0) {
+      console.log("Forcing voice minutes to 0 for Starter tier");
       onChange(0);
     }
   }, [currentTier, value, onChange]);
