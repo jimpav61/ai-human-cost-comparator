@@ -6,10 +6,9 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import { INDUSTRY_OPTIONS } from './constants/industries';
 import { validateEmail, validatePhoneFormat, validateWebsite } from './utils/validation';
 import type { LeadFormData, LeadFormProps } from './types';
-import { Button } from "@/components/ui/button";
-import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
-import { Input } from "@/components/ui/input";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { ContactInfoStep } from './components/ContactInfoStep';
+import { BusinessDetailsStep } from './components/BusinessDetailsStep';
+import { ProgressIndicator } from './components/ProgressIndicator';
 
 const formSchema = z.object({
   name: z.string().min(2, "Name must be at least 2 characters"),
@@ -26,27 +25,48 @@ const formSchema = z.object({
 });
 
 export const LeadForm: React.FC<LeadFormProps> = ({ onSubmit }) => {
+  const [step, setStep] = useState(1);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [emailError, setEmailError] = useState('');
+  const [websiteError, setWebsiteError] = useState('');
   
-  const form = useForm<LeadFormData>({
-    resolver: zodResolver(formSchema),
-    defaultValues: {
-      name: '',
-      companyName: '',
-      email: '',
-      phoneNumber: '',
-      website: '',
-      industry: '',
-      employeeCount: 5
-    }
+  const [formData, setFormData] = useState<LeadFormData>({
+    name: '',
+    companyName: '',
+    email: '',
+    phoneNumber: '',
+    website: '',
+    industry: '',
+    employeeCount: 5
   });
   
-  const handleSubmit = async (data: LeadFormData) => {
+  const handleContactInfoSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!formData.email || !formData.name || !formData.companyName || !formData.phoneNumber) {
+      return;
+    }
+    
+    const validation = validateEmail(formData.email);
+    if (!validation.isValid) {
+      setEmailError(validation.errorMessage);
+      return;
+    }
+    
+    setStep(2);
+  };
+  
+  const handleBusinessDetailsSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    
+    if (!formData.industry) {
+      return;
+    }
+    
     try {
       setIsSubmitting(true);
       
       // Call the onSubmit callback with the form data
-      onSubmit(data);
+      onSubmit(formData);
       
       // Reset submitting state
       setIsSubmitting(false);
@@ -56,158 +76,42 @@ export const LeadForm: React.FC<LeadFormProps> = ({ onSubmit }) => {
     }
   };
   
+  const handleBack = () => {
+    setStep(1);
+  };
+  
   return (
-    <div className="max-w-2xl mx-auto">
-      <div className="text-center mb-6">
-        <h2 className="text-xl font-semibold text-gray-900">Get Your Free ChatSites.ai Savings Report</h2>
-        <p className="text-gray-600 mt-2">
-          See how businesses like yours are saving 30-40% on customer service costs
+    <div className="max-w-2xl mx-auto bg-white rounded-xl shadow-md overflow-hidden">
+      <div className="p-8">
+        <h2 className="text-2xl font-bold text-center mb-2">Calculate Your Potential AI Savings</h2>
+        
+        <ProgressIndicator step={step} totalSteps={2} />
+        
+        {step === 1 ? (
+          <ContactInfoStep 
+            formData={formData}
+            setFormData={setFormData}
+            onSubmit={handleContactInfoSubmit}
+            isSubmitting={isSubmitting}
+            emailError={emailError}
+            websiteError={websiteError}
+            setEmailError={setEmailError}
+            setWebsiteError={setWebsiteError}
+          />
+        ) : (
+          <BusinessDetailsStep
+            formData={formData}
+            setFormData={setFormData}
+            onSubmit={handleBusinessDetailsSubmit}
+            onBack={handleBack}
+            isSubmitting={isSubmitting}
+          />
+        )}
+        
+        <p className="text-xs text-gray-500 text-center mt-4">
+          * Required fields. By submitting this form, you agree to be contacted about our services.
         </p>
       </div>
-      
-      <Form {...form}>
-        <form onSubmit={form.handleSubmit(handleSubmit)} className="space-y-4">
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <FormField
-              control={form.control}
-              name="name"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Your Name</FormLabel>
-                  <FormControl>
-                    <Input placeholder="John Smith" {...field} />
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-            
-            <FormField
-              control={form.control}
-              name="companyName"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Company Name</FormLabel>
-                  <FormControl>
-                    <Input placeholder="Acme Inc." {...field} />
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-            
-            <FormField
-              control={form.control}
-              name="email"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Email</FormLabel>
-                  <FormControl>
-                    <Input 
-                      type="email" 
-                      placeholder="you@example.com"
-                      {...field} 
-                    />
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-            
-            <FormField
-              control={form.control}
-              name="phoneNumber"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Phone Number</FormLabel>
-                  <FormControl>
-                    <Input 
-                      placeholder="(123) 456-7890"
-                      {...field} 
-                    />
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-            
-            <FormField
-              control={form.control}
-              name="website"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Website (Optional)</FormLabel>
-                  <FormControl>
-                    <Input 
-                      placeholder="www.example.com"
-                      {...field} 
-                    />
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-            
-            <FormField
-              control={form.control}
-              name="industry"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Industry</FormLabel>
-                  <Select 
-                    onValueChange={field.onChange} 
-                    defaultValue={field.value}
-                  >
-                    <FormControl>
-                      <SelectTrigger>
-                        <SelectValue placeholder="Select your industry" />
-                      </SelectTrigger>
-                    </FormControl>
-                    <SelectContent>
-                      {INDUSTRY_OPTIONS.map((industry) => (
-                        <SelectItem key={industry} value={industry}>{industry}</SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-            
-            <FormField
-              control={form.control}
-              name="employeeCount"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Number of Employees</FormLabel>
-                  <FormControl>
-                    <Input 
-                      type="number" 
-                      {...field}
-                      onChange={(e) => field.onChange(parseInt(e.target.value) || 1)}
-                    />
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-          </div>
-          
-          <div className="flex justify-center mt-6">
-            <Button 
-              type="submit" 
-              className="w-full sm:w-auto px-8 bg-red-600 hover:bg-red-700"
-              disabled={isSubmitting}
-            >
-              {isSubmitting ? "Processing..." : "Calculate My Savings"}
-            </Button>
-          </div>
-          
-          <p className="text-center text-sm text-gray-500 mt-4">
-            ChatSites.ai can be fully implemented in 1-7 business days
-          </p>
-        </form>
-      </Form>
     </div>
   );
 };

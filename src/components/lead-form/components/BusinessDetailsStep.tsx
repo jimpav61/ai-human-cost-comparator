@@ -1,6 +1,5 @@
 
 import React from 'react';
-import { Button } from '@/components/ui/button';
 import { INDUSTRY_OPTIONS } from '../constants/industries';
 import { LeadFormData } from '../types';
 
@@ -28,7 +27,7 @@ export const BusinessDetailsStep: React.FC<BusinessDetailsStepProps> = ({
         <select
           id="industry"
           required
-          className="calculator-input w-full px-3 py-2 border border-gray-300 rounded-md"
+          className="w-full px-3 py-2 border border-gray-300 rounded-md"
           value={formData.industry}
           onChange={(e) => setFormData(prev => ({ ...prev, industry: e.target.value }))}
         >
@@ -48,40 +47,35 @@ export const BusinessDetailsStep: React.FC<BusinessDetailsStepProps> = ({
           type="number"
           min="1"
           required
-          className="calculator-input w-full px-3 py-2 border border-gray-300 rounded-md"
+          className="w-full px-3 py-2 border border-gray-300 rounded-md"
           value={formData.employeeCount}
           onChange={(e) => setFormData(prev => ({ ...prev, employeeCount: parseInt(e.target.value) || 1 }))}
         />
       </div>
 
-      <div className="flex gap-4">
-        <Button
+      <div className="flex gap-4 pt-2">
+        <button
           type="button"
-          variant="outline"
           onClick={onBack}
-          className="flex-1"
+          className="flex-1 border border-gray-300 bg-white text-gray-700 font-medium py-2 px-4 rounded-md hover:bg-gray-50 transition-all duration-200"
           disabled={isSubmitting}
         >
           Back
-        </Button>
+        </button>
         
-        <Button
+        <button
           type="submit"
           disabled={isSubmitting}
-          className="flex-1 bg-brand-500 hover:bg-brand-600 text-white"
+          className="flex-1 bg-red-500 hover:bg-red-600 text-white font-medium py-2 px-4 rounded-md transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed"
         >
           {isSubmitting ? (
             <>
-              <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
+              <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2 inline-block"></div>
               Processing...
             </>
-          ) : "Let's Calculate Your Savings"}
-        </Button>
+          ) : "Calculate My Savings"}
+        </button>
       </div>
-
-      <p className="text-xs text-gray-500 text-center mt-4">
-        * Required fields. By submitting this form, you agree to be contacted about our services.
-      </p>
     </form>
   );
 };

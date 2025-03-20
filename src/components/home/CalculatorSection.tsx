@@ -34,11 +34,11 @@ const CalculatorSection: React.FC<CalculatorSectionProps> = ({
   }
   
   return (
-    <div className="mb-8">
+    <div className="my-8 bg-pink-50 py-8 rounded-xl">
       <div className="text-center mb-6">
-        <h3 className="text-lg font-medium text-red-600">ChatSites.ai ROI Calculator</h3>
-        <p className="text-gray-600">
-          See how our AI solutions can reduce costs and improve efficiency for your business
+        <h2 className="text-2xl font-bold text-gray-900">Get Your Free AI Savings Report</h2>
+        <p className="text-gray-600 mt-2">
+          Fill out the form below to receive a personalized analysis of how AI can benefit your business
         </p>
       </div>
       <LeadForm onSubmit={onLeadSubmit} />
