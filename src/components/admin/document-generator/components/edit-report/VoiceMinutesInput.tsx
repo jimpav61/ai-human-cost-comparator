@@ -9,22 +9,17 @@ interface VoiceMinutesInputProps {
 }
 
 export const VoiceMinutesInput = ({ value, onChange }: VoiceMinutesInputProps) => {
-  // Ensure the value is a number for display purposes - parse more strictly
-  const displayValue = typeof value === 'number' ? value : 
-                      (value !== undefined && value !== null && value !== '' ? 
-                      parseInt(String(value), 10) : 0);
+  // Force conversion to number for consistency - handle all edge cases
+  const numericValue = typeof value === 'number' ? value :
+                      typeof value === 'string' && value !== '' ? parseInt(value, 10) || 0 : 0;
   
-  console.log("VoiceMinutesInput - current value:", value, "display value:", displayValue, "type:", typeof value);
+  console.log("VoiceMinutesInput RENDER - value:", value, "type:", typeof value, "converted:", numericValue);
   
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    // Parse to number and pass to parent - ensure we're always passing a number
-    const numValue = parseInt(e.target.value, 10) || 0;
-    
-    // Log the value being set for debugging
-    console.log("VoiceMinutesInput: Setting call volume to:", numValue, "from input:", e.target.value);
-    
-    // Always pass a number to the parent component
-    onChange(numValue);
+    // Always convert to number before sending to parent
+    const newValue = parseInt(e.target.value, 10) || 0;
+    console.log("VoiceMinutesInput CHANGE - from:", e.target.value, "to number:", newValue);
+    onChange(newValue);
   };
 
   return (
@@ -34,7 +29,7 @@ export const VoiceMinutesInput = ({ value, onChange }: VoiceMinutesInputProps) =
         id="voice-minutes"
         type="number"
         min="0"
-        value={displayValue}
+        value={numericValue}
         onChange={handleChange}
         placeholder="0"
       />

@@ -18,13 +18,21 @@ export function generateFinancialPage(params: PdfContentParams): string {
     savingsPercentage
   } = params;
   
-  // Log financial data for debugging
-  console.log("Financial page data:", {
+  // CRITICAL: Extract and validate voice minutes, preferring additionalVoiceMinutes
+  const voiceMinutes = typeof additionalVoiceMinutes === 'number' ? additionalVoiceMinutes : 
+                      typeof additionalVoiceMinutes === 'string' && additionalVoiceMinutes !== '' ? 
+                      parseInt(additionalVoiceMinutes, 10) || 0 : 
+                      typeof callVolume === 'number' ? callVolume : 
+                      typeof callVolume === 'string' && callVolume !== '' ? 
+                      parseInt(callVolume, 10) || 0 : 0;
+  
+  console.log("Financial page data - VOICE MINUTES CRITICAL:", {
+    rawAdditionalVoiceMinutes: additionalVoiceMinutes,
+    rawCallVolume: callVolume,
+    finalVoiceMinutes: voiceMinutes,
     aiTier,
     basePrice,
     includedMinutes,
-    additionalVoiceMinutes,
-    callVolume,
     voiceCost,
     totalPrice
   });
@@ -69,15 +77,7 @@ ${brandRed} rg
 (${includedMinutes} minutes/month) Tj
 -190 -25 Td`;
     
-    // Get voice minutes value, ensure it's a number
-    const voiceMinutes = typeof additionalVoiceMinutes === 'number' ? additionalVoiceMinutes : 
-                        (typeof additionalVoiceMinutes === 'string' ? 
-                        parseInt(additionalVoiceMinutes, 10) : 
-                        typeof callVolume === 'number' ? callVolume : 
-                        typeof callVolume === 'string' ? parseInt(callVolume, 10) : 0) || 0;
-    
-    console.log("Voice minutes for financial page:", voiceMinutes, "from additionalVoiceMinutes:", additionalVoiceMinutes, "or callVolume:", callVolume);
-    
+    // Use our validated voice minutes value
     if (voiceMinutes > 0) {
       content += `
 (Additional Voice Minutes:) Tj

@@ -1,18 +1,10 @@
 
 import { Lead } from "@/types/leads";
 import { generateTemplateBasedPdf } from "./template-based-pdf";
-import { ensureVoiceMinutesConsistency } from "./ensureVoiceMinutesConsistency";
 
-/**
- * Generates a professional, multi-page proposal PDF with lead data
- * Using exact values from calculator_results without modification
- */
-export const generateProposalPdf = (lead: Lead): string => {
-  console.log("Generating proposal PDF with template-based approach");
-  console.log("Lead data:", lead.id, lead.company_name);
-  
-  // CRITICAL FIX: Enhanced logging to trace the tier and minutes values
-  console.log("Tier and voice data before processing:", {
+// Helper function to ensure voice minutes consistency and recalculate costs
+function ensureVoiceMinutesConsistency(lead: Lead): Lead {
+  console.log("PROPOSAL GENERATOR - Initial lead data:", {
     calculator_inputs: {
       aiTier: lead.calculator_inputs?.aiTier,
       aiType: lead.calculator_inputs?.aiType,
@@ -26,9 +18,9 @@ export const generateProposalPdf = (lead: Lead): string => {
       typeOf_additionalVoiceMinutes: typeof lead.calculator_results?.additionalVoiceMinutes
     }
   });
-  
-  // CRITICAL FIX: Create a deep copy of the lead to work with
-  let processedLead = JSON.parse(JSON.stringify(lead));
+
+  // Create a deep copy to avoid reference issues
+  const processedLead = JSON.parse(JSON.stringify(lead));
   
   // Ensure calculator_inputs exists
   if (!processedLead.calculator_inputs) {
@@ -40,7 +32,7 @@ export const generateProposalPdf = (lead: Lead): string => {
     processedLead.calculator_results = {};
   }
   
-  // CRITICAL FIX: Direct fix for voice minutes before consistency check
+  // Extract tier info with fallbacks
   const tierKey = processedLead.calculator_results?.tierKey || 
                  processedLead.calculator_inputs?.aiTier || 
                  'growth';
@@ -54,10 +46,10 @@ export const generateProposalPdf = (lead: Lead): string => {
   // For other tiers, ensure voice minutes is a number and exists in both places
   else {
     // Get voice minutes value, prioritizing inputs
-    let voiceMinutes: number = 0;
+    let voiceMinutes: number;
     
+    // CRITICAL: Properly handle any type for callVolume
     if (processedLead.calculator_inputs.callVolume !== undefined) {
-      // Convert to number if it's a string
       if (typeof processedLead.calculator_inputs.callVolume === 'string') {
         voiceMinutes = parseInt(processedLead.calculator_inputs.callVolume, 10) || 0;
       } else {
@@ -74,12 +66,17 @@ export const generateProposalPdf = (lead: Lead): string => {
       }
       console.log("Using additionalVoiceMinutes from results:", voiceMinutes);
     }
+    else {
+      // Default to 0 if no value found
+      voiceMinutes = 0;
+      console.log("No voice minutes found, defaulting to 0");
+    }
     
     // Set both values to ensure consistency
     processedLead.calculator_inputs.callVolume = voiceMinutes;
     processedLead.calculator_results.additionalVoiceMinutes = voiceMinutes;
     
-    // Update voice cost in calculator results
+    // Recalculate voice cost
     if (processedLead.calculator_results.aiCostMonthly) {
       const voiceCost = voiceMinutes * 0.12;
       processedLead.calculator_results.aiCostMonthly.voice = voiceCost;
@@ -92,11 +89,8 @@ export const generateProposalPdf = (lead: Lead): string => {
     }
   }
   
-  // Now run through the consistency check for additional safety
-  processedLead = ensureVoiceMinutesConsistency(processedLead);
-  
-  // Log the final values before generating PDF
-  console.log("Final values for PDF generation:", {
+  // Final consistency check
+  console.log("PROPOSAL GENERATOR - Final lead data for PDF:", {
     calculator_inputs: {
       aiTier: processedLead.calculator_inputs?.aiTier,
       callVolume: processedLead.calculator_inputs?.callVolume
@@ -108,6 +102,20 @@ export const generateProposalPdf = (lead: Lead): string => {
       totalCost: processedLead.calculator_results?.aiCostMonthly?.total
     }
   });
+  
+  return processedLead;
+}
+
+/**
+ * Generates a professional, multi-page proposal PDF with lead data
+ * Using exact values from calculator_results without modification
+ */
+export const generateProposalPdf = (lead: Lead): string => {
+  console.log("Generating proposal PDF with template-based approach");
+  console.log("Lead data:", lead.id, lead.company_name);
+  
+  // CRITICAL FIX: Apply comprehensive data consistency fixes
+  const processedLead = ensureVoiceMinutesConsistency(lead);
   
   // Generate the PDF with consistent data
   return generateTemplateBasedPdf(processedLead);
