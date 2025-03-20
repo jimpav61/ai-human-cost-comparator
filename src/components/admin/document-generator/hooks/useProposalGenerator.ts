@@ -3,6 +3,7 @@ import { useState } from "react";
 import { Lead } from "@/types/leads";
 import { toast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
+import { CalculatorInputs, CalculationResults } from "@/hooks/calculator/types";
 
 export function useProposalGenerator() {
   const [generating, setGenerating] = useState(false);
@@ -28,18 +29,44 @@ export function useProposalGenerator() {
         throw new Error("This lead doesn't have calculator results. Edit the lead first to add calculator data.");
       }
       
+      // Create a deep copy of the lead to properly parse JSON strings if needed
+      const processedLead = structuredClone(lead);
+      
+      // Ensure calculator_inputs is properly parsed and typed
+      if (typeof processedLead.calculator_inputs === 'string') {
+        try {
+          processedLead.calculator_inputs = JSON.parse(processedLead.calculator_inputs) as CalculatorInputs;
+          console.log("Parsed string calculator_inputs to object:", processedLead.calculator_inputs);
+        } catch (error) {
+          console.error("Failed to parse calculator_inputs string:", error);
+        }
+      }
+      
+      // Ensure calculator_results is properly parsed and typed
+      if (typeof processedLead.calculator_results === 'string') {
+        try {
+          processedLead.calculator_results = JSON.parse(processedLead.calculator_results) as CalculationResults;
+          console.log("Parsed string calculator_results to object:", processedLead.calculator_results);
+        } catch (error) {
+          console.error("Failed to parse calculator_results string:", error);
+        }
+      }
+      
       // For debugging, let's log the exact data we're sending to the edge function
       console.log("Sending lead data to edge function:", {
-        id: lead.id,
-        tier: lead.calculator_inputs?.aiTier,
-        type: lead.calculator_inputs?.aiType,
-        volume: lead.calculator_inputs?.callVolume
+        id: processedLead.id,
+        company: processedLead.company_name,
+        tier: processedLead.calculator_inputs?.aiTier,
+        type: processedLead.calculator_inputs?.aiType,
+        volume: processedLead.calculator_inputs?.callVolume,
+        fullInputs: processedLead.calculator_inputs,
+        fullResults: processedLead.calculator_results
       });
       
       // Use Supabase Edge Function to generate the PDF
       const { data, error } = await supabase.functions.invoke("generate-proposal", {
         body: {
-          lead: lead,
+          lead: processedLead,
           mode: "preview",
           debug: true,
           returnContent: true

@@ -46,34 +46,44 @@ export const ProposalGenerator = ({ lead, onLeadUpdated, onProposalGenerated }: 
       if (!data) throw new Error("No lead found");
       
       // Parse JSON strings if they're stored as strings
-      let calculatorInputs: CalculatorInputs;
-      if (typeof data.calculator_inputs === 'string') {
-        try {
-          calculatorInputs = JSON.parse(data.calculator_inputs);
-        } catch (e) {
-          console.error("Failed to parse calculator_inputs JSON:", e);
+      let calculatorInputs: CalculatorInputs | undefined;
+      if (data.calculator_inputs) {
+        if (typeof data.calculator_inputs === 'string') {
+          try {
+            calculatorInputs = JSON.parse(data.calculator_inputs) as CalculatorInputs;
+            console.log("Parsed calculator_inputs JSON string:", calculatorInputs);
+          } catch (e) {
+            console.error("Failed to parse calculator_inputs JSON:", e);
+            // If parsing fails, use the original value but cast it
+            calculatorInputs = data.calculator_inputs as unknown as CalculatorInputs;
+          }
+        } else {
+          // It's already an object, we just need to type cast it
           calculatorInputs = data.calculator_inputs as unknown as CalculatorInputs;
         }
-      } else {
-        calculatorInputs = data.calculator_inputs as unknown as CalculatorInputs;
       }
       
-      let calculatorResults: CalculationResults;
-      if (typeof data.calculator_results === 'string') {
-        try {
-          calculatorResults = JSON.parse(data.calculator_results);
-        } catch (e) {
-          console.error("Failed to parse calculator_results JSON:", e);
+      let calculatorResults: CalculationResults | undefined;
+      if (data.calculator_results) {
+        if (typeof data.calculator_results === 'string') {
+          try {
+            calculatorResults = JSON.parse(data.calculator_results) as CalculationResults;
+            console.log("Parsed calculator_results JSON string:", calculatorResults);
+          } catch (e) {
+            console.error("Failed to parse calculator_results JSON:", e);
+            // If parsing fails, use the original value but cast it
+            calculatorResults = data.calculator_results as unknown as CalculationResults;
+          }
+        } else {
+          // It's already an object, we just need to type cast it
           calculatorResults = data.calculator_results as unknown as CalculationResults;
         }
-      } else {
-        calculatorResults = data.calculator_results as unknown as CalculationResults;
       }
       
-      // Convert the JSON data from Supabase to the expected Lead type
+      // Create a properly typed Lead object
       const refreshedLead: Lead = {
         ...data,
-        calculator_inputs: calculatorInputs,
+        calculator_inputs: calculatorInputs || {},
         calculator_results: calculatorResults
       };
       
@@ -81,7 +91,9 @@ export const ProposalGenerator = ({ lead, onLeadUpdated, onProposalGenerated }: 
         id: refreshedLead.id,
         tier: refreshedLead.calculator_inputs?.aiTier,
         aiType: refreshedLead.calculator_inputs?.aiType,
-        callVolume: refreshedLead.calculator_inputs?.callVolume
+        callVolume: refreshedLead.calculator_inputs?.callVolume,
+        calculatorInputsType: typeof refreshedLead.calculator_inputs,
+        calculatorResultsType: typeof refreshedLead.calculator_results
       });
       
       setCurrentLead(refreshedLead);
