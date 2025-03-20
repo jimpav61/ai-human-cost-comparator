@@ -18,6 +18,17 @@ export function generateFinancialPage(params: PdfContentParams): string {
     savingsPercentage
   } = params;
   
+  // Log financial data for debugging
+  console.log("Financial page data:", {
+    aiTier,
+    basePrice,
+    includedMinutes,
+    additionalVoiceMinutes,
+    callVolume,
+    voiceCost,
+    totalPrice
+  });
+  
   let content = `q
 ${brandRed} rg
 0 792 612 -70 re f
@@ -58,8 +69,14 @@ ${brandRed} rg
 (${includedMinutes} minutes/month) Tj
 -190 -25 Td`;
     
-    // Use the explicit additionalVoiceMinutes directly
-    const voiceMinutes = additionalVoiceMinutes;
+    // Get voice minutes value, ensure it's a number
+    const voiceMinutes = typeof additionalVoiceMinutes === 'number' ? additionalVoiceMinutes : 
+                        (typeof additionalVoiceMinutes === 'string' ? 
+                        parseInt(additionalVoiceMinutes, 10) : 
+                        typeof callVolume === 'number' ? callVolume : 
+                        typeof callVolume === 'string' ? parseInt(callVolume, 10) : 0) || 0;
+    
+    console.log("Voice minutes for financial page:", voiceMinutes, "from additionalVoiceMinutes:", additionalVoiceMinutes, "or callVolume:", callVolume);
     
     if (voiceMinutes > 0) {
       content += `

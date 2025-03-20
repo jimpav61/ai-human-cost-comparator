@@ -14,12 +14,14 @@ export const VoiceMinutesInput = ({ value, onChange }: VoiceMinutesInputProps) =
                       (value !== undefined && value !== null && value !== '' ? 
                       parseInt(String(value), 10) : 0);
   
+  console.log("VoiceMinutesInput - current value:", value, "display value:", displayValue, "type:", typeof value);
+  
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     // Parse to number and pass to parent - ensure we're always passing a number
     const numValue = parseInt(e.target.value, 10) || 0;
     
     // Log the value being set for debugging
-    console.log("VoiceMinutesInput: Setting call volume to:", numValue);
+    console.log("VoiceMinutesInput: Setting call volume to:", numValue, "from input:", e.target.value);
     
     // Always pass a number to the parent component
     onChange(numValue);
@@ -37,7 +39,7 @@ export const VoiceMinutesInput = ({ value, onChange }: VoiceMinutesInputProps) =
         placeholder="0"
       />
       <p className="text-sm text-gray-500">
-        Enter the number of additional voice minutes beyond the included amount.
+        Enter the number of additional voice minutes beyond the included amount. This will be billed at $0.12 per minute.
       </p>
     </div>
   );
