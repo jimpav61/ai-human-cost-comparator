@@ -1,3 +1,4 @@
+
 import { Lead } from "@/types/leads";
 import { useProposalGenerator } from "../hooks/useProposalGenerator";
 import { toast } from "@/hooks/use-toast";
@@ -236,7 +237,7 @@ export const ProposalGenerator = ({ lead, onLeadUpdated, onProposalGenerated }: 
           className="flex items-center gap-1 text-xs sm:text-sm h-8 px-2"
         >
           <Settings className="h-3.5 w-3.5" />
-          <span>Settings</span>
+          <span>Edit</span>
         </Button>
         
         <Button
