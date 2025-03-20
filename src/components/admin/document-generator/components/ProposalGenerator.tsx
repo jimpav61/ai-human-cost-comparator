@@ -1,3 +1,4 @@
+
 import { Lead } from "@/types/leads";
 import { useProposalGenerator } from "../hooks/useProposalGenerator";
 import { toast } from "@/hooks/use-toast";
@@ -29,7 +30,7 @@ export const ProposalGenerator = ({ lead, onLeadUpdated, onProposalGenerated }: 
 
   // Refresh lead data from database to ensure we have latest changes
   const refreshLeadData = async () => {
-    if (!lead?.id) return;
+    if (!lead?.id) return lead;
     
     try {
       setRefreshingLead(true);
@@ -44,11 +45,36 @@ export const ProposalGenerator = ({ lead, onLeadUpdated, onProposalGenerated }: 
       if (error) throw error;
       if (!data) throw new Error("No lead found");
       
+      // Parse JSON strings if they're stored as strings
+      let calculatorInputs: CalculatorInputs;
+      if (typeof data.calculator_inputs === 'string') {
+        try {
+          calculatorInputs = JSON.parse(data.calculator_inputs);
+        } catch (e) {
+          console.error("Failed to parse calculator_inputs JSON:", e);
+          calculatorInputs = data.calculator_inputs as unknown as CalculatorInputs;
+        }
+      } else {
+        calculatorInputs = data.calculator_inputs as unknown as CalculatorInputs;
+      }
+      
+      let calculatorResults: CalculationResults;
+      if (typeof data.calculator_results === 'string') {
+        try {
+          calculatorResults = JSON.parse(data.calculator_results);
+        } catch (e) {
+          console.error("Failed to parse calculator_results JSON:", e);
+          calculatorResults = data.calculator_results as unknown as CalculationResults;
+        }
+      } else {
+        calculatorResults = data.calculator_results as unknown as CalculationResults;
+      }
+      
       // Convert the JSON data from Supabase to the expected Lead type
       const refreshedLead: Lead = {
         ...data,
-        calculator_inputs: data.calculator_inputs as unknown as CalculatorInputs,
-        calculator_results: data.calculator_results as unknown as CalculationResults
+        calculator_inputs: calculatorInputs,
+        calculator_results: calculatorResults
       };
       
       console.log("Refreshed lead data:", {
