@@ -9,6 +9,10 @@ import { getReportFileName } from "./fileNameUtils";
 export const saveReportPDF = (doc: JsPDFWithAutoTable, lead: Lead): void => {
   const fileName = getReportFileName(lead);
   console.log("Document generated, saving as:", fileName);
+  console.log("Lead voice minutes:", {
+    callVolume: lead.calculator_inputs?.callVolume,
+    additionalVoiceMinutes: lead.calculator_results?.additionalVoiceMinutes
+  });
   
   // Save the document with proper company name
   doc.save(fileName);

@@ -102,31 +102,31 @@ ${brandRed} rg
 0 -30 Td
 /F1 13 Tf
 (Current Estimated Monthly Cost:) Tj
-160 0 Td
+200 0 Td
 (${formattedHumanCost}/month) Tj
--160 -25 Td
+-200 -25 Td
 (AI Solution Monthly Cost:) Tj
-160 0 Td
+200 0 Td
 (${formattedTotalCost}/month) Tj
--160 -25 Td
+-200 -25 Td
 (Monthly Savings:) Tj
-160 0 Td
+200 0 Td
 ${brandRed} rg
 (${formattedMonthlySavings}/month) Tj
 0 0 0 rg
--160 -25 Td
+-200 -25 Td
 (Annual Savings:) Tj
-160 0 Td
+200 0 Td
 ${brandRed} rg
 (${formattedYearlySavings}/year) Tj
 0 0 0 rg
--160 -25 Td
+-200 -25 Td
 (Savings Percentage:) Tj
-160 0 Td
+200 0 Td
 ${brandRed} rg
 (${formattedSavingsPercentage}) Tj
 0 0 0 rg
--160 -45 Td
+-200 -45 Td
 
 /F2 18 Tf
 ${brandRed} rg

@@ -98,31 +98,31 @@ ${brandRed} rg
 0 -30 Td
 /F1 13 Tf
 (Current Estimated Monthly Cost:) Tj
-190 0 Td
+230 0 Td
 ($${humanCostMonthly.toLocaleString()}/month) Tj
--190 -25 Td
+-230 -25 Td
 (AI Solution Monthly Cost:) Tj
-190 0 Td
+230 0 Td
 ($${totalPrice.toFixed(2)}/month) Tj
--190 -25 Td
+-230 -25 Td
 (Monthly Savings:) Tj
-190 0 Td
+230 0 Td
 ${brandRed} rg
 ($${monthlySavings.toLocaleString()}/month) Tj
 0 0 0 rg
--190 -25 Td
+-230 -25 Td
 (Annual Savings:) Tj
-190 0 Td
+230 0 Td
 ${brandRed} rg
 ($${yearlySavings.toLocaleString()}/year) Tj
 0 0 0 rg
--190 -25 Td
+-230 -25 Td
 (Savings Percentage:) Tj
-190 0 Td
+230 0 Td
 ${brandRed} rg
 (${savingsPercentage}%) Tj
 0 0 0 rg
--190 -45 Td
+-230 -45 Td
 
 /F2 18 Tf
 ${brandRed} rg
