@@ -56,6 +56,7 @@ export interface ProposalData {
 
 /**
  * Extract all necessary data from lead object to generate a proposal PDF
+ * Using a standardized approach that handles all input variations
  */
 export function extractProposalData(lead: any): ProposalData {
   debugLog("Lead Object for Extraction", {
@@ -94,8 +95,7 @@ export function extractProposalData(lead: any): ProposalData {
   const industry = ensureString(lead.industry, 'Technology');
   const employeeCount = ensureNumber(lead.employee_count, 5);
   
-  // CRITICAL FIX: Extract and validate tier and AI type
-  // ALWAYS prioritize calculator_inputs over calculator_results
+  // Extract and validate tier and AI type - ALWAYS prioritize calculator_inputs
   const tierKey = ensureString(
     calculatorInputs.aiTier || calculatorResults.tierKey, 
     'growth'

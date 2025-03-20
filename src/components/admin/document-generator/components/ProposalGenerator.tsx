@@ -1,4 +1,3 @@
-
 import { Lead } from "@/types/leads";
 import { useProposalGenerator } from "@/hooks/useProposalGenerator";
 import { toast } from "@/hooks/use-toast";
@@ -7,6 +6,7 @@ import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { AlertCircle, CheckCircle2, Info } from "lucide-react";
 import { useState } from "react";
 import { useProposalRevisions } from "../hooks/useProposalRevisions";
+import { standardizeLeadData } from "@/utils/proposal/standardizeLeadData";
 
 interface ProposalGeneratorProps {
   lead: Lead;
@@ -34,8 +34,16 @@ export const ProposalGenerator = ({ lead, onLeadUpdated, onProposalGenerated }: 
       
       // Log what we're working with
       console.log("Starting proposal generation for lead:", lead.id);
-      console.log("Calculator inputs:", lead.calculator_inputs);
-      console.log("Calculator results:", lead.calculator_results);
+      
+      // Pre-process lead data using standardized utility
+      const standardData = standardizeLeadData(lead);
+      console.log("Using standardized lead data:", {
+        company: standardData.companyName,
+        tier: standardData.tierKey,
+        aiType: standardData.aiType,
+        additionalVoiceMinutes: standardData.additionalVoiceMinutes,
+        totalPrice: standardData.totalMonthlyPrice
+      });
       
       // Generate the proposal
       const pdf = await generateProposal(lead);
@@ -49,13 +57,13 @@ export const ProposalGenerator = ({ lead, onLeadUpdated, onProposalGenerated }: 
       // IMPORTANT: Save the proposal as a revision
       try {
         console.log("Saving proposal as a new revision");
-        const title = `Proposal for ${lead.company_name}`;
+        const title = `Proposal for ${standardData.companyName}`;
         const notes = JSON.stringify({
-          aiTier: lead.calculator_inputs?.aiTier || lead.calculator_results?.tierKey,
-          aiType: lead.calculator_inputs?.aiType || lead.calculator_results?.aiType,
-          callVolume: lead.calculator_inputs?.callVolume || lead.calculator_results?.additionalVoiceMinutes || 0,
-          basePrice: lead.calculator_results?.basePriceMonthly || 0,
-          totalPrice: lead.calculator_results?.basePriceMonthly || 0
+          aiTier: standardData.tierKey,
+          aiType: standardData.aiType,
+          callVolume: standardData.additionalVoiceMinutes,
+          basePrice: standardData.basePrice,
+          totalPrice: standardData.totalMonthlyPrice
         });
         
         const newRevision = await saveProposalRevision(lead.id, pdf, title, notes);
