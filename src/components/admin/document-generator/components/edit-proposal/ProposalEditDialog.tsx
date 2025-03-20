@@ -21,7 +21,10 @@ export const ProposalEditDialog = ({ isOpen, onClose, lead, onSave }: ProposalEd
   // Initialize with lead data or defaults
   const initializedLead = initializeLeadData(lead);
   
-  const [aiTier, setAiTier] = useState<string>(initializedLead.calculator_inputs?.aiTier || 'starter');
+  // Use proper type for aiTier to avoid the type error
+  const [aiTier, setAiTier] = useState<"starter" | "growth" | "premium">(
+    (initializedLead.calculator_inputs?.aiTier as "starter" | "growth" | "premium") || 'starter'
+  );
   const [aiType, setAiType] = useState<string>(initializedLead.calculator_inputs?.aiType || 'chatbot');
   const [callVolume, setCallVolume] = useState<number>(
     typeof initializedLead.calculator_inputs?.callVolume === 'number'
@@ -33,7 +36,7 @@ export const ProposalEditDialog = ({ isOpen, onClose, lead, onSave }: ProposalEd
   const { basePrice, voiceCost, totalPrice, setupFee } = calculatePlanPrice(aiTier, callVolume);
   
   // Handle tier change with appropriate AI type adjustments
-  const handleTierChange = (newTier: string) => {
+  const handleTierChange = (newTier: "starter" | "growth" | "premium") => {
     setAiTier(newTier);
     
     // Update AI type based on tier
