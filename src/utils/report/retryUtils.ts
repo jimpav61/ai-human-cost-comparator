@@ -25,15 +25,15 @@ export async function saveReportToStorageWithRetry(
   let reportId: string | null = null;
   
   console.log("Starting report save with retry mechanism");
-  console.log("Lead ID:", lead.id);
-  console.log("Lead company name:", lead.company_name);
-  console.log("Provided filename:", fileName);
+  console.log(`Lead ID: ${lead.id}`);
+  console.log(`Lead company name: ${lead.company_name}`);
+  console.log(`Provided filename: ${fileName}`);
   
-  // First check authentication
+  // First check authentication - using the same proven pattern from directUpload.ts
   const { data: authData, error: authError } = await supabase.auth.getSession();
   
   if (authError) {
-    console.error("Authentication error:", authError.message);
+    console.error(`Authentication error: ${authError.message}`);
     if (isAdmin) {
       toast({
         title: "Authentication Error",
@@ -46,7 +46,11 @@ export async function saveReportToStorageWithRetry(
   
   const isAuthenticated = !!authData.session;
   
-  if (!isAuthenticated) {
+  // Enhanced session logging
+  if (isAuthenticated) {
+    console.log(`User authenticated with ID: ${authData.session.user.id}`);
+    console.log(`Token expires at: ${new Date(authData.session.expires_at! * 1000).toISOString()}`);
+  } else {
     console.error("User is not authenticated, cannot save to storage");
     if (isAdmin) {
       toast({
@@ -58,17 +62,16 @@ export async function saveReportToStorageWithRetry(
     return { reportId: null, pdfUrl: null };
   }
   
-  console.log("User authenticated with ID:", authData.session.user.id);
-  
   // Ensure the lead ID exists
   if (!lead.id) {
     console.error("Lead ID is missing, generating temporary ID");
     lead.id = uuidv4();
   }
   
-  // CRITICAL FIX: ALWAYS use lead UUID as the only filename format
+  // CRITICAL: ALWAYS use standardized UUID format for filenames
+  // Using lead.id ensures unique filenames for each lead, even with same company info
   const standardFileName = `${lead.id}.pdf`;
-  console.log("Standardizing filename to UUID-based format:", standardFileName);
+  console.log(`Standardizing filename to UUID-based format: ${standardFileName}`);
   
   // First convert the PDF to a blob for upload
   const pdfBlob = await convertPDFToBlob(pdfDoc);
@@ -78,25 +81,25 @@ export async function saveReportToStorageWithRetry(
     console.log(`Attempt ${attempts} of ${maxRetries} to save report...`);
     
     try {
-      // Use our new direct upload utility to save the PDF to storage
+      // Use our proven direct upload utility to save the PDF to storage
       pdfUrl = await uploadPDFToBucket(standardFileName, pdfBlob, !isAdmin);
       
       if (!pdfUrl) {
-        console.error("Failed to get PDF URL from storage on attempt", attempts);
+        console.error(`Failed to get PDF URL from storage on attempt ${attempts}`);
         throw new Error("Failed to get PDF URL from storage");
       }
       
-      console.log(`✅ PDF saved to storage on attempt ${attempts}, URL:`, pdfUrl);
+      console.log(`✅ PDF saved to storage on attempt ${attempts}, URL: ${pdfUrl}`);
       
       // If PDF storage was successful, save the report data to the database
       reportId = await saveReportData(lead, pdfUrl);
       
       if (!reportId) {
-        console.error("Failed to save report data to database on attempt", attempts);
+        console.error(`Failed to save report data to database on attempt ${attempts}`);
         throw new Error("Failed to save report data to database");
       }
       
-      console.log(`✅ Report data saved to database on attempt ${attempts}, ID:`, reportId);
+      console.log(`✅ Report data saved to database on attempt ${attempts}, ID: ${reportId}`);
       
       success = true;
     } catch (error) {
@@ -118,11 +121,19 @@ export async function saveReportToStorageWithRetry(
   }
   
   if (success) {
-    console.log("Successfully saved report after", attempts, "attempts");
-    console.log("Report ID:", reportId);
-    console.log("PDF URL:", pdfUrl);
+    console.log(`Successfully saved report after ${attempts} attempts`);
+    console.log(`Report ID: ${reportId}`);
+    console.log(`PDF URL: ${pdfUrl}`);
+    
+    if (isAdmin) {
+      toast({
+        title: "Report Saved",
+        description: "The report has been successfully saved to the cloud.",
+        variant: "default"
+      });
+    }
   } else {
-    console.error("Failed to save report after", maxRetries, "attempts");
+    console.error(`Failed to save report after ${maxRetries} attempts`);
     
     if (isAdmin) {
       toast({

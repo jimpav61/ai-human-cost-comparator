@@ -5,6 +5,7 @@ import { toast } from "@/hooks/use-toast";
 import { FileSpreadsheet } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { testStorageBucketConnectivity } from "@/utils/report/bucketUtils";
+import { useState } from "react";
 
 interface ReportGeneratorProps {
   lead: Lead;
@@ -12,19 +13,23 @@ interface ReportGeneratorProps {
 
 export const ReportGenerator = ({ lead }: ReportGeneratorProps) => {
   const { isLoading, handleDownloadReport } = useReportDownload();
+  const [diagnosticInfo, setDiagnosticInfo] = useState<string | null>(null);
 
   const handleGenerateReport = async () => {
-    console.log(" **************************** Lead 1: ", lead);
-   
     try {
       console.log("Starting report generation and download for lead:", lead.id);
-     
+      console.log("Lead company:", lead.company_name);
+      
       // First run a diagnostic check on the storage bucket
       const diagnosticResult = await testStorageBucketConnectivity();
-      console.log("Storage diagnostic result:", diagnosticResult);
+      const diagInfo = JSON.stringify(diagnosticResult, null, 2);
+      setDiagnosticInfo(diagInfo);
+      console.log("Storage diagnostic result:", diagInfo);
       
       if (!diagnosticResult.success) {
         console.error("Storage diagnostic check failed before attempting report download", diagnosticResult.error);
+        
+        // Provide more specific error messaging based on diagnostic results
         if (!diagnosticResult.bucketAccessible) {
           toast({
             title: "Storage Warning",
@@ -52,7 +57,7 @@ export const ReportGenerator = ({ lead }: ReportGeneratorProps) => {
         return;
       }
       
-      // Proceed with report download
+      // Proceed with report download using the improved functions
       await handleDownloadReport(lead);
     } catch (error) {
       console.error("Error generating report:", error);
@@ -72,8 +77,14 @@ export const ReportGenerator = ({ lead }: ReportGeneratorProps) => {
         className="bg-primary text-white px-4 py-2 rounded disabled:opacity-50 min-w-[200px]"
       >
         <FileSpreadsheet className="h-4 w-4 mr-2" />
-        {isLoading ? "Generating..." : "Generate ROI Peter Report"}
+        {isLoading ? "Generating..." : "Generate ROI Report"}
       </Button>
+      
+      {diagnosticInfo && (
+        <div className="mt-2 text-xs text-gray-500 hidden">
+          <p>Diagnostic info: {diagnosticInfo}</p>
+        </div>
+      )}
     </div>
   );
 };
