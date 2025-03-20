@@ -163,8 +163,6 @@ export const ResultsDisplay: React.FC<ResultsDisplayProps> = ({
           />
         </div>
       )}
-      
-      {/* Remove MiniWorkshop from here since it will now be shown on its own page */}
     </div>
   );
 };

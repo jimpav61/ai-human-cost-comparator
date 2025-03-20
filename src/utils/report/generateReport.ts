@@ -24,7 +24,8 @@ export async function generateAndDownloadReport(lead: Lead): Promise<boolean> {
     toast({
       title: "Success",
       description: "ROI Report downloaded successfully",
-      variant: "default"
+      variant: "default",
+      duration: 1500,
     });
     
     // Attempt to save to storage in parallel - using the reliable method that works in admin
@@ -61,11 +62,13 @@ export async function generateAndDownloadReport(lead: Lead): Promise<boolean> {
         phoneNumber: lead.phone_number,
         website: lead.website,
         industry: lead.industry,
-        employeeCount: lead.employee_count
+        employeeCount: lead.employee_count,
+        calculator_results: lead.calculator_results || {}
       };
       
-      // Redirect to workshop page
-      window.location.href = `/workshop?id=${lead.id}#workshop`;
+      // Use React Router's navigate function via state object to prevent full page reload
+      // Use window.location.href with proper state data encoded
+      window.location.href = `/workshop?leadId=${lead.id}`;
     }, 800); // Slightly longer delay to ensure download completes
     
     return true;
@@ -74,7 +77,8 @@ export async function generateAndDownloadReport(lead: Lead): Promise<boolean> {
     toast({
       title: "Error",
       description: "Failed to generate report. Please try again.",
-      variant: "destructive"
+      variant: "destructive",
+      duration: 1500,
     });
     return false;
   }
