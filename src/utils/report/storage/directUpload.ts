@@ -14,23 +14,10 @@ export async function uploadPDFToBucket(
   try {
     console.log("DIRECT UPLOAD: Starting upload of", fileName, "to reports bucket");
     
-    // 1. Use a simpler authentication approach (reverting to closer to original)
-    const { data, error } = await supabase.auth.getSession();
+    // Using the simplest authentication approach that worked before
+    const { data: authData } = await supabase.auth.getSession();
     
-    if (error) {
-      console.error("DIRECT UPLOAD: Authentication error", error.message);
-      if (!silent) {
-        toast({
-          title: "Authentication Error",
-          description: "Please sign in again to save reports to cloud storage.",
-          variant: "destructive"
-        });
-      }
-      return null;
-    }
-    
-    // Check if session exists
-    if (!data.session) {
+    if (!authData.session) {
       console.error("DIRECT UPLOAD: No active session found");
       if (!silent) {
         toast({
@@ -42,28 +29,9 @@ export async function uploadPDFToBucket(
       return null;
     }
     
-    console.log("DIRECT UPLOAD: Authenticated with user ID", data.session.user.id);
+    console.log("DIRECT UPLOAD: Authenticated with user ID", authData.session.user.id);
     
-    // 2. Quick bucket check - simplified
-    const { data: bucketCheck, error: bucketError } = await supabase.storage
-      .from('reports')
-      .list('', { limit: 1 });
-    
-    if (bucketError) {
-      console.error("DIRECT UPLOAD: Cannot access reports bucket:", bucketError.message);
-      if (!silent) {
-        toast({
-          title: "Storage Access Error",
-          description: "Cannot access storage bucket. Report saved locally only.",
-          variant: "destructive"
-        });
-      }
-      return null;
-    }
-    
-    console.log("DIRECT UPLOAD: Bucket access confirmed, proceeding with upload");
-    
-    // 3. Upload with minimal options (closer to original working code)
+    // Perform direct file upload with minimal options
     console.log("DIRECT UPLOAD: Uploading file", fileName, "size:", pdfBlob.size);
     
     const { data: uploadData, error: uploadError } = await supabase.storage
@@ -88,7 +56,7 @@ export async function uploadPDFToBucket(
     
     console.log("DIRECT UPLOAD: Upload successful, getting public URL");
     
-    // 4. Get the public URL
+    // Get the public URL
     const { data: urlData } = await supabase.storage
       .from('reports')
       .getPublicUrl(fileName);

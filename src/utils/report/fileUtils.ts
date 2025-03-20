@@ -19,14 +19,14 @@ export async function savePDFToStorage(
   try {
     console.log("Starting PDF storage process for file:", fileName);
     
-    // Simplified authentication check - no refresh attempt (which was failing)
-    const { data: sessionData, error: sessionError } = await supabase.auth.getSession();
+    // Simple session check without refresh attempts
+    const { data: sessionData } = await supabase.auth.getSession();
     
-    if (sessionError || !sessionData.session) {
-      console.error("Authentication error:", sessionError?.message || "No active session");
+    if (!sessionData.session) {
+      console.error("No active session found");
       if (isAdmin) {
         toast({
-          title: "Authentication Error",
+          title: "Authentication Required",
           description: "Please sign in to save reports to the cloud.",
           variant: "default"
         });
