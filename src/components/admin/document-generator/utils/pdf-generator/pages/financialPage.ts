@@ -26,7 +26,7 @@ export function generateFinancialPage(params: PdfContentParams): string {
                       typeof callVolume === 'string' && callVolume !== '' ? 
                       parseInt(callVolume, 10) || 0 : 0;
   
-  console.log("Financial page data - VOICE MINUTES CRITICAL:", {
+  console.log("Financial page data - VOICE MINUTES:", {
     rawAdditionalVoiceMinutes: additionalVoiceMinutes,
     rawCallVolume: callVolume,
     finalVoiceMinutes: voiceMinutes,
