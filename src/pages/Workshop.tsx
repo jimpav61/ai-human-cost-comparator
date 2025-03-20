@@ -3,7 +3,7 @@ import React, { useEffect, useState } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { MiniWorkshop } from '@/components/calculator/workshop/MiniWorkshop';
 import { LeadData } from '@/components/calculator/types';
-import { Header } from '@/components/Header';
+import Header from '@/components/Header';
 
 const Workshop = () => {
   const location = useLocation();
