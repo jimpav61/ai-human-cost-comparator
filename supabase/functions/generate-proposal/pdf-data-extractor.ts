@@ -79,12 +79,12 @@ export function extractProposalData(lead: any): ProposalData {
   
   // Log key values for debugging
   debugLog("Key Calculator Values", {
-    results_tierKey: calculatorResults.tierKey,
     inputs_aiTier: calculatorInputs.aiTier,
-    results_aiType: calculatorResults.aiType,
+    results_tierKey: calculatorResults.tierKey,
     inputs_aiType: calculatorInputs.aiType,
-    results_additionalVoiceMinutes: calculatorResults.additionalVoiceMinutes,
-    inputs_callVolume: calculatorInputs.callVolume
+    results_aiType: calculatorResults.aiType,
+    inputs_callVolume: calculatorInputs.callVolume,
+    results_additionalVoiceMinutes: calculatorResults.additionalVoiceMinutes
   });
   
   // Extract company and contact information with defaults
@@ -95,26 +95,31 @@ export function extractProposalData(lead: any): ProposalData {
   const industry = ensureString(lead.industry, 'Technology');
   const employeeCount = ensureNumber(lead.employee_count, 5);
   
-  // CRITICAL FIX: Extract and validate tier with correct prioritization
-  // Always prioritize calculator_inputs.aiTier over all other sources
+  // CRITICAL FIX: Always prioritize calculator_inputs.aiTier
   const tierKey = ensureString(
-    calculatorInputs.aiTier || calculatorResults.tierKey, 
-    'growth'
+    calculatorInputs.aiTier, 
+    calculatorResults.tierKey || 'growth'
   );
   
   const aiType = ensureString(
-    calculatorInputs.aiType || calculatorResults.aiType, 
-    'both'
+    calculatorInputs.aiType,
+    calculatorResults.aiType || 'both'
   );
   
   // Get display names
   const tierName = getPlanName(tierKey);
   const aiTypeDisplay = getAiTypeDisplay(aiType);
   
-  // Voice minutes calculations - now with correct prioritization
+  debugLog("Selected Tier:", {
+    tierKey,
+    tierName,
+    source: calculatorInputs.aiTier ? "inputs" : "results"
+  });
+  
+  // Voice minutes calculations - based on tier
   const includedVoiceMinutes = tierKey === 'starter' ? 0 : 600;
   
-  // CRITICAL FIX: Prioritize calculator_inputs.callVolume over calculator_results.additionalVoiceMinutes
+  // CRITICAL FIX: Prioritize calculator_inputs.callVolume
   let additionalVoiceMinutes = 0;
   
   if (tierKey === 'starter') {
@@ -140,8 +145,7 @@ export function extractProposalData(lead: any): ProposalData {
     'growth': 229,
     'premium': 429
   };
-  const basePrice = basePrices[tierKey as keyof typeof basePrices] || 
-                   ensureNumber(calculatorResults.basePriceMonthly, 229);
+  const basePrice = basePrices[tierKey as keyof typeof basePrices] || 229;
   
   // Use tier-specific setup fees
   const setupFees = {
@@ -149,8 +153,7 @@ export function extractProposalData(lead: any): ProposalData {
     'growth': 749,
     'premium': 1149
   };
-  const setupFee = setupFees[tierKey as keyof typeof setupFees] || 
-                  ensureNumber(calculatorResults.aiCostMonthly?.setupFee, 749);
+  const setupFee = setupFees[tierKey as keyof typeof setupFees] || 749;
   
   // Calculate voice cost based on additional minutes
   const voiceCost = tierKey === 'starter' ? 0 : additionalVoiceMinutes * 0.12;
@@ -195,8 +198,9 @@ export function extractProposalData(lead: any): ProposalData {
     tierName,
     aiType,
     aiTypeDisplay,
-    additionalVoiceMinutes,
     basePrice,
+    setupFee,
+    additionalVoiceMinutes,
     voiceCost,
     totalMonthlyCost
   });

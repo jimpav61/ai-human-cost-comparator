@@ -50,9 +50,20 @@ ${brandRed} rg
 (\\267 Customized AI model trained on your business knowledge and processes) Tj
 0 -20 Td
 (\\267 Advanced natural language processing for accurate understanding of customer inquiries) Tj
-0 -20 Td
+0 -20 Td`;
+
+  // Check if tier is starter - adjust features description accordingly
+  if (tierKey === 'starter') {
+    content += `
+(\\267 Text-based interface for customer engagement) Tj
+0 -20 Td`;
+  } else {
+    content += `
 (\\267 ${aiTypeDisplay} interface for versatile customer engagement) Tj
-0 -20 Td
+0 -20 Td`;
+  }
+
+  content += `
 (\\267 Integration capabilities with your existing systems and workflows) Tj
 0 -20 Td
 (\\267 Comprehensive analytics dashboard for performance monitoring) Tj
@@ -67,11 +78,20 @@ ${brandRed} rg
 0 -25 Td
 /F1 12 Tf
 (\\267 ${tierName} AI Engine with ${tierKey === 'premium' ? 'advanced' : tierKey === 'growth' ? 'enhanced' : 'standard'} capabilities) Tj
-0 -20 Td
-(\\267 ${aiTypeDisplay} Interface ${tierKey !== 'starter' ? 'with speech recognition and synthesis' : ''}) Tj
 0 -20 Td`;
 
-  // Add voice information based on tier and type - handle Starter plan specially
+  // Adjust interface description based on tier
+  if (tierKey === 'starter') {
+    content += `
+(\\267 Text-Only Interface) Tj
+0 -20 Td`;
+  } else {
+    content += `
+(\\267 ${aiTypeDisplay} Interface with speech recognition and synthesis) Tj
+0 -20 Td`;
+  }
+
+  // Add voice information based on tier and type
   if (tierKey === 'starter') {
     content += `
 (\\267 No voice capabilities included in this tier) Tj
@@ -94,13 +114,13 @@ ${brandRed} rg
     }
   }
 
-  // Add standard content
+  // Add standard content with tier-specific details
   content += `
-(\\267 ${tierKey === 'premium' ? 'Unlimited' : '50,000+'} monthly text interactions) Tj
+(\\267 ${tierKey === 'premium' ? 'Unlimited' : tierKey === 'growth' ? '50,000+' : '25,000+'} monthly text interactions) Tj
 0 -20 Td
 (\\267 Secure cloud-based deployment with 99.9% uptime guarantee) Tj
 0 -20 Td
-(\\267 ${tierKey === 'premium' ? 'Priority' : 'Standard'} technical support and maintenance) Tj
+(\\267 ${tierKey === 'premium' ? 'Priority' : tierKey === 'growth' ? 'Enhanced' : 'Standard'} technical support and maintenance) Tj
 0 -30 Td
 
 BT

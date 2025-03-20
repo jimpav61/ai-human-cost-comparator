@@ -9,6 +9,7 @@ import { AITypeSelector } from "./AITypeSelector";
 import { initializeLeadData } from "../../utils/leadDataInitializer";
 import { formatCurrency } from "@/utils/formatters";
 import { calculatePlanPrice } from "./calculatePlanPrice";
+import { toast } from "@/hooks/use-toast";
 
 interface ProposalEditDialogProps {
   isOpen: boolean;
@@ -98,7 +99,7 @@ export const ProposalEditDialog = ({ isOpen, onClose, lead, onSave }: ProposalEd
       updatedLead.calculator_results = {};
     }
     
-    // Update calculator inputs
+    // Update calculator inputs with the edited values
     updatedLead.calculator_inputs.aiTier = aiTier;
     updatedLead.calculator_inputs.aiType = aiType;
     updatedLead.calculator_inputs.callVolume = callVolume;
@@ -107,6 +108,7 @@ export const ProposalEditDialog = ({ isOpen, onClose, lead, onSave }: ProposalEd
     updatedLead.calculator_results.tierKey = aiTier;
     updatedLead.calculator_results.aiType = aiType;
     updatedLead.calculator_results.additionalVoiceMinutes = callVolume;
+    updatedLead.calculator_results.includedVoiceMinutes = aiTier === 'starter' ? 0 : 600;
     
     // Update costs in calculator results
     if (!updatedLead.calculator_results.aiCostMonthly) {
@@ -126,8 +128,24 @@ export const ProposalEditDialog = ({ isOpen, onClose, lead, onSave }: ProposalEd
     updatedLead.calculator_results.savingsPercentage = 
       Math.round((currentHumanCost - totalPrice) / currentHumanCost * 100);
     
+    console.log("Saving proposal with updated values:", {
+      aiTier,
+      aiType,
+      callVolume,
+      basePrice,
+      setupFee,
+      totalPrice
+    });
+    
     // Call the save handler with the updated lead
     onSave(updatedLead);
+    
+    // Show success toast
+    toast({
+      title: "Proposal settings updated",
+      description: `Plan set to ${aiTier === 'starter' ? 'Starter' : aiTier === 'growth' ? 'Growth' : 'Premium'} with ${callVolume} additional voice minutes.`,
+    });
+    
     onClose();
   };
   
@@ -156,36 +174,40 @@ export const ProposalEditDialog = ({ isOpen, onClose, lead, onSave }: ProposalEd
           </div>
           
           <div className="bg-gray-50 p-4 rounded-lg border border-gray-200">
-            <h3 className="font-medium mb-3">Pricing Summary</h3>
-            <div className="space-y-2 text-sm">
-              <div className="flex justify-between">
-                <span>Base Price:</span>
-                <span>{formatCurrency(basePrice)}/month</span>
-              </div>
+            <h3 className="font-medium mb-3">Price Summary</h3>
+            <div className="grid grid-cols-2 gap-2 text-sm">
+              <div>Monthly Base Price:</div>
+              <div>{formatCurrency(basePrice)}/month</div>
               
-              {voiceCost > 0 && (
-                <div className="flex justify-between">
-                  <span>Additional Voice Cost:</span>
-                  <span>{formatCurrency(voiceCost)}/month</span>
-                </div>
+              {aiTier !== 'starter' && (
+                <>
+                  <div>Included Voice Minutes:</div>
+                  <div>600 minutes</div>
+                  
+                  {callVolume > 0 && (
+                    <>
+                      <div>Additional Voice Minutes:</div>
+                      <div>{callVolume} minutes</div>
+                      
+                      <div>Additional Voice Cost:</div>
+                      <div>{formatCurrency(voiceCost)}/month</div>
+                    </>
+                  )}
+                </>
               )}
               
-              <div className="flex justify-between font-medium border-t pt-2 mt-2">
-                <span>Total Monthly Price:</span>
-                <span>{formatCurrency(totalPrice)}/month</span>
-              </div>
+              <div className="font-semibold">Total Monthly Cost:</div>
+              <div className="font-semibold">{formatCurrency(totalPrice)}/month</div>
               
-              <div className="flex justify-between">
-                <span>Setup Fee:</span>
-                <span>{formatCurrency(setupFee)} one-time</span>
-              </div>
+              <div>Setup Fee:</div>
+              <div>{formatCurrency(setupFee)}</div>
             </div>
           </div>
         </div>
         
         <DialogFooter>
           <Button variant="outline" onClick={onClose}>Cancel</Button>
-          <Button onClick={handleSave}>Save Settings</Button>
+          <Button onClick={handleSave}>Save Changes</Button>
         </DialogFooter>
       </DialogContent>
     </Dialog>
