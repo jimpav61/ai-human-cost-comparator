@@ -4,6 +4,7 @@ import { formatPdfCurrency } from "../pdf-utils.ts";
 
 /**
  * Generate the financial page content for the proposal PDF
+ * Now correctly using the updated tier and voice minute values
  */
 export function generateFinancialPageContent(data: ProposalData): string {
   const {
@@ -92,7 +93,7 @@ ${brandRed} rg
 -160 -25 Td
 (Annual Investment:) Tj
 160 0 Td
-(${formatPdfCurrency(totalMonthlyCost * 12)}/year) Tj
+(${formatPdfCurrency(totalMonthlyCost * 10)}/year (2 months free with annual plan)) Tj
 -160 -45 Td
 
 /F2 18 Tf

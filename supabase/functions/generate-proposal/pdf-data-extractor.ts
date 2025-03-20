@@ -95,7 +95,8 @@ export function extractProposalData(lead: any): ProposalData {
   const industry = ensureString(lead.industry, 'Technology');
   const employeeCount = ensureNumber(lead.employee_count, 5);
   
-  // Extract and validate tier and AI type - ALWAYS prioritize calculator_inputs
+  // CRITICAL FIX: Extract and validate tier with correct prioritization
+  // Always prioritize calculator_inputs.aiTier over all other sources
   const tierKey = ensureString(
     calculatorInputs.aiTier || calculatorResults.tierKey, 
     'growth'
@@ -110,7 +111,7 @@ export function extractProposalData(lead: any): ProposalData {
   const tierName = getPlanName(tierKey);
   const aiTypeDisplay = getAiTypeDisplay(aiType);
   
-  // Voice minutes calculations
+  // Voice minutes calculations - now with correct prioritization
   const includedVoiceMinutes = tierKey === 'starter' ? 0 : 600;
   
   // CRITICAL FIX: Prioritize calculator_inputs.callVolume over calculator_results.additionalVoiceMinutes
@@ -130,7 +131,7 @@ export function extractProposalData(lead: any): ProposalData {
     debugLog("Using additionalVoiceMinutes from results:", additionalVoiceMinutes);
   }
   
-  // Financial calculations - ensure valid numbers with defaults
+  // Financial calculations - recalculate based on tier and minutes
   const humanCostMonthly = ensureNumber(calculatorResults.humanCostMonthly, 3800);
   
   // Use tier-specific base prices
@@ -157,10 +158,10 @@ export function extractProposalData(lead: any): ProposalData {
   // Calculate total monthly cost
   const totalMonthlyCost = basePrice + voiceCost;
   
-  const monthlySavings = ensureNumber(calculatorResults.monthlySavings, humanCostMonthly - totalMonthlyCost);
-  const yearlySavings = ensureNumber(calculatorResults.yearlySavings, monthlySavings * 12);
-  const savingsPercentage = ensureNumber(calculatorResults.savingsPercentage, 
-    humanCostMonthly > 0 ? (monthlySavings / humanCostMonthly) * 100 : 0);
+  // Recalculate savings values based on updated costs
+  const monthlySavings = humanCostMonthly - totalMonthlyCost;
+  const yearlySavings = monthlySavings * 12;
+  const savingsPercentage = humanCostMonthly > 0 ? (monthlySavings / humanCostMonthly) * 100 : 0;
   
   // ROI calculations
   const breakEvenMonths = setupFee > 0 && monthlySavings > 0 
