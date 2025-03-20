@@ -1,6 +1,5 @@
-
 import { Lead } from "@/types/leads";
-import { useProposalGenerator } from "@/hooks/useProposalGenerator";
+import { useProposalGenerator } from "../hooks/useProposalGenerator";
 import { toast } from "@/hooks/use-toast";
 import { Button } from "@/components/ui/button";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
@@ -11,6 +10,7 @@ import { standardizeLeadData } from "@/utils/proposal/standardizeLeadData";
 import { useProposalEdit } from "../hooks/useProposalEdit";
 import { ProposalEditDialog } from "./edit-proposal/ProposalEditDialog";
 import { supabase } from "@/integrations/supabase/client";
+import { CalculatorInputs, CalculationResults } from "@/hooks/calculator/types";
 
 interface ProposalGeneratorProps {
   lead: Lead;
@@ -44,19 +44,26 @@ export const ProposalGenerator = ({ lead, onLeadUpdated, onProposalGenerated }: 
       if (error) throw error;
       if (!data) throw new Error("No lead found");
       
+      // Convert the JSON data from Supabase to the expected Lead type
+      const refreshedLead: Lead = {
+        ...data,
+        calculator_inputs: data.calculator_inputs as unknown as CalculatorInputs,
+        calculator_results: data.calculator_results as unknown as CalculationResults
+      };
+      
       console.log("Refreshed lead data:", {
-        id: data.id,
-        tier: data.calculator_inputs?.aiTier,
-        aiType: data.calculator_inputs?.aiType,
-        callVolume: data.calculator_inputs?.callVolume
+        id: refreshedLead.id,
+        tier: refreshedLead.calculator_inputs?.aiTier,
+        aiType: refreshedLead.calculator_inputs?.aiType,
+        callVolume: refreshedLead.calculator_inputs?.callVolume
       });
       
-      setCurrentLead(data as Lead);
+      setCurrentLead(refreshedLead);
       if (onLeadUpdated) {
-        onLeadUpdated(data as Lead);
+        onLeadUpdated(refreshedLead);
       }
       
-      return data as Lead;
+      return refreshedLead;
     } catch (error) {
       console.error("Error refreshing lead data:", error);
       toast({
