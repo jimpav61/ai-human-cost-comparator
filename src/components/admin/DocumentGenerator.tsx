@@ -73,11 +73,11 @@ export const DocumentGenerator = ({ lead, onLeadUpdated }: DocumentGeneratorProp
   };
   
   return (
-    <div>
+    <button className="text-xs md:text-sm px-2 py-1 bg-white border border-gray-200 rounded-md hover:bg-gray-50 transition-colors">
       <NewDocumentGenerator 
         lead={currentLead} 
         onLeadUpdated={handleLeadUpdate} 
       />
-    </div>
+    </button>
   );
 };

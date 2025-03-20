@@ -80,9 +80,10 @@ export const StorageVerificationButton = ({ lead }: StorageVerificationButtonPro
       variant="outline"
       onClick={handleCheckStorage}
       disabled={isChecking}
+      className="text-xs py-1 h-8 px-2"
     >
-      <Database className="h-4 w-4 mr-1" />
-      {isChecking ? "Checking..." : "Verify Storage"}
+      <Database className="h-3.5 w-3.5 mr-1" />
+      <span>Verify</span>
     </Button>
   );
 };

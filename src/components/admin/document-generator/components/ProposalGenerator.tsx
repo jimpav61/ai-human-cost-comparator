@@ -219,38 +219,35 @@ export const ProposalGenerator = ({ lead, onLeadUpdated, onProposalGenerated }: 
   };
 
   return (
-    <div className="space-y-4">
-      <div className="flex flex-wrap gap-2">
+    <div className="space-y-3">
+      <div className="flex flex-wrap items-center gap-2">
         <Button 
           onClick={handleGenerateProposal}
           disabled={generating || refreshingLead}
-          className="bg-primary text-white rounded disabled:opacity-50"
-          size="sm"
+          className="text-xs sm:text-sm py-1 h-8 px-2"
         >
-          {generating ? "Generating..." : refreshingLead ? "Refreshing..." : "Generate Proposal"}
+          {generating ? "Generating..." : "Generate Proposal"}
         </Button>
         
         <Button
           onClick={handleOpenDialog}
           variant="outline"
           size="sm"
-          className="flex items-center gap-1"
+          className="flex items-center gap-1 text-xs sm:text-sm h-8 px-2"
         >
-          <Settings className="h-4 w-4" />
-          <span className="hidden sm:inline">Edit Settings</span>
-          <span className="sm:hidden">Settings</span>
+          <Settings className="h-3.5 w-3.5" />
+          <span>Settings</span>
         </Button>
         
         <Button
           onClick={refreshLeadData}
           variant="outline"
           size="sm"
-          className="flex items-center gap-1"
+          className="flex items-center gap-1 text-xs sm:text-sm h-8 px-2"
           disabled={refreshingLead}
         >
-          <RefreshCw className={`h-4 w-4 ${refreshingLead ? "animate-spin" : ""}`} />
-          <span className="hidden sm:inline">Refresh Data</span>
-          <span className="sm:hidden">Refresh</span>
+          <RefreshCw className={`h-3.5 w-3.5 ${refreshingLead ? "animate-spin" : ""}`} />
+          <span>Refresh</span>
         </Button>
       </div>
       
@@ -288,7 +285,7 @@ export const ProposalGenerator = ({ lead, onLeadUpdated, onProposalGenerated }: 
               variant="outline" 
               onClick={handleRetry}
               size="sm"
-              className="mt-2"
+              className="text-xs"
             >
               Retry Generation
             </Button>
@@ -296,7 +293,7 @@ export const ProposalGenerator = ({ lead, onLeadUpdated, onProposalGenerated }: 
               variant="ghost"
               onClick={() => setShowHelp(!showHelp)}
               size="sm"
-              className="mt-2"
+              className="text-xs"
             >
               {showHelp ? "Hide Help" : "Show Help"}
             </Button>

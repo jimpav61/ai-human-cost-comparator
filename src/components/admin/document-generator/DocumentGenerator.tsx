@@ -14,17 +14,17 @@ interface DocumentGeneratorProps {
 export const DocumentGenerator = ({ lead, onLeadUpdated }: DocumentGeneratorProps) => {
   return (
     <Card className="w-full">
-      <CardContent className="p-4 sm:p-6">
-        <div className="flex flex-wrap justify-between items-center mb-3 gap-2">
-          <h3 className="text-lg font-semibold">Document Generation</h3>
+      <CardContent className="p-3 sm:p-4">
+        <div className="flex flex-wrap justify-between items-center mb-2 gap-2">
+          <h3 className="text-base font-semibold">Document Generation</h3>
           <VersionHistoryButton lead={lead} />
         </div>
         
-        <Separator className="my-3" />
+        <Separator className="my-2" />
         
-        <div className="space-y-6">
+        <div className="space-y-4">
           <ProposalGenerator lead={lead} onLeadUpdated={onLeadUpdated} />
-          <Separator className="my-3" />
+          <Separator className="my-2" />
           <ReportGenerator lead={lead} />
         </div>
       </CardContent>
