@@ -1,7 +1,7 @@
 
 import React from 'react';
 import { AIVsHumanCalculator } from "@/components/AIVsHumanCalculator";
-import { LeadForm, type LeadFormData } from "@/components/LeadForm";
+import { LeadForm, type LeadFormData } from "@/components/lead-form";
 
 interface CalculatorSectionProps {
   showCalculator: boolean;
