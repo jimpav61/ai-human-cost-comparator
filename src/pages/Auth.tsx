@@ -15,30 +15,39 @@ const Auth = () => {
   const [loading, setLoading] = useState(false);
   const [isSignup, setIsSignup] = useState(false);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
+  const [checkingSession, setCheckingSession] = useState(true);
   const navigate = useNavigate();
   
-  // Check if already authenticated - use a more reliable approach for the live preview
+  // Check if already authenticated - improved approach for the live preview
   useEffect(() => {
     let isMounted = true;
     
     const checkSession = async () => {
       try {
+        // Check for existing session first
+        const { data } = await supabase.auth.getSession();
+        
+        if (data.session && isMounted) {
+          console.log("Found existing session, redirecting to admin");
+          // Use navigate instead of direct location change for better React integration
+          navigate("/admin");
+          return;
+        }
+
         // Set up auth state listener
         const { data: { subscription } } = supabase.auth.onAuthStateChange(
           (event, currentSession) => {
             console.log("Auth state changed:", event, !!currentSession);
             if (currentSession && isMounted) {
-              // Use direct navigation
-              window.location.href = "/admin";
+              console.log("Session detected during auth state change, navigating to admin");
+              navigate("/admin");
             }
           }
         );
         
-        // Check for existing session
-        const { data } = await supabase.auth.getSession();
-        console.log("Current session:", data.session);
-        if (data.session && isMounted) {
-          window.location.href = "/admin";
+        // Only set checkingSession to false if we're still mounted
+        if (isMounted) {
+          setCheckingSession(false);
         }
         
         return () => {
@@ -46,6 +55,9 @@ const Auth = () => {
         };
       } catch (error) {
         console.error("Error checking session:", error);
+        if (isMounted) {
+          setCheckingSession(false);
+        }
       }
     };
     
@@ -100,8 +112,8 @@ const Auth = () => {
           description: "Account created and logged in successfully."
         });
         
-        // Use direct navigation
-        window.location.href = "/admin";
+        // Use navigate instead of direct location change
+        navigate("/admin");
       } else {
         // Login flow
         console.log("Attempting login with:", email);
@@ -118,8 +130,8 @@ const Auth = () => {
           description: "You have been logged in successfully."
         });
         
-        // Use direct navigation
-        window.location.href = "/admin";
+        // Use navigate instead of direct location change
+        navigate("/admin");
       }
     } catch (error: any) {
       console.error("Auth error:", error);
@@ -134,7 +146,18 @@ const Auth = () => {
     }
   };
 
-  // Ensure form fields and buttons are properly accessible
+  // Show loading state while checking session
+  if (checkingSession) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-gray-50 to-gray-100 p-4">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-brand-500 mx-auto mb-4"></div>
+          <p className="text-gray-600">Checking authentication status...</p>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-gray-50 to-gray-100 p-4">
       <Card className="w-full max-w-md">
