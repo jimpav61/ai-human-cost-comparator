@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { toast } from "@/components/ui/use-toast";
 import { supabase } from "@/integrations/supabase/client";
@@ -215,7 +214,6 @@ export const LeadForm: React.FC<LeadFormProps> = ({ onSubmit }) => {
         
         setFormData(prev => ({ ...prev, website: finalWebsite }));
         
-        // Set isSubmitting to false before changing step to avoid UI issues
         setIsSubmitting(false);
         setStep(2);
         
@@ -446,7 +444,12 @@ export const LeadForm: React.FC<LeadFormProps> = ({ onSubmit }) => {
                   disabled={isSubmitting}
                   className="w-full bg-brand-500 hover:bg-brand-600 text-white font-medium py-3 px-6 rounded-lg transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed mt-6"
                 >
-                  {isSubmitting ? 'Processing...' : "Continue to Business Details"}
+                  {isSubmitting ? (
+                    <>
+                      <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
+                      Processing...
+                    </>
+                  ) : "Continue to Business Details"}
                 </Button>
               </div>
             </div>
@@ -506,7 +509,12 @@ export const LeadForm: React.FC<LeadFormProps> = ({ onSubmit }) => {
                 disabled={isSubmitting}
                 className="flex-1 bg-brand-500 hover:bg-brand-600 text-white"
               >
-                {isSubmitting ? 'Processing...' : "Let's Calculate Your Savings"}
+                {isSubmitting ? (
+                  <>
+                    <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
+                    Processing...
+                  </>
+                ) : "Let's Calculate Your Savings"}
               </Button>
             </div>
 
