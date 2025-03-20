@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { ResultsSummary } from './ResultsSummary';
 import { ResultsDetailView } from './ResultsDetailView';
@@ -9,7 +10,6 @@ import { Lead } from '@/types/leads';
 import { toast } from '@/components/ui/use-toast';
 import { supabase } from '@/integrations/supabase/client';
 import { toJson } from "@/hooks/calculator/supabase-types";
-import { MiniWorkshop } from './workshop/MiniWorkshop';
 
 interface ResultsDisplayProps {
   results: CalculationResults;
@@ -164,13 +164,7 @@ export const ResultsDisplay: React.FC<ResultsDisplayProps> = ({
         </div>
       )}
       
-      {reportDownloaded && (
-        <MiniWorkshop 
-          leadData={leadData}
-          aiType={aiTypeDisplay}
-          tierName={tierDisplayName}
-        />
-      )}
+      {/* Remove MiniWorkshop from here since it will now be shown on its own page */}
     </div>
   );
 };

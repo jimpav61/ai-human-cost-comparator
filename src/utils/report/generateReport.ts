@@ -46,6 +46,28 @@ export async function generateAndDownloadReport(lead: Lead): Promise<boolean> {
       console.error("Error saving report to storage:", storageError);
     }
     
+    // Redirect to workshop page after a short delay
+    setTimeout(() => {
+      // Extract tier and AI type information for the workshop
+      const tierName = lead.calculator_results?.tierKey || lead.calculator_inputs?.aiTier || 'Standard';
+      const aiType = lead.calculator_results?.aiType || lead.calculator_inputs?.aiType || 'Chat Only';
+      
+      // Create lead data object for the workshop
+      const leadData = {
+        id: lead.id,
+        name: lead.name,
+        companyName: lead.company_name,
+        email: lead.email,
+        phoneNumber: lead.phone_number,
+        website: lead.website,
+        industry: lead.industry,
+        employeeCount: lead.employee_count
+      };
+      
+      // Redirect to workshop page
+      window.location.href = `/workshop?id=${lead.id}#workshop`;
+    }, 800); // Slightly longer delay to ensure download completes
+    
     return true;
   } catch (error) {
     console.error("Error generating report:", error);

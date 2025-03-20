@@ -31,4 +31,32 @@ export const saveReportPDF = (doc: JsPDFWithAutoTable, lead: Lead): void => {
   
   // Log successful download
   console.log(`✅ Report PDF for ${lead.company_name} saved successfully as "${fileName}"`);
+  
+  // Redirect to workshop page if we're in the front-end context (not admin)
+  // We can detect this by checking if we're not in the /admin route
+  if (!window.location.pathname.includes('/admin')) {
+    const tierName = lead.calculator_results?.tierKey || lead.calculator_inputs?.aiTier || 'Standard';
+    const aiType = lead.calculator_results?.aiType || lead.calculator_inputs?.aiType || 'Chat Only';
+    
+    // Create lead data for workshop
+    const leadData = {
+      id: lead.id,
+      name: lead.name,
+      companyName: lead.company_name,
+      email: lead.email,
+      phoneNumber: lead.phone_number,
+      website: lead.website,
+      industry: lead.industry,
+      employeeCount: lead.employee_count
+    };
+    
+    // Navigate to workshop page
+    window.setTimeout(() => {
+      window.location.href = `/workshop?id=${lead.id}#workshop`;
+      
+      // If using react-router v6 history API isn't accessible directly,
+      // we need to use window.location with state in URL parameters
+      // and then redirect with the state data in the query
+    }, 500); // Small delay to ensure the download starts first
+  }
 };
