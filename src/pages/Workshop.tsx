@@ -6,6 +6,7 @@ import { LeadData } from '@/components/calculator/types';
 import Header from '@/components/Header';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from '@/components/ui/use-toast';
+import { fromJson } from '@/hooks/calculator/supabase-types';
 
 const Workshop = () => {
   const location = useLocation();
@@ -50,9 +51,30 @@ const Workshop = () => {
             : data.calculator_results
         };
 
-        // Get AI type and tier name from calculator results
-        const aiType = leadData.calculator_results?.aiType || data.calculator_inputs?.aiType || 'chatbot';
-        const tierName = leadData.calculator_results?.tierKey || data.calculator_inputs?.aiTier || 'starter';
+        // Parse calculator inputs and results to access properties safely
+        const calculatorInputs = typeof data.calculator_inputs === 'string'
+          ? JSON.parse(data.calculator_inputs)
+          : data.calculator_inputs;
+          
+        const calculatorResults = typeof data.calculator_results === 'string'
+          ? JSON.parse(data.calculator_results)
+          : data.calculator_results;
+
+        // Get AI type and tier name from calculator results with proper type checking
+        let aiType = 'chatbot'; // Default value
+        let tierName = 'starter'; // Default value
+        
+        if (calculatorResults && typeof calculatorResults === 'object') {
+          aiType = calculatorResults.aiType || 'chatbot';
+        } else if (calculatorInputs && typeof calculatorInputs === 'object') {
+          aiType = calculatorInputs.aiType || 'chatbot';
+        }
+        
+        if (calculatorResults && typeof calculatorResults === 'object') {
+          tierName = calculatorResults.tierKey || 'starter';
+        } else if (calculatorInputs && typeof calculatorInputs === 'object') {
+          tierName = calculatorInputs.aiTier || 'starter';
+        }
 
         setWorkshopData({
           leadData,
