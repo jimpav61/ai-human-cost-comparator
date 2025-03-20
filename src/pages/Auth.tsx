@@ -17,33 +17,32 @@ const Auth = () => {
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const navigate = useNavigate();
   
-  // Check if already authenticated
+  // Check if already authenticated - use a more reliable approach for the live preview
   useEffect(() => {
     let isMounted = true;
+    
     const checkSession = async () => {
       try {
-        // Set up auth state listener FIRST
+        // Set up auth state listener
         const { data: { subscription } } = supabase.auth.onAuthStateChange(
           (event, currentSession) => {
             console.log("Auth state changed:", event, !!currentSession);
             if (currentSession && isMounted) {
-              // Use direct navigation to ensure it works in all environments
+              // Use direct navigation
               window.location.href = "/admin";
             }
           }
         );
         
-        // THEN check for existing session
+        // Check for existing session
         const { data } = await supabase.auth.getSession();
         console.log("Current session:", data.session);
         if (data.session && isMounted) {
-          // Use direct navigation to ensure it works in all environments
           window.location.href = "/admin";
         }
         
         return () => {
           subscription.unsubscribe();
-          isMounted = false;
         };
       } catch (error) {
         console.error("Error checking session:", error);
@@ -101,7 +100,7 @@ const Auth = () => {
           description: "Account created and logged in successfully."
         });
         
-        // Use direct navigation to ensure it works in all environments
+        // Use direct navigation
         window.location.href = "/admin";
       } else {
         // Login flow
@@ -119,7 +118,7 @@ const Auth = () => {
           description: "You have been logged in successfully."
         });
         
-        // Use direct navigation to ensure it works in all environments
+        // Use direct navigation
         window.location.href = "/admin";
       }
     } catch (error: any) {
@@ -135,6 +134,7 @@ const Auth = () => {
     }
   };
 
+  // Ensure form fields and buttons are properly accessible
   return (
     <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-gray-50 to-gray-100 p-4">
       <Card className="w-full max-w-md">

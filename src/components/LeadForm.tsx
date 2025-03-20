@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { toast } from "@/components/ui/use-toast";
 import { supabase } from "@/integrations/supabase/client";
@@ -215,16 +214,13 @@ export const LeadForm: React.FC<LeadFormProps> = ({ onSubmit }) => {
         
         setFormData(prev => ({ ...prev, website: finalWebsite }));
         
-        // Set a timeout to ensure UI update happens before proceeding
-        setTimeout(() => {
-          setIsSubmitting(false);
-          setStep(2);
-          
-          toast({
-            title: "Information Saved!",
-            description: "Please complete the remaining details to continue to the calculator.",
-          });
-        }, 500);
+        setIsSubmitting(false);
+        setStep(2);
+        
+        toast({
+          title: "Information Saved!",
+          description: "Please complete the remaining details to continue to the calculator.",
+        });
       } else {
         throw new Error("No data returned from database");
       }
@@ -275,16 +271,13 @@ export const LeadForm: React.FC<LeadFormProps> = ({ onSubmit }) => {
           throw error;
         }
 
-        // Set a timeout to ensure UI update happens before proceeding
-        setTimeout(() => {
-          onSubmit(formData);
-          
-          toast({
-            title: "Success!",
-            description: "Your information has been submitted successfully.",
-          });
-          setIsSubmitting(false);
-        }, 500);
+        setIsSubmitting(false);
+        onSubmit(formData);
+        
+        toast({
+          title: "Success!",
+          description: "Your information has been submitted successfully.",
+        });
       } else {
         console.log("Full submission as fallback");
         
@@ -292,7 +285,7 @@ export const LeadForm: React.FC<LeadFormProps> = ({ onSubmit }) => {
           ? formData.website 
           : `https://${formData.website}`;
         
-        const { error } = await supabase
+        const { data, error } = await supabase
           .from('leads')
           .insert([{
             name: formData.name,
@@ -306,23 +299,25 @@ export const LeadForm: React.FC<LeadFormProps> = ({ onSubmit }) => {
             calculator_results: {} as any,
             proposal_sent: false,
             form_completed: true
-          }]);
+          }])
+          .select();
 
         if (error) {
           console.error("Supabase fallback insert error:", error);
           throw error;
         }
 
-        // Set a timeout to ensure UI update happens before proceeding
-        setTimeout(() => {
+        if (data && data.length > 0) {
+          setIsSubmitting(false);
           onSubmit(formData);
           
           toast({
             title: "Success!",
             description: "Your information has been submitted successfully.",
           });
-          setIsSubmitting(false);
-        }, 500);
+        } else {
+          throw new Error("No data returned from database");
+        }
       }
     } catch (error: any) {
       console.error('Error submitting lead:', error);
