@@ -88,7 +88,8 @@ export function standardizeLeadData(lead: Lead): StandardizedProposalData {
   });
   
   // 8. Get version information if available
-  const version = lead.version_info?.version_number || 1;
+  // Fix: Check for version_info in a type-safe way using optional chaining and type assertion
+  const version = (lead as any).version_info?.version_number || 1;
   
   // Return the complete standardized data object
   return {
