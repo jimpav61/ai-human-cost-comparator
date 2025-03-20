@@ -1,4 +1,3 @@
-
 import { useState } from 'react';
 import Header from "@/components/Header";
 import { toast } from "@/components/ui/use-toast";
@@ -46,13 +45,34 @@ const Index = () => {
       <div className="min-h-screen bg-gradient-to-br from-brand-50 to-gray-100 py-8">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           {!showCalculator && <Hero />}
-          {!showCalculator && <ROIShowcase />}
+          
+          {!showCalculator && (
+            <div className="mb-8 text-center">
+              <h2 className="text-2xl font-semibold text-gray-900 mb-3">
+                Get Your Free AI Savings Report
+              </h2>
+              <p className="text-gray-600 mb-6">
+                Fill out the form below to receive a personalized analysis of how AI can benefit your business
+              </p>
+              <CalculatorSection 
+                showCalculator={false}
+                leadData={leadData}
+                onLeadSubmit={handleLeadSubmit}
+              />
+              <ROIShowcase />
+            </div>
+          )}
+          
           {!showCalculator && <AIFeatures />}
-          <CalculatorSection 
-            showCalculator={showCalculator}
-            leadData={leadData}
-            onLeadSubmit={handleLeadSubmit}
-          />
+          
+          {showCalculator && (
+            <CalculatorSection 
+              showCalculator={true}
+              leadData={leadData}
+              onLeadSubmit={handleLeadSubmit}
+            />
+          )}
+          
           <Footer onAdminClick={handleAdminClick} />
         </div>
       </div>

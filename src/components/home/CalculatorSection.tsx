@@ -14,24 +14,26 @@ const CalculatorSection: React.FC<CalculatorSectionProps> = ({
   leadData, 
   onLeadSubmit 
 }) => {
-  return (
-    <>
-      {!showCalculator ? (
-        <LeadForm onSubmit={onLeadSubmit} />
-      ) : (
-        <div className="animate-fadeIn">
-          <div className="text-center mb-8">
-            <h2 className="text-2xl font-semibold text-gray-900">
-              Welcome, {leadData?.name}!
-            </h2>
-            <p className="text-gray-600">
-              Let's calculate potential AI savings for {leadData?.companyName} in the {leadData?.industry} industry
-            </p>
-          </div>
-          <AIVsHumanCalculator leadData={leadData!} />
+  if (showCalculator) {
+    return (
+      <div className="animate-fadeIn">
+        <div className="text-center mb-8">
+          <h2 className="text-2xl font-semibold text-gray-900">
+            Welcome, {leadData?.name}!
+          </h2>
+          <p className="text-gray-600">
+            Let's calculate potential AI savings for {leadData?.companyName} in the {leadData?.industry} industry
+          </p>
         </div>
-      )}
-    </>
+        <AIVsHumanCalculator leadData={leadData!} />
+      </div>
+    );
+  }
+  
+  return (
+    <div className="mb-8">
+      <LeadForm onSubmit={onLeadSubmit} />
+    </div>
   );
 };
 

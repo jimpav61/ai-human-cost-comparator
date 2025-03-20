@@ -5,7 +5,7 @@ const ROIShowcase: React.FC = () => {
   return (
     <div className="mb-8">
       <div className="bg-white/80 backdrop-blur-lg rounded-xl border border-gray-100 shadow-md p-4 max-w-4xl mx-auto">
-        <div className="grid grid-cols-3 gap-4 text-center">
+        <div className="flex flex-wrap justify-center gap-8 text-center">
           <div>
             <div className="text-2xl font-bold text-brand-500">65%</div>
             <p className="text-sm text-gray-600">Cost Reduction</p>
