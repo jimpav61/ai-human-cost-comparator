@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { ResultsSummary } from './ResultsSummary';
 import { ResultsDetailView } from './ResultsDetailView';
@@ -9,6 +10,7 @@ import { Lead } from '@/types/leads';
 import { toast } from '@/components/ui/use-toast';
 import { supabase } from '@/integrations/supabase/client';
 import { toJson } from "@/hooks/calculator/supabase-types";
+import { MiniWorkshop } from './workshop/MiniWorkshop';
 
 interface ResultsDisplayProps {
   results: CalculationResults;
@@ -27,6 +29,7 @@ export const ResultsDisplay: React.FC<ResultsDisplayProps> = ({
 }) => {
   const [showDetails, setShowDetails] = useState(false);
   const [isDownloading, setIsDownloading] = useState(false);
+  const [reportDownloaded, setReportDownloaded] = useState(false);
   const pricingDetails = calculatePricingDetails(inputs);
   const tierDisplayName = getTierDisplayName(inputs.aiTier);
   const aiTypeDisplay = getAITypeDisplay(inputs.aiType);
@@ -98,6 +101,7 @@ export const ResultsDisplay: React.FC<ResultsDisplayProps> = ({
       
       await generateAndDownloadReport(leadForReport);
       setIsDownloading(false);
+      setReportDownloaded(true);
       
       toast({
         title: "Report Downloaded",
@@ -157,6 +161,15 @@ export const ResultsDisplay: React.FC<ResultsDisplayProps> = ({
             aiTypeDisplay={aiTypeDisplay}
           />
         </div>
+      )}
+      
+      {/* Show Mini-Workshop after report download */}
+      {reportDownloaded && (
+        <MiniWorkshop 
+          leadData={leadData}
+          aiType={aiTypeDisplay}
+          tierName={tierDisplayName}
+        />
       )}
     </div>
   );
