@@ -10,21 +10,19 @@ interface AIFeatureCardProps {
 
 const AIFeatureCard: React.FC<AIFeatureCardProps> = ({ title, icon, description, features }) => {
   return (
-    <div className="calculator-card p-6 h-full">
-      <div className="text-brand-500 mb-4 flex items-center justify-center">
-        {icon}
+    <div className="calculator-card h-full p-4">
+      <div className="flex items-center gap-3 mb-3">
+        <div className="text-brand-500">{icon}</div>
+        <h3 className="text-lg font-semibold text-gray-900">{title}</h3>
       </div>
-      <h3 className="text-xl font-semibold mb-4 text-center text-gray-900">{title}</h3>
-      <p className="text-gray-600 mb-6 text-center">
-        {description}
-      </p>
-      <ul className="text-gray-600 space-y-3">
+      <p className="text-sm text-gray-600 mb-3">{description}</p>
+      <ul className="text-sm text-gray-600 space-y-1">
         {features.map((feature, index) => (
-          <li key={index} className="flex items-center">
-            <svg className="h-5 w-5 mr-2 text-brand-500 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+          <li key={index} className="flex items-start">
+            <svg className="h-4 w-4 mr-1 text-brand-500 shrink-0 mt-0.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
             </svg>
-            {feature}
+            <span>{feature}</span>
           </li>
         ))}
       </ul>
