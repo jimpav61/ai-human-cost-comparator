@@ -1,3 +1,4 @@
+
 import React, { useState } from 'react';
 import { toast } from "@/components/ui/use-toast";
 import { supabase } from "@/integrations/supabase/client";
@@ -214,6 +215,7 @@ export const LeadForm: React.FC<LeadFormProps> = ({ onSubmit }) => {
         
         setFormData(prev => ({ ...prev, website: finalWebsite }));
         
+        // Set isSubmitting to false before changing step to avoid UI issues
         setIsSubmitting(false);
         setStep(2);
         
