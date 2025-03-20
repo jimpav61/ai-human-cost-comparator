@@ -24,7 +24,7 @@ export const VersionHistoryButton = ({ lead }: VersionHistoryButtonProps) => {
     <>
       <Button
         variant="outline"
-        className="flex items-center gap-1 whitespace-nowrap text-xs sm:text-sm"
+        className="flex items-center gap-1 whitespace-nowrap text-xs sm:text-sm h-8 px-2"
         onClick={handleOpenDialog}
         size="sm"
       >
