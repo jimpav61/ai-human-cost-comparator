@@ -6,7 +6,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { Label } from "@/components/ui/label";
-import { toast } from "@/components/ui/use-toast"; // Fixed import path
+import { toast } from "@/hooks/use-toast"; 
 import { Mail, Lock, ArrowLeft } from "lucide-react";
 
 const Auth = () => {
@@ -19,14 +19,16 @@ const Auth = () => {
   
   // Check if already authenticated
   useEffect(() => {
+    let isMounted = true;
     const checkSession = async () => {
       try {
         // Set up auth state listener FIRST
         const { data: { subscription } } = supabase.auth.onAuthStateChange(
           (event, currentSession) => {
             console.log("Auth state changed:", event, !!currentSession);
-            if (currentSession) {
-              navigate("/admin");
+            if (currentSession && isMounted) {
+              // Use direct navigation to ensure it works in all environments
+              window.location.href = "/admin";
             }
           }
         );
@@ -34,12 +36,14 @@ const Auth = () => {
         // THEN check for existing session
         const { data } = await supabase.auth.getSession();
         console.log("Current session:", data.session);
-        if (data.session) {
-          navigate("/admin");
+        if (data.session && isMounted) {
+          // Use direct navigation to ensure it works in all environments
+          window.location.href = "/admin";
         }
         
         return () => {
           subscription.unsubscribe();
+          isMounted = false;
         };
       } catch (error) {
         console.error("Error checking session:", error);
@@ -47,6 +51,10 @@ const Auth = () => {
     };
     
     checkSession();
+    
+    return () => {
+      isMounted = false;
+    };
   }, [navigate]);
 
   const handleAuth = async (e: React.FormEvent) => {
@@ -93,7 +101,7 @@ const Auth = () => {
           description: "Account created and logged in successfully."
         });
         
-        // Manually redirect to admin page to ensure navigation works
+        // Use direct navigation to ensure it works in all environments
         window.location.href = "/admin";
       } else {
         // Login flow
@@ -111,7 +119,7 @@ const Auth = () => {
           description: "You have been logged in successfully."
         });
         
-        // Manually redirect to admin page to ensure navigation works
+        // Use direct navigation to ensure it works in all environments
         window.location.href = "/admin";
       }
     } catch (error: any) {

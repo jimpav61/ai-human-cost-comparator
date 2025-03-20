@@ -5,32 +5,51 @@ import type { Database } from './types';
 const SUPABASE_URL = "https://ujyhmchmjzlmsimtrtor.supabase.co";
 const SUPABASE_PUBLISHABLE_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InVqeWhtY2htanpsbXNpbXRydG9yIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDA1OTY5MjgsImV4cCI6MjA1NjE3MjkyOH0.SC-lanLW6TQ6c3BWGPvxtjPpB5oufTvb8j-FmLFHGwI";
 
-// Create a custom storage object to handle cases where localStorage might not be available
-const customStorage = {
-  getItem: (key: string): string | null => {
-    try {
-      return localStorage.getItem(key);
-    } catch (error) {
-      console.error('Error accessing localStorage:', error);
-      return null;
+// Create a more robust storage object with fallbacks
+const createCustomStorage = () => {
+  // Basic storage interface
+  const memoryStorage: Record<string, string> = {};
+  
+  // Create a fallback storage that uses memory if localStorage is not available
+  return {
+    getItem: (key: string): string | null => {
+      try {
+        if (typeof localStorage !== 'undefined') {
+          return localStorage.getItem(key);
+        }
+        return memoryStorage[key] || null;
+      } catch (error) {
+        console.error('Error accessing storage:', error);
+        return memoryStorage[key] || null;
+      }
+    },
+    setItem: (key: string, value: string): void => {
+      try {
+        memoryStorage[key] = value;
+        if (typeof localStorage !== 'undefined') {
+          localStorage.setItem(key, value);
+        }
+      } catch (error) {
+        console.error('Error writing to storage:', error);
+      }
+    },
+    removeItem: (key: string): void => {
+      try {
+        delete memoryStorage[key];
+        if (typeof localStorage !== 'undefined') {
+          localStorage.removeItem(key);
+        }
+      } catch (error) {
+        console.error('Error removing from storage:', error);
+      }
     }
-  },
-  setItem: (key: string, value: string): void => {
-    try {
-      localStorage.setItem(key, value);
-    } catch (error) {
-      console.error('Error writing to localStorage:', error);
-    }
-  },
-  removeItem: (key: string): void => {
-    try {
-      localStorage.removeItem(key);
-    } catch (error) {
-      console.error('Error removing from localStorage:', error);
-    }
-  }
+  };
 };
 
+// Create a single instance of the custom storage
+const customStorage = createCustomStorage();
+
+// Initialize the Supabase client with robust configuration
 export const supabase = createClient<Database>(
   SUPABASE_URL, 
   SUPABASE_PUBLISHABLE_KEY,
@@ -44,7 +63,7 @@ export const supabase = createClient<Database>(
   }
 );
 
-// Simple function to check if user is authenticated
+// Enhanced authentication check function with better error handling
 export const isAuthenticated = async () => {
   try {
     const { data, error } = await supabase.auth.getSession();
@@ -60,15 +79,15 @@ export const isAuthenticated = async () => {
   }
 };
 
-// Safe sign out function that handles missing sessions
+// Improved sign out function with better error handling
 export const safeSignOut = async () => {
   try {
-    // Directly call signOut without checking for session first
-    // This addresses the issue where session checks were returning errors
+    // Direct sign out without checking session first
     const { error } = await supabase.auth.signOut();
     
     if (error && error.message !== "Session not found") {
       // Only treat as a real error if it's not the "Session not found" error
+      console.error("Sign out error:", error);
       return { success: false, error };
     }
     
