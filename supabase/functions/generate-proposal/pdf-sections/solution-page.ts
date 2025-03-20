@@ -33,13 +33,13 @@ BT
 0 -45 Td
 /F2 18 Tf
 ${brandRed} rg
-(${tierName} - ${aiTypeDisplay}) Tj
+(${tierName} - ${tierKey === 'premium' ? 'Text & Conversational Voice' : aiTypeDisplay}) Tj
 0 0 0 rg
 0 -30 Td
 /F1 12 Tf
 (Based on your specific business requirements, we recommend our ${tierName} with) Tj
 0 -20 Td
-(${aiTypeDisplay} capabilities as the optimal solution for ${safeCompanyName}.) Tj
+(${tierKey === 'premium' ? 'Text & Conversational Voice' : aiTypeDisplay} capabilities as the optimal solution for ${safeCompanyName}.) Tj
 0 -40 Td
 /F2 16 Tf
 ${brandRed} rg
@@ -59,7 +59,7 @@ ${brandRed} rg
 0 -20 Td`;
   } else {
     content += `
-(\\267 ${aiTypeDisplay} interface for versatile customer engagement) Tj
+(\\267 ${tierKey === 'premium' ? 'Text & Conversational Voice' : aiTypeDisplay} interface for versatile customer engagement) Tj
 0 -20 Td`;
   }
 
@@ -87,7 +87,7 @@ ${brandRed} rg
 0 -20 Td`;
   } else {
     content += `
-(\\267 ${aiTypeDisplay} Interface with speech recognition and synthesis) Tj
+(\\267 ${tierKey === 'premium' ? 'Text & Conversational Voice' : aiTypeDisplay} Interface with speech recognition and synthesis) Tj
 0 -20 Td`;
   }
 

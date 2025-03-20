@@ -39,6 +39,23 @@ export function useProposalGenerator() {
           console.log("Parsed string calculator_inputs to object:", processedLead.calculator_inputs);
         } catch (error) {
           console.error("Failed to parse calculator_inputs string:", error);
+          // If parsing fails, ensure we have a valid object that meets the CalculatorInputs interface requirements
+          processedLead.calculator_inputs = processedLead.calculator_inputs || {};
+          // Add minimal required properties to satisfy CalculatorInputs type
+          if (typeof processedLead.calculator_inputs === 'object') {
+            const defaultInputs: CalculatorInputs = {
+              aiType: 'both',
+              aiTier: 'growth',
+              role: 'customer-service',
+              numEmployees: 1,
+              hoursPerDay: 8,
+              daysPerWeek: 5,
+              hourlyRate: 20,
+              callVolume: 0,
+              chatVolume: 1000
+            };
+            processedLead.calculator_inputs = { ...defaultInputs, ...processedLead.calculator_inputs };
+          }
         }
       }
       
