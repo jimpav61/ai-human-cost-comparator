@@ -13,7 +13,8 @@ export function extractLeadData(lead: Lead): PdfContentParams {
     inputs_aiTier: lead.calculator_inputs?.aiTier,
     inputs_callVolume: lead.calculator_inputs?.callVolume,
     results_tierKey: lead.calculator_results?.tierKey,
-    results_additionalVoiceMinutes: lead.calculator_results?.additionalVoiceMinutes
+    results_additionalVoiceMinutes: lead.calculator_results?.additionalVoiceMinutes,
+    results_basePriceMonthly: lead.calculator_results?.basePriceMonthly
   });
 
   // Default values
@@ -64,20 +65,47 @@ export function extractLeadData(lead: Lead): PdfContentParams {
   };
   const aiTypeDisplay = aiTypeDisplays[aiType as keyof typeof aiTypeDisplays] || 'Text & Voice';
   
-  // Get pricing information - use calculator_inputs as source of truth for tier
+  // Get pricing information - ALWAYS use calculator_inputs as source of truth for tier
   const basePrices = {
     'starter': 99,
     'growth': 229,
     'premium': 429
   };
-  const basePrice = basePrices[tierKey as keyof typeof basePrices] || results.basePriceMonthly || 229;
+  
+  // IMPROVED: First check if calculator_results has the correct base price for the selected tier
+  // If not, use the mapped price based on the tierKey
+  let basePrice: number;
+  if (results.basePriceMonthly && 
+      (tierKey === 'starter' && results.basePriceMonthly === 99) ||
+      (tierKey === 'growth' && results.basePriceMonthly === 229) ||
+      (tierKey === 'premium' && results.basePriceMonthly === 429)) {
+    // Use the existing base price since it matches the tier
+    basePrice = results.basePriceMonthly;
+    console.log(`Using existing basePriceMonthly: ${basePrice}`);
+  } else {
+    // Use the correct base price for the selected tier
+    basePrice = basePrices[tierKey as keyof typeof basePrices] || 229;
+    console.log(`Using mapped basePrice for tier ${tierKey}: ${basePrice}`);
+  }
   
   const setupFees = {
     'starter': 249,
     'growth': 749,
     'premium': 1149
   };
-  const setupFee = setupFees[tierKey as keyof typeof setupFees] || results.aiCostMonthly?.setupFee || 749;
+  
+  // Similar approach for setup fee
+  let setupFee: number;
+  if (results.aiCostMonthly?.setupFee && 
+      (tierKey === 'starter' && results.aiCostMonthly.setupFee === 249) ||
+      (tierKey === 'growth' && results.aiCostMonthly.setupFee === 749) ||
+      (tierKey === 'premium' && results.aiCostMonthly.setupFee === 1149)) {
+    setupFee = results.aiCostMonthly.setupFee;
+    console.log(`Using existing setupFee: ${setupFee}`);
+  } else {
+    setupFee = setupFees[tierKey as keyof typeof setupFees] || 749;
+    console.log(`Using mapped setupFee for tier ${tierKey}: ${setupFee}`);
+  }
   
   // CRITICAL FIX: ALWAYS prioritize calculator_inputs.callVolume for voice minutes
   // This ensures that UI edits to minutes are always captured
@@ -132,6 +160,7 @@ export function extractLeadData(lead: Lead): PdfContentParams {
   // Final debug logging to confirm all values
   console.log("Final PDF params:", {
     tierKey,
+    tierName,
     aiType,
     basePrice,
     additionalVoiceMinutes,

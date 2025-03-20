@@ -71,7 +71,7 @@ ${brandRed} rg
 (\\267 ${aiTypeDisplay} Interface ${tierKey !== 'starter' ? 'with speech recognition and synthesis' : ''}) Tj
 0 -20 Td`;
 
-  // Add voice information based on tier and type
+  // Add voice information based on tier and type - handle Starter plan specially
   if (tierKey === 'starter') {
     content += `
 (\\267 No voice capabilities included in this tier) Tj

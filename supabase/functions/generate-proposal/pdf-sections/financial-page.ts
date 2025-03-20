@@ -51,7 +51,7 @@ ${brandRed} rg
 (${formattedSetupFee} one-time) Tj
 -160 -25 Td`;
 
-  // Handle voice minutes information 
+  // Handle voice minutes information - special case for Starter plan
   if (tierKey === 'starter') {
     content += `
 (Voice Capabilities:) Tj

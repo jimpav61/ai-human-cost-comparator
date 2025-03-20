@@ -21,21 +21,32 @@ export const addPlanSection = (
     additionalVoiceMinutes
   });
   
-  // CRITICAL BUGFIX: Make sure we're using the exact tier name that was passed in
+  // CRITICAL BUGFIX: Extract tier key from the exact tier name that was passed in
   // Instead of trying to parse it again which was causing the issue
   const tierKey = tierName.toLowerCase().includes('starter') ? 'starter' : 
                  tierName.toLowerCase().includes('growth') ? 'growth' : 
                  tierName.toLowerCase().includes('premium') ? 'premium' : 'growth';
+  
+  console.log(`Determined tierKey from tierName "${tierName}": ${tierKey}`);
   
   // Get the correct setup fee based on tier
   const tierBasedSetupFee = getTierBasedSetupFee(tierKey);
   
   // Use the proper fee (either passed value or tier-based)
   const fee = typeof setupFee === 'number' ? setupFee : tierBasedSetupFee;
-  const voiceMinutes = typeof includedVoiceMinutes === 'number' ? includedVoiceMinutes : 600;
+  
+  // Determine included voice minutes based on tier - Starter plan has 0 minutes
+  const includedMinutes = tierKey === 'starter' ? 0 : 
+                          (typeof includedVoiceMinutes === 'number' ? includedVoiceMinutes : 600);
   
   // CRITICAL FIX: Ensure additionalMinutes is a number, default to 0
-  const additionalMinutes = typeof additionalVoiceMinutes === 'number' ? additionalVoiceMinutes : 0;
+  // For Starter plan, this should always be 0
+  let additionalMinutes = 0;
+  if (tierKey !== 'starter') {
+    additionalMinutes = typeof additionalVoiceMinutes === 'number' ? additionalVoiceMinutes : 0;
+  }
+  
+  console.log(`Using voice minutes: included=${includedMinutes}, additional=${additionalMinutes}`);
   
   doc.setFontSize(14);
   doc.setTextColor(0, 0, 0);
@@ -44,8 +55,9 @@ export const addPlanSection = (
   
   doc.setFontSize(12);
   
+  // Customize voice capability message based on tier
   const voiceCapability = tierKey === 'starter' ? 'No voice capabilities' : 
-                        `Includes ${voiceMinutes} free voice minutes per month`;
+                        `Includes ${includedMinutes} free voice minutes per month`;
   
   // Add the plan name with proper AI type display
   doc.text(`${tierName} (${aiType})`, 20, currentY);
@@ -59,9 +71,9 @@ export const addPlanSection = (
     currentY += 7;
   }
   
-  // CRITICAL: Add voice minutes details if there are any additional minutes
+  // CRITICAL: Add voice minutes details if there are any additional minutes AND not Starter plan
   // This is the key section we need to fix for the additional voice minutes
-  if (additionalMinutes > 0) {
+  if (additionalMinutes > 0 && tierKey !== 'starter') {
     doc.setFontSize(10);
     doc.setTextColor(100, 100, 100);
     const additionalVoiceCost = additionalMinutes * 0.12;
