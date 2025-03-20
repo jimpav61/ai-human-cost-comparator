@@ -1,7 +1,8 @@
+
 import { useState } from 'react';
 import Header from "@/components/Header";
 import { toast } from "@/components/ui/use-toast";
-import type { LeadFormData } from "@/components/LeadForm";
+import type { LeadFormData } from "@/components/lead-form";
 import Hero from "@/components/home/Hero";
 import ROIShowcase from "@/components/home/ROIShowcase";
 import AIFeatures from "@/components/home/AIFeatures";
