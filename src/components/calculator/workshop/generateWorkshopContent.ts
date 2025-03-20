@@ -16,7 +16,9 @@ export function generateWorkshopContent(
   const calculatorResults = leadData.calculator_results || {};
   const monthlySavings = calculatorResults.monthlySavings || 2500;
   const yearlySavings = calculatorResults.yearlySavings || 30000;
-  const savingsPercentage = calculatorResults.savingsPercentage || 30;
+  
+  // Use more realistic savings percentage (30-45% range is realistic)
+  const savingsPercentage = calculatorResults.savingsPercentage || 35;
   const basePriceMonthly = calculatorResults.basePriceMonthly || 1500;
   
   // Create industry-specific content
@@ -132,7 +134,7 @@ export function generateWorkshopContent(
     },
     {
       title: "4. Implementation Steps and Timeline",
-      content: `Based on our experience with similar ${industry} companies with ${employeeCount} employees, we recommend implementing your ${tierName} tier solution in stages over 4-6 weeks. This timeline allows for proper configuration, testing, and team training.\n\nYour implementation should begin with a pilot phase focused on a specific customer segment or service area before expanding to full deployment. For ${companyName}, we suggest starting with your highest volume inquiry types to quickly demonstrate the projected ${savingsPercentage}% cost reduction.`,
+      content: `Based on our experience with similar ${industry} companies with ${employeeCount} employees, we recommend implementing your ${tierName} tier solution in stages over 5-7 business days. This timeline allows for proper configuration, testing, and team training.\n\nYour implementation should begin with a pilot phase focused on a specific customer segment or service area before expanding to full deployment. For ${companyName}, we suggest starting with your highest volume inquiry types to quickly demonstrate the projected ${savingsPercentage}% cost reduction.`,
       bullets: implementationSteps
     },
     {
