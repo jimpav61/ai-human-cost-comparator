@@ -5,6 +5,32 @@ import type { Database } from './types';
 const SUPABASE_URL = "https://ujyhmchmjzlmsimtrtor.supabase.co";
 const SUPABASE_PUBLISHABLE_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InVqeWhtY2htanpsbXNpbXRydG9yIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDA1OTY5MjgsImV4cCI6MjA1NjE3MjkyOH0.SC-lanLW6TQ6c3BWGPvxtjPpB5oufTvb8j-FmLFHGwI";
 
+// Create a custom storage object to handle cases where localStorage might not be available
+const customStorage = {
+  getItem: (key: string): string | null => {
+    try {
+      return localStorage.getItem(key);
+    } catch (error) {
+      console.error('Error accessing localStorage:', error);
+      return null;
+    }
+  },
+  setItem: (key: string, value: string): void => {
+    try {
+      localStorage.setItem(key, value);
+    } catch (error) {
+      console.error('Error writing to localStorage:', error);
+    }
+  },
+  removeItem: (key: string): void => {
+    try {
+      localStorage.removeItem(key);
+    } catch (error) {
+      console.error('Error removing from localStorage:', error);
+    }
+  }
+};
+
 export const supabase = createClient<Database>(
   SUPABASE_URL, 
   SUPABASE_PUBLISHABLE_KEY,
@@ -13,7 +39,7 @@ export const supabase = createClient<Database>(
       persistSession: true,
       autoRefreshToken: true,
       detectSessionInUrl: true,
-      storage: localStorage
+      storage: customStorage
     }
   }
 );

@@ -1,3 +1,4 @@
+
 import React, { useState } from 'react';
 import { toast } from "@/components/ui/use-toast";
 import { supabase } from "@/integrations/supabase/client";
@@ -214,13 +215,16 @@ export const LeadForm: React.FC<LeadFormProps> = ({ onSubmit }) => {
         
         setFormData(prev => ({ ...prev, website: finalWebsite }));
         
-        setIsSubmitting(false);
-        setStep(2);
-        
-        toast({
-          title: "Information Saved!",
-          description: "Please complete the remaining details to continue to the calculator.",
-        });
+        // Set a timeout to ensure UI update happens before proceeding
+        setTimeout(() => {
+          setIsSubmitting(false);
+          setStep(2);
+          
+          toast({
+            title: "Information Saved!",
+            description: "Please complete the remaining details to continue to the calculator.",
+          });
+        }, 500);
       } else {
         throw new Error("No data returned from database");
       }
@@ -270,6 +274,17 @@ export const LeadForm: React.FC<LeadFormProps> = ({ onSubmit }) => {
           console.error("Supabase update error:", error);
           throw error;
         }
+
+        // Set a timeout to ensure UI update happens before proceeding
+        setTimeout(() => {
+          onSubmit(formData);
+          
+          toast({
+            title: "Success!",
+            description: "Your information has been submitted successfully.",
+          });
+          setIsSubmitting(false);
+        }, 500);
       } else {
         console.log("Full submission as fallback");
         
@@ -297,15 +312,18 @@ export const LeadForm: React.FC<LeadFormProps> = ({ onSubmit }) => {
           console.error("Supabase fallback insert error:", error);
           throw error;
         }
+
+        // Set a timeout to ensure UI update happens before proceeding
+        setTimeout(() => {
+          onSubmit(formData);
+          
+          toast({
+            title: "Success!",
+            description: "Your information has been submitted successfully.",
+          });
+          setIsSubmitting(false);
+        }, 500);
       }
-
-      onSubmit(formData);
-      
-      toast({
-        title: "Success!",
-        description: "Your information has been submitted successfully.",
-      });
-
     } catch (error: any) {
       console.error('Error submitting lead:', error);
       toast({
@@ -313,7 +331,6 @@ export const LeadForm: React.FC<LeadFormProps> = ({ onSubmit }) => {
         description: error?.message || "There was an error submitting your information. Please try again.",
         variant: "destructive",
       });
-    } finally {
       setIsSubmitting(false);
     }
   };

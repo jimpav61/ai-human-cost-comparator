@@ -21,11 +21,26 @@ const Auth = () => {
   useEffect(() => {
     const checkSession = async () => {
       try {
+        // Set up auth state listener FIRST
+        const { data: { subscription } } = supabase.auth.onAuthStateChange(
+          (event, currentSession) => {
+            console.log("Auth state changed:", event, !!currentSession);
+            if (currentSession) {
+              navigate("/admin");
+            }
+          }
+        );
+        
+        // THEN check for existing session
         const { data } = await supabase.auth.getSession();
         console.log("Current session:", data.session);
         if (data.session) {
           navigate("/admin");
         }
+        
+        return () => {
+          subscription.unsubscribe();
+        };
       } catch (error) {
         console.error("Error checking session:", error);
       }
@@ -46,6 +61,9 @@ const Auth = () => {
         const { data: signUpData, error: signUpError } = await supabase.auth.signUp({
           email,
           password,
+          options: {
+            emailRedirectTo: window.location.origin + "/auth/callback"
+          }
         });
         
         if (signUpError) throw signUpError;
@@ -74,7 +92,9 @@ const Auth = () => {
           title: "Success",
           description: "Account created and logged in successfully."
         });
-        navigate("/admin");
+        
+        // Manually redirect to admin page to ensure navigation works
+        window.location.href = "/admin";
       } else {
         // Login flow
         console.log("Attempting login with:", email);
@@ -90,7 +110,9 @@ const Auth = () => {
           title: "Login Successful",
           description: "You have been logged in successfully."
         });
-        navigate("/admin");
+        
+        // Manually redirect to admin page to ensure navigation works
+        window.location.href = "/admin";
       }
     } catch (error: any) {
       console.error("Auth error:", error);
