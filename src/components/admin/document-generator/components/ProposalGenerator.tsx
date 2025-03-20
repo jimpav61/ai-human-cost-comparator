@@ -46,7 +46,7 @@ export const ProposalGenerator = ({ lead, onLeadUpdated, onProposalGenerated }: 
       if (!data) throw new Error("No lead found");
       
       // Parse JSON strings if they're stored as strings
-      let calculatorInputs: CalculatorInputs | undefined;
+      let calculatorInputs: CalculatorInputs | null = null;
       if (data.calculator_inputs) {
         if (typeof data.calculator_inputs === 'string') {
           try {
@@ -54,13 +54,36 @@ export const ProposalGenerator = ({ lead, onLeadUpdated, onProposalGenerated }: 
             console.log("Parsed calculator_inputs JSON string:", calculatorInputs);
           } catch (e) {
             console.error("Failed to parse calculator_inputs JSON:", e);
-            // If parsing fails, use the original value but cast it
-            calculatorInputs = data.calculator_inputs as unknown as CalculatorInputs;
+            // If parsing fails, initialize with default values
+            calculatorInputs = {
+              aiType: 'both',
+              aiTier: 'growth',
+              role: 'customerService',
+              numEmployees: 1,
+              callVolume: 0,
+              avgCallDuration: 0,
+              chatVolume: 1000,
+              avgChatLength: 0,
+              avgChatResolutionTime: 0
+            };
           }
         } else {
           // It's already an object, we just need to type cast it
           calculatorInputs = data.calculator_inputs as unknown as CalculatorInputs;
         }
+      } else {
+        // If there's no calculator_inputs at all, initialize with default values
+        calculatorInputs = {
+          aiType: 'both',
+          aiTier: 'growth',
+          role: 'customerService',
+          numEmployees: 1,
+          callVolume: 0,
+          avgCallDuration: 0,
+          chatVolume: 1000,
+          avgChatLength: 0,
+          avgChatResolutionTime: 0
+        };
       }
       
       let calculatorResults: CalculationResults | undefined;
@@ -83,7 +106,7 @@ export const ProposalGenerator = ({ lead, onLeadUpdated, onProposalGenerated }: 
       // Create a properly typed Lead object
       const refreshedLead: Lead = {
         ...data,
-        calculator_inputs: calculatorInputs || {},
+        calculator_inputs: calculatorInputs,
         calculator_results: calculatorResults
       };
       

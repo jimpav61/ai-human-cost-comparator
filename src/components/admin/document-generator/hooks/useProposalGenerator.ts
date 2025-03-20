@@ -45,11 +45,11 @@ export function useProposalGenerator() {
             aiTier: 'growth',
             role: 'customerService',
             numEmployees: 1,
-            hoursPerDay: 8,
-            daysPerWeek: 5,
-            hourlyRate: 20,
             callVolume: 0,
-            chatVolume: 1000
+            avgCallDuration: 0,
+            chatVolume: 1000,
+            avgChatLength: 0,
+            avgChatResolutionTime: 0
           };
           processedLead.calculator_inputs = defaultInputs;
         }
@@ -60,11 +60,11 @@ export function useProposalGenerator() {
           aiTier: 'growth',
           role: 'customerService',
           numEmployees: 1,
-          hoursPerDay: 8,
-          daysPerWeek: 5,
-          hourlyRate: 20,
           callVolume: 0,
-          chatVolume: 1000
+          avgCallDuration: 0,
+          chatVolume: 1000,
+          avgChatLength: 0,
+          avgChatResolutionTime: 0
         };
         processedLead.calculator_inputs = defaultInputs;
       }
