@@ -1,4 +1,3 @@
-
 import { useState } from 'react';
 import Header from "@/components/Header";
 import { toast } from "@/components/ui/use-toast";
@@ -21,25 +20,19 @@ const Index = () => {
       description: "Now you can explore detailed AI cost savings for your business.",
     });
   };
-
-  // Peter's test TEST TEST
   
   const handleAdminClick = () => {
-    // Improved admin navigation with fallback
     try {
-      // First try the programmatic navigation
       window.location.href = '/admin';
     } catch (e) {
       console.error("Navigation error:", e);
       
-      // If that fails, try a different approach
       const a = document.createElement('a');
       a.href = '/admin';
-      a.target = '_self'; // Ensure it opens in the same tab
+      a.target = '_self';
       document.body.appendChild(a);
       a.click();
       
-      // Cleanup
       setTimeout(() => {
         document.body.removeChild(a);
       }, 100);
@@ -52,7 +45,7 @@ const Index = () => {
       <div className="min-h-screen bg-gradient-to-br from-brand-50 to-gray-100 py-12">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <Hero />
-          <ROIShowcase />
+          {!showCalculator && <ROIShowcase />}
           <AIFeatures />
           <CalculatorSection 
             showCalculator={showCalculator}
