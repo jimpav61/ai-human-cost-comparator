@@ -43,6 +43,16 @@ export const validateEmail = (email: string): { isValid: boolean; errorMessage: 
 };
 
 /**
+ * Validates phone number format
+ */
+export const validatePhoneFormat = (phone: string): boolean => {
+  // Remove all non-digit characters
+  const digitsOnly = phone.replace(/\D/g, '');
+  // Check if the phone number has at least 10 digits
+  return digitsOnly.length >= 10;
+};
+
+/**
  * Validates website URL format
  */
 export const validateWebsite = (website: string): { isValid: boolean; errorMessage: string } => {

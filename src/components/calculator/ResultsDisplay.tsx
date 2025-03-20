@@ -2,8 +2,9 @@
 import React, { useState } from 'react';
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
-import type { CalculationResults, PricingDetail, LeadData } from './types';
-import { formatCurrency, formatPercentage } from '@/utils/formatters';
+import type { PricingDetail, LeadData } from './types';
+import { CalculationResults } from '@/hooks/calculator/types';
+import { formatCurrency, formatPercent } from '@/utils/formatters';
 import { calculatePricingDetails } from './pricingDetailsCalculator';
 import type { CalculatorInputs } from '@/hooks/useCalculator';
 import { Separator } from '@/components/ui/separator';
@@ -13,6 +14,7 @@ import { FileText, ArrowRight, BookOpen } from 'lucide-react';
 import { generateAndDownloadReport } from '@/utils/report/generateReport';
 import { AIWorkshop } from './workshop/AIWorkshop';
 import { supabase } from '@/integrations/supabase/client';
+import { Lead } from '@/types/leads';
 
 interface ResultsDisplayProps {
   results: CalculationResults;
@@ -55,13 +57,22 @@ export const ResultsDisplay: React.FC<ResultsDisplayProps> = ({
       // Add current timestamp to lead data
       const currentTime = new Date().toISOString();
       
-      // Use the existing leadData merged with calculator inputs and results
-      const completeLeadData = {
-        ...leadData,
+      // Format the lead data to match the Lead type
+      const completeLeadData: Lead = {
+        id: leadData.id || '',
+        name: leadData.name,
+        company_name: leadData.companyName,
+        email: leadData.email,
+        phone_number: leadData.phoneNumber || '',
+        website: leadData.website || '',
+        industry: leadData.industry || '',
+        employee_count: leadData.employeeCount || 0,
+        calculator_inputs: inputs,
+        calculator_results: results,
+        proposal_sent: false,
         created_at: currentTime,
         updated_at: currentTime,
-        calculator_inputs: inputs,
-        calculator_results: results
+        form_completed: true
       };
       
       // Generate and download the PDF
@@ -103,7 +114,7 @@ export const ResultsDisplay: React.FC<ResultsDisplayProps> = ({
                 <h3 className="text-sm text-gray-500 mb-1">Monthly Savings</h3>
                 <p className="text-3xl font-semibold text-green-600">{formatCurrency(results.monthlySavings)}</p>
                 <p className="text-xs text-gray-500">
-                  {formatPercentage(results.savingsPercentage)} vs. human labor
+                  {formatPercent(results.savingsPercentage)} vs. human labor
                 </p>
               </div>
             </div>
