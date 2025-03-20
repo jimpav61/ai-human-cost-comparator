@@ -1,25 +1,59 @@
 
 import { Lead } from "@/types/leads";
 import { generateReportPDF } from "./pdf/generator";
-import { getSafeFileName } from "./validation";
+import { savePDFToStorage } from "./fileUtils";
+import { toast } from "@/hooks/use-toast";
 
-export function generateAndDownloadReport(lead: Lead): boolean {
+/**
+ * Generate and download a report from the front-end calculator
+ * This function generates a PDF and downloads it to the user's device
+ * It also attempts to save the report to Supabase storage if the user is authenticated
+ */
+export async function generateAndDownloadReport(lead: Lead): Promise<boolean> {
   try {
-    console.log("Starting report generation for lead:", lead.id);
+    console.log("Front-end: Generating report for lead:", lead.id);
     
     // Generate the PDF document
-    const doc = generateReportPDF(lead);
+    const pdfDoc = generateReportPDF(lead);
     
-    // Get a safe filename based on company name
-    const safeFileName = getSafeFileName(lead);
+    // Save the document to the user's device with proper file name
+    const fileName = `${lead.company_name.replace(/[^a-zA-Z0-9]/g, '-')}-ChatSites-ROI-Report.pdf`;
+    pdfDoc.save(fileName);
     
-    // Trigger download
-    doc.save(`${safeFileName}-ChatSites-ROI-Report.pdf`);
+    // Show success toast for the download
+    toast({
+      title: "Success",
+      description: "ROI Report downloaded successfully",
+      variant: "default"
+    });
     
-    console.log("Report generated and download triggered");
+    // Attempt to save to storage in parallel - using the reliable method that works in admin
+    try {
+      // Create a standardized UUID filename for storage (the key part that works in admin)
+      const storageFileName = `${lead.id}.pdf`;
+      console.log("Front-end: Attempting to save report to storage with filename:", storageFileName);
+      
+      // Use the same savePDFToStorage function that works in the admin panel
+      const publicUrl = await savePDFToStorage(pdfDoc, storageFileName, false);
+      
+      if (publicUrl) {
+        console.log("Front-end: Report successfully saved to storage:", publicUrl);
+      } else {
+        console.log("Front-end: Report downloaded but not saved to storage - user likely not authenticated");
+      }
+    } catch (storageError) {
+      // Don't show error to user - just log it, since download was successful
+      console.error("Error saving report to storage:", storageError);
+    }
+    
     return true;
   } catch (error) {
     console.error("Error generating report:", error);
+    toast({
+      title: "Error",
+      description: "Failed to generate report. Please try again.",
+      variant: "destructive"
+    });
     return false;
   }
 }

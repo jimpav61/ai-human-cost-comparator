@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { ResultsSummary } from './ResultsSummary';
 import { ResultsDetailView } from './ResultsDetailView';
@@ -32,7 +31,6 @@ export const ResultsDisplay: React.FC<ResultsDisplayProps> = ({
   const tierDisplayName = getTierDisplayName(inputs.aiTier);
   const aiTypeDisplay = getAITypeDisplay(inputs.aiType);
   
-  // For debugging
   useEffect(() => {
     console.log("ResultsDisplay - Lead ID:", leadData.id);
     console.log("ResultsDisplay - Inputs:", inputs);
@@ -40,8 +38,6 @@ export const ResultsDisplay: React.FC<ResultsDisplayProps> = ({
     console.log("ResultsDisplay - PricingDetails:", pricingDetails);
   }, [inputs, results, pricingDetails, leadData]);
   
-  // Create a Lead object from the leadData and calculator results
-  // Use a real UUID if no ID exists
   const leadForReport: Lead = {
     id: leadData.id || crypto.randomUUID(),
     name: leadData.name,
@@ -60,13 +56,11 @@ export const ResultsDisplay: React.FC<ResultsDisplayProps> = ({
   };
 
   const handleDownloadReport = async () => {
-
     try {
       setIsDownloading(true);
       console.log("Downloading report with lead ID:", leadForReport.id);
       console.log("Full lead object for report:", JSON.stringify(leadForReport));
       
-      // First ensure the lead exists in the database
       const { data: existingLead, error: checkError } = await supabase
         .from('leads')
         .select('id')
@@ -76,7 +70,6 @@ export const ResultsDisplay: React.FC<ResultsDisplayProps> = ({
       if (checkError || !existingLead) {
         console.log("Lead doesn't exist in database yet, creating it first");
         
-        // Create the lead first to ensure it exists
         const { data: newLead, error: createError } = await supabase
           .from('leads')
           .insert({
@@ -103,7 +96,6 @@ export const ResultsDisplay: React.FC<ResultsDisplayProps> = ({
         console.log("Lead created successfully:", newLead);
       }
       
-      // Now generate and download the report
       await generateAndDownloadReport(leadForReport);
       setIsDownloading(false);
       
