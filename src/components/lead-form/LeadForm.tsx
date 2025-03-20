@@ -4,7 +4,7 @@ import { z } from 'zod';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { INDUSTRY_OPTIONS } from './constants/industries';
-import { validateEmail, validateWebsite } from './utils/validation';
+import { validateEmail, validatePhoneFormat, validateWebsite } from './utils/validation';
 import type { LeadFormData, LeadFormProps } from './types';
 import { Button } from "@/components/ui/button";
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
@@ -15,7 +15,7 @@ const formSchema = z.object({
   name: z.string().min(2, "Name must be at least 2 characters"),
   companyName: z.string().min(2, "Company name must be at least 2 characters"),
   email: z.string().email("Please enter a valid email address"),
-  phoneNumber: z.string().min(10, "Please enter a valid phone number"),
+  phoneNumber: z.string().refine(validatePhoneFormat, "Please enter a valid phone number"),
   website: z.string().optional(),
   industry: z.string().min(1, "Please select an industry"),
   employeeCount: z
