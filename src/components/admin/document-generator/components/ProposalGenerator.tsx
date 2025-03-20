@@ -4,12 +4,13 @@ import { useProposalGenerator } from "@/hooks/useProposalGenerator";
 import { toast } from "@/hooks/use-toast";
 import { Button } from "@/components/ui/button";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
-import { AlertCircle, CheckCircle2, Info, Settings } from "lucide-react";
-import { useState } from "react";
+import { AlertCircle, CheckCircle2, Info, Settings, RefreshCw } from "lucide-react";
+import { useState, useEffect } from "react";
 import { useProposalRevisions } from "../hooks/useProposalRevisions";
 import { standardizeLeadData } from "@/utils/proposal/standardizeLeadData";
 import { useProposalEdit } from "../hooks/useProposalEdit";
 import { ProposalEditDialog } from "./edit-proposal/ProposalEditDialog";
+import { supabase } from "@/integrations/supabase/client";
 
 interface ProposalGeneratorProps {
   lead: Lead;
@@ -23,11 +24,61 @@ export const ProposalGenerator = ({ lead, onLeadUpdated, onProposalGenerated }: 
   const { isDialogOpen, handleOpenDialog, handleCloseDialog, handleSaveProposalSettings } = useProposalEdit(lead, onLeadUpdated);
   const [retryCount, setRetryCount] = useState(0);
   const [showHelp, setShowHelp] = useState(false);
+  const [refreshingLead, setRefreshingLead] = useState(false);
+  const [currentLead, setCurrentLead] = useState<Lead>(lead);
+
+  // Refresh lead data from database to ensure we have latest changes
+  const refreshLeadData = async () => {
+    if (!lead?.id) return;
+    
+    try {
+      setRefreshingLead(true);
+      console.log("Refreshing lead data for ID:", lead.id);
+      
+      const { data, error } = await supabase
+        .from('leads')
+        .select('*')
+        .eq('id', lead.id)
+        .single();
+        
+      if (error) throw error;
+      if (!data) throw new Error("No lead found");
+      
+      console.log("Refreshed lead data:", {
+        id: data.id,
+        tier: data.calculator_inputs?.aiTier,
+        aiType: data.calculator_inputs?.aiType,
+        callVolume: data.calculator_inputs?.callVolume
+      });
+      
+      setCurrentLead(data as Lead);
+      if (onLeadUpdated) {
+        onLeadUpdated(data as Lead);
+      }
+      
+      return data as Lead;
+    } catch (error) {
+      console.error("Error refreshing lead data:", error);
+      toast({
+        title: "Error",
+        description: "Failed to refresh lead data",
+        variant: "destructive"
+      });
+      return lead;
+    } finally {
+      setRefreshingLead(false);
+    }
+  };
+
+  // Update currentLead when lead prop changes
+  useEffect(() => {
+    setCurrentLead(lead);
+  }, [lead]);
 
   const handleGenerateProposal = async () => {
     try {
       // Check if lead has required data
-      if (!lead?.id) {
+      if (!currentLead?.id) {
         toast({
           title: "Error",
           description: "Lead data is incomplete",
@@ -36,11 +87,16 @@ export const ProposalGenerator = ({ lead, onLeadUpdated, onProposalGenerated }: 
         return;
       }
       
+      // First refresh the lead to get latest data
+      const freshLead = await refreshLeadData();
+      
       // Log what we're working with
-      console.log("Starting proposal generation for lead:", lead.id);
+      console.log("Starting proposal generation for lead:", freshLead.id);
+      console.log("Using tier:", freshLead.calculator_inputs?.aiTier);
+      console.log("Using voice minutes:", freshLead.calculator_inputs?.callVolume);
       
       // Pre-process lead data using standardized utility
-      const standardData = standardizeLeadData(lead);
+      const standardData = standardizeLeadData(freshLead);
       console.log("Using standardized lead data:", {
         company: standardData.companyName,
         tier: standardData.tierKey,
@@ -50,7 +106,7 @@ export const ProposalGenerator = ({ lead, onLeadUpdated, onProposalGenerated }: 
       });
       
       // Generate the proposal
-      const pdf = await generateProposal(lead);
+      const pdf = await generateProposal(freshLead);
       
       if (!pdf) {
         throw new Error("Failed to generate proposal: No PDF content returned");
@@ -70,7 +126,7 @@ export const ProposalGenerator = ({ lead, onLeadUpdated, onProposalGenerated }: 
           totalPrice: standardData.totalMonthlyPrice
         });
         
-        const newRevision = await saveProposalRevision(lead.id, pdf, title, notes);
+        const newRevision = await saveProposalRevision(freshLead.id, pdf, title, notes);
         
         console.log("Proposal saved as revision:", newRevision);
         
@@ -96,7 +152,7 @@ export const ProposalGenerator = ({ lead, onLeadUpdated, onProposalGenerated }: 
       
       // If the lead was updated during proposal generation, notify parent
       if (onLeadUpdated) {
-        onLeadUpdated(lead);
+        onLeadUpdated(freshLead);
       }
     } catch (error) {
       console.error("Error in proposal generation:", error);
@@ -118,10 +174,10 @@ export const ProposalGenerator = ({ lead, onLeadUpdated, onProposalGenerated }: 
       <div className="flex flex-wrap gap-2">
         <Button 
           onClick={handleGenerateProposal}
-          disabled={generating}
+          disabled={generating || refreshingLead}
           className="bg-primary text-white px-4 py-2 rounded disabled:opacity-50"
         >
-          {generating ? "Generating..." : "Generate Proposal"}
+          {generating ? "Generating..." : refreshingLead ? "Refreshing..." : "Generate Proposal"}
         </Button>
         
         <Button
@@ -131,6 +187,16 @@ export const ProposalGenerator = ({ lead, onLeadUpdated, onProposalGenerated }: 
         >
           <Settings className="h-4 w-4" />
           Edit Settings
+        </Button>
+        
+        <Button
+          onClick={refreshLeadData}
+          variant="outline"
+          className="flex items-center gap-1"
+          disabled={refreshingLead}
+        >
+          <RefreshCw className={`h-4 w-4 ${refreshingLead ? "animate-spin" : ""}`} />
+          Refresh Data
         </Button>
       </div>
       
@@ -144,7 +210,7 @@ export const ProposalGenerator = ({ lead, onLeadUpdated, onProposalGenerated }: 
         </Alert>
       )}
       
-      {!lead.calculator_results && !generationError && (
+      {!currentLead.calculator_results && !generationError && (
         <Alert className="bg-yellow-50 border-yellow-200">
           <Info className="h-4 w-4 text-yellow-600" />
           <AlertTitle className="text-yellow-800">Information</AlertTitle>
@@ -200,7 +266,7 @@ export const ProposalGenerator = ({ lead, onLeadUpdated, onProposalGenerated }: 
       <ProposalEditDialog 
         isOpen={isDialogOpen} 
         onClose={handleCloseDialog} 
-        lead={lead}
+        lead={currentLead}
         onSave={handleSaveProposalSettings}
       />
     </div>
