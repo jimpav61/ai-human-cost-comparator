@@ -19,6 +19,31 @@ export async function savePDFToStorage(
   try {
     console.log("Starting PDF storage process for file:", fileName);
     
+    // First check authentication state - this is critical
+    const { data: authData, error: refreshError } = await supabase.auth.refreshSession();
+    
+    // If refresh fails, try getting the current session
+    if (refreshError) {
+      console.warn("Session refresh failed, checking current session:", refreshError.message);
+      const { data: currentSession, error: sessionError } = await supabase.auth.getSession();
+      
+      if (sessionError || !currentSession.session) {
+        console.error("Authentication error:", sessionError?.message || "No active session");
+        if (isAdmin) {
+          toast({
+            title: "Authentication Error",
+            description: "Your session has expired. Please sign in again.",
+            variant: "destructive"
+          });
+        }
+        return null;
+      }
+      
+      console.log("Using existing session for user:", currentSession.session.user.id);
+    } else {
+      console.log("Session refreshed successfully for user:", authData.session?.user.id);
+    }
+    
     // Convert the PDF to a blob
     const pdfBlob = await convertPDFToBlob(pdfDoc);
     console.log("PDF converted to blob, size:", pdfBlob.size);
