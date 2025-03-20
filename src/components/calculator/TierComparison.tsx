@@ -164,23 +164,28 @@ export const TierComparison: React.FC<TierComparisonProps> = ({
               </CollapsibleContent>
             </Collapsible>
             
-            <CollapsibleTrigger 
-              asChild
-              onClick={(e) => toggleTierExpanded(tier, e)}
-              className="w-full mt-3"
-            >
-              <button className="text-xs text-brand-500 hover:text-brand-700 flex items-center justify-center w-full rounded-md py-1 hover:bg-gray-50">
-                {isExpanded ? (
-                  <>
-                    Show Less <ChevronUp className="h-3 w-3 ml-1" />
-                  </>
-                ) : (
-                  <>
-                    Show More <ChevronDown className="h-3 w-3 ml-1" />
-                  </>
-                )}
-              </button>
-            </CollapsibleTrigger>
+            {/* The critical fix: Move the CollapsibleTrigger inside the Collapsible component */}
+            <div className="w-full mt-3">
+              <Collapsible open={isExpanded}>
+                <CollapsibleTrigger 
+                  asChild
+                  onClick={(e) => toggleTierExpanded(tier, e)}
+                  className="w-full"
+                >
+                  <button className="text-xs text-brand-500 hover:text-brand-700 flex items-center justify-center w-full rounded-md py-1 hover:bg-gray-50">
+                    {isExpanded ? (
+                      <>
+                        Show Less <ChevronUp className="h-3 w-3 ml-1" />
+                      </>
+                    ) : (
+                      <>
+                        Show More <ChevronDown className="h-3 w-3 ml-1" />
+                      </>
+                    )}
+                  </button>
+                </CollapsibleTrigger>
+              </Collapsible>
+            </div>
             
             {!isCompatible && (
               <div className="mt-3 bg-red-50 p-2 rounded text-xs text-red-500 border border-red-100">
