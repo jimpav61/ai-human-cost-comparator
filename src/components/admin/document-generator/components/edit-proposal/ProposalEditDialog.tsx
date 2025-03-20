@@ -1,4 +1,3 @@
-
 import React, { useState } from "react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
@@ -144,6 +143,7 @@ export const ProposalEditDialog = ({ isOpen, onClose, lead, onSave }: ProposalEd
     toast({
       title: "Proposal settings updated",
       description: `Plan set to ${aiTier === 'starter' ? 'Starter' : aiTier === 'growth' ? 'Growth' : 'Premium'} with ${callVolume} additional voice minutes.`,
+      duration: 1500,
     });
     
     onClose();

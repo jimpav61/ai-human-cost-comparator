@@ -27,6 +27,7 @@ export const saveProposalPDF = (doc: JsPDFWithAutoTable, lead: Lead): void => {
     toast({
       title: "Success",
       description: "Proposal generated and downloaded successfully",
+      duration: 1500,
     });
   } catch (error) {
     console.error("Error saving proposal document:", error);
@@ -42,6 +43,7 @@ export const saveProposalPDF = (doc: JsPDFWithAutoTable, lead: Lead): void => {
       title: "Error",
       description: `Failed to save proposal: ${error instanceof Error ? error.message : 'Unknown error'}`,
       variant: "destructive",
+      duration: 1500,
     });
   }
 };

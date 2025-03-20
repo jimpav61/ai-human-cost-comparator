@@ -1,7 +1,6 @@
-
 import React, { useEffect } from 'react';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { toast } from "@/components/ui/use-toast";
+import { toast } from "@/hooks/use-toast";
 
 interface AITypeSectionProps {
   aiType: string;
@@ -28,7 +27,7 @@ export const AITypeSection: React.FC<AITypeSectionProps> = ({
       toast({
         title: "AI Type Updated",
         description: "Starter Plan only supports text capabilities.",
-        duration: 1000,
+        duration: 1500,
       });
     }
     // If on premium plan and using basic voice features, upgrade to premium voice
@@ -39,7 +38,7 @@ export const AITypeSection: React.FC<AITypeSectionProps> = ({
         toast({
           title: "AI Type Enhanced",
           description: "Your voice capabilities have been upgraded to Conversational Voice with Premium Plan.",
-          duration: 1000,
+          duration: 1500,
         });
       } 
       else if (aiType === 'both') {
@@ -48,7 +47,7 @@ export const AITypeSection: React.FC<AITypeSectionProps> = ({
         toast({
           title: "AI Type Enhanced",
           description: "Your voice capabilities have been upgraded to Conversational Voice with Premium Plan.",
-          duration: 1000,
+          duration: 1500,
         });
       }
     }
@@ -61,7 +60,7 @@ export const AITypeSection: React.FC<AITypeSectionProps> = ({
         toast({
           title: "AI Type Enhanced",
           description: "Growth Plan includes both Text & Basic Voice capabilities.",
-          duration: 1000,
+          duration: 1500,
         });
       }
       else if (aiType === 'conversationalVoice' || aiType === 'both-premium') {
@@ -71,7 +70,7 @@ export const AITypeSection: React.FC<AITypeSectionProps> = ({
         toast({
           title: "AI Type Adjusted",
           description: "Voice capabilities have been adjusted to match your Growth Plan.",
-          duration: 1000,
+          duration: 1500,
         });
       }
     }
@@ -87,7 +86,7 @@ export const AITypeSection: React.FC<AITypeSectionProps> = ({
       toast({
         title: "Plan Upgrade Required",
         description: "Conversational Voice requires Premium Plan. Upgrading your selection.",
-        duration: 1000,
+        duration: 1500,
       });
     }
     
@@ -97,7 +96,7 @@ export const AITypeSection: React.FC<AITypeSectionProps> = ({
       toast({
         title: "Plan Upgrade Required",
         description: "Voice capabilities require Growth Plan or higher. Upgrading your selection.",
-        duration: 1000,
+        duration: 1500,
       });
     }
     

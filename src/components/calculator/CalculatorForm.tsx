@@ -23,24 +23,20 @@ export const CalculatorForm: React.FC<CalculatorFormProps> = ({ inputs, onInputC
       console.log("CalculatorForm: Voice AI selected, upgrading to Growth tier");
       onInputChange('aiTier', 'growth');
       
-      // Don't auto-calculate a default call volume
-      // Let the user set it themselves
-      
       toast({
         title: "Plan Upgraded",
         description: "Voice capabilities require Growth Plan or higher. We've automatically upgraded your selection.",
+        duration: 1500,
       });
     } 
     else if ((value === 'conversationalVoice' || value === 'both-premium') && inputs.aiTier !== 'premium') {
       console.log("CalculatorForm: Conversational Voice AI selected, upgrading to Premium tier");
       onInputChange('aiTier', 'premium');
       
-      // Don't auto-calculate a default call volume
-      // Let the user set it themselves
-      
       toast({
         title: "Plan Upgraded",
         description: "Conversational Voice AI requires Premium Plan. We've automatically upgraded your selection.",
+        duration: 1500,
       });
     }
     
@@ -63,6 +59,7 @@ export const CalculatorForm: React.FC<CalculatorFormProps> = ({ inputs, onInputC
           title: "Voice Features Disabled",
           description: "Starter Plan only supports text capabilities. Voice features have been disabled.",
           variant: "default",
+          duration: 1500,
         });
       }
     } 
@@ -77,6 +74,7 @@ export const CalculatorForm: React.FC<CalculatorFormProps> = ({ inputs, onInputC
           title: "Voice Capabilities Adjusted",
           description: "Voice capabilities have been adjusted to basic for the Growth Plan.",
           variant: "default",
+          duration: 1500,
         });
       } 
       else if (inputs.aiType === 'chatbot') {
@@ -84,13 +82,11 @@ export const CalculatorForm: React.FC<CalculatorFormProps> = ({ inputs, onInputC
         console.log("CalculatorForm: Upgrading to growth from chatbot only, suggesting voice features");
         onInputChange('aiType', 'both' as any);
         
-        // Keep call volume at 0, don't auto-calculate it
-        // Let the user set it themselves
-        
         toast({
           title: "Voice Features Enabled",
           description: "Growth Plan includes voice capabilities. We've enabled them for you.",
           variant: "default",
+          duration: 1500,
         });
       }
     } 
@@ -103,6 +99,7 @@ export const CalculatorForm: React.FC<CalculatorFormProps> = ({ inputs, onInputC
           title: "Voice Features Enhanced",
           description: "Premium Plan includes conversational voice. We've upgraded your voice capabilities.",
           variant: "default",
+          duration: 1500,
         });
       } 
       else if (inputs.aiType === 'both') {
@@ -113,19 +110,18 @@ export const CalculatorForm: React.FC<CalculatorFormProps> = ({ inputs, onInputC
           title: "Voice Features Enhanced",
           description: "Premium Plan includes conversational voice. We've upgraded your voice capabilities.",
           variant: "default",
+          duration: 1500,
         });
       } 
       else if (inputs.aiType === 'chatbot') {
         console.log("CalculatorForm: Upgrading to premium from chatbot only, enabling all premium features");
         onInputChange('aiType', 'both-premium' as any);
         
-        // Keep call volume at 0, don't auto-calculate it
-        // Let the user set it themselves
-        
         toast({
           title: "Premium Features Enabled",
           description: "Premium Plan includes our most advanced voice capabilities. We've enabled them for you.",
           variant: "default",
+          duration: 1500,
         });
       }
     }

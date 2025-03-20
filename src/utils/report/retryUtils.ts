@@ -1,4 +1,3 @@
-
 import { savePDFToStorage } from "./fileUtils";
 import { saveReportData } from "./databaseUtils";
 import { Lead } from "@/types/leads";
@@ -38,7 +37,8 @@ export async function saveReportToStorageWithRetry(
       toast({
         title: "Authentication Error",
         description: "Session verification failed. The report was downloaded locally.",
-        variant: "destructive"
+        variant: "destructive",
+        duration: 1500,
       });
     }
     return { reportId: null, pdfUrl: null };
@@ -56,7 +56,8 @@ export async function saveReportToStorageWithRetry(
       toast({
         title: "Authentication Required",
         description: "You need to be logged in to save reports to storage. The report was downloaded locally.",
-        variant: "destructive"
+        variant: "destructive",
+        duration: 1500,
       });
     }
     return { reportId: null, pdfUrl: null };
@@ -110,6 +111,7 @@ export async function saveReportToStorageWithRetry(
           title: "Error Saving Report",
           description: "We couldn't save your report to the cloud after multiple attempts. The report has been downloaded locally.",
           variant: "destructive",
+          duration: 1500,
         });
       }
       
@@ -129,7 +131,8 @@ export async function saveReportToStorageWithRetry(
       toast({
         title: "Report Saved",
         description: "The report has been successfully saved to the cloud.",
-        variant: "default"
+        variant: "default",
+        duration: 1500,
       });
     }
   } else {
@@ -139,7 +142,8 @@ export async function saveReportToStorageWithRetry(
       toast({
         title: "Report Downloaded",
         description: "The report has been downloaded to your device, but we couldn't save it to the cloud after multiple attempts.",
-        variant: "default"
+        variant: "default",
+        duration: 1500,
       });
     }
   }

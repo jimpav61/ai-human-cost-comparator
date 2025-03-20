@@ -1,4 +1,3 @@
-
 import { useState } from "react";
 import { Lead } from "@/types/leads";
 import { supabase } from "@/integrations/supabase/client";
@@ -190,6 +189,7 @@ export function useLeadEditing(onLeadUpdated?: () => void) {
         title: "Success",
         description: "Lead updated successfully",
         variant: "default",
+        duration: 1500,
       });
       
       // Call the onLeadUpdated callback if provided
@@ -202,6 +202,7 @@ export function useLeadEditing(onLeadUpdated?: () => void) {
         title: "Error",
         description: `Failed to update lead: ${error instanceof Error ? error.message : 'Unknown error'}`,
         variant: "destructive",
+        duration: 1500,
       });
     }
   };

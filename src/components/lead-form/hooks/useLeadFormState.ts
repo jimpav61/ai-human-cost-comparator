@@ -1,9 +1,8 @@
-
 import { useState } from 'react';
 import { LeadFormData } from '../types';
 import { validateEmail, validateWebsite, normalizeWebsiteUrl } from '../utils/validation';
 import { supabase } from "@/integrations/supabase/client";
-import { toast } from "@/components/ui/use-toast";
+import { toast } from "@/hooks/use-toast";
 
 const initialFormData: LeadFormData = {
   name: '',
@@ -31,6 +30,7 @@ export const useLeadFormState = (onSubmit: (data: LeadFormData) => void) => {
         title: "Missing Information",
         description: "Please fill in all required fields to continue.",
         variant: "destructive",
+        duration: 1500,
       });
       return;
     }
@@ -42,6 +42,7 @@ export const useLeadFormState = (onSubmit: (data: LeadFormData) => void) => {
         title: "Invalid Email",
         description: emailValidation.errorMessage,
         variant: "destructive",
+        duration: 1500,
       });
       return;
     }
@@ -53,6 +54,7 @@ export const useLeadFormState = (onSubmit: (data: LeadFormData) => void) => {
         title: "Invalid Website",
         description: websiteValidation.errorMessage,
         variant: "destructive",
+        duration: 1500,
       });
       return;
     }
@@ -95,14 +97,10 @@ export const useLeadFormState = (onSubmit: (data: LeadFormData) => void) => {
       if (data && data.length > 0) {
         const leadRecord = data[0] as any;
         
-        // Update form data with the normalized website
         setFormData(prev => ({ ...prev, website: finalWebsite }));
         
-        // Critical fix: First make sure isSubmitting is set to false
         setIsSubmitting(false);
         
-        // Then use a small timeout to ensure React has processed the state update
-        // before changing the step
         setTimeout(() => {
           setLeadId(leadRecord.id);
           setStep(2);
@@ -110,6 +108,7 @@ export const useLeadFormState = (onSubmit: (data: LeadFormData) => void) => {
           toast({
             title: "Information Saved!",
             description: "Please complete the remaining details to continue to the calculator.",
+            duration: 1500,
           });
         }, 50);
       } else {
@@ -122,6 +121,7 @@ export const useLeadFormState = (onSubmit: (data: LeadFormData) => void) => {
         title: "Submission Error",
         description: "There was an error saving your information. Please try again.",
         variant: "destructive",
+        duration: 1500,
       });
       setIsSubmitting(false);
     }
@@ -135,6 +135,7 @@ export const useLeadFormState = (onSubmit: (data: LeadFormData) => void) => {
         title: "Missing Information",
         description: "Please select an industry and specify employee count.",
         variant: "destructive",
+        duration: 1500,
       });
       return;
     }
@@ -162,16 +163,15 @@ export const useLeadFormState = (onSubmit: (data: LeadFormData) => void) => {
           throw error;
         }
 
-        // Critical fix: Set isSubmitting to false first
         setIsSubmitting(false);
         
-        // Then proceed with form submission and toasts
         setTimeout(() => {
           onSubmit(formData);
           
           toast({
             title: "Success!",
             description: "Your information has been submitted successfully.",
+            duration: 1500,
           });
         }, 50);
       } else {
@@ -202,16 +202,15 @@ export const useLeadFormState = (onSubmit: (data: LeadFormData) => void) => {
         }
 
         if (data && data.length > 0) {
-          // Critical fix: Set isSubmitting to false first
           setIsSubmitting(false);
           
-          // Then proceed with form submission and toasts
           setTimeout(() => {
             onSubmit(formData);
             
             toast({
               title: "Success!",
               description: "Your information has been submitted successfully.",
+              duration: 1500,
             });
           }, 50);
         } else {
@@ -224,6 +223,7 @@ export const useLeadFormState = (onSubmit: (data: LeadFormData) => void) => {
         title: "Submission Error",
         description: error?.message || "There was an error submitting your information. Please try again.",
         variant: "destructive",
+        duration: 1500,
       });
       setIsSubmitting(false);
     }

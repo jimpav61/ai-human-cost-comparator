@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { ResultsSummary } from './ResultsSummary';
 import { ResultsDetailView } from './ResultsDetailView';
@@ -106,7 +105,8 @@ export const ResultsDisplay: React.FC<ResultsDisplayProps> = ({
       toast({
         title: "Report Downloaded",
         description: "Your ROI report has been successfully downloaded.",
-        variant: "default"
+        variant: "default",
+        duration: 1500,
       });
     } catch (error) {
       console.error("Error downloading report:", error);
@@ -116,6 +116,7 @@ export const ResultsDisplay: React.FC<ResultsDisplayProps> = ({
         title: "Error",
         description: "Failed to download report. Please try again.",
         variant: "destructive",
+        duration: 1500,
       });
     }
   };
@@ -163,7 +164,6 @@ export const ResultsDisplay: React.FC<ResultsDisplayProps> = ({
         </div>
       )}
       
-      {/* Show Mini-Workshop after report download */}
       {reportDownloaded && (
         <MiniWorkshop 
           leadData={leadData}
