@@ -29,7 +29,7 @@ export const generateProposalPdf = (lead: Lead): string => {
   // AND ensuring we preserve the exact tierKey from calculator_inputs
   const sanitizedLead = JSON.parse(JSON.stringify(lead));
   
-  // CRITICAL FIX: Explicitly prioritize calculator_inputs over calculator_results
+  // CRITICAL FIX: ALWAYS prioritize calculator_inputs over calculator_results
   // This ensures that UI edits always take precedence
   if (sanitizedLead.calculator_inputs && sanitizedLead.calculator_results) {
     // Force calculator_results to use the values from calculator_inputs
