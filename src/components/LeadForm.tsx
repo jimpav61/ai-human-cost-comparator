@@ -1,3 +1,4 @@
+
 import React, { useState } from 'react';
 import { toast } from "@/components/ui/use-toast";
 import { supabase } from "@/integrations/supabase/client";
@@ -210,17 +211,24 @@ export const LeadForm: React.FC<LeadFormProps> = ({ onSubmit }) => {
 
       if (data && data.length > 0) {
         const leadRecord = data[0] as any;
-        setLeadId(leadRecord.id);
         
+        // Update form data with the normalized website
         setFormData(prev => ({ ...prev, website: finalWebsite }));
         
+        // Critical fix: First make sure isSubmitting is set to false
         setIsSubmitting(false);
-        setStep(2);
         
-        toast({
-          title: "Information Saved!",
-          description: "Please complete the remaining details to continue to the calculator.",
-        });
+        // Then use a small timeout to ensure React has processed the state update
+        // before changing the step
+        setTimeout(() => {
+          setLeadId(leadRecord.id);
+          setStep(2);
+          
+          toast({
+            title: "Information Saved!",
+            description: "Please complete the remaining details to continue to the calculator.",
+          });
+        }, 50);
       } else {
         throw new Error("No data returned from database");
       }
@@ -271,13 +279,18 @@ export const LeadForm: React.FC<LeadFormProps> = ({ onSubmit }) => {
           throw error;
         }
 
+        // Critical fix: Set isSubmitting to false first
         setIsSubmitting(false);
-        onSubmit(formData);
         
-        toast({
-          title: "Success!",
-          description: "Your information has been submitted successfully.",
-        });
+        // Then proceed with form submission and toasts
+        setTimeout(() => {
+          onSubmit(formData);
+          
+          toast({
+            title: "Success!",
+            description: "Your information has been submitted successfully.",
+          });
+        }, 50);
       } else {
         console.log("Full submission as fallback");
         
@@ -308,13 +321,18 @@ export const LeadForm: React.FC<LeadFormProps> = ({ onSubmit }) => {
         }
 
         if (data && data.length > 0) {
+          // Critical fix: Set isSubmitting to false first
           setIsSubmitting(false);
-          onSubmit(formData);
           
-          toast({
-            title: "Success!",
-            description: "Your information has been submitted successfully.",
-          });
+          // Then proceed with form submission and toasts
+          setTimeout(() => {
+            onSubmit(formData);
+            
+            toast({
+              title: "Success!",
+              description: "Your information has been submitted successfully.",
+            });
+          }, 50);
         } else {
           throw new Error("No data returned from database");
         }
