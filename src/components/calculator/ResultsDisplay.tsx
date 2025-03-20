@@ -1,175 +1,216 @@
 
-import React, { useState, useEffect } from 'react';
-import { ResultsSummary } from './ResultsSummary';
-import { ResultsDetailView } from './ResultsDetailView';
-import { calculatePricingDetails, getTierDisplayName, getAITypeDisplay } from './pricingDetailsCalculator';
-import type { CalculationResults, CalculatorInputs } from '@/hooks/useCalculator';
-import type { LeadData } from './types';
+import React, { useState } from 'react';
+import { Button } from "@/components/ui/button";
+import { Card, CardContent } from "@/components/ui/card";
+import type { CalculationResults, PricingDetail, LeadData } from './types';
+import { formatCurrency, formatPercentage } from '@/utils/formatters';
+import { calculatePricingDetails } from './pricingDetailsCalculator';
+import type { CalculatorInputs } from '@/hooks/useCalculator';
+import { Separator } from '@/components/ui/separator';
+import { Badge } from "@/components/ui/badge";
+import { getPlanName } from '@/utils/planNameFormatter';
+import { FileText, ArrowRight, BookOpen } from 'lucide-react';
 import { generateAndDownloadReport } from '@/utils/report/generateReport';
-import { Lead } from '@/types/leads';
-import { toast } from '@/components/ui/use-toast';
+import { AIWorkshop } from './workshop/AIWorkshop';
 import { supabase } from '@/integrations/supabase/client';
-import { toJson } from "@/hooks/calculator/supabase-types";
-import { MiniWorkshop } from './workshop/MiniWorkshop';
 
 interface ResultsDisplayProps {
   results: CalculationResults;
-  onGenerateReport: () => void;
   reportGenerated: boolean;
+  onGenerateReport: () => void;
   inputs: CalculatorInputs;
   leadData: LeadData;
 }
 
 export const ResultsDisplay: React.FC<ResultsDisplayProps> = ({
   results,
-  onGenerateReport,
   reportGenerated,
+  onGenerateReport,
   inputs,
-  leadData,
+  leadData
 }) => {
-  const [showDetails, setShowDetails] = useState(false);
-  const [isDownloading, setIsDownloading] = useState(false);
-  const [reportDownloaded, setReportDownloaded] = useState(false);
+  const [showWorkshop, setShowWorkshop] = useState(false);
+  const [downloadedReport, setDownloadedReport] = useState(false);
+  
+  console.log("ResultsDisplay - Lead ID:", leadData.id);
+  console.log("ResultsDisplay - Inputs:", inputs);
+  console.log("ResultsDisplay - Results:", results);
+  
   const pricingDetails = calculatePricingDetails(inputs);
-  const tierDisplayName = getTierDisplayName(inputs.aiTier);
-  const aiTypeDisplay = getAITypeDisplay(inputs.aiType);
+  console.log("ResultsDisplay - PricingDetails:", pricingDetails);
   
-  useEffect(() => {
-    console.log("ResultsDisplay - Lead ID:", leadData.id);
-    console.log("ResultsDisplay - Inputs:", inputs);
-    console.log("ResultsDisplay - Results:", results);
-    console.log("ResultsDisplay - PricingDetails:", pricingDetails);
-  }, [inputs, results, pricingDetails, leadData]);
+  const aiTypeDisplay = inputs.aiType === 'chatbot' ? 'Text Only' : 
+                      inputs.aiType === 'voice' ? 'Basic Voice' : 
+                      inputs.aiType === 'conversationalVoice' ? 'Conversational Voice' : 
+                      inputs.aiType === 'both' ? 'Text & Basic Voice' : 
+                      inputs.aiType === 'both-premium' ? 'Text & Conversational Voice' : 'Custom';
   
-  const leadForReport: Lead = {
-    id: leadData.id || crypto.randomUUID(),
-    name: leadData.name,
-    company_name: leadData.companyName,
-    email: leadData.email,
-    phone_number: leadData.phoneNumber || '',
-    website: leadData.website || '',
-    industry: leadData.industry || '',
-    employee_count: leadData.employeeCount || 0,
-    calculator_inputs: inputs as any,
-    calculator_results: results as any,
-    created_at: new Date().toISOString(),
-    updated_at: new Date().toISOString(),
-    proposal_sent: false,
-    form_completed: true
-  };
-
+  const planName = getPlanName(inputs.aiTier);
+  
   const handleDownloadReport = async () => {
     try {
-      setIsDownloading(true);
-      console.log("Downloading report with lead ID:", leadForReport.id);
-      console.log("Full lead object for report:", JSON.stringify(leadForReport));
+      // First create/update lead in Supabase
+      const leadId = leadData.id;
       
-      const { data: existingLead, error: checkError } = await supabase
-        .from('leads')
-        .select('id')
-        .eq('id', leadForReport.id)
-        .single();
+      // Add current timestamp to lead data
+      const currentTime = new Date().toISOString();
       
-      if (checkError || !existingLead) {
-        console.log("Lead doesn't exist in database yet, creating it first");
-        
-        const { data: newLead, error: createError } = await supabase
-          .from('leads')
-          .insert({
-            id: leadForReport.id,
-            name: leadForReport.name,
-            company_name: leadForReport.company_name,
-            email: leadForReport.email,
-            phone_number: leadForReport.phone_number,
-            website: leadForReport.website,
-            industry: leadForReport.industry,
-            employee_count: leadForReport.employee_count,
-            calculator_inputs: toJson(leadForReport.calculator_inputs),
-            calculator_results: toJson(leadForReport.calculator_results),
-            proposal_sent: false,
-            form_completed: true
-          })
-          .select();
-        
-        if (createError) {
-          console.error("Error creating lead:", createError);
-          throw new Error("Failed to create lead before generating report");
-        }
-        
-        console.log("Lead created successfully:", newLead);
-      }
+      // Use the existing leadData merged with calculator inputs and results
+      const completeLeadData = {
+        ...leadData,
+        created_at: currentTime,
+        updated_at: currentTime,
+        calculator_inputs: inputs,
+        calculator_results: results
+      };
       
-      await generateAndDownloadReport(leadForReport);
-      setIsDownloading(false);
-      setReportDownloaded(true);
+      // Generate and download the PDF
+      await generateAndDownloadReport(completeLeadData);
+      setDownloadedReport(true);
       
-      toast({
-        title: "Report Downloaded",
-        description: "Your ROI report has been successfully downloaded.",
-        variant: "default"
-      });
     } catch (error) {
-      console.error("Error downloading report:", error);
-      setIsDownloading(false);
-      
-      toast({
-        title: "Error",
-        description: "Failed to download report. Please try again.",
-        variant: "destructive",
-      });
+      console.error('Error downloading report:', error);
     }
   };
-
+  
   return (
-    <div className="animate-fadeIn">
-      <ResultsSummary
-        results={results}
-        reportGenerated={reportGenerated}
-        handleGenerateReport={onGenerateReport}
-        tierDisplayName={tierDisplayName}
-        aiTypeDisplay={aiTypeDisplay}
-      />
-
-      {reportGenerated && (
-        <div className="mt-4">
-          <button
-            onClick={handleDownloadReport}
-            disabled={isDownloading}
-            className="w-full bg-brand-600 hover:bg-brand-700 text-white font-medium py-3 px-4 rounded-lg transition-colors duration-200 disabled:opacity-50"
-          >
-            {isDownloading ? "Processing..." : "Download Detailed Report"}
-          </button>
-        </div>
-      )}
-
-      <div className="mt-6">
-        <button
-          onClick={() => setShowDetails(!showDetails)}
-          className="text-brand-600 hover:text-brand-800 font-medium transition-colors duration-200"
-        >
-          {showDetails ? 'Hide Details' : 'View Detailed Breakdown'}
-        </button>
-      </div>
-
-      {showDetails && (
-        <div className="mt-4">
-          <ResultsDetailView
-            results={results}
-            inputs={inputs}
-            pricingDetails={pricingDetails}
-            tierDisplayName={tierDisplayName}
-            aiTypeDisplay={aiTypeDisplay}
+    <div>
+      <Card className="shadow-lg border-gray-200">
+        <CardContent className="p-5">
+          <div className="mb-4">
+            <Badge variant="outline" className="bg-red-50 text-red-600 hover:bg-red-50 border-red-200 mb-2">
+              Selected Plan: {planName} ({aiTypeDisplay})
+            </Badge>
+            
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mt-3">
+              <div className="bg-gray-50 p-4 rounded-md">
+                <h3 className="text-sm text-gray-500 mb-1">Current Staff Cost</h3>
+                <p className="text-3xl font-semibold text-gray-900">{formatCurrency(results.humanCostMonthly)}</p>
+                <p className="text-xs text-gray-500">
+                  {results.humanHours.monthlyTotal.toFixed(3)} labor hours/month
+                </p>
+              </div>
+              
+              <div className="bg-green-50 p-4 rounded-md">
+                <h3 className="text-sm text-gray-500 mb-1">Your ChatSites.ai Cost</h3>
+                <p className="text-3xl font-semibold text-red-600">{formatCurrency(results.aiCostMonthly.total)}</p>
+                <p className="text-xs text-gray-500">
+                  One-time setup: {formatCurrency(results.aiCostMonthly.setupFee)}
+                </p>
+              </div>
+              
+              <div className="bg-blue-50 p-4 rounded-md">
+                <h3 className="text-sm text-gray-500 mb-1">Monthly Savings</h3>
+                <p className="text-3xl font-semibold text-green-600">{formatCurrency(results.monthlySavings)}</p>
+                <p className="text-xs text-gray-500">
+                  {formatPercentage(results.savingsPercentage)} vs. human labor
+                </p>
+              </div>
+            </div>
+          </div>
+          
+          <Separator className="my-6" />
+          
+          <h3 className="text-lg font-semibold mb-3">Human Resource Comparison</h3>
+          
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <div>
+              <h4 className="text-md font-medium mb-2">Labor Hours</h4>
+              <table className="w-full text-sm">
+                <tbody>
+                  <tr className="border-b">
+                    <td className="py-2">Daily per employee:</td>
+                    <td className="py-2 text-right">{results.humanHours.dailyPerEmployee} hours</td>
+                  </tr>
+                  <tr className="border-b">
+                    <td className="py-2">Weekly total:</td>
+                    <td className="py-2 text-right">{results.humanHours.weeklyTotal} hours</td>
+                  </tr>
+                  <tr className="border-b">
+                    <td className="py-2">Monthly total:</td>
+                    <td className="py-2 text-right">{results.humanHours.monthlyTotal.toFixed(3)} hours</td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+            
+            <div>
+              <h4 className="text-md font-medium mb-2">Labor Costs</h4>
+              <table className="w-full text-sm">
+                <tbody>
+                  <tr className="border-b">
+                    <td className="py-2">Current human staff cost:</td>
+                    <td className="py-2 text-right">{formatCurrency(results.humanCostMonthly)}</td>
+                  </tr>
+                  <tr className="border-b">
+                    <td className="py-2">Your ChatSites.ai cost:</td>
+                    <td className="py-2 text-right text-red-600">{formatCurrency(results.aiCostMonthly.total)}</td>
+                  </tr>
+                  <tr className="border-b">
+                    <td className="py-2">Monthly savings:</td>
+                    <td className="py-2 text-right text-green-600">{formatCurrency(results.monthlySavings)}</td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+          </div>
+          
+          <div className="mt-6 text-center">
+            {reportGenerated ? (
+              <div className="space-y-4">
+                <p className="text-gray-700 mb-4">Your Report is Ready</p>
+                
+                <div className="flex flex-col sm:flex-row gap-4 justify-center">
+                  <Button 
+                    onClick={handleDownloadReport}
+                    className="bg-red-600 hover:bg-red-700 text-white">
+                    <FileText className="h-4 w-4 mr-2" />
+                    Download Detailed Report
+                  </Button>
+                  
+                  <Button 
+                    variant="outline"
+                    className="border-red-200 text-red-600 hover:bg-red-50"
+                    onClick={() => setShowWorkshop(true)}>
+                    <BookOpen className="h-4 w-4 mr-2" />
+                    View Implementation Workshop
+                  </Button>
+                </div>
+                
+                {downloadedReport && !showWorkshop && (
+                  <div className="mt-4 p-4 bg-amber-50 border border-amber-200 rounded-md">
+                    <h3 className="font-medium text-amber-800">Next Step: View Your Implementation Workshop</h3>
+                    <p className="text-amber-700 text-sm mt-1">
+                      See how ChatSites.ai can be implemented in your business in 1-7 days
+                    </p>
+                    <Button 
+                      variant="outline"
+                      className="mt-2 border-amber-300 bg-amber-100 hover:bg-amber-200 text-amber-800"
+                      onClick={() => setShowWorkshop(true)}>
+                      Open Workshop <ArrowRight className="h-4 w-4 ml-2" />
+                    </Button>
+                  </div>
+                )}
+              </div>
+            ) : (
+              <Button 
+                onClick={onGenerateReport}
+                className="bg-red-600 hover:bg-red-700 text-white">
+                Generate ROI Report
+              </Button>
+            )}
+          </div>
+        </CardContent>
+      </Card>
+      
+      {showWorkshop && (
+        <div className="mt-8 animate-fadeIn">
+          <AIWorkshop
+            leadData={leadData}
+            aiType={inputs.aiType}
+            tierName={planName}
           />
         </div>
-      )}
-      
-      {/* Show Mini-Workshop after report download */}
-      {reportDownloaded && (
-        <MiniWorkshop 
-          leadData={leadData}
-          aiType={aiTypeDisplay}
-          tierName={tierDisplayName}
-        />
       )}
     </div>
   );

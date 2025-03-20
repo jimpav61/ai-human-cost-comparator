@@ -22,7 +22,10 @@ const CalculatorSection: React.FC<CalculatorSectionProps> = ({
             Welcome, {leadData?.name}!
           </h2>
           <p className="text-gray-600">
-            Let's calculate potential AI savings for {leadData?.companyName} in the {leadData?.industry} industry
+            Let's calculate how ChatSites.ai can deliver significant AI savings for {leadData?.companyName} in the {leadData?.industry} industry
+          </p>
+          <p className="text-sm text-red-600 mt-2">
+            90% of our clients see ROI within the first 30 days of implementation
           </p>
         </div>
         <AIVsHumanCalculator leadData={leadData!} />
@@ -32,6 +35,12 @@ const CalculatorSection: React.FC<CalculatorSectionProps> = ({
   
   return (
     <div className="mb-8">
+      <div className="text-center mb-6">
+        <h3 className="text-lg font-medium text-red-600">ChatSites.ai ROI Calculator</h3>
+        <p className="text-gray-600">
+          See how our AI solutions can reduce costs and improve efficiency for your business
+        </p>
+      </div>
       <LeadForm onSubmit={onLeadSubmit} />
     </div>
   );
