@@ -57,7 +57,7 @@ export const DesktopLeadsTable = ({ leads, onEdit }: DesktopLeadsTableProps) => 
               <TableCell className="whitespace-nowrap">
                 <DateDisplay dateString={lead.created_at} />
               </TableCell>
-              <TableCell className="text-right" style={{ minWidth: "420px" }}>
+              <TableCell className="text-right">
                 <div className="flex justify-end space-x-2">
                   <Button
                     size="sm"

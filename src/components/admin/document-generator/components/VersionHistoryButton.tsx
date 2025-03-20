@@ -29,7 +29,8 @@ export const VersionHistoryButton = ({ lead }: VersionHistoryButtonProps) => {
         size="sm"
       >
         <History className="h-4 w-4" />
-        <span>Version History</span>
+        <span className="hidden sm:inline">Version History</span>
+        <span className="sm:hidden">History</span>
       </Button>
       
       {isDialogOpen && (

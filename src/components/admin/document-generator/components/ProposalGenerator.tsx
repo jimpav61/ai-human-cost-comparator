@@ -1,4 +1,3 @@
-
 import { Lead } from "@/types/leads";
 import { useProposalGenerator } from "../hooks/useProposalGenerator";
 import { toast } from "@/hooks/use-toast";
@@ -28,7 +27,6 @@ export const ProposalGenerator = ({ lead, onLeadUpdated, onProposalGenerated }: 
   const [refreshingLead, setRefreshingLead] = useState(false);
   const [currentLead, setCurrentLead] = useState<Lead>(lead);
 
-  // Refresh lead data from database to ensure we have latest changes
   const refreshLeadData = async () => {
     if (!lead?.id) return lead;
     
@@ -45,7 +43,6 @@ export const ProposalGenerator = ({ lead, onLeadUpdated, onProposalGenerated }: 
       if (error) throw error;
       if (!data) throw new Error("No lead found");
       
-      // Parse JSON strings if they're stored as strings
       let calculatorInputs: CalculatorInputs | null = null;
       if (data.calculator_inputs) {
         if (typeof data.calculator_inputs === 'string') {
@@ -54,7 +51,6 @@ export const ProposalGenerator = ({ lead, onLeadUpdated, onProposalGenerated }: 
             console.log("Parsed calculator_inputs JSON string:", calculatorInputs);
           } catch (e) {
             console.error("Failed to parse calculator_inputs JSON:", e);
-            // If parsing fails, initialize with default values
             calculatorInputs = {
               aiType: 'both',
               aiTier: 'growth',
@@ -68,11 +64,9 @@ export const ProposalGenerator = ({ lead, onLeadUpdated, onProposalGenerated }: 
             };
           }
         } else {
-          // It's already an object, we just need to type cast it
           calculatorInputs = data.calculator_inputs as unknown as CalculatorInputs;
         }
       } else {
-        // If there's no calculator_inputs at all, initialize with default values
         calculatorInputs = {
           aiType: 'both',
           aiTier: 'growth',
@@ -94,16 +88,13 @@ export const ProposalGenerator = ({ lead, onLeadUpdated, onProposalGenerated }: 
             console.log("Parsed calculator_results JSON string:", calculatorResults);
           } catch (e) {
             console.error("Failed to parse calculator_results JSON:", e);
-            // If parsing fails, use the original value but cast it
             calculatorResults = data.calculator_results as unknown as CalculationResults;
           }
         } else {
-          // It's already an object, we just need to type cast it
           calculatorResults = data.calculator_results as unknown as CalculationResults;
         }
       }
       
-      // Create a properly typed Lead object
       const refreshedLead: Lead = {
         ...data,
         calculator_inputs: calculatorInputs,
@@ -138,14 +129,12 @@ export const ProposalGenerator = ({ lead, onLeadUpdated, onProposalGenerated }: 
     }
   };
 
-  // Update currentLead when lead prop changes
   useEffect(() => {
     setCurrentLead(lead);
   }, [lead]);
 
   const handleGenerateProposal = async () => {
     try {
-      // Check if lead has required data
       if (!currentLead?.id) {
         toast({
           title: "Error",
@@ -155,15 +144,12 @@ export const ProposalGenerator = ({ lead, onLeadUpdated, onProposalGenerated }: 
         return;
       }
       
-      // First refresh the lead to get latest data
       const freshLead = await refreshLeadData();
       
-      // Log what we're working with
       console.log("Starting proposal generation for lead:", freshLead.id);
       console.log("Using tier:", freshLead.calculator_inputs?.aiTier);
       console.log("Using voice minutes:", freshLead.calculator_inputs?.callVolume);
       
-      // Pre-process lead data using standardized utility
       const standardData = standardizeLeadData(freshLead);
       console.log("Using standardized lead data:", {
         company: standardData.companyName,
@@ -173,7 +159,6 @@ export const ProposalGenerator = ({ lead, onLeadUpdated, onProposalGenerated }: 
         totalPrice: standardData.totalMonthlyPrice
       });
       
-      // Generate the proposal
       const pdf = await generateProposal(freshLead);
       
       if (!pdf) {
@@ -182,7 +167,6 @@ export const ProposalGenerator = ({ lead, onLeadUpdated, onProposalGenerated }: 
       
       console.log("Proposal generated successfully, PDF length:", pdf.length);
 
-      // IMPORTANT: Save the proposal as a revision
       try {
         console.log("Saving proposal as a new revision");
         const title = `Proposal for ${standardData.companyName}`;
@@ -205,7 +189,6 @@ export const ProposalGenerator = ({ lead, onLeadUpdated, onProposalGenerated }: 
         });
       } catch (saveError) {
         console.error("Error saving proposal revision:", saveError);
-        // Continue anyway since the PDF was generated successfully
         toast({
           title: "Warning",
           description: "Proposal generated but couldn't be saved as a revision",
@@ -213,12 +196,10 @@ export const ProposalGenerator = ({ lead, onLeadUpdated, onProposalGenerated }: 
         });
       }
       
-      // Call both callbacks if provided
       if (onProposalGenerated && pdf) {
         onProposalGenerated(pdf);
       }
       
-      // If the lead was updated during proposal generation, notify parent
       if (onLeadUpdated) {
         onLeadUpdated(freshLead);
       }
@@ -243,7 +224,8 @@ export const ProposalGenerator = ({ lead, onLeadUpdated, onProposalGenerated }: 
         <Button 
           onClick={handleGenerateProposal}
           disabled={generating || refreshingLead}
-          className="bg-primary text-white px-4 py-2 rounded disabled:opacity-50"
+          className="bg-primary text-white rounded disabled:opacity-50"
+          size="sm"
         >
           {generating ? "Generating..." : refreshingLead ? "Refreshing..." : "Generate Proposal"}
         </Button>
@@ -251,20 +233,24 @@ export const ProposalGenerator = ({ lead, onLeadUpdated, onProposalGenerated }: 
         <Button
           onClick={handleOpenDialog}
           variant="outline"
+          size="sm"
           className="flex items-center gap-1"
         >
           <Settings className="h-4 w-4" />
-          Edit Settings
+          <span className="hidden sm:inline">Edit Settings</span>
+          <span className="sm:hidden">Settings</span>
         </Button>
         
         <Button
           onClick={refreshLeadData}
           variant="outline"
+          size="sm"
           className="flex items-center gap-1"
           disabled={refreshingLead}
         >
           <RefreshCw className={`h-4 w-4 ${refreshingLead ? "animate-spin" : ""}`} />
-          Refresh Data
+          <span className="hidden sm:inline">Refresh Data</span>
+          <span className="sm:hidden">Refresh</span>
         </Button>
       </div>
       
@@ -301,6 +287,7 @@ export const ProposalGenerator = ({ lead, onLeadUpdated, onProposalGenerated }: 
             <Button 
               variant="outline" 
               onClick={handleRetry}
+              size="sm"
               className="mt-2"
             >
               Retry Generation
@@ -308,6 +295,7 @@ export const ProposalGenerator = ({ lead, onLeadUpdated, onProposalGenerated }: 
             <Button
               variant="ghost"
               onClick={() => setShowHelp(!showHelp)}
+              size="sm"
               className="mt-2"
             >
               {showHelp ? "Hide Help" : "Show Help"}
