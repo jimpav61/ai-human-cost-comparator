@@ -1,12 +1,15 @@
+
 import { Lead } from "@/types/leads";
 import { useProposalGenerator } from "@/hooks/useProposalGenerator";
 import { toast } from "@/hooks/use-toast";
 import { Button } from "@/components/ui/button";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
-import { AlertCircle, CheckCircle2, Info } from "lucide-react";
+import { AlertCircle, CheckCircle2, Info, Settings } from "lucide-react";
 import { useState } from "react";
 import { useProposalRevisions } from "../hooks/useProposalRevisions";
 import { standardizeLeadData } from "@/utils/proposal/standardizeLeadData";
+import { useProposalEdit } from "../hooks/useProposalEdit";
+import { ProposalEditDialog } from "./edit-proposal/ProposalEditDialog";
 
 interface ProposalGeneratorProps {
   lead: Lead;
@@ -17,6 +20,7 @@ interface ProposalGeneratorProps {
 export const ProposalGenerator = ({ lead, onLeadUpdated, onProposalGenerated }: ProposalGeneratorProps) => {
   const { generating, generationError, proposalPdf, generationSuccess, generateProposal } = useProposalGenerator();
   const { saveProposalRevision } = useProposalRevisions();
+  const { isDialogOpen, handleOpenDialog, handleCloseDialog, handleSaveProposalSettings } = useProposalEdit(lead, onLeadUpdated);
   const [retryCount, setRetryCount] = useState(0);
   const [showHelp, setShowHelp] = useState(false);
 
@@ -111,13 +115,24 @@ export const ProposalGenerator = ({ lead, onLeadUpdated, onProposalGenerated }: 
 
   return (
     <div className="space-y-4">
-      <Button 
-        onClick={handleGenerateProposal}
-        disabled={generating}
-        className="bg-primary text-white px-4 py-2 rounded disabled:opacity-50 min-w-[200px]"
-      >
-        {generating ? "Generating..." : "Generate Proposal"}
-      </Button>
+      <div className="flex flex-wrap gap-2">
+        <Button 
+          onClick={handleGenerateProposal}
+          disabled={generating}
+          className="bg-primary text-white px-4 py-2 rounded disabled:opacity-50"
+        >
+          {generating ? "Generating..." : "Generate Proposal"}
+        </Button>
+        
+        <Button
+          onClick={handleOpenDialog}
+          variant="outline"
+          className="flex items-center gap-1"
+        >
+          <Settings className="h-4 w-4" />
+          Edit Settings
+        </Button>
+      </div>
       
       {generationSuccess && (
         <Alert className="bg-green-50 border-green-200">
@@ -181,6 +196,13 @@ export const ProposalGenerator = ({ lead, onLeadUpdated, onProposalGenerated }: 
           )}
         </div>
       )}
+      
+      <ProposalEditDialog 
+        isOpen={isDialogOpen} 
+        onClose={handleCloseDialog} 
+        lead={lead}
+        onSave={handleSaveProposalSettings}
+      />
     </div>
   );
 };
