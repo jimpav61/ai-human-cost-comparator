@@ -8,8 +8,12 @@ import { getReportFileName } from "./fileNameUtils";
  */
 export const saveReportPDF = (doc: JsPDFWithAutoTable, lead: Lead): void => {
   const fileName = getReportFileName(lead);
+  
+  // Enhanced logging to debug voice minutes issue
   console.log("Document generated, saving as:", fileName);
-  console.log("Lead voice minutes:", {
+  console.log("Lead tier and voice data:", {
+    tierKey: lead.calculator_results?.tierKey || lead.calculator_inputs?.aiTier,
+    aiType: lead.calculator_results?.aiType || lead.calculator_inputs?.aiType,
     callVolume: lead.calculator_inputs?.callVolume,
     additionalVoiceMinutes: lead.calculator_results?.additionalVoiceMinutes
   });

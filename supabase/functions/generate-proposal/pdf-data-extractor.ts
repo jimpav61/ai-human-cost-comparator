@@ -1,3 +1,4 @@
+
 import { 
   formatPdfCurrency, 
   formatPdfPercentage, 
@@ -60,13 +61,30 @@ export function extractProposalData(lead: any): ProposalData {
   debugLog("Lead Object for Extraction", {
     id: lead.id,
     company: lead.company_name,
-    contact: lead.name,
-    calculatorResults: lead.calculator_results ? Object.keys(lead.calculator_results) : "missing"
+    contact: lead.name
+  });
+  
+  // Enhanced debug logging
+  debugLog("Calculator Data Available", {
+    hasCalculatorInputs: !!lead.calculator_inputs,
+    hasCalculatorResults: !!lead.calculator_results,
+    inputKeys: lead.calculator_inputs ? Object.keys(lead.calculator_inputs) : [],
+    resultKeys: lead.calculator_results ? Object.keys(lead.calculator_results) : []
   });
   
   // Ensure calculator_results exists and is an object
   const calculatorResults = lead.calculator_results || {};
-  debugLog("Calculator Results", calculatorResults);
+  const calculatorInputs = lead.calculator_inputs || {};
+  
+  // Log key values for debugging
+  debugLog("Key Calculator Values", {
+    results_tierKey: calculatorResults.tierKey,
+    inputs_aiTier: calculatorInputs.aiTier,
+    results_aiType: calculatorResults.aiType,
+    inputs_aiType: calculatorInputs.aiType,
+    results_additionalVoiceMinutes: calculatorResults.additionalVoiceMinutes,
+    inputs_callVolume: calculatorInputs.callVolume
+  });
   
   // Extract company and contact information with defaults
   const companyName = ensureString(lead.company_name, 'Your Company');
@@ -76,9 +94,17 @@ export function extractProposalData(lead: any): ProposalData {
   const industry = ensureString(lead.industry, 'Technology');
   const employeeCount = ensureNumber(lead.employee_count, 5);
   
-  // Extract and validate tier and AI type
-  const tierKey = ensureString(calculatorResults.tierKey, 'growth');
-  const aiType = ensureString(calculatorResults.aiType, 'both');
+  // CRITICAL FIX: Extract and validate tier and AI type
+  // ALWAYS prioritize calculator_inputs over calculator_results
+  const tierKey = ensureString(
+    calculatorInputs.aiTier || calculatorResults.tierKey, 
+    'growth'
+  );
+  
+  const aiType = ensureString(
+    calculatorInputs.aiType || calculatorResults.aiType, 
+    'both'
+  );
   
   // Get display names
   const tierName = getPlanName(tierKey);
@@ -86,17 +112,51 @@ export function extractProposalData(lead: any): ProposalData {
   
   // Voice minutes calculations
   const includedVoiceMinutes = tierKey === 'starter' ? 0 : 600;
-  const additionalVoiceMinutes = ensureNumber(
-    calculatorResults.additionalVoiceMinutes || 
-    (lead.calculator_inputs?.callVolume || 0)
-  );
+  
+  // CRITICAL FIX: Prioritize calculator_inputs.callVolume over calculator_results.additionalVoiceMinutes
+  let additionalVoiceMinutes = 0;
+  
+  if (tierKey === 'starter') {
+    // Starter tier has no voice minutes
+    additionalVoiceMinutes = 0;
+    debugLog("Starter tier selected, setting additionalVoiceMinutes to 0");
+  } else if (calculatorInputs.callVolume !== undefined) {
+    // Use callVolume from inputs as the primary source of truth
+    additionalVoiceMinutes = ensureNumber(calculatorInputs.callVolume, 0);
+    debugLog("Using callVolume from calculator_inputs:", additionalVoiceMinutes);
+  } else if (calculatorResults.additionalVoiceMinutes !== undefined) {
+    // Fall back to results if inputs don't have callVolume
+    additionalVoiceMinutes = ensureNumber(calculatorResults.additionalVoiceMinutes, 0);
+    debugLog("Using additionalVoiceMinutes from results:", additionalVoiceMinutes);
+  }
   
   // Financial calculations - ensure valid numbers with defaults
   const humanCostMonthly = ensureNumber(calculatorResults.humanCostMonthly, 3800);
-  const basePrice = ensureNumber(calculatorResults.basePriceMonthly, 229);
-  const setupFee = ensureNumber(calculatorResults.aiCostMonthly?.setupFee, 749);
-  const voiceCost = ensureNumber(calculatorResults.aiCostMonthly?.voice, 0);
-  const totalMonthlyCost = ensureNumber(calculatorResults.aiCostMonthly?.total, basePrice + voiceCost);
+  
+  // Use tier-specific base prices
+  const basePrices = {
+    'starter': 99,
+    'growth': 229,
+    'premium': 429
+  };
+  const basePrice = basePrices[tierKey as keyof typeof basePrices] || 
+                   ensureNumber(calculatorResults.basePriceMonthly, 229);
+  
+  // Use tier-specific setup fees
+  const setupFees = {
+    'starter': 249,
+    'growth': 749,
+    'premium': 1149
+  };
+  const setupFee = setupFees[tierKey as keyof typeof setupFees] || 
+                  ensureNumber(calculatorResults.aiCostMonthly?.setupFee, 749);
+  
+  // Calculate voice cost based on additional minutes
+  const voiceCost = tierKey === 'starter' ? 0 : additionalVoiceMinutes * 0.12;
+  
+  // Calculate total monthly cost
+  const totalMonthlyCost = basePrice + voiceCost;
+  
   const monthlySavings = ensureNumber(calculatorResults.monthlySavings, humanCostMonthly - totalMonthlyCost);
   const yearlySavings = ensureNumber(calculatorResults.yearlySavings, monthlySavings * 12);
   const savingsPercentage = ensureNumber(calculatorResults.savingsPercentage, 
@@ -128,13 +188,16 @@ export function extractProposalData(lead: any): ProposalData {
   const formattedYearlySavings = formatPdfCurrency(yearlySavings);
   const formattedSavingsPercentage = formatPdfPercentage(savingsPercentage);
   
-  debugLog("Extracted and Processed Data", {
-    companyName,
+  // Final verification log to confirm the values were properly processed
+  debugLog("Final Proposal Data", {
+    tierKey,
     tierName,
+    aiType,
     aiTypeDisplay,
-    humanCostMonthly,
-    totalMonthlyCost,
-    savingsPercentage
+    additionalVoiceMinutes,
+    basePrice,
+    voiceCost,
+    totalMonthlyCost
   });
   
   return {

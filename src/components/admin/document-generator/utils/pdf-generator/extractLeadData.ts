@@ -7,10 +7,13 @@ import { formatCurrency } from "@/utils/formatters";
  * Extract all necessary data from a lead for PDF generation
  */
 export function extractLeadData(lead: Lead): PdfContentParams {
+  // Explicit debug logging for input values
   console.log("Extracting lead data for PDF generation:", {
     leadId: lead.id,
-    calculator_inputs: lead.calculator_inputs,
-    calculator_results: lead.calculator_results
+    inputs_aiTier: lead.calculator_inputs?.aiTier,
+    inputs_callVolume: lead.calculator_inputs?.callVolume,
+    results_tierKey: lead.calculator_results?.tierKey,
+    results_additionalVoiceMinutes: lead.calculator_results?.additionalVoiceMinutes
   });
 
   // Default values
@@ -36,12 +39,12 @@ export function extractLeadData(lead: Lead): PdfContentParams {
   // Use calculator_results if available, otherwise use defaults
   const results = lead.calculator_results || defaultResults;
   
-  // UPDATED LOGIC: PRIMARY SOURCE OF TRUTH IS CALCULATOR_INPUTS
-  // This is what the user most recently edited in the UI
+  // CRITICAL FIX: ALWAYS prioritize calculator_inputs for tier and minutes
+  // This ensures that any recent UI edits are captured
   const tierKey = lead.calculator_inputs?.aiTier || results.tierKey || 'growth';
   const aiType = lead.calculator_inputs?.aiType || results.aiType || 'both';
   
-  console.log("Using tier and type from inputs:", { tierKey, aiType });
+  console.log("Using tier and type:", { tierKey, aiType });
   
   // Get tier and AI type display names
   const tierNames = {
@@ -76,7 +79,8 @@ export function extractLeadData(lead: Lead): PdfContentParams {
   };
   const setupFee = setupFees[tierKey as keyof typeof setupFees] || results.aiCostMonthly?.setupFee || 749;
   
-  // CRITICAL: Get voice minutes and properly calculate voice costs
+  // CRITICAL FIX: ALWAYS prioritize calculator_inputs.callVolume for voice minutes
+  // This ensures that UI edits to minutes are always captured
   let additionalVoiceMinutes = 0;
   
   // First check if tier is starter - in this case force to 0 voice minutes
@@ -84,7 +88,7 @@ export function extractLeadData(lead: Lead): PdfContentParams {
     additionalVoiceMinutes = 0;
     console.log("Starter tier selected, setting additionalVoiceMinutes to 0");
   }
-  // Next try calculator_inputs.callVolume (direct user input)
+  // IMPROVED SOLUTION: ALWAYS use calculator_inputs.callVolume if it exists (UI edits)
   else if (lead.calculator_inputs?.callVolume !== undefined) {
     if (typeof lead.calculator_inputs.callVolume === 'number') {
       additionalVoiceMinutes = lead.calculator_inputs.callVolume;
@@ -93,7 +97,7 @@ export function extractLeadData(lead: Lead): PdfContentParams {
     }
     console.log("Using callVolume from calculator_inputs:", additionalVoiceMinutes);
   } 
-  // Then try results.additionalVoiceMinutes (might have been calculated)
+  // Fallback to results if inputs are missing
   else if (results.additionalVoiceMinutes !== undefined) {
     additionalVoiceMinutes = results.additionalVoiceMinutes;
     console.log("Using additionalVoiceMinutes from results:", additionalVoiceMinutes);
@@ -103,7 +107,6 @@ export function extractLeadData(lead: Lead): PdfContentParams {
   const includedMinutes = tierKey === 'starter' ? 0 : 600;
   
   // Calculate voice cost based on tier and additionalVoiceMinutes
-  // For starter tier, voice cost is always 0
   const voiceRate = {
     'starter': 0,
     'growth': 0.12,
@@ -126,16 +129,14 @@ export function extractLeadData(lead: Lead): PdfContentParams {
   const today = new Date();
   const formattedDate = `${today.toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' })}`;
   
-  // Log the extracted data for debugging
-  console.log("Extracted PDF params:", {
+  // Final debug logging to confirm all values
+  console.log("Final PDF params:", {
     tierKey,
     aiType,
     basePrice,
     additionalVoiceMinutes,
     voiceCost,
-    totalPrice,
-    setupFee,
-    includedMinutes
+    totalPrice
   });
 
   return {
