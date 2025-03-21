@@ -18,7 +18,7 @@ export function generateWorkshopContent(
   const yearlySavings = calculatorResults.yearlySavings || 30000;
   
   // Use more realistic savings percentage (30-45% range is realistic)
-  const savingsPercentage = calculatorResults.savingsPercentage || 35;
+  const savingsPercentage = 35;
   const basePriceMonthly = calculatorResults.basePriceMonthly || 1500;
   
   // Create industry-specific content
