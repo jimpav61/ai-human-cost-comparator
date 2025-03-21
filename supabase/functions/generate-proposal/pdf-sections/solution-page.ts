@@ -131,15 +131,15 @@ ${brandRed} rg
 0 0 0 rg
 0 -25 Td
 /F1 12 Tf
-(\\267 Discovery and Planning: 1 week) Tj
+(\\267 Discovery and Planning: 1 day) Tj
 0 -20 Td
-(\\267 Development and Customization: 2-3 weeks) Tj
+(\\267 Development and Customization: 2-3 days) Tj
 0 -20 Td
-(\\267 Testing and Quality Assurance: 1 week) Tj
+(\\267 Testing and Quality Assurance: 1 day) Tj
 0 -20 Td
-(\\267 Deployment and Integration: 1 week) Tj
+(\\267 Deployment and Integration: 1 day) Tj
 0 -20 Td
-(\\267 Training and Knowledge Transfer: 1 week) Tj
+(\\267 Training and Knowledge Transfer: 1 day) Tj
 ET
 Q`;
 
