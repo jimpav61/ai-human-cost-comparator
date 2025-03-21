@@ -23,6 +23,7 @@ export const MiniWorkshop: React.FC<MiniWorkshopProps> = ({
   // Extract first name for personalized greeting
   const firstName = leadData.name?.split(' ')[0] || '';
   const companyName = leadData.companyName || 'your business';
+  const industry = leadData.industry || 'your industry';
   
   const handleScheduleCall = () => {
     window.open('https://calendly.com/chatsites/discovery', '_blank');
@@ -66,9 +67,8 @@ export const MiniWorkshop: React.FC<MiniWorkshopProps> = ({
       </div>
       
       <div className="mt-8 text-center text-sm text-gray-500">
-        <p>This content is personalized based on your calculator inputs and {leadData.industry || 'industry'} data.</p>
+        <p>This content is personalized based on your calculator inputs and {industry || 'business'} data.</p>
       </div>
     </div>
   );
 };
-
