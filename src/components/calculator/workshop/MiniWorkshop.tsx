@@ -26,7 +26,7 @@ export const MiniWorkshop: React.FC<MiniWorkshopProps> = ({
   const industry = leadData.industry || 'your industry';
   
   const handleScheduleCall = () => {
-    window.open('https://calendly.com/chatsites/discovery', '_blank');
+    window.open('https://chatsites.youcanbook.me', '_blank');
   };
 
   return (
