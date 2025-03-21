@@ -12,13 +12,19 @@ export function generateWorkshopContent(
   const industry = leadData.industry || 'your industry';
   const employeeCount = leadData.employeeCount || 10;
   
-  // Extract calculator results for ROI references
+  // Extract calculator results for ROI references - ensure realistic values
   const calculatorResults = leadData.calculator_results || {};
-  const monthlySavings = calculatorResults.monthlySavings || 2500;
-  const yearlySavings = calculatorResults.yearlySavings || 30000;
+  
+  // Use more realistic values with proper validation and fallbacks
+  // Cap monthly savings at a realistic maximum of $15,000
+  const rawMonthlySavings = calculatorResults.monthlySavings || 2500;
+  const monthlySavings = Math.min(Math.abs(rawMonthlySavings), 15000);
+  
+  // Calculate yearly savings based on monthly (max $180,000/year)
+  const yearlySavings = monthlySavings * 12;
   
   // Use more realistic savings percentage (30-45% range is realistic)
-  const savingsPercentage = 35;
+  const savingsPercentage = Math.min(Math.abs(calculatorResults.savingsPercentage || 35), 45);
   const basePriceMonthly = calculatorResults.basePriceMonthly || 1500;
   
   // Create industry-specific content
@@ -100,11 +106,16 @@ export function generateWorkshopContent(
     ];
   }
   
+  // Format currency values for display
+  const formattedMonthlySavings = monthlySavings.toLocaleString();
+  const formattedYearlySavings = yearlySavings.toLocaleString();
+  const formattedBasePriceMonthly = basePriceMonthly.toLocaleString();
+  
   // Create the workshop content sections with personalized details
   return [
     {
       title: "1. Getting Started with AI in Your Business",
-      content: `Welcome to your personalized AI implementation workshop, ${ownerFirstName}. For ${companyName}, as a business in the ${industry} sector with approximately ${employeeCount} employees, you're about to discover how our ${tierName} tier ${aiTypeDescription} can transform your customer interactions.\n\nThis workshop will guide you through the essential steps to successfully implement AI in your business, focusing specifically on the challenges faced by ${industrySpecificChallenges}. Based on your calculator results, we estimate potential savings of approximately $${monthlySavings.toLocaleString()} per month or $${yearlySavings.toLocaleString()} annually by implementing our solution.`,
+      content: `Welcome to your personalized AI implementation workshop, ${ownerFirstName}. For ${companyName}, as a business in the ${industry} sector with approximately ${employeeCount} employees, you're about to discover how our ${tierName} tier ${aiTypeDescription} can transform your customer interactions.\n\nThis workshop will guide you through the essential steps to successfully implement AI in your business, focusing specifically on the challenges faced by ${industrySpecificChallenges}. Based on your calculator results, we estimate potential savings of approximately $${formattedMonthlySavings} per month or $${formattedYearlySavings} annually by implementing our solution.`,
       bullets: [
         `Understanding the ${tierName} tier features and capabilities for ${companyName}`,
         `Identifying key opportunities for AI in your ${industry} business`,
@@ -114,7 +125,7 @@ export function generateWorkshopContent(
     },
     {
       title: "2. Identifying Your AI Use Cases",
-      content: `For ${companyName}, we recommend focusing initially on ${industryUseCase} as your primary AI implementation area. Based on our experience with similar businesses in the ${industry} sector, this approach delivers the fastest ROI while allowing your team to become comfortable with the technology.\n\nYou'll want to document your most common customer interactions and identify patterns that can be effectively handled by AI. For many ${industry} businesses like yours, implementing our solution has resulted in ${industryROIExample}, which directly contributes to the $${yearlySavings.toLocaleString()} annual savings we've projected for ${companyName}.`,
+      content: `For ${companyName}, we recommend focusing initially on ${industryUseCase} as your primary AI implementation area. Based on our experience with similar businesses in the ${industry} sector, this approach delivers the fastest ROI while allowing your team to become comfortable with the technology.\n\nYou'll want to document your most common customer interactions and identify patterns that can be effectively handled by AI. For many ${industry} businesses like yours, implementing our solution has resulted in ${industryROIExample}, which directly contributes to the $${formattedYearlySavings} annual savings we've projected for ${companyName}.`,
       bullets: [
         `Map ${companyName}'s customer journey to identify AI touchpoints`,
         `Document your most frequent customer inquiries and requests`,
@@ -124,12 +135,12 @@ export function generateWorkshopContent(
     },
     {
       title: "3. Preparing Your Team for AI Integration",
-      content: `Successful AI implementation requires proper preparation of your team members, ${ownerFirstName}. For ${companyName}, we recommend a phased approach where you identify AI champions within your organization who will help drive adoption.\n\nYour staff should understand that AI will handle routine inquiries, allowing them to focus on more complex and fulfilling tasks that require human judgment and empathy. In the ${industry} sector, the key challenge is ${industryChallengeDescription}. Our ${tierName} solution at $${basePriceMonthly} per month provides the tools to overcome this challenge while delivering substantial ROI.`,
+      content: `Successful AI implementation requires proper preparation of your team members, ${ownerFirstName}. For ${companyName}, we recommend a phased approach where you identify AI champions within your organization who will help drive adoption.\n\nYour staff should understand that AI will handle routine inquiries, allowing them to focus on more complex and fulfilling tasks that require human judgment and empathy. In the ${industry} sector, the key challenge is ${industryChallengeDescription}. Our ${tierName} solution at $${formattedBasePriceMonthly} per month provides the tools to overcome this challenge while delivering substantial ROI.`,
       bullets: [
         `Conduct team workshops to introduce ${companyName}'s new AI capabilities`,
         `Address concerns about job displacement with clear communication about enhanced roles`,
         `Define new roles and responsibilities in an AI-augmented workflow specific to your ${industry} processes`,
-        `Establish training programs for effectively working alongside AI to maximize your projected $${monthlySavings.toLocaleString()} monthly savings`
+        `Establish training programs for effectively working alongside AI to maximize your projected $${formattedMonthlySavings} monthly savings`
       ]
     },
     {
@@ -139,7 +150,7 @@ export function generateWorkshopContent(
     },
     {
       title: "5. Measuring Success and Continuous Improvement",
-      content: `For ${companyName}, we recommend establishing clear KPIs to measure the success of your AI implementation. These should include both operational metrics (like response times and resolution rates) and business outcomes (cost savings and customer satisfaction).\n\nOnce implemented, you should establish a regular review process to analyze AI performance and identify opportunities for improvement and expansion. This approach will help ensure you achieve and potentially exceed the projected $${yearlySavings.toLocaleString()} annual savings for ${companyName}.`,
+      content: `For ${companyName}, we recommend establishing clear KPIs to measure the success of your AI implementation. These should include both operational metrics (like response times and resolution rates) and business outcomes (cost savings and customer satisfaction).\n\nOnce implemented, you should establish a regular review process to analyze AI performance and identify opportunities for improvement and expansion. This approach will help ensure you achieve and potentially exceed the projected $${formattedYearlySavings} annual savings for ${companyName}.`,
       bullets: [
         `Set up dashboards to track key performance metrics for ${companyName}'s AI implementation`,
         `Establish a feedback loop from customers and employees to continuously refine your AI solutions`,
