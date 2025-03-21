@@ -16,15 +16,17 @@ export function generateWorkshopContent(
   const calculatorResults = leadData.calculator_results || {};
   
   // Use more realistic values with proper validation and fallbacks
-  // Cap monthly savings at a realistic maximum of $15,000
+  // Use actual calculator results, but ensure they're reasonable
   const rawMonthlySavings = calculatorResults.monthlySavings || 2500;
-  const monthlySavings = Math.min(Math.abs(rawMonthlySavings), 15000);
+  const monthlySavings = Math.min(Math.abs(rawMonthlySavings), 25000);
   
-  // Calculate yearly savings based on monthly (max $180,000/year)
+  // Calculate yearly savings based on monthly
   const yearlySavings = monthlySavings * 12;
   
-  // Use more realistic savings percentage (30-45% range is realistic)
-  const savingsPercentage = Math.min(Math.abs(calculatorResults.savingsPercentage || 35), 45);
+  // Use realistic savings percentage from calculator results
+  const rawSavingsPercentage = calculatorResults.savingsPercentage || 35;
+  const savingsPercentage = Math.min(Math.abs(rawSavingsPercentage), 65);
+  
   const basePriceMonthly = calculatorResults.basePriceMonthly || 1500;
   
   // Create industry-specific content
