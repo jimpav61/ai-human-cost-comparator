@@ -19,6 +19,7 @@ const Index = () => {
     toast({
       title: "Welcome " + data.name + "!",
       description: "Now you can explore detailed AI cost savings for your business.",
+      duration: 1000, // Set duration to 1000ms (1 second)
     });
   };
   

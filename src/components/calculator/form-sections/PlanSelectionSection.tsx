@@ -37,8 +37,9 @@ export const PlanSelectionSection: React.FC<PlanSelectionSectionProps> = ({
     onSelectTier(tier);
   };
 
+  // Use stronger mobile-specific styling
   return (
-    <div className={isMobile ? "px-1" : ""}>
+    <div className={isMobile ? "px-0 w-full max-w-full overflow-x-hidden" : ""}>
       <TierComparison 
         currentTier={currentTier} 
         onSelectTier={handleTierSelection} 
