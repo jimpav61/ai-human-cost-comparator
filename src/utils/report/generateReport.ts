@@ -25,7 +25,7 @@ export async function generateAndDownloadReport(lead: Lead): Promise<boolean> {
       title: "Success",
       description: "ROI Report downloaded successfully",
       variant: "default",
-      duration: 1000, // Changed from 1500 to 1000
+      duration: 1000,
     });
     
     // Attempt to save to storage in parallel - using the reliable method that works in admin
@@ -68,11 +68,22 @@ export async function generateAndDownloadReport(lead: Lead): Promise<boolean> {
       
       console.log("Redirecting to workshop page with lead ID:", lead.id);
       
-      // Use history.pushState to add workshop page to browser history before navigating
-      // This ensures the back button will work correctly
+      // Use history.pushState to add workshop page to browser history
       const workshopUrl = `/workshop?leadId=${lead.id}`;
       window.history.pushState({ leadData, aiType, tierName }, '', workshopUrl);
-      window.location.href = workshopUrl;
+      
+      // Instead of using location.href which replaces the current page,
+      // programmatically navigate to the workshop page
+      // This allows the browser to properly maintain history
+      window.dispatchEvent(new PopStateEvent('popstate'));
+      
+      // As a fallback, if the workshop page doesn't load within 100ms,
+      // do a regular window.location redirect
+      setTimeout(() => {
+        if (!window.location.href.includes('workshop')) {
+          window.location.href = workshopUrl;
+        }
+      }, 100);
     }, 1500); // Keep 1500ms delay to ensure download completes first
     
     return true;
@@ -82,7 +93,7 @@ export async function generateAndDownloadReport(lead: Lead): Promise<boolean> {
       title: "Error",
       description: "Failed to generate report. Please try again.",
       variant: "destructive",
-      duration: 1000, // Changed from 1500 to 1000
+      duration: 1000,
     });
     return false;
   }
