@@ -95,6 +95,21 @@ const Workshop = () => {
       }
     };
 
+    // Check for pending workshop from session storage (set when PDF is downloaded)
+    const pendingWorkshopLeadId = sessionStorage.getItem('pendingWorkshop');
+    if (pendingWorkshopLeadId) {
+      console.log("Found pending workshop in session storage:", pendingWorkshopLeadId);
+      // Clear the flag so it doesn't trigger again
+      sessionStorage.removeItem('pendingWorkshop');
+      
+      // If we have a different leadId in the URL, prioritize the session storage one
+      if (!searchParams.get('leadId')) {
+        console.log("No leadId in URL, using the one from session storage");
+        fetchLeadData(pendingWorkshopLeadId);
+        return;
+      }
+    }
+
     // First try to get data from location state
     const state = location.state as {
       leadData?: LeadData;

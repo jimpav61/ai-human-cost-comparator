@@ -8,6 +8,10 @@ export async function generateAndDownloadReport(lead: Lead): Promise<boolean> {
   try {
     console.log("Front-end: Generating report for lead:", lead.id);
     
+    // First, set a flag in sessionStorage that we're downloading a report and should redirect to workshop
+    // This will be checked when the page reloads (such as after iOS Safari PDF viewing and hitting back)
+    sessionStorage.setItem('pendingWorkshop', lead.id);
+    
     // Generate the PDF document
     const pdfDoc = generateReportPDF(lead);
     
@@ -26,7 +30,6 @@ export async function generateAndDownloadReport(lead: Lead): Promise<boolean> {
     // Detect iOS using a more reliable approach - simply check for iOS devices in userAgent
     const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent);
     console.log("Device detection - isIOS:", isIOS);
-    const workshopDelay = isIOS ? 3000 : 1500; // Longer delay for iOS to allow PDF interaction
     
     // Attempt to save to storage in parallel
     try {
@@ -47,32 +50,11 @@ export async function generateAndDownloadReport(lead: Lead): Promise<boolean> {
       console.error("Error saving report to storage:", storageError);
     }
     
-    // Redirect to workshop page after delay
-    setTimeout(() => {
-      // Extract tier and AI type information for the workshop
-      const tierName = lead.calculator_results?.tierKey || lead.calculator_inputs?.aiTier || 'Standard';
-      const aiType = lead.calculator_results?.aiType || lead.calculator_inputs?.aiType || 'Chat Only';
-      
-      // Create lead data object for the workshop
-      const leadData = {
-        id: lead.id,
-        name: lead.name,
-        companyName: lead.company_name,
-        email: lead.email,
-        phoneNumber: lead.phone_number,
-        website: lead.website,
-        industry: lead.industry,
-        employeeCount: lead.employee_count,
-        calculator_results: lead.calculator_results || {}
-      };
-      
-      console.log("Redirecting to workshop page with lead ID:", lead.id);
-      
-      // Simple direct navigation to workshop page
-      const workshopUrl = `/workshop?leadId=${lead.id}`;
-      window.location.href = workshopUrl;
-      
-    }, workshopDelay); // Dynamic delay based on device
+    // Navigate to the workshop page immediately after download starts
+    // This ensures the user lands on the workshop page when they return from viewing the PDF
+    console.log("Navigating to workshop page with lead ID:", lead.id);
+    const workshopUrl = `/workshop?leadId=${lead.id}`;
+    window.location.href = workshopUrl;
     
     return true;
   } catch (error) {
