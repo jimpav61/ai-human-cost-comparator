@@ -4,11 +4,6 @@ import { generateReportPDF } from "./pdf/generator";
 import { savePDFToStorage } from "./fileUtils";
 import { toast } from "@/hooks/use-toast";
 
-/**
- * Generate and download a report from the front-end calculator
- * This function generates a PDF and downloads it to the user's device
- * It also attempts to save the report to Supabase storage if the user is authenticated
- */
 export async function generateAndDownloadReport(lead: Lead): Promise<boolean> {
   try {
     console.log("Front-end: Generating report for lead:", lead.id);
@@ -28,9 +23,13 @@ export async function generateAndDownloadReport(lead: Lead): Promise<boolean> {
       duration: 1000,
     });
     
-    // Attempt to save to storage in parallel - using the reliable method that works in admin
+    // Detect iOS and adjust delay accordingly
+    const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent) && !window.MSStream;
+    const workshopDelay = isIOS ? 3000 : 1500; // Longer delay for iOS to allow PDF interaction
+    
+    // Attempt to save to storage in parallel
     try {
-      // Create a standardized UUID filename for storage (the key part that works in admin)
+      // Create a standardized UUID filename for storage
       const storageFileName = `${lead.id}.pdf`;
       console.log("Front-end: Attempting to save report to storage with filename:", storageFileName);
       
@@ -47,7 +46,7 @@ export async function generateAndDownloadReport(lead: Lead): Promise<boolean> {
       console.error("Error saving report to storage:", storageError);
     }
     
-    // Redirect to workshop page after a delay to ensure PDF download completes
+    // Redirect to workshop page after delay
     setTimeout(() => {
       // Extract tier and AI type information for the workshop
       const tierName = lead.calculator_results?.tierKey || lead.calculator_inputs?.aiTier || 'Standard';
@@ -68,11 +67,11 @@ export async function generateAndDownloadReport(lead: Lead): Promise<boolean> {
       
       console.log("Redirecting to workshop page with lead ID:", lead.id);
       
-      // Simple direct navigation to workshop page (original approach)
+      // Simple direct navigation to workshop page
       const workshopUrl = `/workshop?leadId=${lead.id}`;
       window.location.href = workshopUrl;
       
-    }, 1500); // Keep 1500ms delay to ensure download completes first
+    }, workshopDelay); // Dynamic delay based on device
     
     return true;
   } catch (error) {
@@ -86,3 +85,4 @@ export async function generateAndDownloadReport(lead: Lead): Promise<boolean> {
     return false;
   }
 }
+
