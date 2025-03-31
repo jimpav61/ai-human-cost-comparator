@@ -3,6 +3,7 @@ import React from 'react';
 import { Button } from '@/components/ui/button';
 import { INDUSTRY_OPTIONS } from '../constants/industries';
 import { LeadFormData } from '../types';
+import { Input } from '@/components/ui/input';
 
 interface BusinessDetailsStepProps {
   formData: LeadFormData;
@@ -43,10 +44,12 @@ export const BusinessDetailsStep: React.FC<BusinessDetailsStepProps> = ({
         <label htmlFor="employeeCount" className="block text-sm font-medium text-gray-700 mb-1">
           Number of Employees *
         </label>
-        <input
+        <Input
           id="employeeCount"
           type="number"
           min="1"
+          inputMode="numeric"
+          pattern="[0-9]*"
           required
           className="calculator-input w-full px-3 py-2 border border-gray-300 rounded-md"
           value={formData.employeeCount}
