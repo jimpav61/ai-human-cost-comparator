@@ -23,9 +23,9 @@ export async function generateAndDownloadReport(lead: Lead): Promise<boolean> {
       duration: 1000,
     });
     
-    // Detect iOS and adjust delay accordingly
-    const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent) && 
-                  !(navigator.platform && /Win|Mac|Linux/.test(navigator.platform));
+    // Detect iOS using a more reliable approach - simply check for iOS devices in userAgent
+    const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent);
+    console.log("Device detection - isIOS:", isIOS);
     const workshopDelay = isIOS ? 3000 : 1500; // Longer delay for iOS to allow PDF interaction
     
     // Attempt to save to storage in parallel
