@@ -1,3 +1,4 @@
+
 // Adapted from shadcn/ui toast
 import * as React from "react"
 
@@ -159,6 +160,8 @@ function toast({ ...props }: Toast) {
       onOpenChange: (open) => {
         if (!open) dismiss()
       },
+      // Default the duration to 1000ms (1 second) if not specified
+      duration: props.duration ?? 1000,
     },
   })
 

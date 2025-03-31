@@ -30,6 +30,7 @@ export const PlanSelectionSection: React.FC<PlanSelectionSectionProps> = ({
       title: `${tier.charAt(0).toUpperCase() + tier.slice(1)} Plan Selected`,
       description: `Price: $${exactPrice}/month. Setup fee: $${setupFee}. ${tier === 'starter' ? 'No voice capabilities.' : 
         `Includes ${AI_RATES.chatbot[tier as keyof typeof AI_RATES.chatbot].includedVoiceMinutes} voice minutes.`}`,
+      duration: 1000, // Set duration to 1000ms (1 second)
     });
     
     // Pass the tier selection up to the parent component

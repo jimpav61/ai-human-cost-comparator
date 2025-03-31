@@ -1,3 +1,4 @@
+
 import React, { useState } from "react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
@@ -139,11 +140,11 @@ export const ProposalEditDialog = ({ isOpen, onClose, lead, onSave }: ProposalEd
     // Call the save handler with the updated lead
     onSave(updatedLead);
     
-    // Show success toast
+    // Show success toast with 1 second duration
     toast({
       title: "Proposal settings updated",
       description: `Plan set to ${aiTier === 'starter' ? 'Starter' : aiTier === 'growth' ? 'Growth' : 'Premium'} with ${callVolume} additional voice minutes.`,
-      duration: 1000,
+      duration: 1000, // Set duration to 1000ms (1 second)
     });
     
     onClose();

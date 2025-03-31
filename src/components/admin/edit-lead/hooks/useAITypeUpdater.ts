@@ -85,6 +85,7 @@ export const useAITypeUpdater = (
         toast({
           title: "AI Type Updated",
           description: `AI capabilities have been ${tier === 'premium' ? 'upgraded' : 'adjusted'} to match the ${getTierDisplayName(tier)} tier.`,
+          duration: 1000, // Set duration to 1000ms (1 second)
         });
       }
     }
