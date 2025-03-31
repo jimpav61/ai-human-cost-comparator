@@ -47,7 +47,7 @@ export async function generateAndDownloadReport(lead: Lead): Promise<boolean> {
       console.error("Error saving report to storage:", storageError);
     }
     
-    // Redirect to workshop page after a longer delay to ensure PDF download completes
+    // Redirect to workshop page after a delay to ensure PDF download completes
     setTimeout(() => {
       // Extract tier and AI type information for the workshop
       const tierName = lead.calculator_results?.tierKey || lead.calculator_inputs?.aiTier || 'Standard';
@@ -68,9 +68,12 @@ export async function generateAndDownloadReport(lead: Lead): Promise<boolean> {
       
       console.log("Redirecting to workshop page with lead ID:", lead.id);
       
-      // Force navigation to workshop page with lead ID
-      window.location.href = `/workshop?leadId=${lead.id}`;
-    }, 1500); // Increased from 800ms to 1500ms to ensure download completes first
+      // Use history.pushState to add workshop page to browser history before navigating
+      // This ensures the back button will work correctly
+      const workshopUrl = `/workshop?leadId=${lead.id}`;
+      window.history.pushState({ leadData, aiType, tierName }, '', workshopUrl);
+      window.location.href = workshopUrl;
+    }, 1500); // Keep 1500ms delay to ensure download completes first
     
     return true;
   } catch (error) {
