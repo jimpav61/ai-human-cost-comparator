@@ -25,7 +25,7 @@ export async function generateAndDownloadReport(lead: Lead): Promise<boolean> {
       title: "Success",
       description: "ROI Report downloaded successfully",
       variant: "default",
-      duration: 1500,
+      duration: 1000, // Changed from 1500 to 1000
     });
     
     // Attempt to save to storage in parallel - using the reliable method that works in admin
@@ -78,7 +78,7 @@ export async function generateAndDownloadReport(lead: Lead): Promise<boolean> {
       title: "Error",
       description: "Failed to generate report. Please try again.",
       variant: "destructive",
-      duration: 1500,
+      duration: 1000, // Changed from 1500 to 1000
     });
     return false;
   }

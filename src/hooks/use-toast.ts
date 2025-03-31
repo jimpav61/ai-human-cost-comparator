@@ -7,7 +7,7 @@ import type {
 } from "@/components/ui/toast"
 
 const TOAST_LIMIT = 5
-const TOAST_REMOVE_DELAY = 1500 // Changed from 5000 to 1500ms (1.5 seconds)
+const TOAST_REMOVE_DELAY = 1000 // Changed from 1500 to 1000ms (1 second)
 
 type ToasterToast = ToastProps & {
   id: string
@@ -67,7 +67,7 @@ const addToRemoveQueue = (toastId: string) => {
       type: actionTypes.REMOVE_TOAST,
       toastId: toastId,
     })
-  }, TOAST_REMOVE_DELAY) // This now uses 1500ms from the updated constant
+  }, TOAST_REMOVE_DELAY) // This now uses 1000ms (1 second) instead of 1500ms
 
   toastTimeouts.set(toastId, timeout)
 }

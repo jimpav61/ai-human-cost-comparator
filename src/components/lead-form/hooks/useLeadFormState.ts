@@ -30,7 +30,7 @@ export const useLeadFormState = (onSubmit: (data: LeadFormData) => void) => {
         title: "Missing Information",
         description: "Please fill in all required fields to continue.",
         variant: "destructive",
-        duration: 1500,
+        duration: 1000,
       });
       return;
     }
@@ -42,7 +42,7 @@ export const useLeadFormState = (onSubmit: (data: LeadFormData) => void) => {
         title: "Invalid Email",
         description: emailValidation.errorMessage,
         variant: "destructive",
-        duration: 1500,
+        duration: 1000,
       });
       return;
     }
@@ -54,7 +54,7 @@ export const useLeadFormState = (onSubmit: (data: LeadFormData) => void) => {
         title: "Invalid Website",
         description: websiteValidation.errorMessage,
         variant: "destructive",
-        duration: 1500,
+        duration: 1000,
       });
       return;
     }
@@ -108,7 +108,7 @@ export const useLeadFormState = (onSubmit: (data: LeadFormData) => void) => {
           toast({
             title: "Information Saved!",
             description: "Please complete the remaining details to continue to the calculator.",
-            duration: 1500,
+            duration: 1000,
           });
         }, 50);
       } else {
@@ -121,7 +121,7 @@ export const useLeadFormState = (onSubmit: (data: LeadFormData) => void) => {
         title: "Submission Error",
         description: "There was an error saving your information. Please try again.",
         variant: "destructive",
-        duration: 1500,
+        duration: 1000,
       });
       setIsSubmitting(false);
     }
@@ -135,7 +135,7 @@ export const useLeadFormState = (onSubmit: (data: LeadFormData) => void) => {
         title: "Missing Information",
         description: "Please select an industry and specify employee count.",
         variant: "destructive",
-        duration: 1500,
+        duration: 1000,
       });
       return;
     }
@@ -171,7 +171,7 @@ export const useLeadFormState = (onSubmit: (data: LeadFormData) => void) => {
           toast({
             title: "Success!",
             description: "Your information has been submitted successfully.",
-            duration: 1500,
+            duration: 1000,
           });
         }, 50);
       } else {
@@ -210,7 +210,7 @@ export const useLeadFormState = (onSubmit: (data: LeadFormData) => void) => {
             toast({
               title: "Success!",
               description: "Your information has been submitted successfully.",
-              duration: 1500,
+              duration: 1000,
             });
           }, 50);
         } else {
@@ -223,7 +223,7 @@ export const useLeadFormState = (onSubmit: (data: LeadFormData) => void) => {
         title: "Submission Error",
         description: error?.message || "There was an error submitting your information. Please try again.",
         variant: "destructive",
-        duration: 1500,
+        duration: 1000,
       });
       setIsSubmitting(false);
     }
