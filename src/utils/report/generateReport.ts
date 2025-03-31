@@ -24,7 +24,8 @@ export async function generateAndDownloadReport(lead: Lead): Promise<boolean> {
     });
     
     // Detect iOS and adjust delay accordingly
-    const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent) && !window.MSStream;
+    const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent) && 
+                  !(navigator.platform && /Win|Mac|Linux/.test(navigator.platform));
     const workshopDelay = isIOS ? 3000 : 1500; // Longer delay for iOS to allow PDF interaction
     
     // Attempt to save to storage in parallel
@@ -85,4 +86,3 @@ export async function generateAndDownloadReport(lead: Lead): Promise<boolean> {
     return false;
   }
 }
-
