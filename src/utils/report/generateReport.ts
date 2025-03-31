@@ -47,7 +47,7 @@ export async function generateAndDownloadReport(lead: Lead): Promise<boolean> {
       console.error("Error saving report to storage:", storageError);
     }
     
-    // Redirect to workshop page after a short delay
+    // Redirect to workshop page after a longer delay to ensure PDF download completes
     setTimeout(() => {
       // Extract tier and AI type information for the workshop
       const tierName = lead.calculator_results?.tierKey || lead.calculator_inputs?.aiTier || 'Standard';
@@ -66,10 +66,11 @@ export async function generateAndDownloadReport(lead: Lead): Promise<boolean> {
         calculator_results: lead.calculator_results || {}
       };
       
-      // Use React Router's navigate function via state object to prevent full page reload
-      // Use window.location.href with proper state data encoded
+      console.log("Redirecting to workshop page with lead ID:", lead.id);
+      
+      // Force navigation to workshop page with lead ID
       window.location.href = `/workshop?leadId=${lead.id}`;
-    }, 800); // Slightly longer delay to ensure download completes
+    }, 1500); // Increased from 800ms to 1500ms to ensure download completes first
     
     return true;
   } catch (error) {
