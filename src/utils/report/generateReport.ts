@@ -68,22 +68,10 @@ export async function generateAndDownloadReport(lead: Lead): Promise<boolean> {
       
       console.log("Redirecting to workshop page with lead ID:", lead.id);
       
-      // Use history.pushState to add workshop page to browser history
+      // Simple direct navigation to workshop page (original approach)
       const workshopUrl = `/workshop?leadId=${lead.id}`;
-      window.history.pushState({ leadData, aiType, tierName }, '', workshopUrl);
+      window.location.href = workshopUrl;
       
-      // Instead of using location.href which replaces the current page,
-      // programmatically navigate to the workshop page
-      // This allows the browser to properly maintain history
-      window.dispatchEvent(new PopStateEvent('popstate'));
-      
-      // As a fallback, if the workshop page doesn't load within 100ms,
-      // do a regular window.location redirect
-      setTimeout(() => {
-        if (!window.location.href.includes('workshop')) {
-          window.location.href = workshopUrl;
-        }
-      }, 100);
     }, 1500); // Keep 1500ms delay to ensure download completes first
     
     return true;
