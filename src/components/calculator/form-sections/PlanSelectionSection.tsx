@@ -1,8 +1,9 @@
 
 import React from 'react';
 import { TierComparison } from '../TierComparison';
-import { toast } from "@/components/ui/use-toast";
+import { toast } from "@/hooks/use-toast";
 import { AI_RATES } from '@/constants/pricing';
+import { useIsMobile } from '@/hooks/use-mobile';
 
 interface PlanSelectionSectionProps {
   currentTier: string;
@@ -15,6 +16,8 @@ export const PlanSelectionSection: React.FC<PlanSelectionSectionProps> = ({
   currentAIType, 
   onSelectTier 
 }) => {
+  const isMobile = useIsMobile();
+  
   // When a tier is selected, properly update it and log the change
   const handleTierSelection = (tier: string) => {
     console.log(`User selected tier: ${tier} from the plan selection section, current AI type: ${currentAIType}`);
@@ -34,10 +37,12 @@ export const PlanSelectionSection: React.FC<PlanSelectionSectionProps> = ({
   };
 
   return (
-    <TierComparison 
-      currentTier={currentTier} 
-      onSelectTier={handleTierSelection} 
-      currentAIType={currentAIType}
-    />
+    <div className={isMobile ? "px-1" : ""}>
+      <TierComparison 
+        currentTier={currentTier} 
+        onSelectTier={handleTierSelection} 
+        currentAIType={currentAIType}
+      />
+    </div>
   );
 };

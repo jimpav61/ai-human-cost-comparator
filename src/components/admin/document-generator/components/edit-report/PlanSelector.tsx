@@ -17,6 +17,7 @@ import {
 import { Badge } from "@/components/ui/badge";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { Card } from "@/components/ui/card";
+import { useIsMobile } from "@/hooks/use-mobile";
 
 interface PlanSelectorProps {
   value: CalculatorInputs['aiTier'];
@@ -24,6 +25,8 @@ interface PlanSelectorProps {
 }
 
 export const PlanSelector = ({ value, onChange }: PlanSelectorProps) => {
+  const isMobile = useIsMobile();
+  
   // Plan definitions
   const plans = [
     {
@@ -102,7 +105,7 @@ export const PlanSelector = ({ value, onChange }: PlanSelectorProps) => {
       <RadioGroup 
         value={value} 
         onValueChange={onChange}
-        className="grid grid-cols-1 gap-3"
+        className={`grid ${isMobile ? 'grid-cols-1' : 'grid-cols-1'} gap-3`}
       >
         {plans.map((plan) => {
           const isSelected = value === plan.key;
@@ -113,7 +116,7 @@ export const PlanSelector = ({ value, onChange }: PlanSelectorProps) => {
                 <Tooltip>
                   <TooltipTrigger asChild>
                     <Card 
-                      className={`relative overflow-hidden border p-4 transition-all ${
+                      className={`relative overflow-hidden border ${isMobile ? 'p-5' : 'p-4'} transition-all ${
                         isSelected 
                           ? `${plan.color} border-2` 
                           : 'hover:border-gray-300'
@@ -124,13 +127,13 @@ export const PlanSelector = ({ value, onChange }: PlanSelectorProps) => {
                         id={`plan-${plan.key}`}
                         className="absolute right-4 top-4"
                       />
-                      <div className="flex items-center gap-3">
-                        <div className={`p-2 rounded-full ${plan.color}`}>
+                      <div className={`flex items-center ${isMobile ? 'flex-col text-center' : 'gap-3'}`}>
+                        <div className={`p-2 rounded-full ${plan.color} ${isMobile ? 'mb-3' : ''}`}>
                           {plan.icon}
                         </div>
                         
-                        <div>
-                          <div className="flex items-center gap-2">
+                        <div className={isMobile ? 'w-full' : ''}>
+                          <div className={`flex items-center ${isMobile ? 'justify-center' : ''} gap-2`}>
                             <h3 className={`font-medium ${isSelected ? plan.textColor : ''}`}>
                               {plan.name}
                             </h3>
@@ -139,7 +142,7 @@ export const PlanSelector = ({ value, onChange }: PlanSelectorProps) => {
                           
                           <p className="text-xs text-gray-500 mt-1">{plan.description}</p>
                           
-                          <div className="flex items-center gap-2 mt-2">
+                          <div className={`flex items-center ${isMobile ? 'justify-center' : ''} gap-2 mt-2`}>
                             <span className="flex items-center font-medium">
                               <DollarSign className="h-3 w-3" />
                               {plan.price}/mo
@@ -158,7 +161,7 @@ export const PlanSelector = ({ value, onChange }: PlanSelectorProps) => {
                       )}
                     </Card>
                   </TooltipTrigger>
-                  <TooltipContent side="right" align="start" className="max-w-xs">
+                  <TooltipContent side={isMobile ? "bottom" : "right"} align={isMobile ? "center" : "start"} className="max-w-xs">
                     <strong>Features:</strong>
                     <ul className="text-xs mt-1 space-y-1">
                       {plan.features.map((feature, idx) => (
